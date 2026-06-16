@@ -1,1 +1,7 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
 backend/.env
+web-client/.env

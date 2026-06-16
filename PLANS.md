@@ -388,8 +388,8 @@ Point de controle :
 ### Etape 5 - Authentification et autorisations
 
 - Ajouter Google OAuth cote backend.
-- Creer la session ou le jeton d'authentification selon l'approche retenue au
-  moment de l'implementation.
+- Utiliser une session serveur avec cookie `HttpOnly` pour l'application web,
+  plutot qu'un jeton sensible stocke cote frontend.
 - Implementer les roles utilisateur, moderateur, administrateur et banni.
 - Proteger toutes les routes sensibles cote serveur, sans confiance implicite
   dans le frontend.
@@ -484,6 +484,8 @@ Point de controle :
   sa structure devront etre confirmees par tests de parsing.
 - Google OAuth suffit pour le MVP.
 - Le frontend demarre avec Vite, React et TypeScript.
+- Le developpement utilise Node.js `24.16.0` ou plus recent, en restant sur la
+  branche LTS plutot que sur la branche Current.
 - Discord, Twitch et extraction admin sont des evolutions futures.
 - Le VPS Hetzner pourra heberger le backend, le frontend, PostgreSQL et Nginx,
   sous reserve de verification de charge au moment du deploiement.

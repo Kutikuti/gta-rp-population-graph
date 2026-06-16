@@ -39,14 +39,15 @@ La securite du serveur est la priorite numero 1 du developpement.
 
 ## Etat actuel
 
-Le projet est en phase de cadrage. Les dossiers applicatifs `backend/` et
-`web-client/` ne sont pas encore initialises.
+Le socle de l'etape 1 est initialise : backend Express TypeScript et frontend
+Vite React TypeScript, avec lint, tests, build et validation d'environnement.
 
 ## Lancement local
 
-Les commandes seront disponibles apres initialisation du backend et du frontend.
+Version Node.js attendue : `24.16.0` ou plus recente. Les fichiers `.nvmrc` et
+`.node-version` sont fournis pour les gestionnaires de versions Node.js.
 
-Commandes ciblees :
+Installation et demarrage backend :
 
 ```bash
 cd backend
@@ -54,10 +55,28 @@ npm install
 npm run dev
 ```
 
+Installation et demarrage frontend :
+
 ```bash
 cd web-client
 npm install
 npm run dev
+```
+
+Checks utiles :
+
+```bash
+cd backend
+npm run lint
+npm test
+npm run build
+```
+
+```bash
+cd web-client
+npm run lint
+npm test
+npm run build
 ```
 
 ## Donnees
