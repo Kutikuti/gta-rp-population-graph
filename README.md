@@ -46,7 +46,8 @@ Vite React TypeScript, avec lint, tests, build et validation d'environnement.
 L'etape 2 est terminee : Sequelize est configure, la base PostgreSQL peut
 etre creee via `npm run db:ensure`, la migration initiale cree le schema
 metier, les seeds produisent un graphe de developpement exploitable et les
-checks backend passent. La prochaine etape est l'API publique de consultation.
+checks backend passent. L'etape 3 est demarree avec les premieres routes
+publiques de consultation.
 
 ## Lancement local
 

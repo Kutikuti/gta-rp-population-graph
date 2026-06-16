@@ -368,6 +368,8 @@ Bilan :
 
 ### Etape 3 - API publique de consultation
 
+Statut : en cours, socle public implemente le 2026-06-16.
+
 - Implementer les routes publiques de lecture : personnages, fiche detaillee,
   tags, graphe, historique public.
 - Ajouter recherche et filtres cote API.
@@ -381,6 +383,15 @@ Point de controle :
 - Un visiteur anonyme peut consulter toutes les donnees publiques.
 - Aucune route publique ne permet de modifier les donnees.
 - Les performances restent correctes sur les seeds.
+
+Bilan intermediaire :
+
+- Routes `GET /api/characters`, `GET /api/characters/:id`, `GET /api/tags`,
+  `GET /api/graph` et `GET /api/history` ajoutees.
+- Recherche et filtres publics valides cote API avec Zod.
+- Structure graphe retournee au format exploitable par Cytoscape.js.
+- Tests backend ajoutes sur recherche, filtres, fiche, graphe, tags, historique
+  et erreurs de validation.
 
 ### Etape 4 - Interface publique et graphe
 

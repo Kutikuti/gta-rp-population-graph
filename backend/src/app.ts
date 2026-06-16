@@ -6,8 +6,14 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { healthRouter } from "./routes/health.js";
+import { createPublicRouter } from "./routes/public.js";
+import type { PublicDataService } from "./services/public-data.js";
 
-export const createApp = () => {
+export type AppDependencies = {
+  publicDataService?: PublicDataService;
+};
+
+export const createApp = (dependencies: AppDependencies = {}) => {
   const app = express();
 
   app.disable("x-powered-by");
@@ -29,6 +35,7 @@ export const createApp = () => {
   app.use(express.json({ limit: "1mb" }));
 
   app.use("/api/health", healthRouter);
+  app.use("/api", createPublicRouter(dependencies.publicDataService));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

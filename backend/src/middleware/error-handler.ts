@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
+import { ZodError } from "zod";
 
 export const notFoundHandler: RequestHandler = (request, response) => {
   response.status(404).json({
@@ -10,6 +11,20 @@ export const notFoundHandler: RequestHandler = (request, response) => {
 };
 
 export const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+  if (error instanceof ZodError) {
+    response.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Parametres de requete invalides.",
+        issues: error.issues.map((issue) => ({
+          path: issue.path,
+          message: issue.message
+        }))
+      }
+    });
+    return;
+  }
+
   console.error(error);
 
   response.status(500).json({
