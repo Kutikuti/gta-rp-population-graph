@@ -1,0 +1,9 @@
+[hooks]
+exclude_commands = ["curl", "wget"]
+
+[tee]
+enabled = true
+mode = "failures"
+
+[telemetry]
+enabled = false

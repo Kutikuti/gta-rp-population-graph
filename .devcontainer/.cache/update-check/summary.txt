@@ -1,0 +1,9 @@
+Mewtwo devcontainer update status
+Checked: 2026-06-16T14:12:32Z
+
+Warnings:
+- npm has a newer version: pinned 11.16.0, latest 11.17.0
+- uv has a newer version: pinned 0.11.20, latest 0.11.21
+- RTK has a newer version: pinned v0.42.2, latest v0.42.4
+- ast-grep has a newer version: pinned 0.40.3, latest 0.43.0
+- Repomix has a newer version: pinned 1.4.2, latest 1.14.1
