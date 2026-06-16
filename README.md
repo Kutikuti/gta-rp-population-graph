@@ -36,11 +36,17 @@ La securite du serveur est la priorite numero 1 du developpement.
   securite et workflow.
 - [PLANS.md](PLANS.md) : plan MVP, decisions produit/techniques et feuille de
   route de developpement.
+- [DEPLOYMENT.md](DEPLOYMENT.md) : runbook vivant de mise en production.
 
 ## Etat actuel
 
 Le socle de l'etape 1 est initialise : backend Express TypeScript et frontend
 Vite React TypeScript, avec lint, tests, build et validation d'environnement.
+
+L'etape 2 est terminee : Sequelize est configure, la base PostgreSQL peut
+etre creee via `npm run db:ensure`, la migration initiale cree le schema
+metier, les seeds produisent un graphe de developpement exploitable et les
+checks backend passent. La prochaine etape est l'API publique de consultation.
 
 ## Lancement local
 
@@ -77,6 +83,26 @@ cd web-client
 npm run lint
 npm test
 npm run build
+```
+
+Base PostgreSQL de developpement :
+
+```bash
+docker compose up -d postgres
+```
+
+Depuis le devcontainer, utiliser `DB_HOST=host.docker.internal` dans
+`backend/.env` si PostgreSQL tourne dans Docker sur le host. Depuis WSL hors
+devcontainer, `DB_HOST=localhost` suffit avec le port `5432` expose.
+
+Commandes backend pour l'etape 2 :
+
+```bash
+cd backend
+npm run db:ensure
+npm run db:migrate
+npm run db:seed
+npm run db:migrate:executed
 ```
 
 ## Donnees

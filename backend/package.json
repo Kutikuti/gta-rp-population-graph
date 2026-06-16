@@ -9,7 +9,14 @@
     "start": "node dist/index.js",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:ensure": "tsx src/db/ensure-database.ts",
+    "db:migrate": "tsx src/db/migrate.ts up",
+    "db:migrate:undo": "tsx src/db/migrate.ts down",
+    "db:migrate:pending": "tsx src/db/migrate.ts pending",
+    "db:migrate:executed": "tsx src/db/migrate.ts executed",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:reset": "tsx src/db/migrate.ts down --all && tsx src/db/migrate.ts up && tsx src/db/seed.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",
@@ -17,6 +24,9 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
+    "pg": "^8.21.0",
+    "sequelize": "^6.37.8",
+    "umzug": "^3.8.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -24,6 +34,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
+    "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.0",
     "eslint": "^10.5.0",
     "supertest": "^7.2.2",
@@ -34,5 +45,10 @@
   },
   "engines": {
     "node": ">=24.16.0"
+  },
+  "overrides": {
+    "sequelize": {
+      "uuid": "^11.1.1"
+    }
   }
 }

@@ -322,6 +322,8 @@ Frontend :
 
 ### Etape 1 - Socle projet
 
+Statut : terminée le 2026-06-16.
+
 - Initialiser `backend/` en Express TypeScript avec configuration stricte,
   lint, tests, gestion des variables d'environnement et structure de couches.
 - Initialiser `web-client/` avec Vite, React et TypeScript.
@@ -339,6 +341,8 @@ Point de controle :
 
 ### Etape 2 - Modele de donnees et base PostgreSQL
 
+Statut : terminée le 2026-06-16.
+
 - Configurer Sequelize, PostgreSQL, migrations et connexion par variables
   d'environnement.
 - Creer les modeles principaux : `Character`, `Streamer`, `Tag`,
@@ -352,6 +356,15 @@ Point de controle :
 - Les migrations creent une base propre.
 - Les seeds produisent un graphe exploitable.
 - Les contraintes de base evitent les donnees incoherentes les plus evidentes.
+
+Bilan :
+
+- `db:ensure`, migrations, seeds, lint, tests et build backend valides.
+- La migration initiale evite les ENUM PostgreSQL natifs au profit de colonnes
+  texte avec contraintes `CHECK`, pour conserver les valeurs controlees sans
+  declencher le warning de depreciation `pg` observe avec Sequelize.
+- `DEPLOYMENT.md` documente le runbook initial de mise en production, incluant
+  creation de base, migrations, sauvegardes et rollback.
 
 ### Etape 3 - API publique de consultation
 

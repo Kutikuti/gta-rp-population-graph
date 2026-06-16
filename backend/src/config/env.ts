@@ -1,7 +1,18 @@
 import dotenv from "dotenv";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
-dotenv.config({ quiet: true });
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const envPaths = [
+  resolve(process.cwd(), ".env"),
+  resolve(process.cwd(), "backend/.env"),
+  resolve(currentDir, "../../.env")
+];
+const envPath = envPaths.find((candidate) => existsSync(candidate));
+
+dotenv.config({ path: envPath, quiet: true });
 
 const booleanFromString = z
   .string()
@@ -22,6 +33,7 @@ const envSchema = z
     DB_HOST: z.string().min(1).default("localhost"),
     DB_PORT: numberFromString(5432),
     DB_SSL: booleanFromString,
+    DB_MAINTENANCE_NAME: z.string().min(1).default("postgres"),
     SESSION_SECRET: z.string().min(32).default("replace-with-a-long-random-secret"),
     SESSION_COOKIE_NAME: z.string().min(1).default("gta_rp_session"),
     SESSION_COOKIE_SECURE: booleanFromString,
