@@ -400,6 +400,8 @@ Bilan :
 
 ### Etape 4 - Interface publique et graphe
 
+Statut : en cours, socle public implemente le 2026-06-17.
+
 - Construire la vue principale dark mode : recherche/filtres, graphe
   Cytoscape.js, panneau lateral de fiche.
 - Implementer selection, zoom/pan, survol, mise en evidence des resultats et
@@ -413,6 +415,17 @@ Point de controle :
 - Le parcours visiteur anonyme est utilisable de bout en bout.
 - Le graphe reste lisible sur desktop et acceptable sur mobile.
 - Le style dark terminal bleu est coherent et moderne.
+
+Bilan intermediaire :
+
+- Vue publique connectee a l'API reelle avec recherche, filtres persistants,
+  liste de resultats, graphe Cytoscape.js et panneau de fiche.
+- Selection, zoom/pan natif Cytoscape.js, survol et mise en evidence des
+  resultats de recherche implementes.
+- Fiche personnage avec informations principales, streamer, tags, relations,
+  reseaux et historique public.
+- Etats chargement, erreur, vide et aucun resultat ajoutes ; tests, lint et
+  build frontend passent.
 
 ### Etape 5 - Authentification et autorisations
 

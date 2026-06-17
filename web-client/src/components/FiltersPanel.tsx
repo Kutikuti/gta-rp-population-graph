@@ -1,0 +1,95 @@
+import type { CharacterFilters, PublicTag } from "../api";
+import { isActiveFilters, lifeStatusLabels, verificationLabels } from "../constants";
+
+type FiltersPanelProps = {
+  filters: CharacterFilters;
+  tags: PublicTag[];
+  onChange: (key: keyof CharacterFilters, value: string) => void;
+  onReset: () => void;
+};
+
+export function FiltersPanel({ filters, tags, onChange, onReset }: FiltersPanelProps) {
+  return (
+    <>
+      <div className="panel-heading">
+        <h2>Recherche</h2>
+        <button type="button" className="ghost-button" onClick={onReset} disabled={!isActiveFilters(filters)}>
+          Reinitialiser
+        </button>
+      </div>
+
+      <label className="field">
+        <span>Texte</span>
+        <input
+          value={filters.q}
+          onChange={(event) => {
+            onChange("q", event.target.value);
+          }}
+          placeholder="Nom, telephone, matricule..."
+        />
+      </label>
+
+      <label className="field">
+        <span>Statut vital</span>
+        <select
+          value={filters.lifeStatus}
+          onChange={(event) => {
+            onChange("lifeStatus", event.target.value);
+          }}
+        >
+          <option value="">Tous</option>
+          {Object.entries(lifeStatusLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="field">
+        <span>Tag</span>
+        <select
+          value={filters.tag}
+          onChange={(event) => {
+            onChange("tag", event.target.value);
+          }}
+        >
+          <option value="">Tous</option>
+          {tags.map((tag) => (
+            <option key={tag.id} value={tag.id}>
+              {tag.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="field">
+        <span>Streamer</span>
+        <input
+          value={filters.streamer}
+          onChange={(event) => {
+            onChange("streamer", event.target.value);
+          }}
+          placeholder="Nom public"
+        />
+      </label>
+
+      <label className="field">
+        <span>Verification</span>
+        <select
+          value={filters.verificationStatus}
+          onChange={(event) => {
+            onChange("verificationStatus", event.target.value);
+          }}
+        >
+          <option value="">Toutes</option>
+          {Object.entries(verificationLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
+}
