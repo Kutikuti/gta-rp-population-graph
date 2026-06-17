@@ -1,5 +1,5 @@
 [hooks]
-exclude_commands = ["curl", "wget"]
+exclude_commands = ["curl", "wget", "pwd", "ls", "cat", "sed", "rg", "git"]
 
 [tee]
 enabled = true

@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "serena": {
+      "args": ["start-mcp-server", "--context=vscode", "--project", "/workspaces/gta-rp-population-graph"],
+      "command": "serena",
+      "type": "stdio"
+    }
+  }
+}

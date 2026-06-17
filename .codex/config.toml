@@ -710,6 +710,20 @@ enabled = true
 
 [mcp_servers]
 
+[mcp_servers.serena]
+command = "serena"
+args = [
+  "start-mcp-server",
+  "--context=codex",
+  "--project",
+  "/workspaces/gta-rp-population-graph"
+]
+enabled = true
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "prompt"
+disabled_tools = ["execute_shell_command"]
+
 # --- Example: STDIO transport ---
 
 # [mcp_servers.docs]
