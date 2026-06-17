@@ -25,6 +25,8 @@
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
     "pg": "^8.21.0",
+    "present": "^1.0.0",
+    "scripts": "^0.1.0",
     "sequelize": "^6.37.8",
     "umzug": "^3.8.3",
     "zod": "^4.4.3"
@@ -50,5 +52,8 @@
     "sequelize": {
       "uuid": "^11.1.1"
     }
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
   }
 }

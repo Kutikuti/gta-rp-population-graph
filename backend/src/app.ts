@@ -6,7 +6,7 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { healthRouter } from "./routes/health.js";
-import { createPublicRouter } from "./routes/public.js";
+import { createPublicRouter } from "./routes/public/index.js";
 import type { PublicDataService } from "./services/public-data.js";
 
 export type AppDependencies = {

@@ -9,6 +9,7 @@ import type {
   PublicCharacterSummary,
   PublicDataService,
   PublicGraph,
+  HistoryFilters,
   PublicHistoryEntry,
   PublicTag
 } from "../services/public-data.js";
@@ -196,8 +197,12 @@ const createFixtureService = (): PublicDataService => ({
   getGraph() {
     return Promise.resolve(graph);
   },
-  listHistory() {
-    return Promise.resolve(history);
+  listHistory(filters: HistoryFilters) {
+    return Promise.resolve(
+      filters.characterId
+        ? history.filter((entry) => entry.characterId === filters.characterId)
+        : history
+    );
   }
 });
 
@@ -276,5 +281,31 @@ describe("public consultation API", () => {
     });
     expect(historyResponse.status).toBe(200);
     expect(historyBody[0]).toMatchObject({ characterName: "Camille Morel" });
+  });
+
+  it("filters public history by character", async () => {
+    const [matchingResponse, emptyResponse] = await Promise.all([
+      request(app).get("/api/history").query({ characterId: camille.id }),
+      request(app).get("/api/history").query({ characterId: malik.id })
+    ]);
+
+    expect(matchingResponse.status).toBe(200);
+    const matchingBody = matchingResponse.body as PublicHistoryEntry[];
+    const emptyBody = emptyResponse.body as PublicHistoryEntry[];
+
+    expect(matchingBody).toHaveLength(1);
+    expect(matchingBody[0]).toMatchObject({ characterId: camille.id });
+
+    expect(emptyResponse.status).toBe(200);
+    expect(emptyBody).toEqual([]);
+  });
+
+  it("returns validation errors for invalid public history filters", async () => {
+    const response = await request(app).get("/api/history").query({ characterId: "invalid" });
+
+    expect(response.status).toBe(400);
+    const body = response.body as ApiError;
+
+    expect(body.error.code).toBe("VALIDATION_ERROR");
   });
 });

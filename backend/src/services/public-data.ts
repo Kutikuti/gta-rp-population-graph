@@ -31,6 +31,10 @@ export type CharacterListFilters = Pagination & {
   verificationStatus?: VerificationStatus;
 };
 
+export type HistoryFilters = Pagination & {
+  characterId?: string;
+};
+
 export type PublicStreamer = {
   id: string;
   publicName: string;
@@ -155,7 +159,7 @@ export type PublicDataService = {
   getCharacter(id: string): Promise<PublicCharacterDetail | null>;
   listTags(): Promise<PublicTag[]>;
   getGraph(): Promise<PublicGraph>;
-  listHistory(pagination: Pagination): Promise<PublicHistoryEntry[]>;
+  listHistory(filters: HistoryFilters): Promise<PublicHistoryEntry[]>;
 };
 
 const fullName = (character: Pick<Character, "firstName" | "lastName">) =>
@@ -406,11 +410,18 @@ export class SequelizePublicDataService implements PublicDataService {
     };
   }
 
-  async listHistory(pagination: Pagination): Promise<PublicHistoryEntry[]> {
+  async listHistory(filters: HistoryFilters): Promise<PublicHistoryEntry[]> {
+    const where: WhereOptions = {};
+
+    if (filters.characterId) {
+      Object.assign(where, { characterId: filters.characterId });
+    }
+
     const entries = await models.ChangeHistory.findAll({
+      where,
       include: [{ model: Character, as: "character" }],
-      limit: pagination.limit,
-      offset: pagination.offset,
+      limit: filters.limit,
+      offset: filters.offset,
       order: [["createdAt", "DESC"]]
     });
 
