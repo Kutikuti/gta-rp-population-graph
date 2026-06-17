@@ -18,6 +18,21 @@ import type {
   VerificationStatus
 } from "../db/enums.js";
 
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isUuid = (value: string) => uuidPattern.test(value);
+
+const textOrUuidWhere = (value: string, textColumn: "name" | "publicName"): WhereOptions => {
+  const conditions: WhereOptions[] = [{ [textColumn]: { [Op.iLike]: `%${value}%` } }];
+
+  if (isUuid(value)) {
+    conditions.unshift({ id: value });
+  }
+
+  return { [Op.or]: conditions };
+};
+
 export type Pagination = {
   limit: number;
   offset: number;
@@ -266,25 +281,14 @@ const characterIncludes = (filters?: Pick<CharacterListFilters, "tag" | "streame
     model: Streamer,
     as: "streamer",
     required: Boolean(filters?.streamer),
-    where: filters?.streamer
-      ? {
-          [Op.or]: [
-            { id: filters.streamer },
-            { publicName: { [Op.iLike]: `%${filters.streamer}%` } }
-          ]
-        }
-      : undefined
+    where: filters?.streamer ? textOrUuidWhere(filters.streamer, "publicName") : undefined
   },
   {
     model: Tag,
     as: "tags",
     through: { attributes: [] },
     required: Boolean(filters?.tag),
-    where: filters?.tag
-      ? {
-          [Op.or]: [{ id: filters.tag }, { name: { [Op.iLike]: `%${filters.tag}%` } }]
-        }
-      : undefined
+    where: filters?.tag ? textOrUuidWhere(filters.tag, "name") : undefined
   }
 ];
 

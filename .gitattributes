@@ -1,0 +1,7 @@
+* text=auto
+
+*.sh text eol=lf
+.devcontainer/Dockerfile text eol=lf
+.devcontainer/versions.env text eol=lf
+.node-version text eol=lf
+.nvmrc text eol=lf
