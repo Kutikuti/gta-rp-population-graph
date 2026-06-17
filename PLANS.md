@@ -368,7 +368,7 @@ Bilan :
 
 ### Etape 3 - API publique de consultation
 
-Statut : en cours, socle public implemente le 2026-06-16.
+Statut : terminee le 2026-06-17.
 
 - Implementer les routes publiques de lecture : personnages, fiche detaillee,
   tags, graphe, historique public.
@@ -384,7 +384,7 @@ Point de controle :
 - Aucune route publique ne permet de modifier les donnees.
 - Les performances restent correctes sur les seeds.
 
-Bilan intermediaire :
+Bilan :
 
 - Routes `GET /api/characters`, `GET /api/characters/:id`, `GET /api/tags`,
   `GET /api/graph` et `GET /api/history` ajoutees.
@@ -392,6 +392,11 @@ Bilan intermediaire :
 - Structure graphe retournee au format exploitable par Cytoscape.js.
 - Tests backend ajoutes sur recherche, filtres, fiche, graphe, tags, historique
   et erreurs de validation.
+- Validation faite sur base PostgreSQL seedee : personnages, tags, graphe,
+  historique, filtres texte/UUID et erreurs de validation repondent comme
+  attendu.
+- Aucune route publique d'ecriture n'est exposee ; les checks `lint`, tests et
+  build backend passent apres correction du filtrage texte/UUID.
 
 ### Etape 4 - Interface publique et graphe
 
