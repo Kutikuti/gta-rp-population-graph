@@ -129,14 +129,10 @@ Relations typees :
 - Enfant.
 - Fratrie.
 - Couple.
-- Ex.
-- Oncle/tante.
-- Neveu/niece.
-- Groupe.
-- Quartier.
-- Entreprise.
-- Police.
-- Autre.
+
+Les appartenances metier, police, quartier, organisation ou groupe restent des
+champs de fiche ou des tags. Elles ne sont pas des relations du graphe public
+MVP, afin de garder le graphe centre sur les liens narratifs forts.
 
 Chaque relation doit pouvoir porter :
 
@@ -151,7 +147,7 @@ Chaque relation doit pouvoir porter :
   conteste.
 
 Les relations familiales asymetriques sont directionnelles. Les relations de
-couple, ex et fratrie sont symetriques pour l'affichage, meme si elles sont
+couple et fratrie sont symetriques pour l'affichage, meme si elles sont
 stockees une seule fois.
 
 ### ChangeRequest

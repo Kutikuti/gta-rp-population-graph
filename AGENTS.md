@@ -81,9 +81,10 @@ Principes :
 - Recherche par nom, prenom, surnom, telephone, streamer, matricule, tag et
   statut vital.
 - Fiche personnage detaillee.
-- Relations typees strictement RP entre personnages : parent, enfant,
-  fratrie, couple, ex, oncle/tante, neveu/niece, groupe, quartier, entreprise,
-  police, autre.
+- Relations typees strictement RP entre personnages et limitees au noyau
+  familial/couple : parent, enfant, fratrie, couple.
+- Les appartenances metier, police, quartier ou groupe restent des champs de
+  fiche ou des tags, pas des relations du graphe public.
 - Tags administrables.
 - Demandes de modification par utilisateur connecte.
 - Validation ou refus par moderateur.

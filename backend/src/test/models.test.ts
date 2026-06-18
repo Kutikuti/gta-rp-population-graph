@@ -37,20 +37,7 @@ describe("database models", () => {
     expect(roleNames).toEqual(["user", "moderator", "administrator"]);
     expect(lifeStatuses).toEqual(["alive", "deceased", "left", "unknown"]);
     expect(verificationStatuses).toContain("to_check");
-    expect(relationshipTypes).toEqual([
-      "parent",
-      "child",
-      "sibling",
-      "couple",
-      "ex",
-      "uncle_aunt",
-      "nephew_niece",
-      "group",
-      "district",
-      "business",
-      "police",
-      "other"
-    ]);
+    expect(relationshipTypes).toEqual(["parent", "child", "sibling", "couple"]);
     expect(changeRequestStatuses).toEqual(["pending", "approved", "rejected"]);
   });
 

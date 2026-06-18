@@ -27,9 +27,7 @@ const ids = {
     family: "00000000-0000-4000-8000-000000000403"
   },
   relationships: {
-    colleagues: "00000000-0000-4000-8000-000000000501",
-    sibling: "00000000-0000-4000-8000-000000000502",
-    district: "00000000-0000-4000-8000-000000000503"
+    sibling: "00000000-0000-4000-8000-000000000502"
   }
 };
 
@@ -276,17 +274,6 @@ try {
     await models.CharacterRelationship.bulkCreate(
       [
         {
-          id: ids.relationships.colleagues,
-          sourceCharacterId: ids.characters.camille,
-          targetCharacterId: ids.characters.malik,
-          type: "business",
-          direction: "symmetric",
-          label: "Collegues",
-          description: "Travail commun chez Blue Line Logistics.",
-          source: "seed",
-          verificationStatus: "community"
-        },
-        {
           id: ids.relationships.sibling,
           sourceCharacterId: ids.characters.camille,
           targetCharacterId: ids.characters.ines,
@@ -296,17 +283,6 @@ try {
           description: "Relation familiale fictive.",
           source: "seed",
           verificationStatus: "to_check"
-        },
-        {
-          id: ids.relationships.district,
-          sourceCharacterId: ids.characters.malik,
-          targetCharacterId: ids.characters.camille,
-          type: "district",
-          direction: "symmetric",
-          label: "Quartier Nord",
-          description: "Frequentent le meme quartier fictif.",
-          source: "seed",
-          verificationStatus: "community"
         }
       ],
       { transaction }

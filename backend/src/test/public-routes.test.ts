@@ -102,10 +102,10 @@ const camilleDetail: PublicCharacterDetail = {
         id: "00000000-0000-4000-8000-000000000501",
         sourceCharacterId: camille.id,
         targetCharacterId: malik.id,
-        type: "business",
+        type: "sibling",
         direction: "symmetric",
-        label: "Collegues",
-        description: "Travail commun chez Blue Line Logistics.",
+        label: "Fratrie",
+        description: "Relation familiale fictive.",
         source: "seed",
         verificationStatus: "community",
         relatedCharacter: {
@@ -142,8 +142,8 @@ const graph: PublicGraph = {
         type: "relationship",
         source: camille.id,
         target: malik.id,
-        label: "Collegues",
-        relationshipType: "business",
+        label: "Fratrie",
+        relationshipType: "sibling",
         direction: "symmetric",
         verificationStatus: "community"
       }
@@ -253,7 +253,7 @@ describe("public consultation API", () => {
       id: camille.id,
       fullName: "Camille Morel",
       relationships: {
-        outgoing: [{ label: "Collegues", relatedCharacter: { fullName: "Malik Serrano" } }]
+        outgoing: [{ label: "Fratrie", relatedCharacter: { fullName: "Malik Serrano" } }]
       }
     });
   });
@@ -285,7 +285,7 @@ describe("public consultation API", () => {
     expect(graphBody.edges[0]?.data).toMatchObject({
       source: camille.id,
       target: malik.id,
-      relationshipType: "business"
+      relationshipType: "sibling"
     });
     expect(historyResponse.status).toBe(200);
     expect(historyBody[0]).toMatchObject({ characterName: "Camille Morel" });
