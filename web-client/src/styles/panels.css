@@ -1,0 +1,142 @@
+.filters-panel,
+.details-panel {
+  position: fixed;
+  z-index: 30;
+  min-width: 0;
+  border: 1px solid #123452;
+  background: rgba(6, 16, 26, 0.95);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+}
+
+.filters-panel {
+  top: 14px;
+  left: 14px;
+}
+
+.filters-panel.is-collapsed {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.filters-panel.is-open {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: min(340px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 14px;
+}
+
+.details-panel {
+  top: 14px;
+  right: 14px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: min(380px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 14px;
+}
+
+.search-toggle,
+.panel-icon-button {
+  display: grid;
+  place-items: center;
+  border: 1px solid #205d91;
+  color: #cceaff;
+  background: #071827;
+  font-weight: 900;
+}
+
+.search-toggle {
+  width: 44px;
+  height: 44px;
+}
+
+.search-toggle-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #bfe4ff;
+  border-radius: 999px;
+}
+
+.search-toggle-icon::after {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  width: 8px;
+  height: 2px;
+  background: #bfe4ff;
+  content: "";
+  transform: rotate(45deg);
+  transform-origin: center;
+}
+
+.panel-icon-button {
+  width: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  justify-self: end;
+  font-size: 0.8rem;
+}
+
+.panel-close-button {
+  margin-bottom: -4px;
+}
+
+.details-close-button {
+  width: auto;
+  justify-self: end;
+}
+
+.panel-heading,
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel-heading-tight {
+  margin-top: 4px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  color: #9fc6e9;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #1a4b75;
+  color: #e9f6ff;
+  background: #020b14;
+  padding: 0 10px;
+  outline: 0;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #50aefc;
+  box-shadow: 0 0 0 2px rgba(80, 174, 252, 0.18);
+}
+
+.search-result-summary {
+  margin: -2px 0 0;
+  border-top: 1px solid #123452;
+  color: #a9d9ff;
+  padding-top: 10px;
+  font-size: 0.78rem;
+  font-weight: 750;
+}

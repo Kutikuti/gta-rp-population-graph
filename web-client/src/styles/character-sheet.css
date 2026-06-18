@@ -1,0 +1,117 @@
+.character-sheet {
+  display: grid;
+  gap: 16px;
+}
+
+.sheet-header {
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #123452;
+}
+
+.sheet-header h2 {
+  margin-bottom: 5px;
+  font-size: 1.18rem;
+}
+
+.sheet-header p,
+.muted-text,
+.relationship-row small,
+.history-row small {
+  color: #83a6c4;
+  font-size: 0.78rem;
+}
+
+.verification-verified {
+  border-color: #55d6a4;
+  color: #c5ffe7;
+}
+
+.verification-community,
+.verification-imported {
+  border-color: #419ce7;
+}
+
+.verification-to_check,
+.verification-disputed {
+  border-color: #b9903d;
+  color: #ffe6ad;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.metric-grid div {
+  min-width: 0;
+  border: 1px solid #123a5c;
+  background: #071522;
+  padding: 9px;
+}
+
+.metric-grid dt {
+  color: #7fa8ca;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.metric-grid dd {
+  margin: 4px 0 0;
+  color: #edf8ff;
+  font-size: 0.84rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.sheet-section {
+  display: grid;
+  gap: 9px;
+}
+
+.info-list,
+.relationship-list {
+  display: grid;
+  gap: 7px;
+}
+
+.info-list span,
+.relationship-row,
+.history-row {
+  border-left: 2px solid #2c80c7;
+  color: #d7eaff;
+  background: #071522;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+}
+
+.relationship-row,
+.history-row {
+  display: grid;
+  gap: 3px;
+}
+
+.tag-list,
+.link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tag-pill,
+.link-list a {
+  border: 1px solid #2a79bd;
+  color: #cceaff;
+  background: #071827;
+  padding: 6px 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.link-list a:hover {
+  border-color: #76c8ff;
+}

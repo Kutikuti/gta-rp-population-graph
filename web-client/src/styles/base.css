@@ -1,0 +1,85 @@
+:root {
+  color: #d9e8f8;
+  background: #02050a;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  color: #f2f8ff;
+  font-size: 1.02rem;
+  letter-spacing: 0;
+}
+
+h2 {
+  color: #eef7ff;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+}
+
+h3 {
+  color: #cfe8ff;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #5db3ff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.ghost-button {
+  border: 1px solid #205d91;
+  color: #bfe4ff;
+  background: #071827;
+  padding: 7px 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.search-toggle:hover,
+.panel-icon-button:hover,
+.ghost-button:hover {
+  border-color: #65bfff;
+  background: #0a2238;
+}

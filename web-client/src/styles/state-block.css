@@ -1,0 +1,42 @@
+.inline-status,
+.verification-chip {
+  width: fit-content;
+  border: 1px solid #1d5b91;
+  padding: 6px 8px;
+  color: #a9d9ff;
+  background: #071b2b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.state-block {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: grid;
+  place-items: center;
+  width: min(360px, calc(100vw - 32px));
+  min-height: 104px;
+  border: 1px solid #164267;
+  color: #cbe8ff;
+  background: rgba(4, 13, 22, 0.92);
+  padding: 18px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.filters-panel .state-block,
+.details-panel .state-block {
+  position: static;
+  width: 100%;
+  transform: none;
+}
+
+.state-block-muted {
+  color: #86a7c2;
+}
+
+.state-block-error {
+  border-color: #8d3246;
+  color: #ffd5dd;
+  background: rgba(45, 8, 18, 0.9);
+}
