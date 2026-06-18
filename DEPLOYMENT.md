@@ -151,7 +151,45 @@ Rollback applicatif minimal :
 - Commandes exactes PM2 ou systemd.
 - Configuration Nginx multi-domaines.
 - Procedure TLS Certbot.
-- Procedure de promotion du premier administrateur.
 - Backup automatise et test de restauration.
 - Logs applicatifs et rotation.
 - Monitoring minimal et alertes.
+
+## Promotion du premier administrateur
+
+Une fois le premier compte Google connecte avec succes, il existe en base avec
+le role par defaut `user`. La promotion initiale peut se faire directement en
+SQL via le role logique, sans hardcoder un UUID.
+
+Verifier d'abord le compte cible :
+
+```sql
+SELECT u.id, u.email, u.display_name, r.name AS role_name
+FROM users u
+JOIN roles r ON r.id = u.role_id
+WHERE u.email = 'ton.email@example.com';
+```
+
+Promouvoir ensuite le compte :
+
+```sql
+UPDATE users
+SET role_id = (
+  SELECT id
+  FROM roles
+  WHERE name = 'administrator'
+)
+WHERE email = 'ton.email@example.com';
+```
+
+Verifier le resultat :
+
+```sql
+SELECT u.email, r.name AS role_name
+FROM users u
+JOIN roles r ON r.id = u.role_id
+WHERE u.email = 'ton.email@example.com';
+```
+
+Le backend recharge le role depuis la base a chaque requete authentifiee. Une
+simple actualisation de la page suffit donc pour voir le nouveau role.

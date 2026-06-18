@@ -47,8 +47,21 @@ button:disabled {
   position: fixed;
   top: 14px;
   left: 72px;
+  right: 14px;
   z-index: 20;
   pointer-events: none;
+}
+
+.topbar-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topbar-copy {
+  display: grid;
+  gap: 6px;
 }
 
 .eyebrow {
@@ -84,6 +97,99 @@ h3 {
   font-size: 0.8rem;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.auth-feedback {
+  width: fit-content;
+  border: 1px solid #194a73;
+  background: rgba(6, 16, 26, 0.92);
+  padding: 6px 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  pointer-events: auto;
+}
+
+.auth-feedback-success {
+  border-color: #3a9770;
+  color: #cfffe8;
+}
+
+.auth-feedback-error {
+  border-color: #8d3246;
+  color: #ffd5dd;
+}
+
+.auth-status,
+.auth-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  border: 1px solid #123452;
+  background: rgba(6, 16, 26, 0.92);
+  padding: 6px 10px;
+}
+
+.auth-status {
+  color: #d9efff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.auth-status-muted {
+  color: #91b8d8;
+}
+
+.auth-user-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.auth-user-copy strong {
+  color: #eef7ff;
+  font-size: 0.8rem;
+}
+
+.auth-user-copy small {
+  color: #8fb2cf;
+  font-size: 0.72rem;
+}
+
+.auth-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.auth-avatar-fallback {
+  display: grid;
+  place-items: center;
+  border: 1px solid #2b6fa6;
+  color: #d6ecff;
+  background: #0a2238;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.auth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.auth-link {
+  text-decoration: none;
 }
 
 .app-grid {
@@ -435,6 +541,21 @@ h3 {
   .topbar {
     top: 10px;
     left: 64px;
+    right: 10px;
+  }
+
+  .topbar-content {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .topbar-copy {
+    gap: 5px;
+  }
+
+  .auth-controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   h1 {

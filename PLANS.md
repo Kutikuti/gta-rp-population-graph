@@ -478,7 +478,7 @@ Clôture :
 
 ### Etape 5 - Authentification et autorisations
 
-Statut : à démarrer.
+Statut : terminée le 2026-06-18.
 
 - Ajouter Google OAuth cote backend.
 - Utiliser une session serveur avec cookie `HttpOnly` pour l'application web,
@@ -509,6 +509,38 @@ Plan propose :
   banni et controle de role.
 - Documenter le flux d'authentification MVP et la procedure de promotion
   manuelle du premier administrateur.
+
+Bilan intermediaire :
+
+- Session Express backend ajoutee avec cookie `HttpOnly`, nom configurable et
+  mode `secure` reserve a la production pour rester compatible avec le
+  developpement local.
+- Flux Google OAuth backend pose : demarrage `/api/auth/google`, callback
+  `/api/auth/google/callback`, session courante `/api/auth/session`, logout
+  `/api/auth/logout`.
+- Integration utilisateur locale en base preparee autour de `User`, `Role` et
+  `Ban`, avec creation ou mise a jour de l'utilisateur a partir de l'identite
+  Google.
+- Middleware backend de lecture de session, utilisateur courant, verification
+  d'authentification et controle de role prepare pour les futures routes
+  protegees.
+- Premiers espaces backend proteges ajoutes pour valider les autorisations :
+  `/api/contributions/session`, `/api/moderation/session` et
+  `/api/admin/session`, avec controle respectif utilisateur connecte,
+  moderateur ou administrateur.
+- Tests backend ajoutes sur session anonyme, demarrage OAuth, callback valide,
+  refus de callback invalide, utilisateur banni, logout et controle de role.
+- Frontend branche sur la session : bouton `Connexion Google`, affichage du
+  compte connecte, deconnexion et feedback apres redirection OAuth.
+- Documentation locale ajoutee pour le flux de connexion, et procedure de
+  promotion du premier administrateur documentee dans le runbook de deploiement.
+
+Vigilances restantes :
+
+- Promouvoir le premier administrateur reel quand les pages admin deviennent
+  utiles.
+- Verifier les espaces proteges avec de vrais comptes de role different lorsque
+  les ecrans contribution, moderation et administration existeront.
 
 Point de controle :
 

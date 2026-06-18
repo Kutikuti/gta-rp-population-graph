@@ -111,6 +111,39 @@ npm run db:seed
 npm run db:migrate:executed
 ```
 
+## Authentification locale
+
+Le socle d'authentification MVP utilise Google OAuth cote backend avec session
+serveur et cookie `HttpOnly`.
+
+Flux local actuel :
+
+- Le frontend affiche un lien `Connexion Google` dans l'en-tete.
+- Le clic ouvre `/api/auth/google` sur le backend.
+- Google renvoie ensuite vers `/api/auth/google/callback`.
+- Le frontend relit la session via `/api/auth/session` et affiche le compte
+  connecte dans l'en-tete.
+
+Points utiles en local :
+
+- Le backend doit tourner sur `http://localhost:4000`.
+- Le frontend doit tourner sur `http://localhost:5173`.
+- `GOOGLE_CALLBACK_URL` doit pointer vers
+  `http://localhost:4000/api/auth/google/callback`.
+- En production, `SESSION_COOKIE_SECURE=true` est requis. En developpement
+  local, le backend neutralise ce flag hors production pour permettre les
+  tests HTTP locaux.
+
+Verification rapide :
+
+- Se connecter avec le bouton `Connexion Google`.
+- Verifier que le nom, le role et l'avatar s'affichent.
+- Recharger la page pour confirmer que la session persiste.
+- Utiliser `Deconnexion` pour verifier la destruction de session.
+
+La procedure de promotion du premier administrateur est documentee dans
+[DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Donnees
 
 La source initiale prevue est la page Notion communautaire Flashback Whitelist

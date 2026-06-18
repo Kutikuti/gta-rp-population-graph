@@ -1,5 +1,6 @@
 export type LifeStatus = "alive" | "deceased" | "left" | "unknown";
 export type VerificationStatus = "verified" | "community" | "imported" | "to_check" | "disputed";
+export type RoleName = "user" | "moderator" | "administrator";
 
 export type SocialLinks = Partial<
   Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>
@@ -125,6 +126,27 @@ export type PublicHistoryEntry = {
   createdAt: string;
 };
 
+export type AuthenticatedUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: {
+    id: string;
+    name: RoleName;
+  };
+  isBanned: boolean;
+};
+
+export type AuthSession =
+  | {
+      authenticated: false;
+    }
+  | {
+      authenticated: true;
+      user: AuthenticatedUser;
+    };
+
 export type CharacterFilters = {
   q: string;
   lifeStatus: "" | LifeStatus;
@@ -136,8 +158,12 @@ export type CharacterFilters = {
 const env = import.meta.env as { readonly VITE_API_BASE_URL?: string };
 const API_BASE_URL = env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
+const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
+
 const fetchJson = async <T>(path: string): Promise<T> => {
-  const response = await fetch(`${API_BASE_URL}${path}`);
+  const response = await fetch(buildApiUrl(path), {
+    credentials: "include"
+  });
 
   if (!response.ok) {
     throw new Error(`Erreur API ${String(response.status)}`);
@@ -197,4 +223,19 @@ export const listHistory = (characterId?: string) => {
   }
 
   return fetchJson<PublicHistoryEntry[]>(`/api/history?${params.toString()}`);
+};
+
+export const getAuthSession = () => fetchJson<AuthSession>("/api/auth/session");
+
+export const getGoogleAuthUrl = () => buildApiUrl("/api/auth/google");
+
+export const logout = async () => {
+  const response = await fetch(buildApiUrl("/api/auth/logout"), {
+    method: "POST",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erreur API ${String(response.status)}`);
+  }
 };

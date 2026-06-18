@@ -46,6 +46,23 @@ const envSchema = z
     CHANGE_REQUEST_RATE_LIMIT_MAX: numberFromString(10)
   })
   .superRefine((value, context) => {
+    const googleValues = [
+      value.GOOGLE_CLIENT_ID,
+      value.GOOGLE_CLIENT_SECRET,
+      value.GOOGLE_CALLBACK_URL
+    ];
+    const hasAnyGoogleOauthConfig = googleValues.some(Boolean);
+    const hasAllGoogleOauthConfig = googleValues.every(Boolean);
+
+    if (hasAnyGoogleOauthConfig && !hasAllGoogleOauthConfig) {
+      context.addIssue({
+        code: "custom",
+        path: ["GOOGLE_CLIENT_ID"],
+        message:
+          "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_CALLBACK_URL must all be set together."
+      });
+    }
+
     if (value.NODE_ENV === "production") {
       if (value.SESSION_SECRET === "replace-with-a-long-random-secret") {
         context.addIssue({

@@ -129,8 +129,22 @@ const errorResponse = (status = 500) =>
 
 describe("App", () => {
   beforeEach(() => {
+    window.history.replaceState({}, "", "/");
+
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({ authenticated: false });
+      }
+
+      if (url.includes("/api/auth/logout")) {
+        return Promise.resolve({
+          ok: true,
+          status: 204,
+          json: () => Promise.resolve({})
+        } as Response);
+      }
 
       if (url.includes("/api/tags")) {
         return jsonResponse([tag]);
@@ -212,6 +226,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "GTA-RP Population Graph" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Connexion Google" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Fiche personnage")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Ouvrir la recherche" }));
@@ -267,5 +282,86 @@ describe("App", () => {
       await screen.findByText("Impossible de charger les données publiques.")
     ).toBeInTheDocument();
     expect(screen.queryByText("Chargement du graphe...")).not.toBeInTheDocument();
+  });
+
+  it("starts Google login from the header button", async () => {
+    render(<App />);
+
+    expect(await screen.findByRole("link", { name: "Connexion Google" })).toHaveAttribute(
+      "href",
+      "http://localhost:4000/api/auth/google"
+    );
+  });
+
+  it("shows the connected user and logs out cleanly", async () => {
+    window.history.replaceState({}, "", "/?auth=success");
+
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000901",
+            email: "viewer@example.test",
+            displayName: "Viewer Example",
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000001",
+              name: "user"
+            },
+            isBanned: false
+          }
+        });
+      }
+
+      if (url.includes("/api/auth/logout")) {
+        return Promise.resolve({
+          ok: true,
+          status: 204,
+          json: () => Promise.resolve({})
+        } as Response);
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    expect(await screen.findByText("Viewer Example")).toBeInTheDocument();
+    expect(screen.getByText("Utilisateur")).toBeInTheDocument();
+    expect(await screen.findByText("Connexion établie.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Déconnexion" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "Connexion Google" })).toBeInTheDocument();
+    });
+    expect(await screen.findByText("Déconnexion effectuée.")).toBeInTheDocument();
+  });
+
+  it("shows an auth error returned by the OAuth callback", async () => {
+    window.history.replaceState({}, "", "/?auth_error=banned");
+
+    render(<App />);
+
+    expect(
+      await screen.findByText("Ce compte n'est pas autorisé à contribuer.")
+    ).toBeInTheDocument();
   });
 });
