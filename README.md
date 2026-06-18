@@ -18,6 +18,7 @@ personnages, leurs informations publiques, leurs streamers et leurs liens RP.
 - Backend : Express, TypeScript, Sequelize, PostgreSQL.
 - Frontend : Vite, React, TypeScript.
 - Graphe : Cytoscape.js.
+- Qualite code : Biome pour lint et formatage, TypeScript pour le type-check.
 - Authentification : Google OAuth.
 - Production cible : VPS Ubuntu avec Nginx.
 
@@ -41,7 +42,7 @@ La securite du serveur est la priorite numero 1 du developpement.
 ## Etat actuel
 
 Le socle de l'etape 1 est initialise : backend Express TypeScript et frontend
-Vite React TypeScript, avec lint, tests, build et validation d'environnement.
+Vite React TypeScript, avec Biome, tests, build et validation d'environnement.
 
 L'etape 2 est terminee : Sequelize est configure, la base PostgreSQL peut
 etre creee via `npm run db:ensure`, la migration initiale cree le schema
@@ -75,6 +76,8 @@ Checks utiles :
 ```bash
 cd backend
 npm run lint
+npm run check
+npm run format
 npm test
 npm run build
 ```
@@ -82,6 +85,8 @@ npm run build
 ```bash
 cd web-client
 npm run lint
+npm run check
+npm run format
 npm test
 npm run build
 ```

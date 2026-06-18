@@ -15,7 +15,6 @@
         "biomejs.biome",
         "codeandstuff.package-json-upgrade",
         "davidanson.vscode-markdownlint",
-        "dbaeumer.vscode-eslint",
         "eamodio.gitlens",
         "editorconfig.editorconfig",
         "emilast.logfilehighlighter",

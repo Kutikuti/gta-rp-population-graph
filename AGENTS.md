@@ -138,6 +138,21 @@ Le deploiement n'est pas encore implemente. Le plan cible :
   avec la partie publique, mais doivent rester dans le meme systeme de design.
 - Les espaces moderation et administration sont des pages pleines dediees, pas
   des contenus places dans le panneau lateral des fiches personnages.
+- Partie publique : l'ecran d'arrivee doit etre centre sur le graphe. Le graphe
+  occupe l'essentiel de l'espace disponible ; la recherche est repliee par
+  defaut derriere une icone ou un bouton compact, et la fiche personnage n'est
+  pas visible tant qu'aucun noeud n'a ete selectionne.
+- Une fois ouverte par selection d'un noeud, la fiche personnage doit pouvoir
+  etre refermee pour redonner l'espace au graphe. La selection doit etre
+  evidente directement dans le graphe et dans la fiche, sans barre de statut
+  textuelle redondante.
+- Ne pas afficher de statistiques publiques de type nombre de personnages,
+  tags ou liens dans l'exploration publique. Ces informations sont reservees
+  aux espaces moderation ou administration.
+- Eviter les bandeaux et libelles de supervision dans la vue publique, par
+  exemple `Graphe narratif`, `Selection : ...` ou `Vue complete`, sauf besoin
+  d'accessibilite discret. L'interface publique doit laisser le graphe porter
+  l'experience.
 - Favoriser des composants compacts et scannables.
 - Ne pas utiliser de donnees personnelles reelles sans source et justification.
 - Eviter les abstractions prematurees ; suivre les besoins du MVP.
@@ -161,6 +176,10 @@ Le deploiement n'est pas encore implemente. Le plan cible :
   hors Git et passer par variables d'environnement.
 - Prevoir des points reguliers d'etat du code : dette technique, zones a
   refactoriser, risques securite, tests manquants et complexite inutile.
+- Pour tout nouveau developpement, eviter d'empiler toute la logique dans un
+  seul fichier. Decouper des le depart en modules, composants, hooks, services
+  ou utilitaires clairs quand cela aide la reprise future du code, sans creer
+  d'abstraction prematuree.
 - Refactoriser progressivement quand une zone devient confuse, avant qu'elle ne
   bloque les evolutions ou fragilise la securite.
 

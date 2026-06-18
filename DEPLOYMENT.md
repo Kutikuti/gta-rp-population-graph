@@ -99,7 +99,7 @@ pour le developpement local.
 
 ```bash
 cd backend
-npm run lint
+npm run check
 npm test
 npm run build
 ```
@@ -108,7 +108,7 @@ Quand le frontend aura son pipeline de production final :
 
 ```bash
 cd web-client
-npm run lint
+npm run check
 npm test
 npm run build
 ```

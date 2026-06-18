@@ -266,6 +266,25 @@ Routes a prevoir :
   gratuits.
 - Desktop prioritaire, mobile lisible avec graphe adapte ou panneau replie.
 
+### Design public graphe-first
+
+- L'arrivee visiteur doit mettre le graphe au premier plan : il occupe
+  l'essentiel du viewport et reste le centre de gravite de l'interface.
+- Le panneau de recherche et filtres est replie par defaut. Il reste accessible
+  par une icone ou un bouton compact, puis s'ouvre en panneau plus large quand
+  l'utilisateur veut rechercher ou filtrer.
+- La fiche personnage est masquee par defaut. Elle apparait uniquement apres
+  selection d'un noeud et doit pouvoir etre refermee pour revenir a un graphe
+  grand format.
+- La selection doit etre evidente par le style du noeud, de ses relations et
+  par le contenu de la fiche. Eviter les libelles redondants comme
+  `Selection : ...` dans une barre de supervision publique.
+- Retirer de l'exploration publique les statistiques globales du type nombre
+  de personnages, tags ou liens. Les reserver aux vues moderation et
+  administration.
+- Eviter les en-tetes de panneau non necessaires comme `Graphe narratif` ou
+  `Vue complete` quand ils ne servent pas une action utilisateur directe.
+
 ## Securite et moderation
 
 - Priorite absolue du projet : proteger le serveur contre les intrusions et les
@@ -292,6 +311,10 @@ Routes a prevoir :
   proportionnes au risque.
 - Faire des points reguliers sur l'etat du code : dette technique, besoins de
   refactor, risques securite, tests manquants et complexite accumulee.
+- Pour les nouveaux developpements, ranger le code dans des fichiers dedies
+  des que la lisibilite ou la reprise future le justifie : composants, hooks,
+  services, constantes, utilitaires ou modules metier. Eviter les fichiers
+  fourre-tout, tout en gardant les abstractions proportionnees au besoin.
 - Prioriser les refactors qui reduisent un risque securite, clarifient les
   permissions ou simplifient la moderation.
 
@@ -325,10 +348,10 @@ Frontend :
 Statut : terminée le 2026-06-16.
 
 - Initialiser `backend/` en Express TypeScript avec configuration stricte,
-  lint, tests, gestion des variables d'environnement et structure de couches.
+  Biome, tests, gestion des variables d'environnement et structure de couches.
 - Initialiser `web-client/` avec Vite, React et TypeScript.
 - Ajouter une configuration commune minimale : scripts npm, `.env.example`,
-  formatage, lint et documentation de lancement.
+  formatage/lint via Biome et documentation de lancement.
 - Mettre en place une premiere politique de securite backend : Helmet, CORS
   explicite, rate limit de base, gestion centralisee des erreurs.
 
@@ -359,7 +382,7 @@ Point de controle :
 
 Bilan :
 
-- `db:ensure`, migrations, seeds, lint, tests et build backend valides.
+- `db:ensure`, migrations, seeds, checks Biome, tests et build backend valides.
 - La migration initiale evite les ENUM PostgreSQL natifs au profit de colonnes
   texte avec contraintes `CHECK`, pour conserver les valeurs controlees sans
   declencher le warning de depreciation `pg` observe avec Sequelize.
@@ -395,7 +418,7 @@ Bilan :
 - Validation faite sur base PostgreSQL seedee : personnages, tags, graphe,
   historique, filtres texte/UUID et erreurs de validation repondent comme
   attendu.
-- Aucune route publique d'ecriture n'est exposee ; les checks `lint`, tests et
+- Aucune route publique d'ecriture n'est exposee ; les checks Biome, tests et
   build backend passent apres correction du filtrage texte/UUID.
 
 ### Etape 4 - Interface publique et graphe
@@ -424,8 +447,16 @@ Bilan intermediaire :
   resultats de recherche implementes.
 - Fiche personnage avec informations principales, streamer, tags, relations,
   reseaux et historique public.
-- Etats chargement, erreur, vide et aucun resultat ajoutes ; tests, lint et
+- Etats chargement, erreur, vide et aucun resultat ajoutes ; tests, checks Biome et
   build frontend passent.
+- Refonte graphe-first engagee : le graphe occupe le viewport, la recherche est
+  repliee par defaut, la fiche est masquee avant selection et refermable, les
+  statistiques publiques et libelles de supervision du graphe ont ete retires.
+
+A verifier avant cloture :
+
+- Validation visuelle desktop/mobile de la refonte graphe-first.
+- Relancer tests et build frontend dans un environnement en ecriture.
 
 ### Etape 5 - Authentification et autorisations
 
