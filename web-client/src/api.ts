@@ -84,6 +84,11 @@ export type PublicCharacterList = {
   offset: number;
 };
 
+export type PublicCharacterMatches = {
+  ids: string[];
+  total: number;
+};
+
 export type PublicGraph = {
   nodes: Array<{
     data: {
@@ -147,8 +152,8 @@ const appendParam = (params: URLSearchParams, key: string, value: string) => {
   }
 };
 
-export const listCharacters = (filters: CharacterFilters) => {
-  const params = new URLSearchParams({ limit: "100" });
+const characterFilterParams = (filters: CharacterFilters) => {
+  const params = new URLSearchParams();
   appendParam(params, "q", filters.q);
   appendParam(params, "tag", filters.tag);
   appendParam(params, "streamer", filters.streamer);
@@ -161,7 +166,20 @@ export const listCharacters = (filters: CharacterFilters) => {
     params.set("verificationStatus", filters.verificationStatus);
   }
 
+  return params;
+};
+
+export const listCharacters = (filters: CharacterFilters) => {
+  const params = characterFilterParams(filters);
+  params.set("limit", "100");
+
   return fetchJson<PublicCharacterList>(`/api/characters?${params.toString()}`);
+};
+
+export const listCharacterMatches = (filters: CharacterFilters) => {
+  const params = characterFilterParams(filters);
+
+  return fetchJson<PublicCharacterMatches>(`/api/characters/matches?${params.toString()}`);
 };
 
 export const getCharacter = (id: string) =>

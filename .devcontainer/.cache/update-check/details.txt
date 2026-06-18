@@ -1,9 +1,9 @@
 Mewtwo devcontainer update check details
-Checked: 2026-06-16T14:12:32Z
+Checked: 2026-06-18T11:20:25Z
 
 debian:13.5-slim digest unchanged: sha256:4e401d95de7083948053197a9c3913343cd06b706bf15eb6a0c3ccd26f436a0e
 apt: no upgradable packages
-Node 24: pinned v24.16.0, latest v24.16.0
+WARN: Node 24 has a newer version: pinned v24.16.0, latest v24.17.0
 WARN: npm has a newer version: pinned 11.16.0, latest 11.17.0
 WARN: uv has a newer version: pinned 0.11.20, latest 0.11.21
 Serena: pinned 1.5.3, latest 1.5.3

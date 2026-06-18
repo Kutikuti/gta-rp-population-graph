@@ -427,32 +427,53 @@ Statut : en cours, socle public implemente le 2026-06-17.
   filtres persistants.
 - Construire la fiche personnage avec informations, reseaux, relations, tags,
   statut de verification et historique.
-- Ajouter les etats chargement, erreur, vide et aucun resultat.
+- Ajouter les états chargement, erreur, vide et aucun résultat.
 
 Point de controle :
 
 - Le parcours visiteur anonyme est utilisable de bout en bout.
-- Le graphe reste lisible sur desktop et acceptable sur mobile.
-- Le style dark terminal bleu est coherent et moderne.
+- Le graphe reste lisible sur desktop. Le mobile doit rester utilisable, mais
+  le focus principal du MVP public est l'expérience PC.
+- Le style dark terminal bleu est cohérent et moderne.
 
 Bilan intermediaire :
 
-- Vue publique connectee a l'API reelle avec recherche, filtres persistants,
-  liste de resultats, graphe Cytoscape.js et panneau de fiche.
-- Selection, zoom/pan natif Cytoscape.js, survol et mise en evidence des
-  resultats de recherche implementes.
+- Vue publique connectée à l'API réelle avec recherche, filtres persistants,
+  graphe Cytoscape.js et panneau de fiche.
+- Sélection, zoom/pan natif Cytoscape.js, survol et mise en évidence des
+  résultats de recherche implémentés. Les résultats sont portés par le graphe :
+  les correspondances sont mises en évidence, les non-correspondances sont
+  atténuées, et le panneau de recherche affiche seulement un texte de synthèse
+  avec le nombre de résultats, sans liste détaillée.
 - Fiche personnage avec informations principales, streamer, tags, relations,
-  reseaux et historique public.
-- Etats chargement, erreur, vide et aucun resultat ajoutes ; tests, checks Biome et
+  réseaux, statut de vérification et historique public.
+- États chargement, erreur, vide et aucun résultat ajoutés ; tests, checks Biome et
   build frontend passent.
-- Refonte graphe-first engagee : le graphe occupe le viewport, la recherche est
-  repliee par defaut, la fiche est masquee avant selection et refermable, les
-  statistiques publiques et libelles de supervision du graphe ont ete retires.
+- Refonte graphe-first engagée : le graphe occupe le viewport, la recherche est
+  repliée par défaut, la fiche est masquée avant sélection et refermable, les
+  statistiques publiques et libellés de supervision du graphe ont été retirés.
+- Les nœuds personnages sont circulaires avec initiales, en attendant de
+  pouvoir afficher une photo quand elle sera renseignée.
+- La sélection d'un nœud est réversible par un second clic, sans recadrer le
+  graphe à la désélection. Le layout du graphe ne se relance plus lors des
+  changements de recherche.
+- Les relations du graphe public sont limitées au noyau parent, enfant,
+  fratrie et couple ; les appartenances métier, police, quartier ou groupe
+  restent des champs de fiche ou des tags.
+- La recherche du graphe utilise un endpoint dédié `/api/characters/matches`
+  qui renvoie tous les IDs correspondants, sans dépendre du `limit=100` de la
+  future liste paginée.
+- Les champs de recherche déclenchent les correspondances avec un debounce de
+  300 ms côté frontend pour éviter une requête API à chaque caractère.
 
-A verifier avant cloture :
+À vérifier avant clôture :
 
-- Validation visuelle desktop/mobile de la refonte graphe-first.
-- Relancer tests et build frontend dans un environnement en ecriture.
+- Validation visuelle PC de la refonte graphe-first ; mobile acceptable pour le
+  MVP mais non prioritaire pour les prochains arbitrages.
+- Surveiller la volumétrie de `/api/characters/matches` : si le graphe devient
+  très massif, prévoir une recherche indexée ou une stratégie dédiée côté graphe.
+- Prévoir une alternative clavier/accessibilité à la liste de résultats
+  supprimée.
 
 ### Etape 5 - Authentification et autorisations
 

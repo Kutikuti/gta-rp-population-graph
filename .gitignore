@@ -5,3 +5,5 @@ coverage/
 
 backend/.env
 web-client/.env
+
+.devcontainer/.cache/*

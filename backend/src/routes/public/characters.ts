@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import type { PublicDataService } from "../../services/public-data.js";
-import { idParamSchema, parseCharacterFilters } from "./schemas.js";
+import { idParamSchema, parseCharacterFilters, parseCharacterMatchFilters } from "./schemas.js";
 
 export const createPublicCharactersRouter = (publicDataService: PublicDataService) => {
   const router = Router();
@@ -10,6 +10,15 @@ export const createPublicCharactersRouter = (publicDataService: PublicDataServic
     try {
       const filters = parseCharacterFilters(request.query);
       response.json(await publicDataService.listCharacters(filters));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/matches", async (request, response, next) => {
+    try {
+      const filters = parseCharacterMatchFilters(request.query);
+      response.json(await publicDataService.listCharacterMatches(filters));
     } catch (error) {
       next(error);
     }

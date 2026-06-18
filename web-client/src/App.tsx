@@ -4,11 +4,10 @@ import {
   type CharacterFilters,
   getCharacter,
   getGraph,
-  listCharacters,
+  listCharacterMatches,
   listHistory,
   listTags,
   type PublicCharacterDetail,
-  type PublicCharacterSummary,
   type PublicGraph,
   type PublicHistoryEntry,
   type PublicTag
@@ -19,11 +18,14 @@ import { FiltersPanel } from "./components/FiltersPanel";
 import { GraphPanel } from "./components/GraphPanel";
 import { EmptyBlock, LoadingBlock } from "./components/StateBlock";
 import { initialFilters, isActiveFilters } from "./constants";
+import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { usePersistentFilters } from "./hooks/usePersistentFilters";
 
 function App() {
   const [filters, setFilters] = usePersistentFilters();
-  const [characters, setCharacters] = useState<PublicCharacterSummary[]>([]);
+  const debouncedFilters = useDebouncedValue(filters, 300);
+  const [matchingIds, setMatchingIds] = useState<string[]>([]);
+  const [searchTotal, setSearchTotal] = useState(0);
   const [tags, setTags] = useState<PublicTag[]>([]);
   const [graph, setGraph] = useState<PublicGraph | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -48,7 +50,7 @@ function App() {
         }
       } catch {
         if (!ignore) {
-          setError("Impossible de charger les donnees publiques.");
+          setError("Impossible de charger les données publiques.");
         }
       } finally {
         if (!ignore) {
@@ -65,15 +67,24 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const isDebouncedSearchActive = isActiveFilters(debouncedFilters);
+
+    if (!isDebouncedSearchActive) {
+      setMatchingIds([]);
+      setSearchTotal(0);
+      return undefined;
+    }
+
     let ignore = false;
 
-    const loadCharacters = async () => {
+    const loadMatches = async () => {
       try {
         setError(null);
-        const result = await listCharacters(filters);
+        const result = await listCharacterMatches(debouncedFilters);
 
         if (!ignore) {
-          setCharacters(result.items);
+          setMatchingIds(result.ids);
+          setSearchTotal(result.total);
         }
       } catch {
         if (!ignore) {
@@ -82,12 +93,12 @@ function App() {
       }
     };
 
-    void loadCharacters();
+    void loadMatches();
 
     return () => {
       ignore = true;
     };
-  }, [filters]);
+  }, [debouncedFilters]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -112,7 +123,7 @@ function App() {
         if (!ignore) {
           setSelectedCharacter(null);
           setHistory([]);
-          setError("La fiche personnage n'a pas pu etre chargee.");
+          setError("La fiche personnage n'a pas pu être chargée.");
         }
       } finally {
         if (!ignore) {
@@ -129,7 +140,17 @@ function App() {
   }, [selectedId]);
 
   const isSearchActive = isActiveFilters(filters);
-  const matchingIds = useMemo(() => characters.map((character) => character.id), [characters]);
+  const searchResultSummary = useMemo(() => {
+    if (!isSearchActive) {
+      return null;
+    }
+
+    if (searchTotal === 0) {
+      return "Aucun personnage trouvé.";
+    }
+
+    return `${searchTotal} personnage${searchTotal > 1 ? "s" : ""} mis en évidence.`;
+  }, [isSearchActive, searchTotal]);
 
   const closeDetails = useCallback(() => {
     setSelectedId(null);
@@ -190,6 +211,7 @@ function App() {
                 <FiltersPanel
                   filters={filters}
                   tags={tags}
+                  resultSummary={searchResultSummary}
                   onChange={updateFilter}
                   onReset={resetFilters}
                 />

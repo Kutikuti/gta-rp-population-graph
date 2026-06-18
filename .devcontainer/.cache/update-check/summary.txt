@@ -1,7 +1,8 @@
 Mewtwo devcontainer update status
-Checked: 2026-06-16T14:12:32Z
+Checked: 2026-06-18T11:20:25Z
 
 Warnings:
+- Node 24 has a newer version: pinned v24.16.0, latest v24.17.0
 - npm has a newer version: pinned 11.16.0, latest 11.17.0
 - uv has a newer version: pinned 0.11.20, latest 0.11.21
 - RTK has a newer version: pinned v0.42.2, latest v0.42.4

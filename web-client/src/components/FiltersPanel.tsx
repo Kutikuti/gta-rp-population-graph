@@ -4,11 +4,18 @@ import { isActiveFilters, lifeStatusLabels, verificationLabels } from "../consta
 type FiltersPanelProps = {
   filters: CharacterFilters;
   tags: PublicTag[];
+  resultSummary: string | null;
   onChange: (key: keyof CharacterFilters, value: string) => void;
   onReset: () => void;
 };
 
-export function FiltersPanel({ filters, tags, onChange, onReset }: FiltersPanelProps) {
+export function FiltersPanel({
+  filters,
+  tags,
+  resultSummary,
+  onChange,
+  onReset
+}: FiltersPanelProps) {
   return (
     <>
       <div className="panel-heading">
@@ -19,7 +26,7 @@ export function FiltersPanel({ filters, tags, onChange, onReset }: FiltersPanelP
           onClick={onReset}
           disabled={!isActiveFilters(filters)}
         >
-          Reinitialiser
+          Réinitialiser
         </button>
       </div>
 
@@ -30,7 +37,7 @@ export function FiltersPanel({ filters, tags, onChange, onReset }: FiltersPanelP
           onChange={(event) => {
             onChange("q", event.target.value);
           }}
-          placeholder="Nom, telephone, matricule..."
+          placeholder="Nom, téléphone, matricule..."
         />
       </label>
 
@@ -80,7 +87,7 @@ export function FiltersPanel({ filters, tags, onChange, onReset }: FiltersPanelP
       </label>
 
       <label className="field">
-        <span>Verification</span>
+        <span>Vérification</span>
         <select
           value={filters.verificationStatus}
           onChange={(event) => {
@@ -95,6 +102,8 @@ export function FiltersPanel({ filters, tags, onChange, onReset }: FiltersPanelP
           ))}
         </select>
       </label>
+
+      {resultSummary ? <p className="search-result-summary">{resultSummary}</p> : null}
     </>
   );
 }

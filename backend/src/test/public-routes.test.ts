@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import type {
   CharacterListFilters,
+  CharacterMatchFilters,
   HistoryFilters,
   PublicCharacterDetail,
   PublicCharacterList,
+  PublicCharacterMatches,
   PublicCharacterSummary,
   PublicDataService,
   PublicGraph,
@@ -161,39 +163,50 @@ const history: PublicHistoryEntry[] = [
   }
 ];
 
+const filterCharacters = (filters: CharacterMatchFilters) =>
+  [camille, malik].filter((character) => {
+    const query = filters.q?.toLocaleLowerCase("fr-FR");
+    const matchesQuery = query
+      ? [
+          character.fullName,
+          character.nickname,
+          character.phoneNumber,
+          character.businessBadgeNumber
+        ]
+          .filter(Boolean)
+          .some((value) => value?.toLocaleLowerCase("fr-FR").includes(query))
+      : true;
+    const matchesLifeStatus = filters.lifeStatus
+      ? character.lifeStatus === filters.lifeStatus
+      : true;
+    const matchesTag = filters.tag
+      ? character.tags.some((tag) => tag.name === filters.tag || tag.id === filters.tag)
+      : true;
+    const matchesStreamer = filters.streamer
+      ? character.streamer?.publicName === filters.streamer ||
+        character.streamer?.id === filters.streamer
+      : true;
+
+    return matchesQuery && matchesLifeStatus && matchesTag && matchesStreamer;
+  });
+
 const createFixtureService = (): PublicDataService => ({
   listCharacters(filters: CharacterListFilters) {
-    const items = [camille, malik].filter((character) => {
-      const query = filters.q?.toLocaleLowerCase("fr-FR");
-      const matchesQuery = query
-        ? [
-            character.fullName,
-            character.nickname,
-            character.phoneNumber,
-            character.businessBadgeNumber
-          ]
-            .filter(Boolean)
-            .some((value) => value?.toLocaleLowerCase("fr-FR").includes(query))
-        : true;
-      const matchesLifeStatus = filters.lifeStatus
-        ? character.lifeStatus === filters.lifeStatus
-        : true;
-      const matchesTag = filters.tag
-        ? character.tags.some((tag) => tag.name === filters.tag || tag.id === filters.tag)
-        : true;
-      const matchesStreamer = filters.streamer
-        ? character.streamer?.publicName === filters.streamer ||
-          character.streamer?.id === filters.streamer
-        : true;
-
-      return matchesQuery && matchesLifeStatus && matchesTag && matchesStreamer;
-    });
+    const items = filterCharacters(filters);
 
     return Promise.resolve({
       items: items.slice(filters.offset, filters.offset + filters.limit),
       total: items.length,
       limit: filters.limit,
       offset: filters.offset
+    });
+  },
+  listCharacterMatches(filters: CharacterMatchFilters) {
+    const items = filterCharacters(filters);
+
+    return Promise.resolve({
+      ids: items.map((character) => character.id),
+      total: items.length
     });
   },
   getCharacter(id: string) {
@@ -241,6 +254,15 @@ describe("public consultation API", () => {
     const body = response.body as ApiError;
 
     expect(body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns matching character ids without list pagination", async () => {
+    const response = await request(app).get("/api/characters/matches").query({ q: "BL-" });
+
+    expect(response.status).toBe(200);
+    const body = response.body as PublicCharacterMatches;
+
+    expect(body).toEqual({ ids: [camille.id, malik.id], total: 2 });
   });
 
   it("returns one detailed character sheet", async () => {

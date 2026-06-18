@@ -256,6 +256,15 @@ h3 {
   box-shadow: 0 0 0 2px rgba(80, 174, 252, 0.18);
 }
 
+.search-result-summary {
+  margin: -2px 0 0;
+  border-top: 1px solid #123452;
+  color: #a9d9ff;
+  padding-top: 10px;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
 .ghost-button {
   border: 1px solid #205d91;
   color: #bfe4ff;

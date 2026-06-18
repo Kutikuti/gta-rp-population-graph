@@ -17,7 +17,7 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
         <div>
           <p className="eyebrow">Fiche personnage</p>
           <h2>{character.fullName}</h2>
-          <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigne"}</p>
+          <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}</p>
         </div>
       </div>
 
@@ -27,7 +27,7 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
           <dd>{lifeStatusLabels[character.lifeStatus]}</dd>
         </div>
         <div>
-          <dt>Telephone</dt>
+          <dt>Téléphone</dt>
           <dd>{compactValue(character.phoneNumber)}</dd>
         </div>
         <div>
@@ -44,10 +44,10 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
         <h3>Organisation</h3>
         <div className="info-list">
           <span>Entreprise : {compactValue(character.businessName)}</span>
-          <span>Echelon : {compactValue(character.businessRank)}</span>
+          <span>Échelon : {compactValue(character.businessRank)}</span>
           <span>Matricule entreprise : {compactValue(character.businessBadgeNumber)}</span>
           <span>Groupe : {compactValue(character.groupName)}</span>
-          <span>Role : {compactValue(character.groupRole)}</span>
+          <span>Rôle : {compactValue(character.groupRole)}</span>
           <span>Quartier : {compactValue(character.district)}</span>
           <span>Police : {compactValue(character.policeRank ?? character.policeBadgeNumber)}</span>
         </div>
@@ -84,13 +84,13 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
               </div>
             ))
           ) : (
-            <span className="muted-text">Aucune relation documentee.</span>
+            <span className="muted-text">Aucune relation documentée.</span>
           )}
         </div>
       </section>
 
       <section className="sheet-section">
-        <h3>Reseaux</h3>
+        <h3>Réseaux</h3>
         <div className="link-list">
           {links.length ? (
             links.map(([platform, url]) => (
@@ -105,7 +105,7 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
       </section>
 
       <section className="sheet-section">
-        <h3>Verification</h3>
+        <h3>Vérification</h3>
         <span className={`verification-chip verification-${character.verificationStatus}`}>
           {verificationLabels[character.verificationStatus]}
         </span>
@@ -117,7 +117,7 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
           history.map((entry) => (
             <div key={entry.id} className="history-row">
               <span>{formatDate(entry.createdAt)}</span>
-              <small>{Object.keys(entry.changes).length} champ modifie</small>
+              <small>{Object.keys(entry.changes).length} champ modifié</small>
             </div>
           ))
         ) : (

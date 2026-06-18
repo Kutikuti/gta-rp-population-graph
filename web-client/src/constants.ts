@@ -10,17 +10,17 @@ export const initialFilters: CharacterFilters = {
 
 export const lifeStatusLabels: Record<LifeStatus, string> = {
   alive: "Vivant",
-  deceased: "Decede",
+  deceased: "Décédé",
   left: "Parti",
   unknown: "Inconnu"
 };
 
 export const verificationLabels: Record<VerificationStatus, string> = {
-  verified: "Verifie",
+  verified: "Vérifié",
   community: "Communautaire",
-  imported: "Importe",
-  to_check: "A verifier",
-  disputed: "Conteste"
+  imported: "Importé",
+  to_check: "À vérifier",
+  disputed: "Contesté"
 };
 
 export const relationLabels: Record<string, string> = {

@@ -21,7 +21,7 @@ vi.mock("./GraphView", () => ({
           onSelect("00000000-0000-4000-8000-000000000301");
         }}
       >
-        Noeud Camille Morel
+        Nœud Camille Morel
       </button>
       <span>Correspondances {matchingIds.join(",")}</span>
       <span>Selection {selectedId}</span>
@@ -176,6 +176,13 @@ describe("App", () => {
         return jsonResponse([]);
       }
 
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({
+          ids: url.includes("q=ines") ? [ines.id] : [camille.id, ines.id],
+          total: url.includes("q=ines") ? 1 : 2
+        });
+      }
+
       if (url.includes("/api/characters?")) {
         return jsonResponse({
           items: url.includes("q=ines") ? [ines] : [camille, ines],
@@ -213,28 +220,29 @@ describe("App", () => {
 
     expect(screen.queryByRole("button", { name: /Ines Morel/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Noeud Camille Morel" }));
+    await user.click(screen.getByRole("button", { name: "Nœud Camille Morel" }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Noeud Camille Morel" }));
+    await user.click(screen.getByRole("button", { name: "Nœud Camille Morel" }));
 
     await waitFor(() => {
       expect(screen.queryByLabelText("Fiche personnage")).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Noeud Camille Morel" }));
+    await user.click(screen.getByRole("button", { name: "Nœud Camille Morel" }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText("Nom, telephone, matricule..."), "ines");
+    await user.type(screen.getByPlaceholderText("Nom, téléphone, matricule..."), "ines");
 
     await waitFor(() => {
       expect(screen.getByText(`Correspondances ${ines.id}`)).toBeInTheDocument();
+      expect(screen.getByText("1 personnage mis en évidence.")).toBeInTheDocument();
     });
   });
 
@@ -246,8 +254,8 @@ describe("App", () => {
         return errorResponse();
       }
 
-      if (url.includes("/api/characters?")) {
-        return jsonResponse({ items: [], total: 0, limit: 100, offset: 0 });
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
       }
 
       return errorResponse(404);
@@ -256,7 +264,7 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      await screen.findByText("Impossible de charger les donnees publiques.")
+      await screen.findByText("Impossible de charger les données publiques.")
     ).toBeInTheDocument();
     expect(screen.queryByText("Chargement du graphe...")).not.toBeInTheDocument();
   });

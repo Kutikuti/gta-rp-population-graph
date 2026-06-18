@@ -44,6 +44,8 @@ export type CharacterListFilters = Pagination & {
   verificationStatus?: VerificationStatus;
 };
 
+export type CharacterMatchFilters = Omit<CharacterListFilters, "limit" | "offset">;
+
 export type HistoryFilters = Pagination & {
   characterId?: string;
 };
@@ -127,6 +129,11 @@ export type PublicCharacterList = {
   offset: number;
 };
 
+export type PublicCharacterMatches = {
+  ids: string[];
+  total: number;
+};
+
 export type CytoscapeNode = {
   data: {
     id: string;
@@ -169,6 +176,7 @@ export type PublicHistoryEntry = {
 
 export type PublicDataService = {
   listCharacters(filters: CharacterListFilters): Promise<PublicCharacterList>;
+  listCharacterMatches(filters: CharacterMatchFilters): Promise<PublicCharacterMatches>;
   getCharacter(id: string): Promise<PublicCharacterDetail | null>;
   listTags(): Promise<PublicTag[]>;
   getGraph(): Promise<PublicGraph>;
@@ -312,24 +320,30 @@ const searchWhere = (q: string): WhereOptions => {
   };
 };
 
+const characterWhere = (
+  filters: Pick<CharacterListFilters, "lifeStatus" | "q" | "verificationStatus">
+): WhereOptions => {
+  const where: WhereOptions = {};
+
+  if (filters.q) {
+    Object.assign(where, searchWhere(filters.q));
+  }
+
+  if (filters.lifeStatus) {
+    Object.assign(where, { lifeStatus: filters.lifeStatus });
+  }
+
+  if (filters.verificationStatus) {
+    Object.assign(where, { verificationStatus: filters.verificationStatus });
+  }
+
+  return where;
+};
+
 export class SequelizePublicDataService implements PublicDataService {
   async listCharacters(filters: CharacterListFilters): Promise<PublicCharacterList> {
-    const where: WhereOptions = {};
-
-    if (filters.q) {
-      Object.assign(where, searchWhere(filters.q));
-    }
-
-    if (filters.lifeStatus) {
-      Object.assign(where, { lifeStatus: filters.lifeStatus });
-    }
-
-    if (filters.verificationStatus) {
-      Object.assign(where, { verificationStatus: filters.verificationStatus });
-    }
-
     const result = await models.Character.findAndCountAll({
-      where,
+      where: characterWhere(filters),
       include: characterIncludes(filters),
       distinct: true,
       limit: filters.limit,
@@ -345,6 +359,24 @@ export class SequelizePublicDataService implements PublicDataService {
       total: result.count,
       limit: filters.limit,
       offset: filters.offset
+    };
+  }
+
+  async listCharacterMatches(filters: CharacterMatchFilters): Promise<PublicCharacterMatches> {
+    const result = await models.Character.findAndCountAll({
+      attributes: ["id"],
+      where: characterWhere(filters),
+      include: characterIncludes(filters),
+      distinct: true,
+      order: [
+        ["lastName", "ASC"],
+        ["firstName", "ASC"]
+      ]
+    });
+
+    return {
+      ids: result.rows.map((character) => character.id),
+      total: result.count
     };
   }
 
