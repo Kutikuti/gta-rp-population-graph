@@ -39,4 +39,6 @@ export const relationLabels: Record<string, string> = {
 };
 
 export const isActiveFilters = (filters: CharacterFilters) =>
-  Boolean(filters.q || filters.lifeStatus || filters.tag || filters.streamer || filters.verificationStatus);
+  Boolean(
+    filters.q || filters.lifeStatus || filters.tag || filters.streamer || filters.verificationStatus
+  );

@@ -1,7 +1,5 @@
-import type { MigrationParams } from "umzug";
 import type { Transaction } from "sequelize";
-
-import type { MigrationContext } from "../migrate.js";
+import type { MigrationParams } from "umzug";
 import {
   changeRequestStatuses,
   dataSources,
@@ -12,6 +10,7 @@ import {
   tagTypes,
   verificationStatuses
 } from "../enums.js";
+import type { MigrationContext } from "../migrate.js";
 
 const timestampColumns = (
   DataTypes: MigrationContext["DataTypes"],
@@ -523,7 +522,13 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       verificationStatuses,
       transaction
     );
-    await addEnumCheck(queryInterface, "change_requests", "status", changeRequestStatuses, transaction);
+    await addEnumCheck(
+      queryInterface,
+      "change_requests",
+      "status",
+      changeRequestStatuses,
+      transaction
+    );
 
     await queryInterface.addIndex("characters", ["first_name", "last_name"], {
       name: "characters_name_idx",

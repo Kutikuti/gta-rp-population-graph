@@ -7,7 +7,7 @@ export const createSequelize = () =>
     dialect: "postgres",
     host: env.DB_HOST,
     port: env.DB_PORT,
-    logging: env.NODE_ENV === "development" ? false : false,
+    logging: false,
     dialectOptions: env.DB_SSL
       ? {
           ssl: {

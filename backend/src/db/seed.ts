@@ -1,5 +1,5 @@
-import { createSequelize } from "./sequelize.js";
 import { initModels } from "./models/index.js";
+import { createSequelize } from "./sequelize.js";
 
 const ids = {
   roles: {

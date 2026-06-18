@@ -13,7 +13,12 @@ export function FiltersPanel({ filters, tags, onChange, onReset }: FiltersPanelP
     <>
       <div className="panel-heading">
         <h2>Recherche</h2>
-        <button type="button" className="ghost-button" onClick={onReset} disabled={!isActiveFilters(filters)}>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={onReset}
+          disabled={!isActiveFilters(filters)}
+        >
           Reinitialiser
         </button>
       </div>

@@ -1,7 +1,9 @@
 export type LifeStatus = "alive" | "deceased" | "left" | "unknown";
 export type VerificationStatus = "verified" | "community" | "imported" | "to_check" | "disputed";
 
-export type SocialLinks = Partial<Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>>;
+export type SocialLinks = Partial<
+  Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>
+>;
 
 export type PublicStreamer = {
   id: string;
@@ -162,7 +164,8 @@ export const listCharacters = (filters: CharacterFilters) => {
   return fetchJson<PublicCharacterList>(`/api/characters?${params.toString()}`);
 };
 
-export const getCharacter = (id: string) => fetchJson<PublicCharacterDetail>(`/api/characters/${id}`);
+export const getCharacter = (id: string) =>
+  fetchJson<PublicCharacterDetail>(`/api/characters/${id}`);
 
 export const listTags = () => fetchJson<PublicTag[]>("/api/tags");
 

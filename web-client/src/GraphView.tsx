@@ -16,7 +16,14 @@ function GraphView({ graph, matchingIds, selectedId, onSelect }: GraphViewProps)
 
   useCytoscapeGraph({ containerRef, graph, matchingIdSet, selectedId, onSelect });
 
-  return <div ref={containerRef} className="graph-canvas" aria-label="Graphe interactif des personnages" />;
+  return (
+    <div
+      ref={containerRef}
+      className="graph-canvas"
+      role="img"
+      aria-label="Graphe interactif des personnages"
+    />
+  );
 }
 
 export default GraphView;

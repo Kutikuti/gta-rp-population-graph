@@ -1,14 +1,4 @@
-import { Op, type Includeable, type WhereOptions } from "sequelize";
-
-import { models } from "../db/index.js";
-import {
-  Character,
-  CharacterRelationship,
-  Streamer,
-  Tag,
-  type JsonObject,
-  type SocialLinks
-} from "../db/models/index.js";
+import { type Includeable, Op, type WhereOptions } from "sequelize";
 import type {
   DataSource,
   LifeStatus,
@@ -17,9 +7,17 @@ import type {
   TagType,
   VerificationStatus
 } from "../db/enums.js";
+import { models } from "../db/index.js";
+import {
+  Character,
+  CharacterRelationship,
+  type JsonObject,
+  type SocialLinks,
+  Streamer,
+  Tag
+} from "../db/models/index.js";
 
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const isUuid = (value: string) => uuidPattern.test(value);
 
@@ -276,7 +274,9 @@ const serializeCharacterDetail = (character: Character): PublicCharacterDetail =
   createdAt: isoDate(character.createdAt)
 });
 
-const characterIncludes = (filters?: Pick<CharacterListFilters, "tag" | "streamer">): Includeable[] => [
+const characterIncludes = (
+  filters?: Pick<CharacterListFilters, "tag" | "streamer">
+): Includeable[] => [
   {
     model: Streamer,
     as: "streamer",

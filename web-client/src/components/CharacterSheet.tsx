@@ -76,7 +76,10 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
         <div className="relationship-list">
           {relationships.length ? (
             relationships.map((relationship) => (
-              <div key={`${relationship.id}-${relationship.relatedCharacter.id}`} className="relationship-row">
+              <div
+                key={`${relationship.id}-${relationship.relatedCharacter.id}`}
+                className="relationship-row"
+              >
                 <span>{relationship.relatedCharacter.fullName}</span>
                 <small>
                   {relationLabels[relationship.type] ?? relationship.type} · {relationship.label}

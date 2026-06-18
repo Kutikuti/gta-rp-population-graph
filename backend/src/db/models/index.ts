@@ -1,35 +1,37 @@
 import {
-  CreationOptional,
+  type CreationOptional,
   DataTypes,
-  ForeignKey,
-  InferAttributes,
-  InferCreationAttributes,
+  type ForeignKey,
+  type InferAttributes,
+  type InferCreationAttributes,
   Model,
-  NonAttribute,
-  Sequelize
+  type NonAttribute,
+  type Sequelize
 } from "sequelize";
 
 import {
-  changeRequestStatuses,
-  dataSources,
-  lifeStatuses,
-  relationshipDirections,
-  relationshipTypes,
-  roleNames,
-  tagTypes,
-  verificationStatuses,
   type ChangeRequestStatus,
+  changeRequestStatuses,
   type DataSource,
+  dataSources,
   type LifeStatus,
+  lifeStatuses,
   type RelationshipDirection,
   type RelationshipType,
   type RoleName,
+  relationshipDirections,
+  relationshipTypes,
+  roleNames,
   type TagType,
-  type VerificationStatus
+  tagTypes,
+  type VerificationStatus,
+  verificationStatuses
 } from "../enums.js";
 
 export type JsonObject = Record<string, unknown>;
-export type SocialLinks = Partial<Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>>;
+export type SocialLinks = Partial<
+  Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>
+>;
 
 export class Role extends Model<InferAttributes<Role>, InferCreationAttributes<Role>> {
   declare id: CreationOptional<string>;
@@ -76,7 +78,10 @@ export class Streamer extends Model<InferAttributes<Streamer>, InferCreationAttr
   declare updatedAt: CreationOptional<Date>;
 }
 
-export class Character extends Model<InferAttributes<Character>, InferCreationAttributes<Character>> {
+export class Character extends Model<
+  InferAttributes<Character>,
+  InferCreationAttributes<Character>
+> {
   declare id: CreationOptional<string>;
   declare firstName: string;
   declare lastName: string;

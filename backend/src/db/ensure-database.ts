@@ -25,10 +25,9 @@ const client = new pg.Client({
 try {
   await client.connect();
 
-  const existingDatabase = await client.query(
-    "SELECT 1 FROM pg_database WHERE datname = $1",
-    [env.DB_NAME]
-  );
+  const existingDatabase = await client.query("SELECT 1 FROM pg_database WHERE datname = $1", [
+    env.DB_NAME
+  ]);
 
   if (existingDatabase.rowCount === 0) {
     await client.query(`CREATE DATABASE ${quoteIdentifier(env.DB_NAME)}`);

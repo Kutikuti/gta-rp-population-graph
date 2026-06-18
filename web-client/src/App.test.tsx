@@ -6,7 +6,9 @@ import { App } from "./App";
 
 vi.mock("./GraphView", () => ({
   default: ({ selectedId }: { selectedId: string | null }) => (
-    <div aria-label="Graphe interactif des personnages">Graphe mock {selectedId}</div>
+    <div role="img" aria-label="Graphe interactif des personnages">
+      Graphe mock {selectedId}
+    </div>
   )
 }));
 
@@ -166,7 +168,11 @@ describe("App", () => {
         });
       }
 
-      return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) } as Response);
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({})
+      } as Response);
     });
 
     vi.stubGlobal("fetch", fetchMock);
@@ -182,13 +188,16 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "GTA-RP Population Graph" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Fiche personnage")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Ouvrir la recherche" }));
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Camille Morel/ })).toBeInTheDocument();
     });
-
-    expect(screen.getByText("2 personnages")).toBeInTheDocument();
     expect(await screen.findByLabelText("Graphe interactif des personnages")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Camille Morel/ }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
@@ -219,7 +228,9 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(await screen.findByText("Impossible de charger les donnees publiques.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Impossible de charger les donnees publiques.")
+    ).toBeInTheDocument();
     expect(screen.queryByText("Chargement du graphe...")).not.toBeInTheDocument();
   });
 });

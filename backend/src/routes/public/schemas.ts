@@ -33,4 +33,5 @@ export const parseCharacterFilters = (query: unknown): CharacterListFilters =>
 
 export const parsePagination = (query: unknown): Pagination => paginationSchema.parse(query);
 
-export const parseHistoryFilters = (query: unknown): HistoryFilters => historyQuerySchema.parse(query);
+export const parseHistoryFilters = (query: unknown): HistoryFilters =>
+  historyQuerySchema.parse(query);

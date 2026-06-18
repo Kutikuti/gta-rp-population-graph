@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import type {
   CharacterListFilters,
+  HistoryFilters,
   PublicCharacterDetail,
   PublicCharacterList,
   PublicCharacterSummary,
   PublicDataService,
   PublicGraph,
-  HistoryFilters,
   PublicHistoryEntry,
   PublicTag
 } from "../services/public-data.js";
@@ -166,16 +166,24 @@ const createFixtureService = (): PublicDataService => ({
     const items = [camille, malik].filter((character) => {
       const query = filters.q?.toLocaleLowerCase("fr-FR");
       const matchesQuery = query
-        ? [character.fullName, character.nickname, character.phoneNumber, character.businessBadgeNumber]
+        ? [
+            character.fullName,
+            character.nickname,
+            character.phoneNumber,
+            character.businessBadgeNumber
+          ]
             .filter(Boolean)
             .some((value) => value?.toLocaleLowerCase("fr-FR").includes(query))
         : true;
-      const matchesLifeStatus = filters.lifeStatus ? character.lifeStatus === filters.lifeStatus : true;
+      const matchesLifeStatus = filters.lifeStatus
+        ? character.lifeStatus === filters.lifeStatus
+        : true;
       const matchesTag = filters.tag
         ? character.tags.some((tag) => tag.name === filters.tag || tag.id === filters.tag)
         : true;
       const matchesStreamer = filters.streamer
-        ? character.streamer?.publicName === filters.streamer || character.streamer?.id === filters.streamer
+        ? character.streamer?.publicName === filters.streamer ||
+          character.streamer?.id === filters.streamer
         : true;
 
       return matchesQuery && matchesLifeStatus && matchesTag && matchesStreamer;

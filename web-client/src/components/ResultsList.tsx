@@ -6,15 +6,22 @@ type ResultsListProps = {
   characters: PublicCharacterSummary[];
   selectedId: string | null;
   isLoading: boolean;
+  total: number;
   onSelect: (id: string) => void;
 };
 
-export function ResultsList({ characters, selectedId, isLoading, onSelect }: ResultsListProps) {
+export function ResultsList({
+  characters,
+  selectedId,
+  isLoading,
+  total,
+  onSelect
+}: ResultsListProps) {
   return (
     <section className="results-list" aria-label="Resultats de recherche">
       <div className="panel-heading panel-heading-tight">
         <h2>Resultats</h2>
-        {isLoading ? <span className="inline-status">Chargement</span> : <span>{characters.length}</span>}
+        {isLoading ? <span className="inline-status">Chargement</span> : <span>{total}</span>}
       </div>
 
       {characters.length === 0 && !isLoading ? (
@@ -31,7 +38,8 @@ export function ResultsList({ characters, selectedId, isLoading, onSelect }: Res
           >
             <span className="result-name">{character.fullName}</span>
             <span className="result-meta">
-              {lifeStatusLabels[character.lifeStatus]} · {character.streamer?.publicName ?? "Streamer inconnu"}
+              {lifeStatusLabels[character.lifeStatus]} ·{" "}
+              {character.streamer?.publicName ?? "Streamer inconnu"}
             </span>
           </button>
         ))

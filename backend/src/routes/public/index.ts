@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { SequelizePublicDataService, type PublicDataService } from "../../services/public-data.js";
+import { type PublicDataService, SequelizePublicDataService } from "../../services/public-data.js";
 import { createPublicCharactersRouter } from "./characters.js";
 import { createPublicGraphRouter } from "./graph.js";
 import { createPublicHistoryRouter } from "./history.js";

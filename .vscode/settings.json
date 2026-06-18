@@ -1,0 +1,5 @@
+{
+  "biome.configurationPath": "biome.json",
+  "biome.lsp.bin": "web-client/node_modules/.bin/biome",
+  "biome.requireConfiguration": true
+}

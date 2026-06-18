@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  type CharacterFilters,
   getCharacter,
   getGraph,
   listCharacters,
   listHistory,
   listTags,
-  type CharacterFilters,
   type PublicCharacterDetail,
   type PublicCharacterSummary,
   type PublicGraph,
@@ -31,6 +31,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedCharacter, setSelectedCharacter] = useState<PublicCharacterDetail | null>(null);
   const [history, setHistory] = useState<PublicHistoryEntry[]>([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isBootLoading, setIsBootLoading] = useState(true);
   const [isListLoading, setIsListLoading] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -78,10 +79,6 @@ function App() {
         if (!ignore) {
           setCharacters(result.items);
           setTotal(result.total);
-
-          if (!selectedId && result.items[0]) {
-            setSelectedId(result.items[0].id);
-          }
         }
       } catch {
         if (!ignore) {
@@ -99,7 +96,7 @@ function App() {
     return () => {
       ignore = true;
     };
-  }, [filters, selectedId]);
+  }, [filters]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -141,17 +138,20 @@ function App() {
   }, [selectedId]);
 
   const matchingIds = useMemo(() => characters.map((character) => character.id), [characters]);
-  const selectedSummary = useMemo(
-    () => characters.find((character) => character.id === selectedId) ?? null,
-    [characters, selectedId]
-  );
 
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id);
   }, []);
 
+  const closeDetails = () => {
+    setSelectedId(null);
+    setSelectedCharacter(null);
+    setHistory([]);
+  };
+
   const updateFilter = (key: keyof CharacterFilters, value: string) => {
     setFilters((current) => ({ ...current, [key]: value }));
+    setIsSearchOpen(true);
   };
 
   const resetFilters = () => {
@@ -166,43 +166,81 @@ function App() {
             <p className="eyebrow">Annuaire RP public</p>
             <h1 id="workspace-title">GTA-RP Population Graph</h1>
           </div>
-          <div className="topbar-stats" aria-label="Synthese des donnees">
-            <span>{total} personnages</span>
-            <span>{tags.length} tags</span>
-            <span>{graph?.edges.length ?? 0} liens</span>
-          </div>
         </header>
 
-        <div className="app-grid">
-          <aside className="filters-panel" aria-label="Recherche et filtres">
-            <FiltersPanel filters={filters} tags={tags} onChange={updateFilter} onReset={resetFilters} />
-            <ResultsList
-              characters={characters}
-              selectedId={selectedId}
-              isLoading={isListLoading}
-              onSelect={handleSelect}
-            />
+        <div
+          className={`app-grid ${isSearchOpen ? "has-search" : ""} ${selectedId ? "has-details" : ""}`}
+        >
+          <aside
+            className={`filters-panel ${isSearchOpen ? "is-open" : "is-collapsed"}`}
+            aria-label="Recherche et filtres"
+          >
+            {isSearchOpen ? (
+              <>
+                <button
+                  type="button"
+                  className="panel-icon-button panel-close-button"
+                  aria-label="Replier la recherche"
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                  }}
+                >
+                  ×
+                </button>
+                <FiltersPanel
+                  filters={filters}
+                  tags={tags}
+                  onChange={updateFilter}
+                  onReset={resetFilters}
+                />
+                <ResultsList
+                  characters={characters}
+                  selectedId={selectedId}
+                  isLoading={isListLoading}
+                  total={total}
+                  onSelect={handleSelect}
+                />
+              </>
+            ) : (
+              <button
+                type="button"
+                className="search-toggle"
+                aria-label="Ouvrir la recherche"
+                onClick={() => {
+                  setIsSearchOpen(true);
+                }}
+              >
+                <span aria-hidden="true" className="search-toggle-icon" />
+              </button>
+            )}
           </aside>
 
           <GraphPanel
             graph={graph}
             matchingIds={matchingIds}
             selectedId={selectedId}
-            selectedSummary={selectedSummary}
-            filters={filters}
             isLoading={isBootLoading}
             error={error}
             onSelect={handleSelect}
           />
 
-          <aside className="details-panel" aria-label="Fiche personnage">
-            {isDetailLoading ? <LoadingBlock label="Chargement de la fiche..." /> : null}
-            {!isDetailLoading && !selectedCharacter ? (
-              <EmptyBlock label="Aucune fiche selectionnee." />
-            ) : selectedCharacter ? (
-              <CharacterSheet character={selectedCharacter} history={history} />
-            ) : null}
-          </aside>
+          {selectedId ? (
+            <aside className="details-panel" aria-label="Fiche personnage">
+              <button
+                type="button"
+                className="panel-icon-button details-close-button"
+                onClick={closeDetails}
+              >
+                Fermer
+              </button>
+              {isDetailLoading ? <LoadingBlock label="Chargement de la fiche..." /> : null}
+              {!isDetailLoading && !selectedCharacter ? (
+                <EmptyBlock label="Fiche indisponible." />
+              ) : selectedCharacter ? (
+                <CharacterSheet character={selectedCharacter} history={history} />
+              ) : null}
+            </aside>
+          ) : null}
         </div>
       </section>
     </main>

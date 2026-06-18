@@ -1,5 +1,5 @@
+import { DataTypes, literal, type Sequelize } from "sequelize";
 import { SequelizeStorage, Umzug } from "umzug";
-import { DataTypes, Sequelize, literal } from "sequelize";
 
 import { createSequelize } from "./sequelize.js";
 

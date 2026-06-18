@@ -88,7 +88,10 @@ export function useCytoscapeGraph({
       cy.elements().not(selected.closedNeighborhood()).addClass("dimmed");
       selected.closedNeighborhood().removeClass("dimmed");
       selected.animate({ style: { "border-width": 4 } }, { duration: 120 });
-      cy.animate({ center: { eles: selected }, zoom: Math.max(cy.zoom(), 1.05) }, { duration: 220 });
+      cy.animate(
+        { center: { eles: selected }, zoom: Math.max(cy.zoom(), 1.05) },
+        { duration: 220 }
+      );
     }
   }, [selectedId]);
 
