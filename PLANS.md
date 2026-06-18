@@ -419,7 +419,7 @@ Bilan :
 
 ### Etape 4 - Interface publique et graphe
 
-Statut : en cours, socle public implemente le 2026-06-17.
+Statut : terminée le 2026-06-18.
 
 - Construire la vue principale dark mode : recherche/filtres, graphe
   Cytoscape.js, panneau lateral de fiche.
@@ -465,17 +465,20 @@ Bilan intermediaire :
   future liste paginée.
 - Les champs de recherche déclenchent les correspondances avec un debounce de
   300 ms côté frontend pour éviter une requête API à chaque caractère.
+- `App.tsx` reste à surveiller sur sa taille : extraire la logique de recherche
+  ou de chargement si l'étape 5 ou 6 alourdit encore le composant.
 
-À vérifier avant clôture :
+Clôture :
 
-- Validation visuelle PC de la refonte graphe-first ; mobile acceptable pour le
-  MVP mais non prioritaire pour les prochains arbitrages.
-- Surveiller la volumétrie de `/api/characters/matches` : si le graphe devient
-  très massif, prévoir une recherche indexée ou une stratégie dédiée côté graphe.
-- Prévoir une alternative clavier/accessibilité à la liste de résultats
-  supprimée.
+- Validation visuelle PC jugée satisfaisante pour le MVP actuel.
+- L'accessibilité clavier de navigation dans les résultats reste une amélioration
+  future, non bloquante à ce stade.
+- La volumétrie de `/api/characters/matches` reste un point de vigilance
+  technique informatif, pas un blocage de clôture.
 
 ### Etape 5 - Authentification et autorisations
+
+Statut : à démarrer.
 
 - Ajouter Google OAuth cote backend.
 - Utiliser une session serveur avec cookie `HttpOnly` pour l'application web,
@@ -484,6 +487,28 @@ Bilan intermediaire :
 - Proteger toutes les routes sensibles cote serveur, sans confiance implicite
   dans le frontend.
 - Prevoir la promotion manuelle du premier administrateur en base.
+
+Plan propose :
+
+- Ajouter la configuration d'authentification dans l'environnement backend :
+  variables Google OAuth, secret de session, URL de callback et liste d'origines
+  autorisees.
+- Installer et brancher la session Express avec cookie `HttpOnly`, `SameSite`
+  et configuration `secure` selon l'environnement.
+- Integrer Google OAuth cote backend avec creation ou recuperation de
+  l'utilisateur local, rattachement du role par defaut `user` et refus explicite
+  des comptes bannis.
+- Exposer les routes d'authentification minimales pour le frontend public :
+  `GET /auth/session`, `GET /auth/google`, `GET /auth/google/callback`,
+  `POST /auth/logout`.
+- Ajouter un middleware serveur central pour lire l'utilisateur courant, verifier
+  l'authentification, le role minimal et le bannissement.
+- Appliquer ce middleware sur les futures routes de contribution, moderation et
+  administration, meme si leurs pages arrivent plus tard.
+- Ajouter les tests backend sur session, login, logout, refus d'utilisateur
+  banni et controle de role.
+- Documenter le flux d'authentification MVP et la procedure de promotion
+  manuelle du premier administrateur.
 
 Point de controle :
 
