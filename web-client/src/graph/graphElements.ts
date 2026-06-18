@@ -14,29 +14,12 @@ const getCharacterInitials = (name: string) => {
   return initials || "?";
 };
 
-export const toCytoscapeElements = (
-  graph: PublicGraph,
-  matchingIdSet: Set<string>,
-  isSearchActive: boolean
-): ElementDefinition[] => [
-  ...graph.nodes.map((node) => {
-    const isMatched = matchingIdSet.has(node.data.characterId);
-
-    return {
-      data: {
-        ...node.data,
-        displayLabel: getCharacterInitials(node.data.fullName || node.data.label),
-        isMatched
-      },
-      classes: isSearchActive ? (isMatched ? "matched" : "search-muted") : ""
-    };
-  }),
-  ...graph.edges.map((edge) => {
-    const isMatched = matchingIdSet.has(edge.data.source) && matchingIdSet.has(edge.data.target);
-
-    return {
-      ...edge,
-      classes: isSearchActive && !isMatched ? "search-muted" : ""
-    };
-  })
+export const toCytoscapeElements = (graph: PublicGraph): ElementDefinition[] => [
+  ...graph.nodes.map((node) => ({
+    data: {
+      ...node.data,
+      displayLabel: getCharacterInitials(node.data.fullName || node.data.label)
+    }
+  })),
+  ...graph.edges
 ];

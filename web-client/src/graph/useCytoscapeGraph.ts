@@ -36,7 +36,7 @@ export function useCytoscapeGraph({
 
     const cy = cytoscape({
       container: containerRef.current,
-      elements: toCytoscapeElements(graph, matchingIdSet, isSearchActive),
+      elements: toCytoscapeElements(graph),
       minZoom: 0.35,
       maxZoom: 2.2,
       style: cytoscapeStyles,
@@ -77,7 +77,7 @@ export function useCytoscapeGraph({
       cy.destroy();
       cytoscapeRef.current = null;
     };
-  }, [containerRef, graph, matchingIdSet, isSearchActive]);
+  }, [containerRef, graph]);
 
   useEffect(() => {
     const cy = cytoscapeRef.current;
