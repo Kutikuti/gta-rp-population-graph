@@ -9,6 +9,7 @@ type UseCytoscapeGraphParams = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   graph: PublicGraph;
   matchingIdSet: Set<string>;
+  isSearchActive: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
 };
@@ -17,10 +18,16 @@ export function useCytoscapeGraph({
   containerRef,
   graph,
   matchingIdSet,
+  isSearchActive,
   selectedId,
   onSelect
 }: UseCytoscapeGraphParams) {
   const cytoscapeRef = useRef<Core | null>(null);
+  const onSelectRef = useRef(onSelect);
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -29,7 +36,7 @@ export function useCytoscapeGraph({
 
     const cy = cytoscape({
       container: containerRef.current,
-      elements: toCytoscapeElements(graph, matchingIdSet),
+      elements: toCytoscapeElements(graph, matchingIdSet, isSearchActive),
       minZoom: 0.35,
       maxZoom: 2.2,
       style: cytoscapeStyles,
@@ -46,7 +53,7 @@ export function useCytoscapeGraph({
     const handleNodeTap = (event: EventObject) => {
       const node = event.target as NodeSingular;
       const id = node.data("characterId") as string;
-      onSelect(id);
+      onSelectRef.current(id);
     };
 
     const handleNodeMouseOver = (event: EventObject) => {
@@ -70,7 +77,7 @@ export function useCytoscapeGraph({
       cy.destroy();
       cytoscapeRef.current = null;
     };
-  }, [containerRef, graph, matchingIdSet, onSelect]);
+  }, [containerRef, graph, matchingIdSet, isSearchActive]);
 
   useEffect(() => {
     const cy = cytoscapeRef.current;
@@ -79,7 +86,7 @@ export function useCytoscapeGraph({
       return;
     }
 
-    cy.nodes().removeClass("selected dimmed");
+    cy.nodes().removeClass("selected dimmed").removeStyle("border-width");
     cy.edges().removeClass("dimmed");
 
     if (selectedId) {
@@ -87,7 +94,6 @@ export function useCytoscapeGraph({
       selected.addClass("selected");
       cy.elements().not(selected.closedNeighborhood()).addClass("dimmed");
       selected.closedNeighborhood().removeClass("dimmed");
-      selected.animate({ style: { "border-width": 4 } }, { duration: 120 });
       cy.animate(
         { center: { eles: selected }, zoom: Math.max(cy.zoom(), 1.05) },
         { duration: 220 }
@@ -102,12 +108,31 @@ export function useCytoscapeGraph({
       return;
     }
 
+    cy.nodes().removeClass("matched search-muted");
+    cy.edges().removeClass("search-muted");
+
+    if (!isSearchActive) {
+      return;
+    }
+
     cy.nodes().forEach((node) => {
-      if (matchingIdSet.has(node.data("characterId") as string)) {
+      const isMatched = matchingIdSet.has(node.data("characterId") as string);
+      const isSelected = node.data("characterId") === selectedId;
+
+      if (isMatched) {
         node.addClass("matched");
-      } else {
-        node.removeClass("matched");
+      } else if (!isSelected) {
+        node.addClass("search-muted");
       }
     });
-  }, [matchingIdSet]);
+
+    cy.edges().forEach((edge) => {
+      const sourceId = edge.data("source") as string;
+      const targetId = edge.data("target") as string;
+
+      if (!(matchingIdSet.has(sourceId) && matchingIdSet.has(targetId))) {
+        edge.addClass("search-muted");
+      }
+    });
+  }, [matchingIdSet, isSearchActive, selectedId]);
 }

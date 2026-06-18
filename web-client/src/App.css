@@ -224,7 +224,6 @@ h3 {
 }
 
 .sheet-header p,
-.result-meta,
 .muted-text,
 .relationship-row small,
 .history-row small {
@@ -268,41 +267,13 @@ h3 {
 
 .inline-status,
 .verification-chip {
+  width: fit-content;
   border: 1px solid #1d5b91;
   padding: 6px 8px;
   color: #a9d9ff;
   background: #071b2b;
   font-size: 0.78rem;
   font-weight: 700;
-}
-
-.results-list {
-  display: grid;
-  gap: 8px;
-  min-height: 0;
-}
-
-.result-row {
-  display: grid;
-  gap: 4px;
-  width: 100%;
-  border: 1px solid #143a5d;
-  color: inherit;
-  background: #071522;
-  padding: 10px;
-  text-align: left;
-}
-
-.result-row:hover,
-.result-row.is-selected {
-  border-color: #47a8f5;
-  background: #09233a;
-}
-
-.result-name {
-  color: #f1f8ff;
-  font-size: 0.9rem;
-  font-weight: 800;
 }
 
 .state-block {

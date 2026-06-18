@@ -17,15 +17,13 @@ import "./App.css";
 import { CharacterSheet } from "./components/CharacterSheet";
 import { FiltersPanel } from "./components/FiltersPanel";
 import { GraphPanel } from "./components/GraphPanel";
-import { ResultsList } from "./components/ResultsList";
 import { EmptyBlock, LoadingBlock } from "./components/StateBlock";
-import { initialFilters } from "./constants";
+import { initialFilters, isActiveFilters } from "./constants";
 import { usePersistentFilters } from "./hooks/usePersistentFilters";
 
 function App() {
   const [filters, setFilters] = usePersistentFilters();
   const [characters, setCharacters] = useState<PublicCharacterSummary[]>([]);
-  const [total, setTotal] = useState(0);
   const [tags, setTags] = useState<PublicTag[]>([]);
   const [graph, setGraph] = useState<PublicGraph | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -33,7 +31,6 @@ function App() {
   const [history, setHistory] = useState<PublicHistoryEntry[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isBootLoading, setIsBootLoading] = useState(true);
-  const [isListLoading, setIsListLoading] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,21 +69,15 @@ function App() {
 
     const loadCharacters = async () => {
       try {
-        setIsListLoading(true);
         setError(null);
         const result = await listCharacters(filters);
 
         if (!ignore) {
           setCharacters(result.items);
-          setTotal(result.total);
         }
       } catch {
         if (!ignore) {
           setError("La recherche n'a pas pu aboutir.");
-        }
-      } finally {
-        if (!ignore) {
-          setIsListLoading(false);
         }
       }
     };
@@ -137,17 +128,26 @@ function App() {
     };
   }, [selectedId]);
 
+  const isSearchActive = isActiveFilters(filters);
   const matchingIds = useMemo(() => characters.map((character) => character.id), [characters]);
 
-  const handleSelect = useCallback((id: string) => {
-    setSelectedId(id);
-  }, []);
-
-  const closeDetails = () => {
+  const closeDetails = useCallback(() => {
     setSelectedId(null);
     setSelectedCharacter(null);
     setHistory([]);
-  };
+  }, []);
+
+  const handleSelect = useCallback((id: string) => {
+    setSelectedId((currentId) => {
+      if (id === currentId) {
+        setSelectedCharacter(null);
+        setHistory([]);
+        return null;
+      }
+
+      return id;
+    });
+  }, []);
 
   const updateFilter = (key: keyof CharacterFilters, value: string) => {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -193,13 +193,6 @@ function App() {
                   onChange={updateFilter}
                   onReset={resetFilters}
                 />
-                <ResultsList
-                  characters={characters}
-                  selectedId={selectedId}
-                  isLoading={isListLoading}
-                  total={total}
-                  onSelect={handleSelect}
-                />
               </>
             ) : (
               <button
@@ -218,6 +211,7 @@ function App() {
           <GraphPanel
             graph={graph}
             matchingIds={matchingIds}
+            isSearchActive={isSearchActive}
             selectedId={selectedId}
             isLoading={isBootLoading}
             error={error}

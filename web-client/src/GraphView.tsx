@@ -6,15 +6,16 @@ import { useCytoscapeGraph } from "./graph/useCytoscapeGraph";
 type GraphViewProps = {
   graph: PublicGraph;
   matchingIds: string[];
+  isSearchActive: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
 };
 
-function GraphView({ graph, matchingIds, selectedId, onSelect }: GraphViewProps) {
+function GraphView({ graph, matchingIds, isSearchActive, selectedId, onSelect }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const matchingIdSet = useMemo(() => new Set(matchingIds), [matchingIds]);
 
-  useCytoscapeGraph({ containerRef, graph, matchingIdSet, selectedId, onSelect });
+  useCytoscapeGraph({ containerRef, graph, matchingIdSet, isSearchActive, selectedId, onSelect });
 
   return (
     <div

@@ -27,15 +27,7 @@ export const relationLabels: Record<string, string> = {
   parent: "Parent",
   child: "Enfant",
   sibling: "Fratrie",
-  couple: "Couple",
-  ex: "Ex",
-  uncle_aunt: "Oncle / tante",
-  nephew_niece: "Neveu / niece",
-  group: "Groupe",
-  district: "Quartier",
-  business: "Entreprise",
-  police: "Police",
-  other: "Autre"
+  couple: "Couple"
 };
 
 export const isActiveFilters = (filters: CharacterFilters) =>

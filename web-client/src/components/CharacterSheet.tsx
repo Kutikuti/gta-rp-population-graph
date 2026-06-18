@@ -19,9 +19,6 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
           <h2>{character.fullName}</h2>
           <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigne"}</p>
         </div>
-        <span className={`verification-chip verification-${character.verificationStatus}`}>
-          {verificationLabels[character.verificationStatus]}
-        </span>
       </div>
 
       <dl className="metric-grid">
@@ -105,6 +102,13 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
             <span className="muted-text">Aucun lien public.</span>
           )}
         </div>
+      </section>
+
+      <section className="sheet-section">
+        <h3>Verification</h3>
+        <span className={`verification-chip verification-${character.verificationStatus}`}>
+          {verificationLabels[character.verificationStatus]}
+        </span>
       </section>
 
       <section className="sheet-section">

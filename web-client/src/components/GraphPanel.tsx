@@ -8,6 +8,7 @@ const GraphView = lazy(() => import("../GraphView"));
 type GraphPanelProps = {
   graph: PublicGraph | null;
   matchingIds: string[];
+  isSearchActive: boolean;
   selectedId: string | null;
   isLoading: boolean;
   error: string | null;
@@ -17,6 +18,7 @@ type GraphPanelProps = {
 export function GraphPanel({
   graph,
   matchingIds,
+  isSearchActive,
   selectedId,
   isLoading,
   error,
@@ -35,6 +37,7 @@ export function GraphPanel({
           <GraphView
             graph={graph}
             matchingIds={matchingIds}
+            isSearchActive={isSearchActive}
             selectedId={selectedId}
             onSelect={onSelect}
           />

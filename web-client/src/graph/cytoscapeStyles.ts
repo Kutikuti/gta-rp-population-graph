@@ -6,20 +6,20 @@ export const cytoscapeStyles: StylesheetJsonBlock[] = [
     style: {
       "background-color": "#0e72c9",
       "border-color": "#61b9ff",
-      "border-width": 2,
+      "border-width": 1,
       color: "#eaf6ff",
       "font-family": "Inter, system-ui, sans-serif",
-      "font-size": "12px",
+      "font-size": "15px",
       "font-weight": 700,
-      height: 44,
-      label: "data(label)",
+      height: 54,
+      label: "data(displayLabel)",
       "overlay-opacity": 0,
-      shape: "round-rectangle",
+      shape: "ellipse",
       "text-halign": "center",
-      "text-max-width": "104px",
+      "text-max-width": "42px",
       "text-valign": "center",
-      "text-wrap": "wrap",
-      width: 118
+      "text-wrap": "none",
+      width: 54
     }
   },
   {
@@ -30,17 +30,20 @@ export const cytoscapeStyles: StylesheetJsonBlock[] = [
     }
   },
   {
-    selector: "node[verificationStatus = 'to_check'], node[verificationStatus = 'imported']",
-    style: {
-      "border-style": "dashed"
-    }
-  },
-  {
     selector: "node.matched",
     style: {
       "background-color": "#1194ff",
-      "border-color": "#c8ecff",
-      "border-width": 3
+      "border-color": "#fff0a6",
+      "border-width": 1
+    }
+  },
+  {
+    selector: "node.search-muted",
+    style: {
+      "background-color": "#14202c",
+      "border-color": "#31485c",
+      color: "#5f7488",
+      opacity: 0.16
     }
   },
   {
@@ -49,14 +52,15 @@ export const cytoscapeStyles: StylesheetJsonBlock[] = [
       "background-color": "#d7f2ff",
       "border-color": "#ffffff",
       color: "#04111f",
-      "border-width": 4
+      "border-width": 1,
+      opacity: 1
     }
   },
   {
     selector: "node.hovered",
     style: {
       "border-color": "#ffffff",
-      "border-width": 3
+      "border-width": 2
     }
   },
   {
@@ -95,6 +99,12 @@ export const cytoscapeStyles: StylesheetJsonBlock[] = [
     selector: "edge.dimmed",
     style: {
       opacity: 0.18
+    }
+  },
+  {
+    selector: "edge.search-muted",
+    style: {
+      opacity: 0.08
     }
   }
 ];

@@ -5,9 +5,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
 vi.mock("./GraphView", () => ({
-  default: ({ selectedId }: { selectedId: string | null }) => (
+  default: ({
+    matchingIds,
+    selectedId,
+    onSelect
+  }: {
+    matchingIds: string[];
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+  }) => (
     <div role="img" aria-label="Graphe interactif des personnages">
-      Graphe mock {selectedId}
+      <button
+        type="button"
+        onClick={() => {
+          onSelect("00000000-0000-4000-8000-000000000301");
+        }}
+      >
+        Noeud Camille Morel
+      </button>
+      <span>Correspondances {matchingIds.join(",")}</span>
+      <span>Selection {selectedId}</span>
     </div>
   )
 }));
@@ -192,12 +209,23 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Ouvrir la recherche" }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Camille Morel/ })).toBeInTheDocument();
-    });
     expect(await screen.findByLabelText("Graphe interactif des personnages")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Camille Morel/ }));
+    expect(screen.queryByRole("button", { name: /Ines Morel/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Noeud Camille Morel" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Noeud Camille Morel" }));
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText("Fiche personnage")).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Noeud Camille Morel" }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
@@ -206,8 +234,7 @@ describe("App", () => {
     await user.type(screen.getByPlaceholderText("Nom, telephone, matricule..."), "ines");
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Ines Morel/ })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /Camille Morel/ })).not.toBeInTheDocument();
+      expect(screen.getByText(`Correspondances ${ines.id}`)).toBeInTheDocument();
     });
   });
 
