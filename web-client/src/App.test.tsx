@@ -101,6 +101,13 @@ const jsonResponse = (body: unknown) =>
     json: () => Promise.resolve(body)
   } as Response);
 
+const errorResponse = (status = 500) =>
+  Promise.resolve({
+    ok: false,
+    status,
+    json: () => Promise.resolve({})
+  } as Response);
+
 describe("App", () => {
   beforeEach(() => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
@@ -193,5 +200,26 @@ describe("App", () => {
       expect(screen.getByRole("button", { name: /Ines Morel/ })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /Camille Morel/ })).not.toBeInTheDocument();
     });
+  });
+
+  it("shows an API error instead of an endless graph loader", async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/tags") || url.includes("/api/graph")) {
+        return errorResponse();
+      }
+
+      if (url.includes("/api/characters?")) {
+        return jsonResponse({ items: [], total: 0, limit: 100, offset: 0 });
+      }
+
+      return errorResponse(404);
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText("Impossible de charger les donnees publiques.")).toBeInTheDocument();
+    expect(screen.queryByText("Chargement du graphe...")).not.toBeInTheDocument();
   });
 });
