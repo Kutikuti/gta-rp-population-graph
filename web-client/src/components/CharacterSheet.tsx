@@ -5,9 +5,10 @@ import { compactValue, formatDate, socialEntries } from "../utils/format";
 type CharacterSheetProps = {
   character: PublicCharacterDetail;
   history: PublicHistoryEntry[];
+  onContribute: () => void;
 };
 
-export function CharacterSheet({ character, history }: CharacterSheetProps) {
+export function CharacterSheet({ character, history, onContribute }: CharacterSheetProps) {
   const links = socialEntries(character.socialLinks ?? character.streamer?.socialLinks);
   const relationships = [...character.relationships.outgoing, ...character.relationships.incoming];
 
@@ -19,6 +20,9 @@ export function CharacterSheet({ character, history }: CharacterSheetProps) {
           <h2>{character.fullName}</h2>
           <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}</p>
         </div>
+        <button type="button" className="ghost-button" onClick={onContribute}>
+          Proposer
+        </button>
       </div>
 
       <dl className="metric-grid">

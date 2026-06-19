@@ -1,0 +1,245 @@
+.topbar-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.ghost-button.is-active,
+.primary-action {
+  border-color: #68c7ff;
+  color: #f0f9ff;
+  background: #0b2d49;
+}
+
+.danger-action {
+  border-color: #8d3246;
+  color: #ffd5dd;
+}
+
+.full-page-view {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background:
+    linear-gradient(rgba(37, 119, 191, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 119, 191, 0.05) 1px, transparent 1px), #020811;
+  background-size: 30px 30px;
+  padding: 104px 24px 32px;
+}
+
+.full-page-header,
+.full-page-grid,
+.moderation-layout {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.full-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.full-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+.moderation-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.work-panel {
+  border: 1px solid #123c5f;
+  background: rgba(5, 16, 27, 0.94);
+  padding: 16px;
+}
+
+.side-work-panel,
+.moderation-list-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.moderation-detail-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.snapshot-form,
+.snapshot-form fieldset {
+  display: grid;
+  gap: 14px;
+}
+
+.snapshot-form fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #153f63;
+  padding: 12px;
+}
+
+.snapshot-form legend {
+  padding: 0 6px;
+  color: #8fcfff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.snapshot-form label,
+.moderation-actions label {
+  display: grid;
+  gap: 6px;
+  color: #a9c9e4;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.snapshot-form input,
+.snapshot-form select,
+.snapshot-form textarea,
+.moderation-actions textarea {
+  width: 100%;
+  border: 1px solid #184970;
+  color: #eaf7ff;
+  background: #061522;
+  padding: 8px 9px;
+  font-size: 0.8rem;
+}
+
+.checkbox-field {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  align-content: center;
+}
+
+.checkbox-field input {
+  width: 16px;
+  height: 16px;
+}
+
+.wide-field {
+  display: grid;
+}
+
+.form-actions,
+.moderation-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.moderation-actions label {
+  flex: 1 1 260px;
+}
+
+.request-list {
+  display: grid;
+  gap: 8px;
+}
+
+.request-row {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #143d60;
+  color: #dcefff;
+  background: #061522;
+  padding: 10px;
+  text-align: left;
+}
+
+.request-row span,
+.request-row small {
+  color: #8fb2cf;
+  font-size: 0.74rem;
+}
+
+.selectable-row:hover,
+.selectable-row.is-active {
+  border-color: #65bfff;
+  background: #0a2238;
+}
+
+.inline-feedback {
+  border: 1px solid #194a73;
+  background: #061522;
+  padding: 8px 10px;
+  color: #bfe4ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.success-text {
+  border-color: #3a9770;
+  color: #cfffe8;
+}
+
+.detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.diff-panel,
+.direct-edit-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid #143d60;
+  background: #061522;
+  padding: 9px;
+  color: #dcefff;
+  font-size: 0.78rem;
+}
+
+.diff-row strong {
+  color: #8fcfff;
+}
+
+.diff-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .topbar-actions,
+  .full-page-header,
+  .form-actions,
+  .moderation-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .full-page-grid,
+  .moderation-layout,
+  .form-grid,
+  .diff-row {
+    grid-template-columns: 1fr;
+  }
+
+  .full-page-view {
+    padding: 138px 12px 24px;
+  }
+}

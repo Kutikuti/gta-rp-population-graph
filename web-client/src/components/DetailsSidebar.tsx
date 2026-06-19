@@ -7,9 +7,16 @@ type DetailsSidebarProps = {
   history: PublicHistoryEntry[];
   isLoading: boolean;
   onClose: () => void;
+  onContribute: () => void;
 };
 
-export function DetailsSidebar({ character, history, isLoading, onClose }: DetailsSidebarProps) {
+export function DetailsSidebar({
+  character,
+  history,
+  isLoading,
+  onClose,
+  onContribute
+}: DetailsSidebarProps) {
   return (
     <aside className="details-panel" aria-label="Fiche personnage">
       <button type="button" className="panel-icon-button details-close-button" onClick={onClose}>
@@ -19,7 +26,7 @@ export function DetailsSidebar({ character, history, isLoading, onClose }: Detai
       {!isLoading && !character ? (
         <EmptyBlock label="Fiche indisponible." />
       ) : character ? (
-        <CharacterSheet character={character} history={history} />
+        <CharacterSheet character={character} history={history} onContribute={onContribute} />
       ) : null}
     </aside>
   );

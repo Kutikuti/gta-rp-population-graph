@@ -550,6 +550,8 @@ Point de controle :
 
 ### Etape 6 - Contribution et moderation
 
+Statut : en cours depuis le 2026-06-19.
+
 - Implementer les demandes de modification sur snapshot complet de fiche.
 - Calculer le diff champ par champ a l'acceptation.
 - Creer l'historique detaille pour chaque demande acceptee.
@@ -557,6 +559,31 @@ Point de controle :
   acceptation et refus avec commentaire obligatoire.
 - Permettre aux moderateurs d'editer directement une fiche tout en creant le
   meme historique detaille.
+
+Bilan intermediaire :
+
+- Service backend de demandes de modification ajoute avec validation stricte du
+  snapshot de fiche `Character`, calcul de diff champ par champ, approbation en
+  transaction Sequelize, refus avec commentaire et edition directe moderateur.
+- Routes protegees ajoutees : creation et suivi utilisateur sous
+  `/api/contributions/change-requests`, file de moderation, detail,
+  acceptation, refus et edition directe sous `/api/moderation`.
+- Les snapshots acceptent uniquement une allowlist de champs de fiche. Les
+  champs serveur, roles, historiques, relations et tags ne sont pas modifiables
+  via ce flux.
+- Frontend ajoute : page contribution depuis une fiche selectionnee, page pleine
+  de moderation separee du panneau public, comparaison des champs modifies,
+  acceptation, refus commente obligatoire et formulaire d'edition directe.
+
+Vigilances restantes :
+
+- Les tags, relations RP et streamers ne sont pas encore modifiables par ce
+  flux ; ils devront etre ajoutes avec validations dediees pour eviter les
+  relations incoherentes et les suppressions implicites.
+- Verifier le workflow complet sur une base PostgreSQL de developpement apres
+  lancement des tests hors sandbox lecture seule.
+- Ajouter des tests d'integration service contre base quand l'environnement de
+  test pourra ecrire les fichiers temporaires Vitest/Vite.
 
 Point de controle :
 

@@ -7,11 +7,26 @@ type AppHeaderProps = {
     message: string;
   } | null;
   authSession: AuthSession | null;
+  activeView: "explore" | "contribution" | "moderation";
   isAuthLoading: boolean;
+  onExplore: () => void;
   onLogout: () => void;
+  onModeration: () => void;
 };
 
-export function AppHeader({ authFeedback, authSession, isAuthLoading, onLogout }: AppHeaderProps) {
+const canModerate = (session: AuthSession | null) =>
+  session?.authenticated &&
+  (session.user.role.name === "moderator" || session.user.role.name === "administrator");
+
+export function AppHeader({
+  authFeedback,
+  authSession,
+  activeView,
+  isAuthLoading,
+  onExplore,
+  onLogout,
+  onModeration
+}: AppHeaderProps) {
   return (
     <header className="topbar">
       <div className="topbar-content">
@@ -24,12 +39,30 @@ export function AppHeader({ authFeedback, authSession, isAuthLoading, onLogout }
             </p>
           ) : null}
         </div>
-        <AuthControls
-          isLoading={isAuthLoading}
-          session={authSession}
-          loginHref={getGoogleAuthUrl()}
-          onLogout={onLogout}
-        />
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className={`ghost-button ${activeView === "explore" ? "is-active" : ""}`}
+            onClick={onExplore}
+          >
+            Graphe
+          </button>
+          {canModerate(authSession) ? (
+            <button
+              type="button"
+              className={`ghost-button ${activeView === "moderation" ? "is-active" : ""}`}
+              onClick={onModeration}
+            >
+              Modération
+            </button>
+          ) : null}
+          <AuthControls
+            isLoading={isAuthLoading}
+            session={authSession}
+            loginHref={getGoogleAuthUrl()}
+            onLogout={onLogout}
+          />
+        </div>
       </div>
     </header>
   );

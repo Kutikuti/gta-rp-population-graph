@@ -8,11 +8,15 @@ import { loadCurrentUser } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { adminRouter } from "./routes/admin.js";
 import { createAuthRouter, sessionMiddleware } from "./routes/auth.js";
-import { contributionsRouter } from "./routes/contributions.js";
+import { createContributionsRouter } from "./routes/contributions.js";
 import { healthRouter } from "./routes/health.js";
-import { moderationRouter } from "./routes/moderation.js";
+import { createModerationRouter } from "./routes/moderation.js";
 import { createPublicRouter } from "./routes/public/index.js";
 import { type AuthService, SequelizeAuthService } from "./services/auth.js";
+import {
+  type ChangeRequestService,
+  SequelizeChangeRequestService
+} from "./services/change-requests.js";
 import { type GoogleOauthClient, GoogleOidcClient } from "./services/google-oauth.js";
 import type { PublicDataService } from "./services/public-data.js";
 
@@ -20,11 +24,14 @@ export type AppDependencies = {
   publicDataService?: PublicDataService;
   authService?: AuthService;
   googleOauthClient?: GoogleOauthClient;
+  changeRequestService?: ChangeRequestService;
 };
 
 export const createApp = (dependencies: AppDependencies = {}) => {
   const authService = dependencies.authService ?? new SequelizeAuthService();
   const googleOauthClient = dependencies.googleOauthClient ?? new GoogleOidcClient();
+  const changeRequestService =
+    dependencies.changeRequestService ?? new SequelizeChangeRequestService();
   const app = express();
 
   app.disable("x-powered-by");
@@ -55,8 +62,8 @@ export const createApp = (dependencies: AppDependencies = {}) => {
       googleOauthClient
     })
   );
-  app.use("/api/contributions", contributionsRouter);
-  app.use("/api/moderation", moderationRouter);
+  app.use("/api/contributions", createContributionsRouter(changeRequestService));
+  app.use("/api/moderation", createModerationRouter(changeRequestService));
   app.use("/api/admin", adminRouter);
   app.use("/api", createPublicRouter(dependencies.publicDataService));
 

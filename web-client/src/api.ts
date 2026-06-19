@@ -1,6 +1,7 @@
 export type LifeStatus = "alive" | "deceased" | "left" | "unknown";
 export type VerificationStatus = "verified" | "community" | "imported" | "to_check" | "disputed";
 export type RoleName = "user" | "moderator" | "administrator";
+export type ChangeRequestStatus = "pending" | "approved" | "rejected";
 
 export type SocialLinks = Partial<
   Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>
@@ -155,14 +156,67 @@ export type CharacterFilters = {
   verificationStatus: "" | VerificationStatus;
 };
 
+export type CharacterSnapshot = {
+  firstName: string;
+  lastName: string;
+  nickname: string | null;
+  birthDate: string | null;
+  lifeStatus: LifeStatus;
+  deathOrDepartureDate: string | null;
+  photoUrl: string | null;
+  businessName: string | null;
+  businessRank: string | null;
+  businessBadgeNumber: string | null;
+  phoneNumber: string | null;
+  streamerId: string | null;
+  socialLinks: SocialLinks | null;
+  groupName: string | null;
+  groupRole: string | null;
+  district: string | null;
+  isRpDeath: boolean;
+  policeRank: string | null;
+  policeBadgeNumber: string | null;
+  previousCharacters: Record<string, string> | null;
+  verificationStatus: VerificationStatus;
+  sourceNote: string | null;
+};
+
+export type FieldChange = {
+  old: unknown;
+  new: unknown;
+};
+
+export type ChangeDiff = Record<string, FieldChange>;
+
+export type ChangeRequestSummary = {
+  id: string;
+  characterId: string;
+  characterName: string | null;
+  userId: string;
+  userDisplayName: string | null;
+  status: ChangeRequestStatus;
+  proposedSnapshot: CharacterSnapshot;
+  reviewerId: string | null;
+  reviewerDisplayName: string | null;
+  moderatorComment: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const env = import.meta.env as { readonly VITE_API_BASE_URL?: string };
 const API_BASE_URL = env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
 
-const fetchJson = async <T>(path: string): Promise<T> => {
+const fetchJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(buildApiUrl(path), {
-    credentials: "include"
+    ...init,
+    credentials: "include",
+    headers: {
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...init?.headers
+    }
   });
 
   if (!response.ok) {
@@ -171,6 +225,12 @@ const fetchJson = async <T>(path: string): Promise<T> => {
 
   return (await response.json()) as T;
 };
+
+const sendJson = async <T>(path: string, method: "POST" | "PATCH", body?: unknown): Promise<T> =>
+  fetchJson<T>(path, {
+    method,
+    body: body ? JSON.stringify(body) : undefined
+  });
 
 const appendParam = (params: URLSearchParams, key: string, value: string) => {
   if (value.trim()) {
@@ -239,3 +299,60 @@ export const logout = async () => {
     throw new Error(`Erreur API ${String(response.status)}`);
   }
 };
+
+export const characterToSnapshot = (character: PublicCharacterDetail): CharacterSnapshot => ({
+  firstName: character.firstName,
+  lastName: character.lastName,
+  nickname: character.nickname,
+  birthDate: character.birthDate,
+  lifeStatus: character.lifeStatus,
+  deathOrDepartureDate: character.deathOrDepartureDate,
+  photoUrl: character.photoUrl,
+  businessName: character.businessName,
+  businessRank: character.businessRank,
+  businessBadgeNumber: character.businessBadgeNumber,
+  phoneNumber: character.phoneNumber,
+  streamerId: character.streamer?.id ?? null,
+  socialLinks: character.socialLinks,
+  groupName: character.groupName,
+  groupRole: character.groupRole,
+  district: character.district,
+  isRpDeath: character.isRpDeath,
+  policeRank: character.policeRank,
+  policeBadgeNumber: character.policeBadgeNumber,
+  previousCharacters: character.previousCharacters,
+  verificationStatus: character.verificationStatus,
+  sourceNote: character.sourceNote
+});
+
+export const createChangeRequest = (characterId: string, proposedSnapshot: CharacterSnapshot) =>
+  sendJson<ChangeRequestSummary>("/api/contributions/change-requests", "POST", {
+    characterId,
+    proposedSnapshot
+  });
+
+export const listMyChangeRequests = () =>
+  fetchJson<ChangeRequestSummary[]>("/api/contributions/change-requests");
+
+export const listModerationChangeRequests = (status: ChangeRequestStatus = "pending") => {
+  const params = new URLSearchParams({ status });
+  return fetchJson<ChangeRequestSummary[]>(`/api/moderation/change-requests?${params.toString()}`);
+};
+
+export const approveChangeRequest = (id: string) =>
+  sendJson<{ request: ChangeRequestSummary; changes: ChangeDiff }>(
+    `/api/moderation/change-requests/${id}/approve`,
+    "POST"
+  );
+
+export const rejectChangeRequest = (id: string, comment: string) =>
+  sendJson<ChangeRequestSummary>(`/api/moderation/change-requests/${id}/reject`, "POST", {
+    comment
+  });
+
+export const editCharacterDirectly = (characterId: string, snapshot: CharacterSnapshot) =>
+  sendJson<{ characterId: string; changes: ChangeDiff }>(
+    `/api/moderation/characters/${characterId}`,
+    "PATCH",
+    { snapshot }
+  );
