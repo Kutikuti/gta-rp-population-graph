@@ -1,5 +1,7 @@
 {
   "biome.configurationPath": "biome.json",
-  "biome.lsp.bin": "web-client/node_modules/.bin/biome",
+  "biome.lsp.bin": {
+    "linux-x64": "web-client/node_modules/@biomejs/cli-linux-x64/biome"
+  },
   "biome.requireConfiguration": true
 }
