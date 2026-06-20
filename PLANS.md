@@ -27,10 +27,15 @@ Inclus :
 - Vue principale avec graphe interactif.
 - Recherche et filtres persistants.
 - Fiche personnage.
+- Historique de fiche deplieable avec detail des champs modifies.
 - Tags et relations typees.
 - Import initial depuis Notion communautaire.
 - Connexion Google OAuth.
-- Demandes de modification moderees.
+- Demandes de modification moderees pour les utilisateurs simples.
+- Demandes de creation de fiche moderees, declenchees depuis une recherche sans
+  resultat satisfaisant pour reduire le risque de doublon.
+- Modifications directes par moderateur ou administrateur, avec historique
+  obligatoire.
 - Roles utilisateur, moderateur, administrateur et utilisateur banni.
 - Historique par fiche et historique global.
 - Page contact, remerciements et soutien.
@@ -59,6 +64,18 @@ Hors MVP :
 2. Ouvre une fiche personnage.
 3. Propose une correction ou un ajout.
 4. Suit l'etat de sa demande.
+
+Un moderateur ou administrateur qui modifie une fiche existante applique le
+changement directement. Cette action ne cree pas de demande en attente, mais
+elle doit produire le meme historique detaille qu'une demande acceptee.
+Dans l'interface, cette action doit etre presentee comme `Modifier`, tandis que
+les utilisateurs simples voient `Proposer`.
+
+Si la recherche ne trouve aucun resultat satisfaisant, l'utilisateur connecte
+peut proposer une nouvelle fiche depuis le panneau de recherche. L'interface
+doit d'abord afficher les resultats proches ou l'absence de resultat, puis
+presenter l'action de creation comme une demande moderee, pas comme une
+publication directe.
 
 ### Moderateur
 
@@ -153,8 +170,13 @@ stockees une seule fois.
 ### ChangeRequest
 
 - Utilisateur createur.
-- Personnage concerne.
+- Type de demande : modification d'une fiche existante ou creation d'une
+  nouvelle fiche.
+- Personnage concerne pour une modification ; nul tant que la creation d'une
+  nouvelle fiche n'est pas acceptee.
 - Snapshot complet de la fiche proposee.
+- Contexte de recherche ayant mene a une demande de creation, afin d'aider les
+  moderateurs a detecter les doublons.
 - Difference calculee champ par champ a l'acceptation.
 - Statut : en attente, acceptee, refusee.
 - Commentaire moderateur obligatoire en cas de refus.
@@ -188,8 +210,9 @@ Routes a prevoir :
 - `GET /api/graph`
 - `GET /api/tags`
 - `GET /api/history`
-- `POST /api/change-requests`
-- `GET /api/me/change-requests`
+- `POST /api/contributions/change-requests`
+- `POST /api/contributions/change-requests/character-creations`
+- `GET /api/contributions/change-requests`
 - `GET /api/moderation/change-requests`
 - `POST /api/moderation/change-requests/:id/approve`
 - `POST /api/moderation/change-requests/:id/reject`
@@ -553,6 +576,9 @@ Point de controle :
 Statut : en cours depuis le 2026-06-19.
 
 - Implementer les demandes de modification sur snapshot complet de fiche.
+- Implementer les demandes de creation de fiche depuis une recherche sans
+  resultat satisfaisant, avec stockage du contexte de recherche et passage par
+  la meme file de moderation.
 - Calculer le diff champ par champ a l'acceptation.
 - Creer l'historique detaille pour chaque demande acceptee.
 - Construire les pages pleines de moderation : liste, detail, comparaison,
@@ -574,12 +600,30 @@ Bilan intermediaire :
 - Frontend ajoute : page contribution depuis une fiche selectionnee, page pleine
   de moderation separee du panneau public, comparaison des champs modifies,
   acceptation, refus commente obligatoire et formulaire d'edition directe.
+- Les modifications de fiche existante faites par moderateur ou administrateur
+  depuis le formulaire de contribution sont appliquees directement avec
+  historique, sans passer par une demande en attente.
+- La fiche personnage affiche un bouton adapte au role : `Proposer` pour les
+  utilisateurs simples, `Modifier` pour moderateur ou administrateur.
+- L'historique de fiche est deplieable et affiche les champs modifies avec
+  libelles lisibles et anciennes/nouvelles valeurs.
+- La navigation des vues pleines a ete simplifiee : le retour au graphe passe
+  par la topbar globale, sans bouton `Retour au graphe` duplique dans le
+  contenu.
+- Creation de fiche ajoutee au flux de contribution : depuis une recherche sans
+  resultat, un utilisateur connecte peut proposer une fiche candidate, stockee
+  comme demande de creation et publiee uniquement apres validation moderateur.
+  Le backend bloque les doublons exacts nom/prenom et conserve le contexte de
+  recherche pour aider la moderation.
 
 Vigilances restantes :
 
 - Les tags, relations RP et streamers ne sont pas encore modifiables par ce
   flux ; ils devront etre ajoutes avec validations dediees pour eviter les
   relations incoherentes et les suppressions implicites.
+- Les doublons exacts nom/prenom sont bloques cote serveur pour les creations,
+  mais les doublons approximatifs restent a traiter par l'interface et par la
+  moderation jusqu'a l'ajout d'une recherche de similarite plus fine.
 - Verifier le workflow complet sur une base PostgreSQL de developpement apres
   lancement des tests hors sandbox lecture seule.
 - Ajouter des tests d'integration service contre base quand l'environnement de

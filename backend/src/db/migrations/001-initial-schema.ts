@@ -2,6 +2,7 @@ import type { Transaction } from "sequelize";
 import type { MigrationParams } from "umzug";
 import {
   changeRequestStatuses,
+  changeRequestTypes,
   dataSources,
   lifeStatuses,
   relationshipDirections,
@@ -406,16 +407,25 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           onUpdate: "CASCADE",
           onDelete: "RESTRICT"
         },
+        request_type: {
+          type: enumColumn(DataTypes),
+          allowNull: false,
+          defaultValue: "update"
+        },
         character_id: {
           type: DataTypes.UUID,
-          allowNull: false,
+          allowNull: true,
           references: { model: "characters", key: "id" },
           onUpdate: "CASCADE",
-          onDelete: "CASCADE"
+          onDelete: "SET NULL"
         },
         proposed_snapshot: {
           type: DataTypes.JSONB,
           allowNull: false
+        },
+        search_context: {
+          type: DataTypes.JSONB,
+          allowNull: true
         },
         status: {
           type: enumColumn(DataTypes),
@@ -529,6 +539,13 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       changeRequestStatuses,
       transaction
     );
+    await addEnumCheck(
+      queryInterface,
+      "change_requests",
+      "request_type",
+      changeRequestTypes,
+      transaction
+    );
 
     await queryInterface.addIndex("characters", ["first_name", "last_name"], {
       name: "characters_name_idx",
@@ -560,6 +577,10 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
     });
     await queryInterface.addIndex("change_requests", ["status"], {
       name: "change_requests_status_idx",
+      transaction
+    });
+    await queryInterface.addIndex("change_requests", ["request_type"], {
+      name: "change_requests_request_type_idx",
       transaction
     });
 

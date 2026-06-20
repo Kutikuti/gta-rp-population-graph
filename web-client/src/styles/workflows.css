@@ -1,8 +1,12 @@
 .topbar-actions {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: stretch;
+  gap: 8px;
   pointer-events: auto;
+}
+
+.topbar-actions > .ghost-button {
+  min-height: 34px;
 }
 
 .ghost-button.is-active,
@@ -170,6 +174,26 @@
   font-size: 0.74rem;
 }
 
+.request-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.request-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #3a9770;
+  color: #cfffe8;
+  background: rgba(14, 63, 48, 0.64);
+  padding: 2px 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .selectable-row:hover,
 .selectable-row.is-active {
   border-color: #65bfff;
@@ -197,6 +221,14 @@
   gap: 12px;
 }
 
+.request-kind-label {
+  display: block;
+  margin: 4px 0;
+  color: #7fd7ad;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .diff-panel,
 .direct-edit-panel {
   display: grid;
@@ -212,6 +244,10 @@
   padding: 9px;
   color: #dcefff;
   font-size: 0.78rem;
+}
+
+.diff-row.is-creation {
+  grid-template-columns: 150px minmax(0, 1fr);
 }
 
 .diff-row strong {

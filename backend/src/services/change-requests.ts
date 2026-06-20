@@ -1,7 +1,12 @@
-import type { Transaction } from "sequelize";
+import { Op, type Transaction } from "sequelize";
 import { z } from "zod";
 
-import { type DataSource, lifeStatuses, verificationStatuses } from "../db/enums.js";
+import {
+  type changeRequestTypes,
+  type DataSource,
+  lifeStatuses,
+  verificationStatuses
+} from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
 import type { ChangeRequest, Character, JsonObject, SocialLinks } from "../db/models/index.js";
 
@@ -95,6 +100,22 @@ export const changeRequestCreateSchema = z.object({
   proposedSnapshot: characterSnapshotSchema
 });
 
+export const characterCreationContextSchema = z
+  .object({
+    q: nullableText(200),
+    lifeStatus: nullableText(40),
+    tag: nullableText(120),
+    streamer: nullableText(160),
+    verificationStatus: nullableText(40),
+    matchTotal: z.number().int().min(0).max(100000).optional()
+  })
+  .strict();
+
+export const characterCreationRequestSchema = z.object({
+  proposedSnapshot: characterSnapshotSchema,
+  searchContext: characterCreationContextSchema
+});
+
 export const moderationListSchema = z.object({
   status: z.enum(["pending", "approved", "rejected"]).optional()
 });
@@ -108,6 +129,7 @@ export const directCharacterEditSchema = z.object({
 });
 
 export type CharacterSnapshot = z.infer<typeof characterSnapshotSchema>;
+export type CharacterCreationContext = z.infer<typeof characterCreationContextSchema>;
 
 type ChangeValue = string | boolean | JsonObject | SocialLinks | null;
 
@@ -120,12 +142,14 @@ export type ChangeDiff = Record<string, FieldChange>;
 
 export type ChangeRequestSummary = {
   id: string;
-  characterId: string;
+  requestType: (typeof changeRequestTypes)[number];
+  characterId: string | null;
   characterName: string | null;
   userId: string;
   userDisplayName: string | null;
   status: "pending" | "approved" | "rejected";
   proposedSnapshot: JsonObject;
+  searchContext: JsonObject | null;
   reviewerId: string | null;
   reviewerDisplayName: string | null;
   moderatorComment: string | null;
@@ -140,6 +164,11 @@ export interface ChangeRequestService {
     characterId: string;
     proposedSnapshot: CharacterSnapshot;
   }): Promise<ChangeRequestSummary | null>;
+  createCharacterCreationRequest(input: {
+    userId: string;
+    proposedSnapshot: CharacterSnapshot;
+    searchContext: CharacterCreationContext;
+  }): Promise<ChangeRequestSummary | "duplicate">;
   listUserChangeRequests(userId: string): Promise<ChangeRequestSummary[]>;
   listModerationChangeRequests(
     status?: ChangeRequestSummary["status"]
@@ -212,14 +241,18 @@ export const calculateCharacterDiff = (
 
 const serializeChangeRequest = (request: ChangeRequest): ChangeRequestSummary => ({
   id: request.id,
+  requestType: request.requestType,
   characterId: request.characterId,
   characterName: request.character
     ? `${request.character.firstName} ${request.character.lastName}`
+    : request.requestType === "create"
+      ? `${String(request.proposedSnapshot.firstName)} ${String(request.proposedSnapshot.lastName)}`
     : null,
   userId: request.userId,
   userDisplayName: request.user?.displayName ?? null,
   status: request.status,
   proposedSnapshot: request.proposedSnapshot,
+  searchContext: request.searchContext,
   reviewerId: request.reviewerId,
   reviewerDisplayName: request.reviewer?.displayName ?? null,
   moderatorComment: request.moderatorComment,
@@ -229,7 +262,7 @@ const serializeChangeRequest = (request: ChangeRequest): ChangeRequestSummary =>
 });
 
 const requestInclude = [
-  { association: "character", attributes: ["id", "firstName", "lastName"] },
+  { association: "character", attributes: ["id", "firstName", "lastName"], required: false },
   { association: "user", attributes: ["id", "displayName"] },
   { association: "reviewer", attributes: ["id", "displayName"], required: false }
 ];
@@ -258,6 +291,35 @@ const applySnapshot = async (
   );
 };
 
+const calculateCharacterCreationDiff = (snapshot: CharacterSnapshot): ChangeDiff =>
+  editableFields.reduce<ChangeDiff>((changes, field) => {
+    const newValue = snapshot[field] as ChangeValue;
+
+    if (stableJson(newValue) !== stableJson(null)) {
+      changes[field] = {
+        old: null,
+        new: newValue
+      };
+    }
+
+    return changes;
+  }, {});
+
+const hasExactNameDuplicate = async (snapshot: CharacterSnapshot) => {
+  const firstName = snapshot.firstName.trim();
+  const lastName = snapshot.lastName.trim();
+
+  const duplicate = await models.Character.findOne({
+    attributes: ["id"],
+    where: {
+      firstName: { [Op.iLike]: firstName },
+      lastName: { [Op.iLike]: lastName }
+    }
+  });
+
+  return Boolean(duplicate);
+};
+
 export class SequelizeChangeRequestService implements ChangeRequestService {
   async createChangeRequest(input: {
     userId: string;
@@ -272,8 +334,10 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
 
     const request = await models.ChangeRequest.create({
       userId: input.userId,
+      requestType: "update",
       characterId: input.characterId,
       proposedSnapshot: input.proposedSnapshot as unknown as JsonObject,
+      searchContext: null,
       status: "pending",
       reviewerId: null,
       moderatorComment: null,
@@ -281,6 +345,36 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
     });
 
     return reloadRequest(request.id);
+  }
+
+  async createCharacterCreationRequest(input: {
+    userId: string;
+    proposedSnapshot: CharacterSnapshot;
+    searchContext: CharacterCreationContext;
+  }): Promise<ChangeRequestSummary | "duplicate"> {
+    if (await hasExactNameDuplicate(input.proposedSnapshot)) {
+      return "duplicate";
+    }
+
+    const request = await models.ChangeRequest.create({
+      userId: input.userId,
+      requestType: "create",
+      characterId: null,
+      proposedSnapshot: input.proposedSnapshot as unknown as JsonObject,
+      searchContext: input.searchContext as unknown as JsonObject,
+      status: "pending",
+      reviewerId: null,
+      moderatorComment: null,
+      resolvedAt: null
+    });
+
+    const summary = await reloadRequest(request.id);
+
+    if (!summary) {
+      throw new Error(`Change request ${request.id} could not be reloaded after creation.`);
+    }
+
+    return summary;
   }
 
   async listUserChangeRequests(userId: string): Promise<ChangeRequestSummary[]> {
@@ -323,31 +417,56 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         return null;
       }
 
-      const character = await models.Character.findByPk(request.characterId, {
-        transaction,
-        lock: transaction.LOCK.UPDATE
-      });
+      const proposedSnapshot = characterSnapshotSchema.parse(request.proposedSnapshot);
+      const changes =
+        request.requestType === "create"
+          ? calculateCharacterCreationDiff(proposedSnapshot)
+          : null;
+
+      let character: Character | null = null;
+
+      if (request.requestType === "create") {
+        character = await models.Character.create(
+          {
+            ...proposedSnapshot,
+            dataSource: "contribution"
+          },
+          { transaction }
+        );
+      } else if (request.characterId) {
+        character = await models.Character.findByPk(request.characterId, {
+          transaction,
+          lock: transaction.LOCK.UPDATE
+        });
+
+        if (!character) {
+          return null;
+        }
+      }
 
       if (!character) {
         return null;
       }
 
-      const proposedSnapshot = characterSnapshotSchema.parse(request.proposedSnapshot);
-      const changes = calculateCharacterDiff(characterToSnapshot(character), proposedSnapshot);
+      const resolvedChanges =
+        changes ?? calculateCharacterDiff(characterToSnapshot(character), proposedSnapshot);
 
-      await applySnapshot(character, proposedSnapshot, "contribution", transaction);
+      if (request.requestType === "update") {
+        await applySnapshot(character, proposedSnapshot, "contribution", transaction);
+      }
       await models.ChangeHistory.create(
         {
           characterId: character.id,
           changeRequestId: request.id,
           moderatorId: input.moderatorId,
-          changes
+          changes: resolvedChanges
         },
         { transaction }
       );
       await request.update(
         {
           status: "approved",
+          characterId: character.id,
           reviewerId: input.moderatorId,
           resolvedAt: new Date()
         },
@@ -360,7 +479,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         throw new Error(`Change request ${request.id} could not be reloaded after approval.`);
       }
 
-      return { request: summary, changes };
+      return { request: summary, changes: resolvedChanges };
     });
   }
 

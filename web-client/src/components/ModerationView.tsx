@@ -6,19 +6,26 @@ import {
   type ChangeDiff,
   type ChangeRequestSummary,
   type CharacterSnapshot,
+  type LifeStatus,
+  type VerificationStatus,
   characterToSnapshot,
   editCharacterDirectly,
   getCharacter,
   listModerationChangeRequests,
   rejectChangeRequest
 } from "../api";
+import {
+  characterSnapshotFieldLabels,
+  lifeStatusLabels,
+  verificationLabels
+} from "../constants";
 import { formatDate } from "../utils/format";
 import { CharacterSnapshotForm } from "./CharacterSnapshotForm";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
 
 type ModerationViewProps = {
   session: AuthSession | null;
-  onBack: () => void;
+  onDataChanged: () => Promise<void>;
   onError: (message: string) => void;
 };
 
@@ -26,9 +33,21 @@ const canModerate = (session: AuthSession | null) =>
   session?.authenticated &&
   (session.user.role.name === "moderator" || session.user.role.name === "administrator");
 
-const displayValue = (value: unknown) => {
+const displayValue = (field: keyof CharacterSnapshot, value: unknown) => {
   if (value === null || value === undefined || value === "") {
     return "Non renseigné";
+  }
+
+  if (field === "lifeStatus") {
+    return lifeStatusLabels[value as LifeStatus] ?? String(value);
+  }
+
+  if (field === "verificationStatus") {
+    return verificationLabels[value as VerificationStatus] ?? String(value);
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Oui" : "Non";
   }
 
   if (typeof value === "object") {
@@ -40,7 +59,19 @@ const displayValue = (value: unknown) => {
 
 const diffSnapshots = (current: CharacterSnapshot | null, proposed: CharacterSnapshot) => {
   if (!current) {
-    return [];
+    return Object.keys(proposed)
+      .filter((key) => {
+        const typedKey = key as keyof CharacterSnapshot;
+        return JSON.stringify(proposed[typedKey] ?? null) !== JSON.stringify(null);
+      })
+      .map((key) => {
+        const typedKey = key as keyof CharacterSnapshot;
+        return {
+        field: typedKey,
+        oldValue: null,
+        newValue: proposed[typedKey]
+      };
+      });
   }
 
   return Object.keys(proposed)
@@ -53,14 +84,14 @@ const diffSnapshots = (current: CharacterSnapshot | null, proposed: CharacterSna
     .map((key) => {
       const typedKey = key as keyof CharacterSnapshot;
       return {
-        field: key,
+        field: typedKey,
         oldValue: current[typedKey],
         newValue: proposed[typedKey]
       };
     });
 };
 
-export function ModerationView({ session, onBack, onError }: ModerationViewProps) {
+export function ModerationView({ session, onDataChanged, onError }: ModerationViewProps) {
   const [requests, setRequests] = useState<ChangeRequestSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentSnapshot, setCurrentSnapshot] = useState<CharacterSnapshot | null>(null);
@@ -74,6 +105,7 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
 
   const selectedRequest =
     requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
+  const isCreationRequest = selectedRequest?.requestType === "create";
 
   useEffect(() => {
     if (!selectedId && requests[0]) {
@@ -113,6 +145,13 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
     if (!selectedRequest) {
       setCurrentSnapshot(null);
       setEditSnapshot(null);
+      return;
+    }
+
+    if (selectedRequest.requestType === "create" || !selectedRequest.characterId) {
+      setCurrentSnapshot(null);
+      setEditSnapshot(selectedRequest.proposedSnapshot);
+      setIsDetailLoading(false);
       return;
     }
 
@@ -160,6 +199,7 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
     setIsSubmitting(true);
     try {
       const result = await approveChangeRequest(selectedRequest.id);
+      await onDataChanged();
       refreshAfterResolution(result.request, result.changes);
     } catch {
       onError("Impossible d'accepter la demande.");
@@ -191,7 +231,12 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
 
     setIsSubmitting(true);
     try {
+      if (!selectedRequest.characterId) {
+        return;
+      }
+
       const result = await editCharacterDirectly(selectedRequest.characterId, editSnapshot);
+      await onDataChanged();
       setFeedback("Fiche modifiée directement.");
       setLastChanges(result.changes);
     } catch {
@@ -208,9 +253,6 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
           <p className="eyebrow">Modération</p>
           <h2 id="moderation-title">Demandes de modification</h2>
         </div>
-        <button type="button" className="ghost-button" onClick={onBack}>
-          Retour au graphe
-        </button>
       </div>
 
       {!canModerate(session) ? (
@@ -233,7 +275,15 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
                       setLastChanges(null);
                     }}
                   >
-                    <strong>{request.characterName ?? "Personnage supprimé"}</strong>
+                    <strong className="request-title">
+                      {request.requestType === "create" ? (
+                        <span className="request-type-badge" title="Demande de création">
+                          <span aria-hidden="true">+</span>
+                          Création
+                        </span>
+                      ) : null}
+                      <span>{request.characterName ?? "Personnage supprimé"}</span>
+                    </strong>
                     <span>{request.userDisplayName ?? "Utilisateur inconnu"}</span>
                     <small>{formatDate(request.createdAt)}</small>
                   </button>
@@ -257,7 +307,15 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
               <>
                 <div className="detail-heading">
                   <div>
-                    <h3>{selectedRequest.characterName ?? "Personnage supprimé"}</h3>
+                    <h3>
+                      {selectedRequest.characterName ??
+                        (isCreationRequest ? "Nouvelle fiche" : "Personnage supprimé")}
+                    </h3>
+                    <span className="request-kind-label">
+                      {isCreationRequest
+                        ? "Demande de création de fiche"
+                        : "Demande de modification de fiche"}
+                    </span>
                     <span className="muted-text">
                       Proposé par {selectedRequest.userDisplayName ?? "utilisateur inconnu"}
                     </span>
@@ -265,13 +323,18 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
                 </div>
 
                 <section className="diff-panel">
-                  <h3>Comparaison</h3>
+                  <h3>{isCreationRequest ? "Fiche candidate" : "Comparaison"}</h3>
                   {visibleDiff.length ? (
                     visibleDiff.map((change) => (
-                      <div key={change.field} className="diff-row">
-                        <strong>{change.field}</strong>
-                        <span>{displayValue(change.oldValue)}</span>
-                        <span>{displayValue(change.newValue)}</span>
+                      <div
+                        key={change.field}
+                        className={`diff-row ${isCreationRequest ? "is-creation" : ""}`}
+                      >
+                        <strong>{characterSnapshotFieldLabels[change.field]}</strong>
+                        {!isCreationRequest ? (
+                          <span>{displayValue(change.field, change.oldValue)}</span>
+                        ) : null}
+                        <span>{displayValue(change.field, change.newValue)}</span>
                       </div>
                     ))
                   ) : (
@@ -308,7 +371,7 @@ export function ModerationView({ session, onBack, onError }: ModerationViewProps
                   </button>
                 </div>
 
-                {editSnapshot ? (
+                {editSnapshot && selectedRequest.requestType === "update" ? (
                   <section className="direct-edit-panel">
                     <h3>Édition directe modérateur</h3>
                     <CharacterSnapshotForm

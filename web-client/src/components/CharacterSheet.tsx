@@ -1,14 +1,72 @@
-import type { PublicCharacterDetail, PublicHistoryEntry } from "../api";
-import { lifeStatusLabels, relationLabels, verificationLabels } from "../constants";
+import type {
+  CharacterSnapshot,
+  LifeStatus,
+  PublicCharacterDetail,
+  PublicHistoryEntry,
+  VerificationStatus
+} from "../api";
+import {
+  characterSnapshotFieldLabels,
+  lifeStatusLabels,
+  relationLabels,
+  verificationLabels
+} from "../constants";
 import { compactValue, formatDate, socialEntries } from "../utils/format";
 
 type CharacterSheetProps = {
+  canEditDirectly: boolean;
   character: PublicCharacterDetail;
   history: PublicHistoryEntry[];
   onContribute: () => void;
 };
 
-export function CharacterSheet({ character, history, onContribute }: CharacterSheetProps) {
+type HistoryChange = {
+  old: unknown;
+  new: unknown;
+};
+
+const isKnownSnapshotField = (field: string): field is keyof CharacterSnapshot =>
+  field in characterSnapshotFieldLabels;
+
+const isHistoryChange = (value: unknown): value is HistoryChange =>
+  Boolean(
+    value &&
+      typeof value === "object" &&
+      "old" in value &&
+      "new" in value &&
+      Object.keys(value).every((key) => key === "old" || key === "new")
+  );
+
+const displayHistoryValue = (field: string, value: unknown) => {
+  if (value === null || value === undefined || value === "") {
+    return "Non renseigné";
+  }
+
+  if (field === "lifeStatus") {
+    return lifeStatusLabels[value as LifeStatus] ?? String(value);
+  }
+
+  if (field === "verificationStatus") {
+    return verificationLabels[value as VerificationStatus] ?? String(value);
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Oui" : "Non";
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+};
+
+export function CharacterSheet({
+  canEditDirectly,
+  character,
+  history,
+  onContribute
+}: CharacterSheetProps) {
   const links = socialEntries(character.socialLinks ?? character.streamer?.socialLinks);
   const relationships = [...character.relationships.outgoing, ...character.relationships.incoming];
 
@@ -21,7 +79,7 @@ export function CharacterSheet({ character, history, onContribute }: CharacterSh
           <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}</p>
         </div>
         <button type="button" className="ghost-button" onClick={onContribute}>
-          Proposer
+          {canEditDirectly ? "Modifier" : "Proposer"}
         </button>
       </div>
 
@@ -118,12 +176,36 @@ export function CharacterSheet({ character, history, onContribute }: CharacterSh
       <section className="sheet-section">
         <h3>Historique</h3>
         {history.length ? (
-          history.map((entry) => (
-            <div key={entry.id} className="history-row">
-              <span>{formatDate(entry.createdAt)}</span>
-              <small>{Object.keys(entry.changes).length} champ modifié</small>
-            </div>
-          ))
+          history.map((entry) => {
+            const changes = Object.entries(entry.changes).filter((change): change is [
+              string,
+              HistoryChange
+            ] => isHistoryChange(change[1]));
+
+            return (
+              <details key={entry.id} className="history-row">
+                <summary>
+                  <span>{formatDate(entry.createdAt)}</span>
+                  <small>{Object.keys(entry.changes).length} champ modifié</small>
+                </summary>
+                {changes.length ? (
+                  <div className="history-change-list">
+                    {changes.map(([field, change]) => (
+                      <div key={field} className="history-change-row">
+                        <strong>
+                          {isKnownSnapshotField(field) ? characterSnapshotFieldLabels[field] : field}
+                        </strong>
+                        <span>{displayHistoryValue(field, change.old)}</span>
+                        <span>{displayHistoryValue(field, change.new)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="muted-text">Détail indisponible.</span>
+                )}
+              </details>
+            );
+          })
         ) : (
           <span className="muted-text">Aucun historique public.</span>
         )}

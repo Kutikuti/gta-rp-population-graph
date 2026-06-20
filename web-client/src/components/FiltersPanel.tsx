@@ -3,17 +3,21 @@ import { isActiveFilters, lifeStatusLabels, verificationLabels } from "../consta
 
 type FiltersPanelProps = {
   filters: CharacterFilters;
+  canSuggestCreation: boolean;
   tags: PublicTag[];
   resultSummary: string | null;
   onChange: (key: keyof CharacterFilters, value: string) => void;
+  onSuggestCreation: () => void;
   onReset: () => void;
 };
 
 export function FiltersPanel({
+  canSuggestCreation,
   filters,
   tags,
   resultSummary,
   onChange,
+  onSuggestCreation,
   onReset
 }: FiltersPanelProps) {
   return (
@@ -104,6 +108,11 @@ export function FiltersPanel({
       </label>
 
       {resultSummary ? <p className="search-result-summary">{resultSummary}</p> : null}
+      {canSuggestCreation ? (
+        <button type="button" className="ghost-button primary-action" onClick={onSuggestCreation}>
+          Proposer une nouvelle fiche
+        </button>
+      ) : null}
     </>
   );
 }

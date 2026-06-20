@@ -2,6 +2,7 @@ import type { CharacterFilters, PublicTag } from "../api";
 import { FiltersPanel } from "./FiltersPanel";
 
 type SearchSidebarProps = {
+  canSuggestCreation: boolean;
   filters: CharacterFilters;
   isOpen: boolean;
   resultSummary: string | null;
@@ -10,9 +11,11 @@ type SearchSidebarProps = {
   onClose: () => void;
   onOpen: () => void;
   onReset: () => void;
+  onSuggestCreation: () => void;
 };
 
 export function SearchSidebar({
+  canSuggestCreation,
   filters,
   isOpen,
   resultSummary,
@@ -20,7 +23,8 @@ export function SearchSidebar({
   onChange,
   onClose,
   onOpen,
-  onReset
+  onReset,
+  onSuggestCreation
 }: SearchSidebarProps) {
   return (
     <aside
@@ -38,11 +42,13 @@ export function SearchSidebar({
             ×
           </button>
           <FiltersPanel
+            canSuggestCreation={canSuggestCreation}
             filters={filters}
             tags={tags}
             resultSummary={resultSummary}
             onChange={onChange}
             onReset={onReset}
+            onSuggestCreation={onSuggestCreation}
           />
         </>
       ) : (

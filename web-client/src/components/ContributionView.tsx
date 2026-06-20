@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 
 import {
   type AuthSession,
+  type CharacterCreationContext,
   type ChangeRequestSummary,
   type CharacterSnapshot,
   characterToSnapshot,
+  createCharacterCreationRequest,
   createChangeRequest,
+  editCharacterDirectly,
   listMyChangeRequests,
   type PublicCharacterDetail
 } from "../api";
@@ -15,9 +18,11 @@ import { EmptyBlock, LoadingBlock } from "./StateBlock";
 
 type ContributionViewProps = {
   character: PublicCharacterDetail | null;
+  creationContext: CharacterCreationContext | null;
   session: AuthSession | null;
-  onBack: () => void;
+  onDataChanged: () => Promise<void>;
   onError: (message: string) => void;
+  onSubmitted: (message: string, closeContribution: boolean) => void;
 };
 
 const statusLabels: Record<ChangeRequestSummary["status"], string> = {
@@ -26,9 +31,65 @@ const statusLabels: Record<ChangeRequestSummary["status"], string> = {
   rejected: "Refusée"
 };
 
-export function ContributionView({ character, session, onBack, onError }: ContributionViewProps) {
+const canEditDirectly = (session: AuthSession | null) =>
+  session?.authenticated &&
+  (session.user.role.name === "moderator" || session.user.role.name === "administrator");
+
+const snapshotFromSearch = (context: CharacterCreationContext): CharacterSnapshot => {
+  const parts = context.q.trim().split(/\s+/).filter(Boolean);
+  const [firstName = "", ...lastNameParts] = parts;
+
+  return {
+    firstName,
+    lastName: lastNameParts.join(" "),
+    nickname: null,
+    birthDate: null,
+    lifeStatus: "unknown",
+    deathOrDepartureDate: null,
+    photoUrl: null,
+    businessName: null,
+    businessRank: null,
+    businessBadgeNumber: null,
+    phoneNumber: null,
+    streamerId: null,
+    socialLinks: null,
+    groupName: null,
+    groupRole: null,
+    district: null,
+    isRpDeath: false,
+    policeRank: null,
+    policeBadgeNumber: null,
+    previousCharacters: null,
+    verificationStatus: "to_check",
+    sourceNote: null
+  };
+};
+
+const snapshotFromProps = (
+  character: PublicCharacterDetail | null,
+  creationContext: CharacterCreationContext | null
+) => {
+  if (creationContext) {
+    return snapshotFromSearch(creationContext);
+  }
+
+  if (character) {
+    return characterToSnapshot(character);
+  }
+
+  return null;
+};
+
+export function ContributionView({
+  character,
+  creationContext,
+  session,
+  onDataChanged,
+  onError,
+  onSubmitted
+}: ContributionViewProps) {
   const [snapshot, setSnapshot] = useState<CharacterSnapshot | null>(
-    character ? characterToSnapshot(character) : null
+    snapshotFromProps(character, creationContext)
   );
   const [requests, setRequests] = useState<ChangeRequestSummary[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,8 +97,8 @@ export function ContributionView({ character, session, onBack, onError }: Contri
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
-    setSnapshot(character ? characterToSnapshot(character) : null);
-  }, [character]);
+    setSnapshot(snapshotFromProps(character, creationContext));
+  }, [character, creationContext]);
 
   useEffect(() => {
     if (!session?.authenticated) {
@@ -68,7 +129,7 @@ export function ContributionView({ character, session, onBack, onError }: Contri
   }, [onError, session]);
 
   const submit = async () => {
-    if (!character || !snapshot) {
+    if (!snapshot || (!character && !creationContext)) {
       return;
     }
 
@@ -76,9 +137,28 @@ export function ContributionView({ character, session, onBack, onError }: Contri
     setFeedback(null);
 
     try {
-      const created = await createChangeRequest(character.id, snapshot);
+      if (character && !creationContext && canEditDirectly(session)) {
+        await editCharacterDirectly(character.id, snapshot);
+        await onDataChanged();
+        onSubmitted("Fiche mise à jour.", true);
+        return;
+      }
+
+      const created = creationContext
+        ? await createCharacterCreationRequest(snapshot, creationContext)
+        : character
+          ? await createChangeRequest(character.id, snapshot)
+          : null;
+
+      if (!created) {
+        return;
+      }
       setRequests((current) => [created, ...current]);
-      setFeedback("Demande envoyée en modération.");
+      if (creationContext) {
+        onSubmitted("Demande envoyée en modération.", true);
+      } else {
+        setFeedback("Demande envoyée en modération.");
+      }
     } catch {
       onError("Impossible d'envoyer la demande.");
     } finally {
@@ -92,27 +172,32 @@ export function ContributionView({ character, session, onBack, onError }: Contri
         <div>
           <p className="eyebrow">Contribution</p>
           <h2 id="contribution-title">
-            {character ? `Proposer une correction pour ${character.fullName}` : "Contribution"}
+            {character && !creationContext
+              ? `Proposer une correction pour ${character.fullName}`
+              : "Proposer une nouvelle fiche"}
           </h2>
         </div>
-        <button type="button" className="ghost-button" onClick={onBack}>
-          Retour au graphe
-        </button>
       </div>
 
       {!session?.authenticated ? (
         <EmptyBlock label="Connexion Google requise pour proposer une modification." />
-      ) : !character || !snapshot ? (
-        <EmptyBlock label="Sélectionnez un personnage depuis le graphe avant de contribuer." />
+      ) : !snapshot || (!character && !creationContext) ? (
+        <EmptyBlock label="Sélectionnez un personnage ou relancez une recherche avant de contribuer." />
       ) : (
         <div className="full-page-grid">
           <div className="work-panel">
             {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
             <CharacterSnapshotForm
               snapshot={snapshot}
-              submitLabel="Envoyer la demande"
+              submitLabel={
+                character && !creationContext && canEditDirectly(session)
+                  ? "Appliquer la modification"
+                  : "Envoyer la demande"
+              }
               isSubmitting={isSubmitting}
-              onCancel={onBack}
+              onCancel={() => {
+                onSubmitted("", true);
+              }}
               onChange={setSnapshot}
               onSubmit={submit}
             />

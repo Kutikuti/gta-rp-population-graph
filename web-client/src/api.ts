@@ -2,6 +2,7 @@ export type LifeStatus = "alive" | "deceased" | "left" | "unknown";
 export type VerificationStatus = "verified" | "community" | "imported" | "to_check" | "disputed";
 export type RoleName = "user" | "moderator" | "administrator";
 export type ChangeRequestStatus = "pending" | "approved" | "rejected";
+export type ChangeRequestType = "update" | "create";
 
 export type SocialLinks = Partial<
   Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>
@@ -190,18 +191,24 @@ export type ChangeDiff = Record<string, FieldChange>;
 
 export type ChangeRequestSummary = {
   id: string;
-  characterId: string;
+  requestType: ChangeRequestType;
+  characterId: string | null;
   characterName: string | null;
   userId: string;
   userDisplayName: string | null;
   status: ChangeRequestStatus;
   proposedSnapshot: CharacterSnapshot;
+  searchContext: CharacterCreationContext | null;
   reviewerId: string | null;
   reviewerDisplayName: string | null;
   moderatorComment: string | null;
   resolvedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type CharacterCreationContext = CharacterFilters & {
+  matchTotal: number;
 };
 
 const env = import.meta.env as { readonly VITE_API_BASE_URL?: string };
@@ -329,6 +336,15 @@ export const createChangeRequest = (characterId: string, proposedSnapshot: Chara
   sendJson<ChangeRequestSummary>("/api/contributions/change-requests", "POST", {
     characterId,
     proposedSnapshot
+  });
+
+export const createCharacterCreationRequest = (
+  proposedSnapshot: CharacterSnapshot,
+  searchContext: CharacterCreationContext
+) =>
+  sendJson<ChangeRequestSummary>("/api/contributions/change-requests/character-creations", "POST", {
+    proposedSnapshot,
+    searchContext
   });
 
 export const listMyChangeRequests = () =>

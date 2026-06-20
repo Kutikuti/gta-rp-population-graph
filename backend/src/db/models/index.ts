@@ -11,7 +11,9 @@ import {
 
 import {
   type ChangeRequestStatus,
+  type ChangeRequestType,
   changeRequestStatuses,
+  changeRequestTypes,
   type DataSource,
   dataSources,
   type LifeStatus,
@@ -161,8 +163,10 @@ export class ChangeRequest extends Model<
 > {
   declare id: CreationOptional<string>;
   declare userId: ForeignKey<User["id"]>;
-  declare characterId: ForeignKey<Character["id"]>;
+  declare requestType: ChangeRequestType;
+  declare characterId: ForeignKey<Character["id"]> | null;
   declare proposedSnapshot: JsonObject;
+  declare searchContext: JsonObject | null;
   declare status: ChangeRequestStatus;
   declare reviewerId: ForeignKey<User["id"]> | null;
   declare moderatorComment: string | null;
@@ -440,13 +444,22 @@ export const initModels = (sequelize: Sequelize) => {
         type: DataTypes.UUID,
         allowNull: false
       },
+      requestType: {
+        type: DataTypes.ENUM(...changeRequestTypes),
+        allowNull: false,
+        defaultValue: "update"
+      },
       characterId: {
         type: DataTypes.UUID,
-        allowNull: false
+        allowNull: true
       },
       proposedSnapshot: {
         type: DataTypes.JSONB,
         allowNull: false
+      },
+      searchContext: {
+        type: DataTypes.JSONB,
+        allowNull: true
       },
       status: {
         type: DataTypes.ENUM(...changeRequestStatuses),
@@ -462,7 +475,12 @@ export const initModels = (sequelize: Sequelize) => {
     {
       sequelize,
       tableName: "change_requests",
-      indexes: [{ fields: ["status"] }, { fields: ["user_id"] }, { fields: ["character_id"] }]
+      indexes: [
+        { fields: ["status"] },
+        { fields: ["user_id"] },
+        { fields: ["character_id"] },
+        { fields: ["request_type"] }
+      ]
     }
   );
 

@@ -75,12 +75,14 @@ const snapshot: CharacterSnapshot = {
 
 const summary = (status: ChangeRequestSummary["status"]): ChangeRequestSummary => ({
   id: ids.request,
+  requestType: "update",
   characterId: ids.character,
   characterName: "Camille Morel",
   userId: ids.user,
   userDisplayName: "User Example",
   status,
   proposedSnapshot: snapshot,
+  searchContext: null,
   reviewerId: status === "pending" ? null : ids.moderator,
   reviewerDisplayName: status === "pending" ? null : "Moderator Example",
   moderatorComment: status === "rejected" ? "Source insuffisante." : null,
@@ -140,6 +142,29 @@ class FixtureChangeRequestService implements ChangeRequestService {
     }
 
     return null;
+  }
+
+  async createCharacterCreationRequest(input: {
+    userId: string;
+    proposedSnapshot: CharacterSnapshot;
+  }) {
+    this.lastCreatedBy = input.userId;
+
+    if (input.proposedSnapshot.firstName === "Camille") {
+      return "duplicate" as const;
+    }
+
+    return {
+      ...summary("pending"),
+      requestType: "create" as const,
+      characterId: null,
+      characterName: `${input.proposedSnapshot.firstName} ${input.proposedSnapshot.lastName}`,
+      proposedSnapshot: input.proposedSnapshot,
+      searchContext: {
+        q: `${input.proposedSnapshot.firstName} ${input.proposedSnapshot.lastName}`,
+        matchTotal: 0
+      }
+    };
   }
 
   async listUserChangeRequests() {
@@ -259,6 +284,55 @@ describe("change request routes", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("creates a moderated character creation request after an empty search", async () => {
+    const { app, service } = createFixtureApp();
+    const agent = request.agent(app);
+
+    await loginAs(agent, "user");
+
+    const response = await agent.post("/api/contributions/change-requests/character-creations").send({
+      proposedSnapshot: {
+        ...snapshot,
+        firstName: "Nadia",
+        lastName: "Soler"
+      },
+      searchContext: {
+        q: "Nadia Soler",
+        lifeStatus: "",
+        tag: "",
+        streamer: "",
+        verificationStatus: "",
+        matchTotal: 0
+      }
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      requestType: "create",
+      characterId: null,
+      characterName: "Nadia Soler"
+    });
+    expect(service.lastCreatedBy).toBe(ids.user);
+  });
+
+  it("rejects an obvious duplicate character creation request", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+
+    await loginAs(agent, "user");
+
+    const response = await agent.post("/api/contributions/change-requests/character-creations").send({
+      proposedSnapshot: snapshot,
+      searchContext: {
+        q: "Camille Morel",
+        matchTotal: 0
+      }
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("POSSIBLE_DUPLICATE_CHARACTER");
   });
 
   it("keeps moderation routes restricted to moderators", async () => {

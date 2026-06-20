@@ -3,6 +3,7 @@ import { CharacterSheet } from "./CharacterSheet";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
 
 type DetailsSidebarProps = {
+  canEditDirectly: boolean;
   character: PublicCharacterDetail | null;
   history: PublicHistoryEntry[];
   isLoading: boolean;
@@ -11,6 +12,7 @@ type DetailsSidebarProps = {
 };
 
 export function DetailsSidebar({
+  canEditDirectly,
   character,
   history,
   isLoading,
@@ -26,7 +28,12 @@ export function DetailsSidebar({
       {!isLoading && !character ? (
         <EmptyBlock label="Fiche indisponible." />
       ) : character ? (
-        <CharacterSheet character={character} history={history} onContribute={onContribute} />
+        <CharacterSheet
+          canEditDirectly={canEditDirectly}
+          character={character}
+          history={history}
+          onContribute={onContribute}
+        />
       ) : null}
     </aside>
   );

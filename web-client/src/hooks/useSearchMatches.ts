@@ -58,6 +58,7 @@ export function useSearchMatches(filters: CharacterFilters, onError: (message: s
   return {
     isSearchActive,
     matchingIds,
-    searchResultSummary
+    searchResultSummary,
+    searchTotal
   };
 }

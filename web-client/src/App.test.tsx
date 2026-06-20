@@ -130,6 +130,8 @@ const errorResponse = (status = 500) =>
 describe("App", () => {
   beforeEach(() => {
     window.history.replaceState({}, "", "/");
+    window.localStorage.clear();
+    window.sessionStorage.clear();
 
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = input instanceof Request ? input.url : input.toString();
@@ -363,5 +365,89 @@ describe("App", () => {
     expect(
       await screen.findByText("Ce compte n'est pas autorisé à contribuer.")
     ).toBeInTheDocument();
+  });
+
+  it("lets a connected user propose a new character after an empty search", async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000901",
+            email: "viewer@example.test",
+            displayName: "Viewer Example",
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000001",
+              name: "user"
+            },
+            isBanned: false
+          }
+        });
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      if (url.includes("/api/contributions/change-requests/character-creations")) {
+        return jsonResponse({
+          id: "00000000-0000-4000-8000-000000000801",
+          requestType: "create",
+          characterId: null,
+          characterName: "Nadia Soler",
+          userId: "00000000-0000-4000-8000-000000000901",
+          userDisplayName: "Viewer Example",
+          status: "pending",
+          proposedSnapshot: JSON.parse(String(init?.body)).proposedSnapshot,
+          searchContext: JSON.parse(String(init?.body)).searchContext,
+          reviewerId: null,
+          reviewerDisplayName: null,
+          moderatorComment: null,
+          resolvedAt: null,
+          createdAt: now,
+          updatedAt: now
+        });
+      }
+
+      if (url.includes("/api/contributions/change-requests")) {
+        return jsonResponse([]);
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Ouvrir la recherche" }));
+    await user.type(screen.getByPlaceholderText("Nom, téléphone, matricule..."), "Nadia Soler");
+
+    expect(await screen.findByText("Aucun personnage trouvé.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Proposer une nouvelle fiche" }));
+
+    expect(await screen.findByRole("heading", { name: "Proposer une nouvelle fiche" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Nadia")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Soler")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Envoyer la demande" }));
+
+    expect(await screen.findByText("Demande envoyée en modération.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("heading", { name: "Proposer une nouvelle fiche" })
+      ).not.toBeInTheDocument();
+    });
   });
 });

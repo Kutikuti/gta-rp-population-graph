@@ -69,7 +69,7 @@ Principes :
   importee ou communautaire.
 - Garder un historique des modifications validees.
 - Privilegier un flux de contribution modere plutot que l'ecriture directe par
-  les utilisateurs.
+  les utilisateurs simples.
 - Les futures pistes Discord, Twitch et extraction admin ne doivent pas bloquer
   le MVP.
 - Les relations documentees concernent uniquement les personnages et le RP, pas
@@ -86,7 +86,12 @@ Principes :
 - Les appartenances metier, police, quartier ou groupe restent des champs de
   fiche ou des tags, pas des relations du graphe public.
 - Tags administrables.
-- Demandes de modification par utilisateur connecte.
+- Demandes de modification par utilisateur connecte simple.
+- Demandes de creation de fiche par utilisateur connecte, proposees depuis la
+  recherche quand aucun resultat satisfaisant n'est trouve, et validees par
+  moderation avant publication afin de limiter les doublons.
+- Les modifications effectuees par un moderateur ou un administrateur sont
+  appliquees directement cote serveur et doivent toujours creer un historique.
 - Validation ou refus par moderateur.
 - Roles utilisateur, moderateur, administrateur et utilisateur banni.
 - Page globale d'historique.
@@ -147,6 +152,14 @@ Le deploiement n'est pas encore implemente. Le plan cible :
   etre refermee pour redonner l'espace au graphe. La selection doit etre
   evidente directement dans le graphe et dans la fiche, sans barre de statut
   textuelle redondante.
+- Le bouton d'action d'une fiche personnage doit indiquer le comportement reel :
+  `Proposer` pour un utilisateur simple, `Modifier` pour un moderateur ou un
+  administrateur dont la modification est appliquee directement.
+- Les vues pleines contribution, moderation et administration utilisent la
+  navigation globale en haut a droite pour revenir au graphe. Ne pas ajouter de
+  bouton `Retour au graphe` redondant dans leur contenu.
+- L'historique affiche dans une fiche personnage doit pouvoir etre deplie pour
+  consulter le detail des champs modifies.
 - Ne pas afficher de statistiques publiques de type nombre de personnages,
   tags ou liens dans l'exploration publique. Ces informations sont reservees
   aux espaces moderation ou administration.

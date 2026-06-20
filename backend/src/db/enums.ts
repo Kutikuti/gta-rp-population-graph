@@ -27,3 +27,6 @@ export type RelationshipDirection = (typeof relationshipDirections)[number];
 
 export const changeRequestStatuses = ["pending", "approved", "rejected"] as const;
 export type ChangeRequestStatus = (typeof changeRequestStatuses)[number];
+
+export const changeRequestTypes = ["update", "create"] as const;
+export type ChangeRequestType = (typeof changeRequestTypes)[number];

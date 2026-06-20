@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   getCharacter,
@@ -11,6 +11,19 @@ export function useCharacterDetails(selectedId: string | null, onError: (message
   const [selectedCharacter, setSelectedCharacter] = useState<PublicCharacterDetail | null>(null);
   const [history, setHistory] = useState<PublicHistoryEntry[]>([]);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  const refreshCharacterDetails = useCallback(async () => {
+    if (!selectedId) {
+      return;
+    }
+
+    const [detailResult, historyResult] = await Promise.all([
+      getCharacter(selectedId),
+      listHistory(selectedId)
+    ]);
+    setSelectedCharacter(detailResult);
+    setHistory(historyResult);
+  }, [selectedId]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -57,6 +70,7 @@ export function useCharacterDetails(selectedId: string | null, onError: (message
   return {
     history,
     isDetailLoading,
+    refreshCharacterDetails,
     selectedCharacter
   };
 }

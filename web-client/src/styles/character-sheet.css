@@ -94,6 +94,36 @@
   gap: 3px;
 }
 
+.history-row summary {
+  display: grid;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.history-change-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.history-change-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  border: 1px solid #143d60;
+  background: #061522;
+  padding: 7px;
+}
+
+.history-change-row strong {
+  color: #8fcfff;
+}
+
+.history-change-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .tag-list,
 .link-list {
   display: flex;

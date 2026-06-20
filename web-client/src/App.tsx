@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import type { CharacterFilters } from "./api";
+import type { CharacterCreationContext, CharacterFilters } from "./api";
 import "./App.css";
 import { AppHeader } from "./components/AppHeader";
 import { ContributionView } from "./components/ContributionView";
@@ -20,6 +20,8 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [creationContext, setCreationContext] = useState<CharacterCreationContext | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<"explore" | "contribution" | "moderation">(
     "explore"
   );
@@ -28,16 +30,31 @@ function App() {
     setError(message);
   }, []);
 
-  const { graph, isBootLoading, tags } = usePublicGraphData(handleError);
+  const { graph, isBootLoading, refreshPublicGraphData, tags } = usePublicGraphData(handleError);
   const { authFeedback, authSession, handleLogout, isAuthLoading } = useAuthSession(handleError);
-  const { isSearchActive, matchingIds, searchResultSummary } = useSearchMatches(
+  const { isSearchActive, matchingIds, searchResultSummary, searchTotal } = useSearchMatches(
     filters,
     handleError
   );
-  const { history, isDetailLoading, selectedCharacter } = useCharacterDetails(
-    selectedId,
-    handleError
-  );
+  const { history, isDetailLoading, refreshCharacterDetails, selectedCharacter } =
+    useCharacterDetails(selectedId, handleError);
+  const canEditDirectly =
+    authSession?.authenticated &&
+    (authSession.user.role.name === "moderator" || authSession.user.role.name === "administrator");
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [toastMessage]);
 
   const closeDetails = useCallback(() => {
     setSelectedId(null);
@@ -56,6 +73,34 @@ function App() {
     setFilters(initialFilters);
   };
 
+  const openCharacterCreation = () => {
+    setSelectedId(null);
+    setCreationContext({
+      ...filters,
+      matchTotal: searchTotal
+    });
+    setActiveView("contribution");
+  };
+
+  const handleContributionSubmitted = (message: string, closeContribution: boolean) => {
+    if (message) {
+      setToastMessage(message);
+    }
+
+    if (closeContribution) {
+      setCreationContext(null);
+      setActiveView("explore");
+    }
+  };
+
+  const refreshAfterModerationChange = useCallback(async () => {
+    try {
+      await Promise.all([refreshPublicGraphData(), refreshCharacterDetails()]);
+    } catch {
+      handleError("Les données publiques n'ont pas pu être rafraîchies.");
+    }
+  }, [handleError, refreshCharacterDetails, refreshPublicGraphData]);
+
   return (
     <main className="app-shell">
       <section className="workspace" aria-labelledby="workspace-title">
@@ -65,6 +110,7 @@ function App() {
           authSession={authSession}
           isAuthLoading={isAuthLoading}
           onExplore={() => {
+            setCreationContext(null);
             setActiveView("explore");
           }}
           onLogout={handleLogout}
@@ -78,6 +124,9 @@ function App() {
             className={`app-grid ${isSearchOpen ? "has-search" : ""} ${selectedId ? "has-details" : ""}`}
           >
             <SearchSidebar
+              canSuggestCreation={
+                Boolean(authSession?.authenticated) && isSearchActive && searchTotal === 0
+              }
               filters={filters}
               isOpen={isSearchOpen}
               resultSummary={searchResultSummary}
@@ -90,6 +139,7 @@ function App() {
                 setIsSearchOpen(true);
               }}
               onReset={resetFilters}
+              onSuggestCreation={openCharacterCreation}
             />
 
             <GraphPanel
@@ -104,11 +154,13 @@ function App() {
 
             {selectedId ? (
               <DetailsSidebar
+                canEditDirectly={Boolean(canEditDirectly)}
                 character={selectedCharacter}
                 history={history}
                 isLoading={isDetailLoading}
                 onClose={closeDetails}
                 onContribute={() => {
+                  setCreationContext(null);
                   setActiveView("contribution");
                 }}
               />
@@ -119,22 +171,25 @@ function App() {
         {activeView === "contribution" ? (
           <ContributionView
             character={selectedCharacter}
+            creationContext={creationContext}
             session={authSession}
-            onBack={() => {
-              setActiveView("explore");
-            }}
+            onDataChanged={refreshAfterModerationChange}
             onError={handleError}
+            onSubmitted={handleContributionSubmitted}
           />
         ) : null}
 
         {activeView === "moderation" ? (
           <ModerationView
             session={authSession}
-            onBack={() => {
-              setActiveView("explore");
-            }}
+            onDataChanged={refreshAfterModerationChange}
             onError={handleError}
           />
+        ) : null}
+        {toastMessage ? (
+          <div className="app-toast" role="status" aria-live="polite">
+            {toastMessage}
+          </div>
         ) : null}
       </section>
     </main>

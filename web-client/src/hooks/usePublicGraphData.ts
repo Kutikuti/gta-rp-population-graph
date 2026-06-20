@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getGraph, listTags, type PublicGraph, type PublicTag } from "../api";
 
@@ -6,6 +6,12 @@ export function usePublicGraphData(onError: (message: string) => void) {
   const [tags, setTags] = useState<PublicTag[]>([]);
   const [graph, setGraph] = useState<PublicGraph | null>(null);
   const [isBootLoading, setIsBootLoading] = useState(true);
+
+  const refreshPublicGraphData = useCallback(async () => {
+    const [tagsResult, graphResult] = await Promise.all([listTags(), getGraph()]);
+    setTags(tagsResult);
+    setGraph(graphResult);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -39,6 +45,7 @@ export function usePublicGraphData(onError: (message: string) => void) {
   return {
     graph,
     isBootLoading,
+    refreshPublicGraphData,
     tags
   };
 }

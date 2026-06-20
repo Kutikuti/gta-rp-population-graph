@@ -3,7 +3,8 @@ import { Router } from "express";
 import { requireAuthenticatedUser } from "../middleware/auth.js";
 import {
   type ChangeRequestService,
-  changeRequestCreateSchema
+  changeRequestCreateSchema,
+  characterCreationRequestSchema
 } from "../services/change-requests.js";
 
 export const createContributionsRouter = (changeRequestService: ChangeRequestService) => {
@@ -57,6 +58,39 @@ export const createContributionsRouter = (changeRequestService: ChangeRequestSer
       next(error);
     }
   });
+
+  router.post(
+    "/change-requests/character-creations",
+    requireAuthenticatedUser,
+    async (request, response, next) => {
+      try {
+        if (!request.currentUser) {
+          throw new Error("Authenticated route reached without current user.");
+        }
+
+        const payload = characterCreationRequestSchema.parse(request.body);
+        const changeRequest = await changeRequestService.createCharacterCreationRequest({
+          userId: request.currentUser.id,
+          proposedSnapshot: payload.proposedSnapshot,
+          searchContext: payload.searchContext
+        });
+
+        if (changeRequest === "duplicate") {
+          response.status(409).json({
+            error: {
+              code: "POSSIBLE_DUPLICATE_CHARACTER",
+              message: "Un personnage porte deja ce nom et ce prenom."
+            }
+          });
+          return;
+        }
+
+        response.status(201).json(changeRequest);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
   return router;
 };

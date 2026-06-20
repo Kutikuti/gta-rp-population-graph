@@ -1,4 +1,4 @@
-import type { CharacterFilters, LifeStatus, VerificationStatus } from "./api";
+import type { CharacterFilters, CharacterSnapshot, LifeStatus, VerificationStatus } from "./api";
 
 export const initialFilters: CharacterFilters = {
   q: "",
@@ -28,6 +28,31 @@ export const relationLabels: Record<string, string> = {
   child: "Enfant",
   sibling: "Fratrie",
   couple: "Couple"
+};
+
+export const characterSnapshotFieldLabels: Record<keyof CharacterSnapshot, string> = {
+  firstName: "Prénom",
+  lastName: "Nom",
+  nickname: "Surnom",
+  birthDate: "Date de naissance",
+  lifeStatus: "Statut vital",
+  deathOrDepartureDate: "Date de décès ou départ",
+  photoUrl: "Photo",
+  businessName: "Entreprise",
+  businessRank: "Échelon entreprise",
+  businessBadgeNumber: "Matricule entreprise",
+  phoneNumber: "Téléphone",
+  streamerId: "Streamer",
+  socialLinks: "Réseaux sociaux",
+  groupName: "Groupe",
+  groupRole: "Rôle groupe",
+  district: "Quartier",
+  isRpDeath: "Mort RP",
+  policeRank: "Grade police",
+  policeBadgeNumber: "Matricule police",
+  previousCharacters: "Anciens personnages",
+  verificationStatus: "Vérification",
+  sourceNote: "Note de source"
 };
 
 export const isActiveFilters = (filters: CharacterFilters) =>

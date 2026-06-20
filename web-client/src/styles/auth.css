@@ -1,7 +1,7 @@
 .auth-controls {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: stretch;
+  gap: 8px;
   pointer-events: auto;
 }
 
@@ -29,11 +29,11 @@
 .auth-user-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 36px;
+  gap: 8px;
+  height: 34px;
   border: 1px solid #123452;
   background: rgba(6, 16, 26, 0.92);
-  padding: 6px 10px;
+  padding: 5px 8px;
 }
 
 .auth-status {
@@ -48,22 +48,28 @@
 
 .auth-user-copy {
   display: grid;
-  gap: 2px;
+  align-content: center;
+  gap: 1px;
+  min-width: 0;
 }
 
 .auth-user-copy strong {
   color: #eef7ff;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .auth-user-copy small {
   color: #8fb2cf;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .auth-avatar {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   object-fit: cover;
 }
@@ -82,7 +88,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 34px;
   pointer-events: auto;
   white-space: nowrap;
 }
