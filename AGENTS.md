@@ -34,6 +34,8 @@ Modeles metier attendus :
 - `User`
 - `Role`
 - `Ban`
+- `UserIdentity` ou equivalent futur pour lier plusieurs fournisseurs SSO a un
+  meme compte utilisateur.
 
 ## Frontend
 
@@ -70,6 +72,9 @@ Principes :
 - Garder un historique des modifications validees.
 - Privilegier un flux de contribution modere plutot que l'ecriture directe par
   les utilisateurs simples.
+- Ne pas exposer publiquement les noms et prenoms fournis par les fournisseurs
+  OAuth. Les utilisateurs doivent pouvoir choisir un nom d'affichage public
+  distinct de leur identite SSO.
 - Les futures pistes Discord, Twitch et extraction admin ne doivent pas bloquer
   le MVP.
 - Les relations documentees concernent uniquement les personnages et le RP, pas
@@ -90,8 +95,13 @@ Principes :
 - Demandes de creation de fiche par utilisateur connecte, proposees depuis la
   recherche quand aucun resultat satisfaisant n'est trouve, et validees par
   moderation avant publication afin de limiter les doublons.
+- Photo optionnelle de personnage, proposee uniquement dans une modification de
+  fiche existante. La creation de fiche ne doit pas permettre l'upload de photo
+  afin de limiter le spam et le stockage inutile.
 - Les modifications effectuees par un moderateur ou un administrateur sont
   appliquees directement cote serveur et doivent toujours creer un historique.
+- Page profil utilisateur permettant de modifier son nom d'affichage public,
+  consulter ses contributions et preparer le rattachement futur d'autres SSO.
 - Validation ou refus par moderateur.
 - Roles utilisateur, moderateur, administrateur et utilisateur banni.
 - Page globale d'historique.
@@ -155,6 +165,10 @@ Le deploiement n'est pas encore implemente. Le plan cible :
 - Le bouton d'action d'une fiche personnage doit indiquer le comportement reel :
   `Proposer` pour un utilisateur simple, `Modifier` pour un moderateur ou un
   administrateur dont la modification est appliquee directement.
+- La photo d'un personnage est affichee dans un masque rond, notamment dans les
+  noeuds du graphe. L'interface d'upload doit permettre de recadrer une image
+  carree ou quasi-carree en deplacant/zoomant l'image sous un masque rond avant
+  envoi ou validation.
 - Les vues pleines contribution, moderation et administration utilisent la
   navigation globale en haut a droite pour revenir au graphe. Ne pas ajouter de
   bouton `Retour au graphe` redondant dans leur contenu.
@@ -183,6 +197,15 @@ Le deploiement n'est pas encore implemente. Le plan cible :
   injection SQL, XSS, CSRF si applicable, abus de rate limit et fuite de secrets.
 - Ne jamais faire confiance aux donnees envoyees par le frontend, meme pour les
   utilisateurs moderateurs ou administrateurs.
+- Les uploads de photos sont une surface d'attaque majeure. Toute image doit
+  etre limitee en taille, validee cote serveur par type MIME et signature de
+  fichier, decodee avec une librairie maintenue, reencodee dans un format
+  controle, depouillee de ses metadonnees, stockee avec un nom genere et jamais
+  servie depuis un chemin fourni par l'utilisateur. Refuser les SVG, fichiers
+  polyglottes, archives et contenus executables.
+- Les photos proposees par des utilisateurs simples restent non publiques tant
+  qu'une moderation ne les a pas validees. Les moderateurs et administrateurs
+  peuvent appliquer une photo directement, avec historique.
 - Toute route qui modifie des donnees doit verifier explicitement
   l'authentification, le role, le bannissement eventuel et la validite de la
   charge utile.

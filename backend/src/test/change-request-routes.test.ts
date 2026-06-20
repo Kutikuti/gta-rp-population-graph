@@ -292,21 +292,23 @@ describe("change request routes", () => {
 
     await loginAs(agent, "user");
 
-    const response = await agent.post("/api/contributions/change-requests/character-creations").send({
-      proposedSnapshot: {
-        ...snapshot,
-        firstName: "Nadia",
-        lastName: "Soler"
-      },
-      searchContext: {
-        q: "Nadia Soler",
-        lifeStatus: "",
-        tag: "",
-        streamer: "",
-        verificationStatus: "",
-        matchTotal: 0
-      }
-    });
+    const response = await agent
+      .post("/api/contributions/change-requests/character-creations")
+      .send({
+        proposedSnapshot: {
+          ...snapshot,
+          firstName: "Nadia",
+          lastName: "Soler"
+        },
+        searchContext: {
+          q: "Nadia Soler",
+          lifeStatus: "",
+          tag: "",
+          streamer: "",
+          verificationStatus: "",
+          matchTotal: 0
+        }
+      });
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({
@@ -323,13 +325,15 @@ describe("change request routes", () => {
 
     await loginAs(agent, "user");
 
-    const response = await agent.post("/api/contributions/change-requests/character-creations").send({
-      proposedSnapshot: snapshot,
-      searchContext: {
-        q: "Camille Morel",
-        matchTotal: 0
-      }
-    });
+    const response = await agent
+      .post("/api/contributions/change-requests/character-creations")
+      .send({
+        proposedSnapshot: snapshot,
+        searchContext: {
+          q: "Camille Morel",
+          matchTotal: 0
+        }
+      });
 
     expect(response.status).toBe(409);
     expect(response.body.error.code).toBe("POSSIBLE_DUPLICATE_CHARACTER");

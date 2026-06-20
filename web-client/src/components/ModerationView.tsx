@@ -6,19 +6,15 @@ import {
   type ChangeDiff,
   type ChangeRequestSummary,
   type CharacterSnapshot,
-  type LifeStatus,
-  type VerificationStatus,
   characterToSnapshot,
   editCharacterDirectly,
   getCharacter,
+  type LifeStatus,
   listModerationChangeRequests,
-  rejectChangeRequest
+  rejectChangeRequest,
+  type VerificationStatus
 } from "../api";
-import {
-  characterSnapshotFieldLabels,
-  lifeStatusLabels,
-  verificationLabels
-} from "../constants";
+import { characterSnapshotFieldLabels, lifeStatusLabels, verificationLabels } from "../constants";
 import { formatDate } from "../utils/format";
 import { CharacterSnapshotForm } from "./CharacterSnapshotForm";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
@@ -67,10 +63,10 @@ const diffSnapshots = (current: CharacterSnapshot | null, proposed: CharacterSna
       .map((key) => {
         const typedKey = key as keyof CharacterSnapshot;
         return {
-        field: typedKey,
-        oldValue: null,
-        newValue: proposed[typedKey]
-      };
+          field: typedKey,
+          oldValue: null,
+          newValue: proposed[typedKey]
+        };
       });
   }
 

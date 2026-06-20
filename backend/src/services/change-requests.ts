@@ -247,7 +247,7 @@ const serializeChangeRequest = (request: ChangeRequest): ChangeRequestSummary =>
     ? `${request.character.firstName} ${request.character.lastName}`
     : request.requestType === "create"
       ? `${String(request.proposedSnapshot.firstName)} ${String(request.proposedSnapshot.lastName)}`
-    : null,
+      : null,
   userId: request.userId,
   userDisplayName: request.user?.displayName ?? null,
   status: request.status,
@@ -419,9 +419,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
 
       const proposedSnapshot = characterSnapshotSchema.parse(request.proposedSnapshot);
       const changes =
-        request.requestType === "create"
-          ? calculateCharacterCreationDiff(proposedSnapshot)
-          : null;
+        request.requestType === "create" ? calculateCharacterCreationDiff(proposedSnapshot) : null;
 
       let character: Character | null = null;
 

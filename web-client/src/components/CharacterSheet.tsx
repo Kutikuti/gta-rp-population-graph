@@ -177,10 +177,9 @@ export function CharacterSheet({
         <h3>Historique</h3>
         {history.length ? (
           history.map((entry) => {
-            const changes = Object.entries(entry.changes).filter((change): change is [
-              string,
-              HistoryChange
-            ] => isHistoryChange(change[1]));
+            const changes = Object.entries(entry.changes).filter(
+              (change): change is [string, HistoryChange] => isHistoryChange(change[1])
+            );
 
             return (
               <details key={entry.id} className="history-row">
@@ -193,7 +192,9 @@ export function CharacterSheet({
                     {changes.map(([field, change]) => (
                       <div key={field} className="history-change-row">
                         <strong>
-                          {isKnownSnapshotField(field) ? characterSnapshotFieldLabels[field] : field}
+                          {isKnownSnapshotField(field)
+                            ? characterSnapshotFieldLabels[field]
+                            : field}
                         </strong>
                         <span>{displayHistoryValue(field, change.old)}</span>
                         <span>{displayHistoryValue(field, change.new)}</span>

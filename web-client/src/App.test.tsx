@@ -437,7 +437,9 @@ describe("App", () => {
     expect(await screen.findByText("Aucun personnage trouvé.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Proposer une nouvelle fiche" }));
 
-    expect(await screen.findByRole("heading", { name: "Proposer une nouvelle fiche" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Proposer une nouvelle fiche" })
+    ).toBeInTheDocument();
     expect(screen.getByDisplayValue("Nadia")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Soler")).toBeInTheDocument();
 

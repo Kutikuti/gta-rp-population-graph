@@ -28,9 +28,13 @@ Inclus :
 - Recherche et filtres persistants.
 - Fiche personnage.
 - Historique de fiche deplieable avec detail des champs modifies.
+- Photo optionnelle de personnage, ajoutee uniquement via modification de fiche
+  existante, avec upload securise et recadrage rond pour le graphe.
 - Tags et relations typees.
 - Import initial depuis Notion communautaire.
 - Connexion Google OAuth.
+- Page profil utilisateur avec nom d'affichage public modifiable, historique de
+  contributions et emplacement prevu pour les futurs rattachements SSO.
 - Demandes de modification moderees pour les utilisateurs simples.
 - Demandes de creation de fiche moderees, declenchees depuis une recherche sans
   resultat satisfaisant pour reduire le risque de doublon.
@@ -47,6 +51,11 @@ Hors MVP :
 - Extraction officielle admin comme dependance obligatoire.
 - Interface immersive ou direction visuelle fortement inspiree GTA.
 - Application mobile native.
+- Upload de photo lors de la creation initiale d'une fiche par utilisateur
+  simple. La photo doit etre proposee apres existence de la fiche, via
+  modification moderee, afin de limiter le spam.
+- Connexion Discord et Twitch. Ces SSO sont prevus plus tard comme fournisseurs
+  supplementaires rattachables depuis la page profil.
 
 ## Parcours utilisateur
 
@@ -61,9 +70,14 @@ Hors MVP :
 ### Utilisateur connecte
 
 1. Se connecte avec Google.
-2. Ouvre une fiche personnage.
-3. Propose une correction ou un ajout.
-4. Suit l'etat de sa demande.
+2. Choisit ou confirme un nom d'affichage public si necessaire.
+3. Ouvre une fiche personnage.
+4. Propose une correction ou un ajout.
+5. Suit l'etat de sa demande depuis son profil.
+
+Le nom d'affichage public est distinct du nom renvoye par Google ou par un
+autre fournisseur SSO. L'objectif est de ne pas diffuser publiquement les noms
+et prenoms personnels des utilisateurs.
 
 Un moderateur ou administrateur qui modifie une fiche existante applique le
 changement directement. Cette action ne cree pas de demande en attente, mais
@@ -76,6 +90,12 @@ peut proposer une nouvelle fiche depuis le panneau de recherche. L'interface
 doit d'abord afficher les resultats proches ou l'absence de resultat, puis
 presenter l'action de creation comme une demande moderee, pas comme une
 publication directe.
+
+L'ajout ou le remplacement d'une photo de personnage est reserve a la
+modification d'une fiche existante. L'utilisateur uploade une image, la recadre
+dans un masque rond et soumet la photo avec la modification. La photo ne devient
+publique qu'apres validation moderateur, sauf modification directe par un
+moderateur ou administrateur.
 
 ### Moderateur
 
@@ -102,7 +122,8 @@ Informations attendues :
 - Date de naissance.
 - Statut vital : vivant, decede, parti, inconnu.
 - Date de deces ou de depart si applicable.
-- Photo.
+- Photo optionnelle, stockee comme fichier controle par le serveur, avec
+  metadonnees de cadrage ou rendu final adapte au masque rond du graphe.
 - Entreprise.
 - Echelon entreprise.
 - Matricule entreprise.
@@ -191,6 +212,25 @@ stockees une seule fois.
 - Moderateur responsable.
 - Date de validation.
 
+### User
+
+- Identite interne.
+- Email de contact issu du fournisseur SSO, non affiche publiquement.
+- Nom d'affichage public choisi par l'utilisateur.
+- Role et bannissement eventuel.
+- Date de premiere connexion et derniere connexion.
+- Indicateur demandant de choisir un nom public lorsque le profil vient d'etre
+  cree ou lorsque le nom public est encore derive du fournisseur SSO.
+
+### UserIdentity
+
+- Utilisateur rattache.
+- Fournisseur : Google au MVP, Discord et Twitch plus tard.
+- Identifiant fournisseur.
+- Email ou nom renvoye par le fournisseur, conserve pour l'authentification mais
+  non affiche publiquement.
+- Dates de liaison et derniere utilisation.
+
 ## Architecture cible
 
 ### Backend
@@ -202,6 +242,9 @@ stockees une seule fois.
 - Rate limit sur les demandes de modification.
 - Gestion centralisee des erreurs.
 - Separation des routes publiques, authentifiees, moderation et administration.
+- Uploads images traites par des routes authentifiees dediees, avec limite de
+  taille, rate limit specifique, validation forte, reencodage serveur et
+  stockage hors des chemins fournis par l'utilisateur.
 
 Routes a prevoir :
 
@@ -210,8 +253,13 @@ Routes a prevoir :
 - `GET /api/graph`
 - `GET /api/tags`
 - `GET /api/history`
+- `GET /api/me`
+- `PATCH /api/me/profile`
+- `GET /api/me/change-requests`
+- `GET /api/me/identities`
 - `POST /api/contributions/change-requests`
 - `POST /api/contributions/change-requests/character-creations`
+- `POST /api/contributions/character-photo-uploads`
 - `GET /api/contributions/change-requests`
 - `GET /api/moderation/change-requests`
 - `POST /api/moderation/change-requests/:id/approve`
@@ -230,6 +278,11 @@ Routes a prevoir :
 - Vue principale en trois zones : barre de recherche/filtres, graphe, panneau
   fiche.
 - Navigation secondaire vers historique, moderation, administration et contact.
+- Page profil utilisateur dediee : modification du nom d'affichage public,
+  liste des demandes et changements de l'utilisateur, fournisseurs SSO lies ou
+  disponibles.
+- Workflow photo personnage : upload, previsualisation, cadrage sous masque
+  rond, zoom/deplacement, soumission avec la modification.
 - Utiliser une bibliotheque existante pour le graphe plutot qu'un moteur maison.
 - Etats obligatoires : chargement, erreur, vide, aucun resultat, non autorise.
 
@@ -311,12 +364,21 @@ Routes a prevoir :
 - Lecture publique uniquement pour les visiteurs anonymes.
 - Connexion obligatoire pour proposer une modification.
 - Un utilisateur banni ne peut plus creer de demande.
-- Les changements de donnees publiques passent par validation moderateur.
+- Les changements proposes par des utilisateurs simples passent par validation
+  moderateur. Les changements effectues par moderateur ou administrateur sont
+  appliques directement mais doivent etre journalises.
 - Les actions moderateur et administrateur doivent etre journalisees.
 - Rate limit sur les demandes pour limiter le spam.
+- Rate limit specifique sur les uploads de photos pour limiter le spam disque
+  et les attaques par fichiers volumineux.
 - Les donnees importees ou incertaines doivent etre marquees comme a verifier.
 - Validation stricte des entrees cote serveur, autorisations verifiees sur
   chaque route sensible et absence de confiance implicite dans le frontend.
+- Upload photo : taille maximale a fixer avant implementation, proposition MVP
+  2 Mo par fichier ; formats acceptes JPEG, PNG et WebP uniquement ; validation
+  par magic bytes et decode image ; refus des SVG ; suppression EXIF ;
+  reencodage serveur vers un format controle ; noms de fichiers generes ;
+  stockage temporaire avant moderation ; nettoyage des fichiers orphelins.
 - Secrets et variables sensibles hors Git, configuration par variables
   d'environnement.
 - Les moderateurs peuvent modifier directement une fiche, mais cette action doit
@@ -573,7 +635,7 @@ Point de controle :
 
 ### Etape 6 - Contribution et moderation
 
-Statut : en cours depuis le 2026-06-19.
+Statut : terminee le 2026-06-20.
 
 - Implementer les demandes de modification sur snapshot complet de fiche.
 - Implementer les demandes de creation de fiche depuis une recherche sans
@@ -586,7 +648,7 @@ Statut : en cours depuis le 2026-06-19.
 - Permettre aux moderateurs d'editer directement une fiche tout en creant le
   meme historique detaille.
 
-Bilan intermediaire :
+Bilan final :
 
 - Service backend de demandes de modification ajoute avec validation stricte du
   snapshot de fiche `Character`, calcul de diff champ par champ, approbation en
@@ -616,16 +678,15 @@ Bilan intermediaire :
   Le backend bloque les doublons exacts nom/prenom et conserve le contexte de
   recherche pour aider la moderation.
 
-Vigilances restantes :
+Points reportes ou a surveiller :
 
 - Les tags, relations RP et streamers ne sont pas encore modifiables par ce
-  flux ; ils devront etre ajoutes avec validations dediees pour eviter les
-  relations incoherentes et les suppressions implicites.
+  flux. Ils sont hors perimetre de cette etape et devront etre ajoutes avec
+  validations dediees pour eviter les relations incoherentes et les suppressions
+  implicites.
 - Les doublons exacts nom/prenom sont bloques cote serveur pour les creations,
   mais les doublons approximatifs restent a traiter par l'interface et par la
   moderation jusqu'a l'ajout d'une recherche de similarite plus fine.
-- Verifier le workflow complet sur une base PostgreSQL de developpement apres
-  lancement des tests hors sandbox lecture seule.
 - Ajouter des tests d'integration service contre base quand l'environnement de
   test pourra ecrire les fichiers temporaires Vitest/Vite.
 
@@ -634,8 +695,42 @@ Point de controle :
 - Le workflow contribution -> moderation -> historique fonctionne.
 - Les refus demandent un commentaire.
 - Les pages moderation sont separees du panneau lateral public.
+- Les modifications de fiches existantes faites par moderateur ou
+  administrateur sont appliquees directement avec historique.
+- Les creations de fiches restent moderees et ne publient rien sans validation.
 
-### Etape 7 - Administration
+### Etape 7 - Profil utilisateur et photos securisees
+
+- Ajouter ou ajuster le modele utilisateur pour distinguer l'identite SSO du
+  nom d'affichage public.
+- Proposer le choix du nom d'affichage public a la premiere connexion lorsque le
+  compte vient d'etre cree ou que le nom public est encore derive du SSO.
+- Construire une page profil pleine dediee permettant de modifier le nom
+  d'affichage public.
+- Afficher dans le profil la liste des demandes et changements effectues par
+  l'utilisateur.
+- Preparer la structure de rattachement multi-SSO sans implementer encore
+  Discord ni Twitch.
+- Ajouter le workflow photo personnage uniquement depuis une modification de
+  fiche existante : upload, recadrage rond, previsualisation et soumission.
+- Securiser fortement l'upload : taille maximale, formats autorises, validation
+  par signature, reencodage serveur, suppression EXIF, stockage temporaire,
+  nettoyage des fichiers orphelins, rate limit specifique et tests de refus.
+- Integrer la photo validee dans la fiche et dans les noeuds du graphe avec un
+  cadrage rond stable.
+
+Point de controle :
+
+- Aucun nom/prenom issu d'un fournisseur SSO n'est expose publiquement par
+  defaut.
+- Un utilisateur peut changer son nom d'affichage public depuis son profil.
+- Les photos ne peuvent pas etre proposees pendant la creation d'une fiche.
+- Une photo proposee par un utilisateur simple n'est publique qu'apres
+  validation moderateur.
+- Les fichiers invalides, trop volumineux, SVG ou non-images sont rejetes cote
+  serveur.
+
+### Etape 8 - Administration
 
 - Construire les pages pleines d'administration.
 - Ajouter gestion des tags : creation, modification, suppression controlee.
@@ -650,7 +745,7 @@ Point de controle :
 - Les suppressions dangereuses sont controlees ou bloquees si elles cassent des
   donnees existantes.
 
-### Etape 8 - Import Notion
+### Etape 9 - Import Notion
 
 - Creer un importeur page par page pour la source Notion communautaire.
 - Stocker les donnees brutes importees.
@@ -666,7 +761,7 @@ Point de controle :
 - Les donnees incertaines sont marquees a verifier.
 - Les erreurs de parsing sont visibles et non silencieuses.
 
-### Etape 9 - Durcissement qualite et securite
+### Etape 10 - Durcissement qualite et securite
 
 - Revue des validations d'entree, autorisations, rate limits, logs et gestion
   d'erreurs.
@@ -682,7 +777,7 @@ Point de controle :
 - Les refactors necessaires avant mise en ligne sont identifies ou faits.
 - Les checks automatises passent.
 
-### Etape 10 - Preparation deploiement
+### Etape 11 - Preparation deploiement
 
 - Documenter la configuration de production : variables, PostgreSQL, Nginx,
   TLS, processus Node.js et build frontend.

@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 
 import {
   type AuthSession,
-  type CharacterCreationContext,
   type ChangeRequestSummary,
+  type CharacterCreationContext,
   type CharacterSnapshot,
   characterToSnapshot,
-  createCharacterCreationRequest,
   createChangeRequest,
+  createCharacterCreationRequest,
   editCharacterDirectly,
   listMyChangeRequests,
   type PublicCharacterDetail
