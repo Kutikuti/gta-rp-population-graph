@@ -286,6 +286,21 @@ describe("change request routes", () => {
     expect(service.lastCreatedBy).toBe(ids.user);
   });
 
+  it("rejects oversized character photo drafts before processing the file", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+
+    await loginAs(agent, "user");
+
+    const response = await agent
+      .post(`/api/contributions/characters/${ids.character}/photo-drafts`)
+      .set("Content-Type", "image/png")
+      .send(Buffer.alloc(2_097_153));
+
+    expect(response.status).toBe(413);
+    expect(response.body.error.code).toBe("PAYLOAD_TOO_LARGE");
+  });
+
   it("rejects invalid contribution snapshots", async () => {
     const { app } = createFixtureApp();
     const agent = request.agent(app);

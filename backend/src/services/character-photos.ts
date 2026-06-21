@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 
 import { env } from "../config/env.js";
 
@@ -122,7 +122,7 @@ export const createCharacterPhotoDraft = async (input: {
     failOn: "warning",
     limitInputPixels: 16_000_000
   });
-  let metadata: sharp.Metadata;
+  let metadata: Metadata;
 
   try {
     metadata = await image.metadata();
