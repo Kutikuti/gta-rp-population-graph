@@ -30,6 +30,7 @@ export type PublicCharacterSummary = {
   lastName: string;
   fullName: string;
   nickname: string | null;
+  photoUrl: string | null;
   lifeStatus: LifeStatus;
   phoneNumber: string | null;
   businessName: string | null;
@@ -67,7 +68,6 @@ export type PublicRelationship = {
 export type PublicCharacterDetail = PublicCharacterSummary & {
   birthDate: string | null;
   deathOrDepartureDate: string | null;
-  photoUrl: string | null;
   businessRank: string | null;
   socialLinks: SocialLinks | null;
   isRpDeath: boolean;
@@ -102,6 +102,7 @@ export type PublicGraph = {
       fullName: string;
       lifeStatus: LifeStatus;
       verificationStatus: VerificationStatus;
+      photoUrl: string | null;
       streamerName: string | null;
       tagIds: string[];
     };
@@ -132,6 +133,7 @@ export type AuthenticatedUser = {
   id: string;
   email: string;
   displayName: string;
+  mustChooseDisplayName: boolean;
   avatarUrl: string | null;
   role: {
     id: string;
@@ -216,6 +218,18 @@ const API_BASE_URL = env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
 
+export const resolveApiAssetUrl = (path: string | null) => {
+  if (!path) {
+    return null;
+  }
+
+  if (/^https?:\/\//u.test(path)) {
+    return path;
+  }
+
+  return buildApiUrl(path);
+};
+
 const fetchJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(buildApiUrl(path), {
     ...init,
@@ -296,6 +310,9 @@ export const getAuthSession = () => fetchJson<AuthSession>("/api/auth/session");
 
 export const getGoogleAuthUrl = () => buildApiUrl("/api/auth/google");
 
+export const updateProfileDisplayName = (displayName: string) =>
+  sendJson<{ user: AuthenticatedUser }>("/api/profile/display-name", "PATCH", { displayName });
+
 export const logout = async () => {
   const response = await fetch(buildApiUrl("/api/auth/logout"), {
     method: "POST",
@@ -349,6 +366,26 @@ export const createCharacterCreationRequest = (
 
 export const listMyChangeRequests = () =>
   fetchJson<ChangeRequestSummary[]>("/api/contributions/change-requests");
+
+export const uploadCharacterPhotoDraft = async (characterId: string, image: Blob) => {
+  const response = await fetch(
+    buildApiUrl(`/api/contributions/characters/${characterId}/photo-drafts`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": image.type || "image/webp"
+      },
+      body: image
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Erreur API ${String(response.status)}`);
+  }
+
+  return (await response.json()) as { photoUrl: string };
+};
 
 export const listModerationChangeRequests = (status: ChangeRequestStatus = "pending") => {
   const params = new URLSearchParams({ status });

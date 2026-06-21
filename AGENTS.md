@@ -169,6 +169,9 @@ Le deploiement n'est pas encore implemente. Le plan cible :
   noeuds du graphe. L'interface d'upload doit permettre de recadrer une image
   carree ou quasi-carree en deplacant/zoomant l'image sous un masque rond avant
   envoi ou validation.
+- Quand une photo validee existe pour un personnage, le noeud du graphe affiche
+  la photo seule, sans initiales superposees. Les initiales servent uniquement
+  de fallback pour les personnages sans photo.
 - Les vues pleines contribution, moderation et administration utilisent la
   navigation globale en haut a droite pour revenir au graphe. Ne pas ajouter de
   bouton `Retour au graphe` redondant dans leur contenu.

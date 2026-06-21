@@ -7,11 +7,12 @@ type AppHeaderProps = {
     message: string;
   } | null;
   authSession: AuthSession | null;
-  activeView: "explore" | "contribution" | "moderation";
+  activeView: "explore" | "contribution" | "moderation" | "profile";
   isAuthLoading: boolean;
   onExplore: () => void;
   onLogout: () => void;
   onModeration: () => void;
+  onProfile: () => void;
 };
 
 const canModerate = (session: AuthSession | null) =>
@@ -25,7 +26,8 @@ export function AppHeader({
   isAuthLoading,
   onExplore,
   onLogout,
-  onModeration
+  onModeration,
+  onProfile
 }: AppHeaderProps) {
   return (
     <header className="topbar">
@@ -54,6 +56,15 @@ export function AppHeader({
               onClick={onModeration}
             >
               Modération
+            </button>
+          ) : null}
+          {authSession?.authenticated ? (
+            <button
+              type="button"
+              className={`ghost-button ${activeView === "profile" ? "is-active" : ""}`}
+              onClick={onProfile}
+            >
+              Profil
             </button>
           ) : null}
           <AuthControls

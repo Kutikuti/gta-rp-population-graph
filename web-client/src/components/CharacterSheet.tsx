@@ -5,6 +5,7 @@ import type {
   PublicHistoryEntry,
   VerificationStatus
 } from "../api";
+import { resolveApiAssetUrl } from "../api";
 import {
   characterSnapshotFieldLabels,
   lifeStatusLabels,
@@ -69,14 +70,18 @@ export function CharacterSheet({
 }: CharacterSheetProps) {
   const links = socialEntries(character.socialLinks ?? character.streamer?.socialLinks);
   const relationships = [...character.relationships.outgoing, ...character.relationships.incoming];
+  const photoUrl = resolveApiAssetUrl(character.photoUrl);
 
   return (
     <article className="character-sheet">
       <div className="sheet-header">
-        <div>
-          <p className="eyebrow">Fiche personnage</p>
-          <h2>{character.fullName}</h2>
-          <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}</p>
+        <div className="sheet-identity">
+          {photoUrl ? <img src={photoUrl} alt="" className="sheet-photo" /> : null}
+          <div>
+            <p className="eyebrow">Fiche personnage</p>
+            <h2>{character.fullName}</h2>
+            <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}</p>
+          </div>
         </div>
         <button type="button" className="ghost-button" onClick={onContribute}>
           {canEditDirectly ? "Modifier" : "Proposer"}

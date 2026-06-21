@@ -1,6 +1,8 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError } from "zod";
 
+import { InvalidCharacterPhotoError } from "../services/character-photos.js";
+
 export const notFoundHandler: RequestHandler = (request, response) => {
   response.status(404).json({
     error: {
@@ -11,6 +13,16 @@ export const notFoundHandler: RequestHandler = (request, response) => {
 };
 
 export const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+  if ((error as { type?: string }).type === "entity.too.large") {
+    response.status(413).json({
+      error: {
+        code: "PAYLOAD_TOO_LARGE",
+        message: "Charge utile trop volumineuse."
+      }
+    });
+    return;
+  }
+
   if (error instanceof ZodError) {
     response.status(400).json({
       error: {
@@ -20,6 +32,16 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, _ne
           path: issue.path,
           message: issue.message
         }))
+      }
+    });
+    return;
+  }
+
+  if (error instanceof InvalidCharacterPhotoError) {
+    response.status(400).json({
+      error: {
+        code: "INVALID_CHARACTER_PHOTO",
+        message: error.message
       }
     });
     return;

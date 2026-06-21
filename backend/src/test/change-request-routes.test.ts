@@ -28,6 +28,7 @@ const usersByCode = {
     id: ids.user,
     email: "user@example.test",
     displayName: "User Example",
+    mustChooseDisplayName: false,
     avatarUrl: null,
     role: {
       id: "00000000-0000-4000-8000-000000000001",
@@ -39,6 +40,7 @@ const usersByCode = {
     id: ids.moderator,
     email: "moderator@example.test",
     displayName: "Moderator Example",
+    mustChooseDisplayName: false,
     avatarUrl: null,
     role: {
       id: "00000000-0000-4000-8000-000000000002",
@@ -92,7 +94,7 @@ const summary = (status: ChangeRequestSummary["status"]): ChangeRequestSummary =
 });
 
 class FixtureAuthService implements AuthService {
-  private readonly usersById = new Map(
+  private readonly usersById: Map<string, AuthenticatedUser> = new Map(
     Object.values(usersByCode).map((user) => [user.id, user] as const)
   );
 
@@ -108,6 +110,23 @@ class FixtureAuthService implements AuthService {
     }
 
     return { status: "authenticated", user };
+  }
+
+  async updateDisplayName(userId: string, displayName: string) {
+    const user = this.usersById.get(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    const updatedUser = {
+      ...user,
+      displayName,
+      mustChooseDisplayName: false
+    };
+    this.usersById.set(userId, updatedUser);
+
+    return updatedUser;
   }
 }
 

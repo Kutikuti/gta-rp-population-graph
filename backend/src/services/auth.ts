@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { Op } from "sequelize";
 
 import type { RoleName } from "../db/enums.js";
@@ -7,6 +9,7 @@ export type AuthenticatedUser = {
   id: string;
   email: string;
   displayName: string;
+  mustChooseDisplayName: boolean;
   avatarUrl: string | null;
   role: {
     id: string;
@@ -35,6 +38,7 @@ export type AuthResult =
 export interface AuthService {
   getSessionUser(userId: string): Promise<AuthenticatedUser | null>;
   authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult>;
+  updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null>;
 }
 
 const activeBanWhere = {
@@ -46,6 +50,7 @@ const serializeAuthenticatedUser = (user: {
   id: string;
   email: string;
   displayName: string;
+  displayNameChosenAt: Date | null;
   avatarUrl: string | null;
   role?: { id: string; name: RoleName } | null;
   bans?: Array<{ id: string }>;
@@ -58,6 +63,7 @@ const serializeAuthenticatedUser = (user: {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    mustChooseDisplayName: !user.displayNameChosenAt,
     avatarUrl: user.avatarUrl,
     role: {
       id: user.role.id,
@@ -66,6 +72,8 @@ const serializeAuthenticatedUser = (user: {
     isBanned: Boolean(user.bans?.length)
   };
 };
+
+const createDefaultDisplayName = () => `Utilisateur ${randomUUID().slice(0, 8)}`;
 
 export class SequelizeAuthService implements AuthService {
   async getSessionUser(userId: string): Promise<AuthenticatedUser | null> {
@@ -104,7 +112,8 @@ export class SequelizeAuthService implements AuthService {
       defaults: {
         googleId: identity.googleId,
         email: identity.email,
-        displayName: identity.displayName,
+        displayName: createDefaultDisplayName(),
+        displayNameChosenAt: null,
         avatarUrl: identity.avatarUrl,
         roleId: defaultRole.id,
         lastLoginAt: now
@@ -113,7 +122,6 @@ export class SequelizeAuthService implements AuthService {
 
     const updates: Partial<{
       email: string;
-      displayName: string;
       avatarUrl: string | null;
       lastLoginAt: Date;
     }> = {
@@ -122,10 +130,6 @@ export class SequelizeAuthService implements AuthService {
 
     if (user.email !== identity.email) {
       updates.email = identity.email;
-    }
-
-    if (user.displayName !== identity.displayName) {
-      updates.displayName = identity.displayName;
     }
 
     if (user.avatarUrl !== identity.avatarUrl) {
@@ -143,5 +147,20 @@ export class SequelizeAuthService implements AuthService {
     return authenticatedUser.isBanned
       ? { status: "banned", user: authenticatedUser }
       : { status: "authenticated", user: authenticatedUser };
+  }
+
+  async updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null> {
+    const user = await models.User.findByPk(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    await user.update({
+      displayName,
+      displayNameChosenAt: new Date()
+    });
+
+    return this.getSessionUser(user.id);
   }
 }

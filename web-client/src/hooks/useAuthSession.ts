@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { type AuthSession, getAuthSession, logout } from "../api";
+import { type AuthSession, getAuthSession, logout, updateProfileDisplayName } from "../api";
 
 export type AuthFeedback = {
   tone: "success" | "error";
@@ -101,9 +101,22 @@ export function useAuthSession(onError: (message: string) => void) {
     }
   };
 
+  const handleDisplayNameUpdate = async (displayName: string) => {
+    try {
+      const { user } = await updateProfileDisplayName(displayName);
+      setAuthSession({ authenticated: true, user });
+      setAuthFeedback({ tone: "success", message: "Nom public mis à jour." });
+      return true;
+    } catch {
+      onError("Le nom public n'a pas pu être mis à jour.");
+      return false;
+    }
+  };
+
   return {
     authFeedback,
     authSession,
+    handleDisplayNameUpdate,
     handleLogout,
     isAuthLoading
   };

@@ -1,6 +1,6 @@
 import type { ElementDefinition } from "cytoscape";
 
-import type { PublicGraph } from "../api";
+import { type PublicGraph, resolveApiAssetUrl } from "../api";
 
 const getCharacterInitials = (name: string) => {
   const initials = name
@@ -15,11 +15,16 @@ const getCharacterInitials = (name: string) => {
 };
 
 export const toCytoscapeElements = (graph: PublicGraph): ElementDefinition[] => [
-  ...graph.nodes.map((node) => ({
-    data: {
-      ...node.data,
-      displayLabel: getCharacterInitials(node.data.fullName || node.data.label)
-    }
-  })),
+  ...graph.nodes.map((node) => {
+    const photoUrl = resolveApiAssetUrl(node.data.photoUrl);
+
+    return {
+      data: {
+        ...node.data,
+        photoUrl,
+        displayLabel: photoUrl ? "" : getCharacterInitials(node.data.fullName || node.data.label)
+      }
+    };
+  }),
   ...graph.edges
 ];

@@ -53,6 +53,14 @@
   gap: 16px;
 }
 
+.full-page-grid.single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-layout {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
 .moderation-layout {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
@@ -214,6 +222,102 @@
   color: #cfffe8;
 }
 
+.warning-text {
+  border-color: #816829;
+  color: #ffe3a3;
+}
+
+.muted-copy {
+  margin: 0;
+  color: #8fb2cf;
+  font-size: 0.78rem;
+}
+
+.profile-main-panel,
+.profile-sso-panel,
+.profile-sso-actions {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-sso-panel {
+  border-top: 1px solid #123c5f;
+  padding-top: 14px;
+}
+
+.profile-sso-panel h3,
+.side-work-panel h3 {
+  margin: 0;
+  color: #eaf7ff;
+  font-size: 0.92rem;
+}
+
+.profile-sso-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.photo-upload-panel {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.photo-upload-controls {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.photo-preview-mask {
+  position: relative;
+  width: 132px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #1f5d8a;
+  border-radius: 50%;
+  background: #020811;
+  display: grid;
+  place-items: center;
+  color: #6d93b2;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.photo-preview-mask img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center;
+}
+
+.photo-crop-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.photo-crop-controls label {
+  display: grid;
+  gap: 5px;
+}
+
+.photo-crop-controls input[type="range"] {
+  padding: 0;
+}
+
+.photo-use-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.photo-upload-feedback {
+  margin: 0;
+  color: #7fd7ad;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .detail-heading {
   display: flex;
   align-items: flex-start;
@@ -259,6 +363,26 @@
   overflow-wrap: anywhere;
 }
 
+.compact-request-list .request-list-item {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #143d60;
+  background: #061522;
+  padding: 10px;
+}
+
+.compact-request-list .request-list-item strong {
+  min-width: 0;
+  color: #dcefff;
+  overflow-wrap: anywhere;
+}
+
+.compact-request-list .request-list-item span,
+.compact-request-list .request-list-item small {
+  color: #8fb2cf;
+  font-size: 0.74rem;
+}
+
 @media (max-width: 860px) {
   .topbar-actions,
   .full-page-header,
@@ -271,8 +395,14 @@
   .full-page-grid,
   .moderation-layout,
   .form-grid,
-  .diff-row {
+  .photo-upload-panel,
+  .diff-row,
+  .profile-sso-actions {
     grid-template-columns: 1fr;
+  }
+
+  .photo-upload-feedback {
+    white-space: normal;
   }
 
   .full-page-view {

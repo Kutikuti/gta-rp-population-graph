@@ -33,6 +33,7 @@ const ids = {
 
 const sequelize = createSequelize();
 const models = initModels(sequelize);
+const now = new Date();
 
 try {
   await sequelize.transaction(async (transaction) => {
@@ -86,6 +87,7 @@ try {
           googleId: "seed-viewer-google-id",
           email: "viewer.seed@example.test",
           displayName: "Spectateur Seed",
+          displayNameChosenAt: now,
           avatarUrl: null,
           roleId: ids.roles.user,
           lastLoginAt: null
@@ -95,6 +97,7 @@ try {
           googleId: "seed-moderator-google-id",
           email: "moderator.seed@example.test",
           displayName: "Moderateur Seed",
+          displayNameChosenAt: now,
           avatarUrl: null,
           roleId: ids.roles.moderator,
           lastLoginAt: null

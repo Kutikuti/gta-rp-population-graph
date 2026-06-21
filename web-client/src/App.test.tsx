@@ -45,6 +45,7 @@ const camille = {
   lastName: "Morel",
   fullName: "Camille Morel",
   nickname: "Cami",
+  photoUrl: null,
   lifeStatus: "alive",
   phoneNumber: "555-0101",
   businessName: "Blue Line Logistics",
@@ -163,6 +164,7 @@ describe("App", () => {
               fullName: character.fullName,
               lifeStatus: character.lifeStatus,
               verificationStatus: character.verificationStatus,
+              photoUrl: character.photoUrl,
               streamerName: character.streamer?.publicName ?? null,
               tagIds: character.tags.map((item) => item.id)
             }
@@ -308,6 +310,7 @@ describe("App", () => {
             id: "00000000-0000-4000-8000-000000000901",
             email: "viewer@example.test",
             displayName: "Viewer Example",
+            mustChooseDisplayName: false,
             avatarUrl: null,
             role: {
               id: "00000000-0000-4000-8000-000000000001",
@@ -378,6 +381,7 @@ describe("App", () => {
             id: "00000000-0000-4000-8000-000000000901",
             email: "viewer@example.test",
             displayName: "Viewer Example",
+            mustChooseDisplayName: false,
             avatarUrl: null,
             role: {
               id: "00000000-0000-4000-8000-000000000001",

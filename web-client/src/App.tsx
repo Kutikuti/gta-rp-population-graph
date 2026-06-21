@@ -7,6 +7,7 @@ import { ContributionView } from "./components/ContributionView";
 import { DetailsSidebar } from "./components/DetailsSidebar";
 import { GraphPanel } from "./components/GraphPanel";
 import { ModerationView } from "./components/ModerationView";
+import { ProfileView } from "./components/ProfileView";
 import { SearchSidebar } from "./components/SearchSidebar";
 import { initialFilters } from "./constants";
 import { useAuthSession } from "./hooks/useAuthSession";
@@ -22,16 +23,17 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [creationContext, setCreationContext] = useState<CharacterCreationContext | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<"explore" | "contribution" | "moderation">(
-    "explore"
-  );
+  const [activeView, setActiveView] = useState<
+    "explore" | "contribution" | "moderation" | "profile"
+  >("explore");
 
   const handleError = useCallback((message: string) => {
     setError(message);
   }, []);
 
   const { graph, isBootLoading, refreshPublicGraphData, tags } = usePublicGraphData(handleError);
-  const { authFeedback, authSession, handleLogout, isAuthLoading } = useAuthSession(handleError);
+  const { authFeedback, authSession, handleDisplayNameUpdate, handleLogout, isAuthLoading } =
+    useAuthSession(handleError);
   const { isSearchActive, matchingIds, searchResultSummary, searchTotal } = useSearchMatches(
     filters,
     handleError
@@ -55,6 +57,13 @@ function App() {
       window.clearTimeout(timeoutId);
     };
   }, [toastMessage]);
+
+  useEffect(() => {
+    if (authSession?.authenticated && authSession.user.mustChooseDisplayName) {
+      setCreationContext(null);
+      setActiveView("profile");
+    }
+  }, [authSession]);
 
   const closeDetails = useCallback(() => {
     setSelectedId(null);
@@ -116,6 +125,9 @@ function App() {
           onLogout={handleLogout}
           onModeration={() => {
             setActiveView("moderation");
+          }}
+          onProfile={() => {
+            setActiveView("profile");
           }}
         />
 
@@ -183,6 +195,13 @@ function App() {
           <ModerationView
             session={authSession}
             onDataChanged={refreshAfterModerationChange}
+            onError={handleError}
+          />
+        ) : null}
+        {activeView === "profile" ? (
+          <ProfileView
+            session={authSession}
+            onDisplayNameUpdate={handleDisplayNameUpdate}
             onError={handleError}
           />
         ) : null}

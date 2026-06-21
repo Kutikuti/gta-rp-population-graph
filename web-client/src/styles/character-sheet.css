@@ -4,9 +4,28 @@
 }
 
 .sheet-header {
+  display: flex;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid #123452;
+}
+
+.sheet-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sheet-photo {
+  width: 58px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  border: 1px solid #61b9ff;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .sheet-header h2 {

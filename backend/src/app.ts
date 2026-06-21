@@ -11,12 +11,14 @@ import { createAuthRouter, sessionMiddleware } from "./routes/auth.js";
 import { createContributionsRouter } from "./routes/contributions.js";
 import { healthRouter } from "./routes/health.js";
 import { createModerationRouter } from "./routes/moderation.js";
+import { createProfileRouter } from "./routes/profile.js";
 import { createPublicRouter } from "./routes/public/index.js";
 import { type AuthService, SequelizeAuthService } from "./services/auth.js";
 import {
   type ChangeRequestService,
   SequelizeChangeRequestService
 } from "./services/change-requests.js";
+import { characterPhotoPublicDir } from "./services/character-photos.js";
 import { type GoogleOauthClient, GoogleOidcClient } from "./services/google-oauth.js";
 import type { PublicDataService } from "./services/public-data.js";
 
@@ -50,6 +52,18 @@ export const createApp = (dependencies: AppDependencies = {}) => {
       legacyHeaders: false
     })
   );
+  app.use(
+    "/uploads/characters",
+    express.static(characterPhotoPublicDir, {
+      fallthrough: false,
+      immutable: true,
+      maxAge: "30d",
+      setHeaders: (response) => {
+        response.setHeader("Access-Control-Allow-Origin", env.WEB_CLIENT_URL);
+        response.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      }
+    })
+  );
   app.use(express.json({ limit: "1mb" }));
   app.use(sessionMiddleware);
   app.use(loadCurrentUser(authService));
@@ -64,6 +78,7 @@ export const createApp = (dependencies: AppDependencies = {}) => {
   );
   app.use("/api/contributions", createContributionsRouter(changeRequestService));
   app.use("/api/moderation", createModerationRouter(changeRequestService));
+  app.use("/api/profile", createProfileRouter(authService));
   app.use("/api/admin", adminRouter);
   app.use("/api", createPublicRouter(dependencies.publicDataService));
 

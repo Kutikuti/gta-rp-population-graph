@@ -52,8 +52,18 @@ Variables critiques :
 - `RATE_LIMIT_WINDOW_MS`
 - `RATE_LIMIT_MAX_REQUESTS`
 - `CHANGE_REQUEST_RATE_LIMIT_MAX`
+- `PHOTO_UPLOAD_MAX_BYTES`
+- `PHOTO_UPLOAD_RATE_LIMIT_MAX`
+- `PHOTO_STORAGE_DIR`
+- `PHOTO_DRAFT_MAX_AGE_HOURS`
 
 `SESSION_SECRET` doit etre long, aleatoire et different de la valeur d'exemple.
+
+Par defaut, les photos sont stockees sous `backend/storage/uploads`, ignore par
+Git. En production, conserver ce dossier hors du repertoire servi directement
+par Nginx : l'API expose uniquement les fichiers valides sous
+`/uploads/characters`. Les brouillons temporaires restent internes sous
+`tmp/`.
 
 ## Creation de la base
 
@@ -104,6 +114,42 @@ npm test
 npm run build
 ```
 
+## Nettoyage des photos temporaires
+
+Les uploads photo de contribution sont d'abord stockes en brouillons internes.
+Ces fichiers temporaires doivent etre nettoyes periodiquement pour limiter le
+spam disque et supprimer les brouillons abandonnes.
+
+Le backend fournit un job dedie :
+
+```bash
+cd backend
+npm run photo:cleanup
+```
+
+Le job supprime uniquement les fichiers du dossier temporaire qui respectent le
+format attendu `userId.photoId.webp` et dont l'age depasse
+`PHOTO_DRAFT_MAX_AGE_HOURS` (24 heures par defaut). Il ne parcourt pas
+recursivement le stockage et ne touche jamais au dossier public
+`characters/`.
+
+Avec PM2, configurer un process cron separe de l'API :
+
+```js
+{
+  name: "gta-rp-photo-cleanup",
+  cwd: "/var/www/gta-rp-population-graph/backend",
+  script: "npm",
+  args: "run photo:cleanup",
+  cron_restart: "0 * * * *",
+  autorestart: false
+}
+```
+
+Ce process se lance toutes les heures, execute le nettoyage, logue le nombre de
+fichiers scannes/supprimes/ignores, puis s'arrete. L'API Express reste separee :
+un echec du job ne doit pas rendre le site indisponible.
+
 Quand le frontend aura son pipeline de production final :
 
 ```bash
@@ -140,6 +186,8 @@ Rollback applicatif minimal :
 - [ ] Backup initial configure.
 - [ ] `npm run db:migrate` execute.
 - [ ] `npm run db:migrate:pending` retourne `[]`.
+- [ ] Dossier `PHOTO_STORAGE_DIR` cree ou creatable par l'utilisateur backend.
+- [ ] Job PM2 `gta-rp-photo-cleanup` configure.
 - [ ] Backend build OK.
 - [ ] Frontend build OK.
 - [ ] Nginx configure avec TLS.

@@ -256,7 +256,7 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
       ) : (
         <div className="moderation-layout">
           <aside className="work-panel moderation-list-panel">
-            <h3>File en attente</h3>
+            <h3>Demandes en attente</h3>
             {isLoading ? <LoadingBlock label="Chargement..." /> : null}
             {!isLoading && requests.length ? (
               <div className="request-list">
@@ -374,10 +374,13 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
                       snapshot={editSnapshot}
                       submitLabel="Appliquer directement"
                       isSubmitting={isSubmitting}
+                      canUploadPhoto={false}
+                      isPhotoUploading={false}
                       onCancel={() => {
                         setEditSnapshot(selectedRequest.proposedSnapshot);
                       }}
                       onChange={setEditSnapshot}
+                      onPhotoUpload={async () => undefined}
                       onSubmit={submitDirectEdit}
                     />
                   </section>

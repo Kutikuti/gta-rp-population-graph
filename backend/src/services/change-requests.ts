@@ -9,6 +9,13 @@ import {
 } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
 import type { ChangeRequest, Character, JsonObject, SocialLinks } from "../db/models/index.js";
+import {
+  assertPendingCharacterPhotoExists,
+  deletePendingCharacterPhoto,
+  InvalidCharacterPhotoError,
+  isPendingCharacterPhotoToken,
+  promoteCharacterPhotoIfPending
+} from "./character-photos.js";
 
 const emptyToNull = (value: string | null | undefined) => {
   if (typeof value !== "string") {
@@ -291,6 +298,13 @@ const applySnapshot = async (
   );
 };
 
+const prepareSnapshotForWrite = async (
+  snapshot: CharacterSnapshot
+): Promise<CharacterSnapshot> => ({
+  ...snapshot,
+  photoUrl: await promoteCharacterPhotoIfPending(snapshot.photoUrl)
+});
+
 const calculateCharacterCreationDiff = (snapshot: CharacterSnapshot): ChangeDiff =>
   editableFields.reduce<ChangeDiff>((changes, field) => {
     const newValue = snapshot[field] as ChangeValue;
@@ -332,6 +346,12 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       return null;
     }
 
+    const photoUrl = input.proposedSnapshot.photoUrl;
+
+    if (isPendingCharacterPhotoToken(photoUrl)) {
+      await assertPendingCharacterPhotoExists(photoUrl, input.userId);
+    }
+
     const request = await models.ChangeRequest.create({
       userId: input.userId,
       requestType: "update",
@@ -352,6 +372,12 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
     proposedSnapshot: CharacterSnapshot;
     searchContext: CharacterCreationContext;
   }): Promise<ChangeRequestSummary | "duplicate"> {
+    if (input.proposedSnapshot.photoUrl) {
+      throw new InvalidCharacterPhotoError(
+        "La photo est disponible uniquement sur une fiche existante."
+      );
+    }
+
     if (await hasExactNameDuplicate(input.proposedSnapshot)) {
       return "duplicate";
     }
@@ -417,7 +443,9 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         return null;
       }
 
-      const proposedSnapshot = characterSnapshotSchema.parse(request.proposedSnapshot);
+      const proposedSnapshot = await prepareSnapshotForWrite(
+        characterSnapshotSchema.parse(request.proposedSnapshot)
+      );
       const changes =
         request.requestType === "create" ? calculateCharacterCreationDiff(proposedSnapshot) : null;
 
@@ -465,6 +493,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         {
           status: "approved",
           characterId: character.id,
+          proposedSnapshot: proposedSnapshot as unknown as JsonObject,
           reviewerId: input.moderatorId,
           resolvedAt: new Date()
         },
@@ -494,6 +523,12 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       return null;
     }
 
+    const proposedSnapshot = characterSnapshotSchema.safeParse(request.proposedSnapshot);
+
+    if (proposedSnapshot.success) {
+      await deletePendingCharacterPhoto(proposedSnapshot.data.photoUrl);
+    }
+
     await request.update({
       status: "rejected",
       reviewerId: input.moderatorId,
@@ -519,9 +554,16 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         return null;
       }
 
-      const changes = calculateCharacterDiff(characterToSnapshot(character), input.snapshot);
+      const photoUrl = input.snapshot.photoUrl;
 
-      await applySnapshot(character, input.snapshot, "moderation", transaction);
+      if (isPendingCharacterPhotoToken(photoUrl)) {
+        await assertPendingCharacterPhotoExists(photoUrl, input.moderatorId);
+      }
+
+      const preparedSnapshot = await prepareSnapshotForWrite(input.snapshot);
+      const changes = calculateCharacterDiff(characterToSnapshot(character), preparedSnapshot);
+
+      await applySnapshot(character, preparedSnapshot, "moderation", transaction);
       await models.ChangeHistory.create(
         {
           characterId: character.id,

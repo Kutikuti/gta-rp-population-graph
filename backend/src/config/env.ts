@@ -43,7 +43,11 @@ const envSchema = z
     GOOGLE_CALLBACK_URL: z.url().optional(),
     RATE_LIMIT_WINDOW_MS: numberFromString(900000),
     RATE_LIMIT_MAX_REQUESTS: numberFromString(100),
-    CHANGE_REQUEST_RATE_LIMIT_MAX: numberFromString(10)
+    CHANGE_REQUEST_RATE_LIMIT_MAX: numberFromString(10),
+    PHOTO_UPLOAD_MAX_BYTES: numberFromString(2097152),
+    PHOTO_UPLOAD_RATE_LIMIT_MAX: numberFromString(6),
+    PHOTO_STORAGE_DIR: z.string().min(1).default("storage/uploads"),
+    PHOTO_DRAFT_MAX_AGE_HOURS: numberFromString(24)
   })
   .superRefine((value, context) => {
     const googleValues = [

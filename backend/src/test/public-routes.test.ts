@@ -48,6 +48,7 @@ const camille: PublicCharacterSummary = {
   lastName: "Morel",
   fullName: "Camille Morel",
   nickname: "Cami",
+  photoUrl: null,
   lifeStatus: "alive",
   phoneNumber: "555-0101",
   businessName: "Blue Line Logistics",
@@ -133,6 +134,7 @@ const graph: PublicGraph = {
       fullName: character.fullName,
       lifeStatus: character.lifeStatus,
       verificationStatus: character.verificationStatus,
+      photoUrl: character.photoUrl,
       streamerName: character.streamer?.publicName ?? null,
       tagIds: character.tags.map((tag) => tag.id)
     }

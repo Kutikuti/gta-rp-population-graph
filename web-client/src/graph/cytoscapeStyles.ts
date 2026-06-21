@@ -30,6 +30,14 @@ export const cytoscapeStyles: StylesheetJsonBlock[] = [
     }
   },
   {
+    selector: "node[photoUrl]",
+    style: {
+      "background-fit": "cover",
+      "background-image": "data(photoUrl)",
+      "background-opacity": 1
+    }
+  },
+  {
     selector: "node.matched",
     style: {
       "background-color": "#1194ff",

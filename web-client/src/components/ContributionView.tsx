@@ -10,7 +10,8 @@ import {
   createCharacterCreationRequest,
   editCharacterDirectly,
   listMyChangeRequests,
-  type PublicCharacterDetail
+  type PublicCharacterDetail,
+  uploadCharacterPhotoDraft
 } from "../api";
 import { formatDate } from "../utils/format";
 import { CharacterSnapshotForm } from "./CharacterSnapshotForm";
@@ -94,6 +95,7 @@ export function ContributionView({
   const [requests, setRequests] = useState<ChangeRequestSummary[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [isPhotoUploading, setIsPhotoUploading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -166,6 +168,24 @@ export function ContributionView({
     }
   };
 
+  const uploadPhoto = async (image: Blob) => {
+    if (!character || creationContext) {
+      onError("La photo ne peut être ajoutée que sur une fiche existante.");
+      return;
+    }
+
+    setIsPhotoUploading(true);
+
+    try {
+      const draft = await uploadCharacterPhotoDraft(character.id, image);
+      setSnapshot((current) => (current ? { ...current, photoUrl: draft.photoUrl } : current));
+    } catch {
+      onError("La photo n'a pas pu être envoyée.");
+    } finally {
+      setIsPhotoUploading(false);
+    }
+  };
+
   return (
     <section className="full-page-view" aria-labelledby="contribution-title">
       <div className="full-page-header">
@@ -195,10 +215,13 @@ export function ContributionView({
                   : "Envoyer la demande"
               }
               isSubmitting={isSubmitting}
+              canUploadPhoto={Boolean(character && !creationContext)}
+              isPhotoUploading={isPhotoUploading}
               onCancel={() => {
                 onSubmitted("", true);
               }}
               onChange={setSnapshot}
+              onPhotoUpload={uploadPhoto}
               onSubmit={submit}
             />
           </div>

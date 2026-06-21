@@ -72,6 +72,7 @@ export type PublicCharacterSummary = {
   lastName: string;
   fullName: string;
   nickname: string | null;
+  photoUrl: string | null;
   lifeStatus: LifeStatus;
   phoneNumber: string | null;
   businessName: string | null;
@@ -143,6 +144,7 @@ export type CytoscapeNode = {
     fullName: string;
     lifeStatus: LifeStatus;
     verificationStatus: VerificationStatus;
+    photoUrl: string | null;
     streamerName: string | null;
     tagIds: string[];
   };
@@ -216,6 +218,7 @@ const serializeCharacterSummary = (character: Character): PublicCharacterSummary
   lastName: character.lastName,
   fullName: fullName(character),
   nickname: character.nickname,
+  photoUrl: character.photoUrl,
   lifeStatus: character.lifeStatus,
   phoneNumber: character.phoneNumber,
   businessName: character.businessName,
@@ -427,6 +430,7 @@ export class SequelizePublicDataService implements PublicDataService {
           fullName: fullName(character),
           lifeStatus: character.lifeStatus,
           verificationStatus: character.verificationStatus,
+          photoUrl: character.photoUrl,
           streamerName: character.streamer?.publicName ?? null,
           tagIds: character.tags?.map((tag) => tag.id) ?? []
         }

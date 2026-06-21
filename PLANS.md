@@ -259,7 +259,7 @@ Routes a prevoir :
 - `GET /api/me/identities`
 - `POST /api/contributions/change-requests`
 - `POST /api/contributions/change-requests/character-creations`
-- `POST /api/contributions/character-photo-uploads`
+- `POST /api/contributions/characters/:id/photo-drafts`
 - `GET /api/contributions/change-requests`
 - `GET /api/moderation/change-requests`
 - `POST /api/moderation/change-requests/:id/approve`
@@ -374,8 +374,8 @@ Routes a prevoir :
 - Les donnees importees ou incertaines doivent etre marquees comme a verifier.
 - Validation stricte des entrees cote serveur, autorisations verifiees sur
   chaque route sensible et absence de confiance implicite dans le frontend.
-- Upload photo : taille maximale a fixer avant implementation, proposition MVP
-  2 Mo par fichier ; formats acceptes JPEG, PNG et WebP uniquement ; validation
+- Upload photo : taille maximale MVP fixee a 2 Mo par fichier ; formats
+  acceptes JPEG, PNG et WebP uniquement ; validation
   par magic bytes et decode image ; refus des SVG ; suppression EXIF ;
   reencodage serveur vers un format controle ; noms de fichiers generes ;
   stockage temporaire avant moderation ; nettoyage des fichiers orphelins.
@@ -537,8 +537,9 @@ Bilan intermediaire :
 - Refonte graphe-first engagée : le graphe occupe le viewport, la recherche est
   repliée par défaut, la fiche est masquée avant sélection et refermable, les
   statistiques publiques et libellés de supervision du graphe ont été retirés.
-- Les nœuds personnages sont circulaires avec initiales, en attendant de
-  pouvoir afficher une photo quand elle sera renseignée.
+- Les nœuds personnages sont circulaires avec initiales quand aucune photo
+  n'est renseignee. Quand une photo validee existe, elle remplace les initiales
+  dans le noeud du graphe.
 - La sélection d'un nœud est réversible par un second clic, sans recadrer le
   graphe à la désélection. Le layout du graphe ne se relance plus lors des
   changements de recherche.
@@ -701,6 +702,8 @@ Point de controle :
 
 ### Etape 7 - Profil utilisateur et photos securisees
 
+Statut : en cours depuis le 2026-06-21.
+
 - Ajouter ou ajuster le modele utilisateur pour distinguer l'identite SSO du
   nom d'affichage public.
 - Proposer le choix du nom d'affichage public a la premiere connexion lorsque le
@@ -729,6 +732,39 @@ Point de controle :
   validation moderateur.
 - Les fichiers invalides, trop volumineux, SVG ou non-images sont rejetes cote
   serveur.
+
+Bilan intermediaire :
+
+- Le backend ne synchronise plus le nom d'affichage public depuis Google a
+  chaque connexion. Les nouveaux comptes recoivent un pseudonyme local et
+  doivent choisir explicitement leur nom public.
+- Une migration ajoute `display_name_chosen_at` et pseudonymise les comptes
+  existants qui n'ont pas encore de nom public confirme.
+- Une route protegee `/api/profile` permet de lire le profil et de modifier le
+  nom public avec validation serveur.
+- Le frontend ajoute une page pleine Profil, accessible depuis la topbar,
+  ouverte automatiquement quand l'utilisateur doit choisir son nom public.
+- Le profil affiche les demandes de contribution de l'utilisateur et prepare
+  l'emplacement des futurs rattachements SSO Google, Discord et Twitch.
+- Le workflow photo de fiche existante est ajoute : recadrage rond cote
+  frontend, upload temporaire authentifie, validation MIME/signature, decodage
+  et reencodage WebP via `sharp`, stockage interne temporaire puis promotion en
+  fichier public uniquement apres validation moderateur ou modification directe.
+- Dans le graphe public, une photo validee remplace les initiales du noeud :
+  les initiales ne sont affichees que pour les personnages sans photo.
+- Les creations de fiche ne peuvent toujours pas porter de photo, afin de
+  limiter le spam de stockage.
+- Le nettoyage des photos temporaires orphelines est gere par un job dedie
+  `npm run photo:cleanup`, prevu pour etre lance periodiquement par PM2 avec
+  `cron_restart`.
+
+Vigilances restantes :
+
+- La liste du profil affiche les demandes utilisateur, mais pas encore un
+  journal dedie des actions directes realisees par un moderateur ou
+  administrateur.
+- Ajouter des tests backend dedies aux refus d'upload : taille excessive, SVG,
+  MIME incoherent, signature invalide et image illisible.
 
 ### Etape 8 - Administration
 

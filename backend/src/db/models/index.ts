@@ -47,6 +47,7 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare googleId: string;
   declare email: string;
   declare displayName: string;
+  declare displayNameChosenAt: Date | null;
   declare avatarUrl: string | null;
   declare roleId: ForeignKey<Role["id"]>;
   declare lastLoginAt: Date | null;
@@ -235,6 +236,7 @@ export const initModels = (sequelize: Sequelize) => {
         type: DataTypes.STRING(160),
         allowNull: false
       },
+      displayNameChosenAt: DataTypes.DATE,
       avatarUrl: DataTypes.TEXT,
       roleId: {
         type: DataTypes.UUID,

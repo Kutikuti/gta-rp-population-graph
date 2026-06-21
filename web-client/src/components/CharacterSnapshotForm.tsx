@@ -1,12 +1,21 @@
-import type { CharacterSnapshot, LifeStatus, VerificationStatus } from "../api";
+import {
+  type CharacterSnapshot,
+  type LifeStatus,
+  resolveApiAssetUrl,
+  type VerificationStatus
+} from "../api";
 import { lifeStatusLabels, verificationLabels } from "../constants";
+import { CharacterPhotoUpload } from "./CharacterPhotoUpload";
 
 type CharacterSnapshotFormProps = {
   snapshot: CharacterSnapshot;
   submitLabel: string;
   isSubmitting: boolean;
+  canUploadPhoto: boolean;
+  isPhotoUploading: boolean;
   onCancel: () => void;
   onChange: (snapshot: CharacterSnapshot) => void;
+  onPhotoUpload: (image: Blob) => Promise<void>;
   onSubmit: () => void;
 };
 
@@ -31,8 +40,7 @@ const fieldGroups: Array<{
       { key: "firstName", label: "Prénom" },
       { key: "lastName", label: "Nom" },
       { key: "nickname", label: "Surnom" },
-      { key: "birthDate", label: "Date de naissance", type: "date" },
-      { key: "photoUrl", label: "Photo" }
+      { key: "birthDate", label: "Date de naissance", type: "date" }
     ]
   },
   {
@@ -60,8 +68,11 @@ export function CharacterSnapshotForm({
   snapshot,
   submitLabel,
   isSubmitting,
+  canUploadPhoto,
+  isPhotoUploading,
   onCancel,
   onChange,
+  onPhotoUpload,
   onSubmit
 }: CharacterSnapshotFormProps) {
   const updateText = (key: keyof CharacterSnapshot, value: string) => {
@@ -99,6 +110,22 @@ export function CharacterSnapshotForm({
           </div>
         </fieldset>
       ))}
+
+      {canUploadPhoto ? (
+        <fieldset>
+          <legend>Photo</legend>
+          <CharacterPhotoUpload
+            currentPhotoUrl={
+              snapshot.photoUrl?.startsWith("pending-photo:")
+                ? null
+                : resolveApiAssetUrl(snapshot.photoUrl)
+            }
+            isUploading={isPhotoUploading}
+            mode={submitLabel.includes("Appliquer") ? "direct" : "request"}
+            onUpload={onPhotoUpload}
+          />
+        </fieldset>
+      ) : null}
 
       <fieldset>
         <legend>Statuts</legend>

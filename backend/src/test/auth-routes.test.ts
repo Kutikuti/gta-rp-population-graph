@@ -14,6 +14,7 @@ const baseUser: AuthenticatedUser = {
   id: "00000000-0000-4000-8000-000000000901",
   email: "viewer@example.test",
   displayName: "Viewer Example",
+  mustChooseDisplayName: false,
   avatarUrl: "https://example.test/avatar.png",
   role: {
     id: "00000000-0000-4000-8000-000000000001",
@@ -34,11 +35,24 @@ class FixtureAuthService implements AuthService {
       ...baseUser,
       email: identity.email,
       displayName: identity.displayName,
+      mustChooseDisplayName: false,
       avatarUrl: identity.avatarUrl,
       isBanned: this.bannedGoogleIds.has(identity.googleId)
     };
 
     return user.isBanned ? { status: "banned", user } : { status: "authenticated", user };
+  }
+
+  async updateDisplayName(userId: string, displayName: string) {
+    if (userId !== baseUser.id) {
+      return null;
+    }
+
+    return {
+      ...baseUser,
+      displayName,
+      mustChooseDisplayName: false
+    };
   }
 }
 
