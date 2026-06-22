@@ -715,7 +715,7 @@ Point de controle :
 
 ### Etape 7 - Profil utilisateur et photos securisees
 
-Statut : en cours depuis le 2026-06-21.
+Statut : terminee le 2026-06-22.
 
 - Ajouter ou ajuster le modele utilisateur pour distinguer l'identite SSO du
   nom d'affichage public.
@@ -746,7 +746,7 @@ Point de controle :
 - Les fichiers invalides, trop volumineux, SVG ou non-images sont rejetes cote
   serveur.
 
-Bilan intermediaire :
+Bilan final :
 
 - Le backend ne synchronise plus le nom d'affichage public depuis Google a
   chaque connexion. Les nouveaux comptes recoivent un pseudonyme local et
@@ -777,19 +777,56 @@ Bilan intermediaire :
   volumineux. Un test frontend verrouille aussi le comportement du graphe :
   photo presente => aucune initiale affichee dans le noeud.
 
-Vigilances restantes :
-
-- La liste du profil affiche les demandes utilisateur, mais pas encore un
-  journal dedie des actions directes realisees par un moderateur ou
-  administrateur.
-
 ### Etape 8 - Administration
+
+Statut : a preparer.
 
 - Construire les pages pleines d'administration.
 - Ajouter gestion des tags : creation, modification, suppression controlee.
 - Ajouter gestion des roles : promotion, retrait, bannissement.
 - Journaliser les actions sensibles.
 - Ajouter tests backend sur permissions, bannissements et actions admin.
+- Corriger le profil utilisateur pour afficher aussi un journal dedie des
+  actions directes realisees par un moderateur ou administrateur lorsque ces
+  actions concernent l'utilisateur courant.
+
+Plan propose :
+
+- Backend administration :
+  - ajouter un service admin dedie pour centraliser les changements de tags,
+    roles et bannissements ;
+  - exposer les routes protegees administrateur sous `/api/admin` :
+    `GET /users`, `PATCH /users/:id/role`, `POST /users/:id/ban`,
+    `DELETE /users/:id/ban`, `POST /tags`, `PATCH /tags/:id` et
+    `DELETE /tags/:id` ;
+  - valider toutes les charges utiles avec Zod et refuser explicitement les
+    roles, types de tags ou couleurs invalides ;
+  - empecher les actions dangereuses evidentes, par exemple supprimer un tag
+    encore rattache a des personnages sans strategie claire, ou retirer le
+    dernier administrateur actif.
+- Journalisation :
+  - creer un journal d'actions administratives distinct des historiques de
+    fiches personnage ;
+  - enregistrer l'acteur, la cible, le type d'action, les anciennes/nouvelles
+    valeurs utiles et la date ;
+  - relier les actions directes de moderation ou d'administration au profil de
+    l'utilisateur concerne quand c'est pertinent, afin de corriger le manque
+    identifie a la fin de l'etape 7.
+- Frontend administration :
+  - ajouter une page pleine `Administration`, accessible uniquement aux
+    administrateurs via la navigation globale ;
+  - separer les vues en sections compactes : utilisateurs, roles/bannissements,
+    tags et journal ;
+  - conserver le style data-app sobre, sans bouton redondant de retour au
+    graphe dans le contenu ;
+  - afficher les erreurs d'autorisation ou de validation sans exposer de detail
+    technique.
+- Tests et securite :
+  - tester les refus utilisateur simple/moderateur sur toutes les routes admin ;
+  - tester promotion, retrogradation, bannissement, levee de bannissement et
+    blocage du dernier administrateur ;
+  - tester creation, modification et suppression controlee des tags ;
+  - verifier que chaque action sensible produit une entree de journal.
 
 Point de controle :
 
@@ -797,6 +834,8 @@ Point de controle :
 - Les changements structurants sont traces.
 - Les suppressions dangereuses sont controlees ou bloquees si elles cassent des
   donnees existantes.
+- Le profil utilisateur expose les demandes de contribution et les actions
+  directes pertinentes, sans melanger ces donnees avec l'identite SSO privee.
 
 ### Etape 9 - Import Notion
 
