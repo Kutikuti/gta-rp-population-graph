@@ -80,15 +80,26 @@ function App() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    const selectedCharacterParam =
+      selectedCharacter &&
+      (selectedId === selectedCharacter.id || selectedId === selectedCharacter.publicSlug)
+        ? selectedCharacter.publicSlug
+        : selectedId;
 
-    if (selectedId) {
-      url.searchParams.set("character", selectedId);
+    if (selectedCharacterParam) {
+      url.searchParams.set("character", selectedCharacterParam);
     } else {
       url.searchParams.delete("character");
     }
 
     window.history.replaceState({}, "", url.toString());
-  }, [selectedId]);
+  }, [selectedCharacter, selectedId]);
+
+  useEffect(() => {
+    if (selectedCharacter && selectedId === selectedCharacter.publicSlug) {
+      setSelectedId(selectedCharacter.id);
+    }
+  }, [selectedCharacter, selectedId]);
 
   const closeDetails = useCallback(() => {
     setSelectedId(null);
@@ -209,7 +220,7 @@ function App() {
                   }
 
                   const url = new URL(window.location.href);
-                  url.searchParams.set("character", selectedId);
+                  url.searchParams.set("character", selectedCharacter?.publicSlug ?? selectedId);
 
                   try {
                     await navigator.clipboard.writeText(url.toString());

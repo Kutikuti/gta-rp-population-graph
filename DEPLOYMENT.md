@@ -102,6 +102,13 @@ npm run db:migrate:pending
 
 Le dernier `pending` doit retourner une liste vide.
 
+La migration des slugs publics de personnages backfill automatiquement la
+colonne `public_slug` a partir du nom et prenom existants, au format lisible
+`prenom-nom`, avec suffixe numerote si un doublon est detecte. Ces slugs
+servent ensuite aux URLs publiques partageables des fiches. Lors d'une
+modification ulterieure du prenom ou du nom, le slug est regenere
+automatiquement avec la meme logique.
+
 Ne pas lancer `npm run db:seed` en production. Les seeds sont uniquement faits
 pour le developpement local.
 

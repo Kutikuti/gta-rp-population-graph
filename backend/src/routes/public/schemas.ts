@@ -31,7 +31,12 @@ export const historyQuerySchema = paginationSchema.extend({
 });
 
 export const idParamSchema = z.object({
-  id: z.uuid()
+  id: z
+    .string()
+    .trim()
+    .min(1)
+    .max(180)
+    .regex(/^[a-z0-9-]+$/)
 });
 
 export const parseCharacterFilters = (query: unknown): CharacterListFilters =>

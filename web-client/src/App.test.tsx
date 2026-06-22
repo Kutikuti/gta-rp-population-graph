@@ -41,6 +41,7 @@ const tag = {
 
 const camille = {
   id: "00000000-0000-4000-8000-000000000301",
+  publicSlug: "camille-morel",
   firstName: "Camille",
   lastName: "Morel",
   fullName: "Camille Morel",
@@ -71,6 +72,7 @@ const camille = {
 const ines = {
   ...camille,
   id: "00000000-0000-4000-8000-000000000303",
+  publicSlug: "ines-morel",
   firstName: "Ines",
   lastName: "Morel",
   fullName: "Ines Morel",
@@ -155,8 +157,8 @@ describe("App", () => {
 
       if (url.includes("/api/characters/directory")) {
         return jsonResponse([
-          { id: camille.id, fullName: camille.fullName },
-          { id: ines.id, fullName: ines.fullName }
+          { id: camille.id, publicSlug: camille.publicSlug, fullName: camille.fullName },
+          { id: ines.id, publicSlug: ines.publicSlug, fullName: ines.fullName }
         ]);
       }
 
@@ -197,7 +199,10 @@ describe("App", () => {
         });
       }
 
-      if (url.includes(`/api/characters/${camille.id}`)) {
+      if (
+        url.includes(`/api/characters/${camille.id}`) ||
+        url.includes(`/api/characters/${camille.publicSlug}`)
+      ) {
         return jsonResponse(camilleDetail);
       }
 
@@ -300,7 +305,7 @@ describe("App", () => {
   });
 
   it("opens a shared character link directly from the URL", async () => {
-    window.history.replaceState({}, "", `/?character=${camille.id}`);
+    window.history.replaceState({}, "", `/?character=${camille.publicSlug}`);
 
     render(<App />);
 

@@ -88,6 +88,10 @@ Principes :
 - Fiche personnage detaillee.
 - URL partageable vers une fiche precise, ouvrant la vue publique avec le
   graphe centre sur le personnage et sa fiche ouverte.
+  Cette URL publique doit utiliser un slug lisible stable de type
+  `prenom-nom`, avec suffixe numerote en cas de doublon, plutot qu'un UUID.
+  Si le prenom ou le nom d'une fiche change, ce slug doit etre regenere pour
+  rester coherent avec la fiche publique.
 - Relations typees strictement RP entre personnages et limitees au noyau
   familial/couple : parent, enfant, fratrie, couple.
 - Les appartenances metier, police, quartier ou groupe restent des champs de

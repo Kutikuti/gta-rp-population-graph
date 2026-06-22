@@ -29,6 +29,9 @@ Inclus :
 - Fiche personnage.
 - Lien partageable vers une fiche personnage, ouvrant directement la vue graphe
   centree sur ce personnage avec sa fiche ouverte.
+  L'URL publique utilise un slug lisible stable `prenom-nom`, avec suffixe
+  numerote en cas de doublon, plutot qu'un identifiant technique. Ce slug est
+  regenere automatiquement si le nom public du personnage change.
 - Historique de fiche deplieable avec detail des champs modifies.
 - Photo optionnelle de personnage, ajoutee uniquement via modification de fiche
   existante, avec upload securise et recadrage rond pour le graphe.

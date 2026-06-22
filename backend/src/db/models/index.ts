@@ -105,6 +105,7 @@ export class Character extends Model<
   InferCreationAttributes<Character>
 > {
   declare id: CreationOptional<string>;
+  declare publicSlug: string;
   declare firstName: string;
   declare lastName: string;
   declare nickname: string | null;
@@ -345,6 +346,11 @@ export const initModels = (sequelize: Sequelize) => {
   Character.init(
     {
       id: uuidPrimaryKey,
+      publicSlug: {
+        type: DataTypes.STRING(180),
+        allowNull: false,
+        unique: true
+      },
       firstName: {
         type: DataTypes.STRING(120),
         allowNull: false
@@ -397,6 +403,7 @@ export const initModels = (sequelize: Sequelize) => {
       sequelize,
       tableName: "characters",
       indexes: [
+        { fields: ["public_slug"], unique: true },
         { fields: ["first_name", "last_name"] },
         { fields: ["phone_number"] },
         { fields: ["life_status"] },

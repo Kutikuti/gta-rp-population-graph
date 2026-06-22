@@ -68,6 +68,7 @@ export type PublicTag = {
 
 export type PublicCharacterSummary = {
   id: string;
+  publicSlug: string;
   firstName: string;
   lastName: string;
   fullName: string;
@@ -132,6 +133,7 @@ export type PublicCharacterList = {
 
 export type PublicCharacterReference = {
   id: string;
+  publicSlug: string;
   fullName: string;
 };
 
@@ -185,7 +187,7 @@ export type PublicDataService = {
   listCharacters(filters: CharacterListFilters): Promise<PublicCharacterList>;
   listCharacterDirectory(): Promise<PublicCharacterReference[]>;
   listCharacterMatches(filters: CharacterMatchFilters): Promise<PublicCharacterMatches>;
-  getCharacter(id: string): Promise<PublicCharacterDetail | null>;
+  getCharacter(identifier: string): Promise<PublicCharacterDetail | null>;
   listStreamers(): Promise<PublicStreamer[]>;
   listTags(): Promise<PublicTag[]>;
   getGraph(): Promise<PublicGraph>;
@@ -221,6 +223,7 @@ const serializeTag = (tag: Tag): PublicTag => ({
 
 const serializeCharacterSummary = (character: Character): PublicCharacterSummary => ({
   id: character.id,
+  publicSlug: character.publicSlug,
   firstName: character.firstName,
   lastName: character.lastName,
   fullName: fullName(character),
@@ -374,7 +377,7 @@ export class SequelizePublicDataService implements PublicDataService {
 
   async listCharacterDirectory(): Promise<PublicCharacterReference[]> {
     const characters = await models.Character.findAll({
-      attributes: ["id", "firstName", "lastName"],
+      attributes: ["id", "publicSlug", "firstName", "lastName"],
       order: [
         ["lastName", "ASC"],
         ["firstName", "ASC"]
@@ -383,6 +386,7 @@ export class SequelizePublicDataService implements PublicDataService {
 
     return characters.map((character) => ({
       id: character.id,
+      publicSlug: character.publicSlug,
       fullName: fullName(character)
     }));
   }
@@ -405,8 +409,9 @@ export class SequelizePublicDataService implements PublicDataService {
     };
   }
 
-  async getCharacter(id: string): Promise<PublicCharacterDetail | null> {
-    const character = await models.Character.findByPk(id, {
+  async getCharacter(identifier: string): Promise<PublicCharacterDetail | null> {
+    const character = await models.Character.findOne({
+      where: isUuid(identifier) ? { id: identifier } : { publicSlug: identifier },
       include: [
         ...characterIncludes(),
         {

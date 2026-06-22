@@ -26,6 +26,7 @@ export type PublicTag = {
 
 export type PublicCharacterSummary = {
   id: string;
+  publicSlug: string;
   firstName: string;
   lastName: string;
   fullName: string;
@@ -89,6 +90,7 @@ export type PublicCharacterList = {
 
 export type PublicCharacterReference = {
   id: string;
+  publicSlug: string;
   fullName: string;
 };
 

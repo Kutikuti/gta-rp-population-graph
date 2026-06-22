@@ -63,6 +63,7 @@ const streamers: PublicStreamer[] = [
 
 const camille: PublicCharacterSummary = {
   id: "00000000-0000-4000-8000-000000000301",
+  publicSlug: "camille-morel",
   firstName: "Camille",
   lastName: "Morel",
   fullName: "Camille Morel",
@@ -93,6 +94,7 @@ const camille: PublicCharacterSummary = {
 const malik: PublicCharacterSummary = {
   ...camille,
   id: "00000000-0000-4000-8000-000000000302",
+  publicSlug: "malik-serrano",
   firstName: "Malik",
   lastName: "Serrano",
   fullName: "Malik Serrano",
@@ -185,8 +187,8 @@ const history: PublicHistoryEntry[] = [
 ];
 
 const directory: PublicCharacterReference[] = [
-  { id: camille.id, fullName: camille.fullName },
-  { id: malik.id, fullName: malik.fullName }
+  { id: camille.id, publicSlug: camille.publicSlug, fullName: camille.fullName },
+  { id: malik.id, publicSlug: malik.publicSlug, fullName: malik.fullName }
 ];
 
 const filterCharacters = (filters: CharacterMatchFilters) =>
@@ -239,7 +241,9 @@ const createFixtureService = (): PublicDataService => ({
     });
   },
   getCharacter(id: string) {
-    return Promise.resolve(id === camilleDetail.id ? camilleDetail : null);
+    return Promise.resolve(
+      id === camilleDetail.id || id === camilleDetail.publicSlug ? camilleDetail : null
+    );
   },
   listTags() {
     return Promise.resolve(tags);
@@ -318,6 +322,19 @@ describe("public consultation API", () => {
       relationships: {
         outgoing: [{ label: "Fratrie", relatedCharacter: { fullName: "Malik Serrano" } }]
       }
+    });
+  });
+
+  it("returns one detailed character sheet from the public slug", async () => {
+    const response = await request(app).get(`/api/characters/${camille.publicSlug}`);
+
+    expect(response.status).toBe(200);
+    const body = response.body as PublicCharacterDetail;
+
+    expect(body).toMatchObject({
+      id: camille.id,
+      publicSlug: camille.publicSlug,
+      fullName: "Camille Morel"
     });
   });
 

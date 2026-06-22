@@ -165,6 +165,7 @@ try {
       [
         {
           id: ids.characters.camille,
+          publicSlug: "camille-morel",
           firstName: "Camille",
           lastName: "Morel",
           nickname: "Cami",
@@ -191,6 +192,7 @@ try {
         },
         {
           id: ids.characters.malik,
+          publicSlug: "malik-serrano",
           firstName: "Malik",
           lastName: "Serrano",
           nickname: "Serrano",
@@ -217,6 +219,7 @@ try {
         },
         {
           id: ids.characters.ines,
+          publicSlug: "ines-morel",
           firstName: "Ines",
           lastName: "Morel",
           nickname: null,

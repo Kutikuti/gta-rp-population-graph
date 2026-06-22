@@ -51,7 +51,9 @@ La fiche publique et les formulaires de modification supportent maintenant :
 - un bloc medias distinct avec streamer existant ou nouveau streamer ;
 - les liens publics Twitch, Kick, YouTube, Instagram et TikTok ;
 - l'edition des parentes RP ;
-- un lien partageable vers une fiche publique via l'URL.
+- un lien partageable vers une fiche publique via un slug lisible
+  `prenom-nom`, avec suffixe numerote si un doublon existe, et mis a jour si le
+  nom public du personnage change.
 
 ## Lancement local
 

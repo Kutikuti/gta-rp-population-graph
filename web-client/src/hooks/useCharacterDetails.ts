@@ -17,10 +17,15 @@ export function useCharacterDetails(selectedId: string | null, onError: (message
       return;
     }
 
-    const [detailResult, historyResult] = await Promise.all([
-      getCharacter(selectedId),
-      listHistory(selectedId)
-    ]);
+    const detailResult = await getCharacter(selectedId);
+
+    if (!detailResult) {
+      setSelectedCharacter(null);
+      setHistory([]);
+      return;
+    }
+
+    const historyResult = await listHistory(detailResult.id);
     setSelectedCharacter(detailResult);
     setHistory(historyResult);
   }, [selectedId]);
@@ -38,10 +43,17 @@ export function useCharacterDetails(selectedId: string | null, onError: (message
     const loadDetail = async () => {
       try {
         setIsDetailLoading(true);
-        const [detailResult, historyResult] = await Promise.all([
-          getCharacter(selectedId),
-          listHistory(selectedId)
-        ]);
+        const detailResult = await getCharacter(selectedId);
+
+        if (!detailResult) {
+          if (!ignore) {
+            setSelectedCharacter(null);
+            setHistory([]);
+          }
+          return;
+        }
+
+        const historyResult = await listHistory(detailResult.id);
 
         if (!ignore) {
           setSelectedCharacter(detailResult);

@@ -23,6 +23,7 @@ import {
   isPendingCharacterPhotoToken,
   promoteCharacterPhotoIfPending
 } from "./character-photos.js";
+import { generateUniqueCharacterSlug } from "./character-slug.js";
 
 const emptyToNull = (value: string | null | undefined) => {
   if (typeof value !== "string") {
@@ -553,9 +554,20 @@ const applySnapshot = async (
   transaction: Transaction
 ) => {
   const streamerId = await resolveStreamerId(snapshot, transaction);
+  const shouldRefreshPublicSlug =
+    snapshot.firstName !== character.firstName || snapshot.lastName !== character.lastName;
+  const publicSlug = shouldRefreshPublicSlug
+    ? await generateUniqueCharacterSlug(
+        snapshot.firstName,
+        snapshot.lastName,
+        transaction,
+        character.id
+      )
+    : character.publicSlug;
 
   await character.update(
     {
+      publicSlug,
       firstName: snapshot.firstName,
       lastName: snapshot.lastName,
       nickname: snapshot.nickname,
@@ -743,6 +755,11 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       if (request.requestType === "create") {
         character = await models.Character.create(
           {
+            publicSlug: await generateUniqueCharacterSlug(
+              proposedSnapshot.firstName,
+              proposedSnapshot.lastName,
+              transaction
+            ),
             firstName: proposedSnapshot.firstName,
             lastName: proposedSnapshot.lastName,
             nickname: proposedSnapshot.nickname,
