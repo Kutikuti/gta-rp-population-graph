@@ -56,8 +56,12 @@ Hors MVP :
 - Upload de photo lors de la creation initiale d'une fiche par utilisateur
   simple. La photo doit etre proposee apres existence de la fiche, via
   modification moderee, afin de limiter le spam.
-- Connexion Discord et Twitch. Ces SSO sont prevus plus tard comme fournisseurs
-  supplementaires rattachables depuis la page profil.
+- Connexion et rattachement multi-SSO au-dela de Google : Discord et Twitch
+  sont prevus plus tard comme fournisseurs supplementaires rattachables depuis
+  la page profil.
+- Etat live Twitch dans les fiches personnage. Cette integration sera traitee
+  avec le futur SSO Twitch afin de mutualiser la configuration Twitch, les
+  secrets serveur et la gestion des limites d'API.
 
 ## Parcours utilisateur
 
@@ -755,6 +759,8 @@ Bilan intermediaire :
   ouverte automatiquement quand l'utilisateur doit choisir son nom public.
 - Le profil affiche les demandes de contribution de l'utilisateur et prepare
   l'emplacement des futurs rattachements SSO Google, Discord et Twitch.
+- L'etat live Twitch reste volontairement reporte a l'etape future dediee aux
+  SSO multiples et aux integrations de plateformes.
 - Le workflow photo de fiche existante est ajoute : recadrage rond cote
   frontend, upload temporaire authentifie, validation MIME/signature, decodage
   et reencodage WebP via `sharp`, stockage interne temporaire puis promotion en
@@ -838,6 +844,38 @@ Point de controle :
 - Les sauvegardes sont planifiees avant exposition publique.
 - Le serveur est durci avant trafic public.
 
+### Etape 12 - SSO multiples et integrations plateformes
+
+- Generaliser le modele `UserIdentity` pour rattacher plusieurs fournisseurs a
+  un meme compte utilisateur : Google, Discord et Twitch.
+- Permettre a un utilisateur de connecter ou de dissocier un fournisseur depuis
+  son profil, sans exposer publiquement les noms, prenoms, emails ou handles
+  renvoyes par ces fournisseurs.
+- Gerer les collisions de compte avec prudence : refus ou validation explicite
+  lorsqu'une identite fournisseur est deja rattachee ailleurs, sans fusion
+  automatique risquee.
+- Ajouter les variables d'environnement, secrets serveur, callbacks OAuth et
+  tests pour chaque fournisseur, avec une documentation de deploiement dediee.
+- Maintenir les controles existants de role, bannissement et session serveur
+  quel que soit le fournisseur utilise pour se connecter.
+- Ajouter l'etat live Twitch dans cette etape, en s'appuyant sur la
+  configuration Twitch serveur deja necessaire au SSO.
+- Exposer l'etat live Twitch par le backend avec cache court et degradation
+  silencieuse si Twitch est indisponible.
+- Afficher l'etat live uniquement dans le bouton/lien Twitch de la fiche
+  personnage, avec un rond rouge lorsque le stream est en cours. Aucun indicateur
+  n'est affiche si la chaine est hors ligne ou si l'etat est inconnu.
+
+Point de controle :
+
+- Un compte peut etre retrouve via plusieurs fournisseurs sans creer de doublon
+  involontaire.
+- Les donnees personnelles SSO restent privees et separees du nom d'affichage
+  public.
+- Les secrets Discord et Twitch ne sont jamais envoyes au frontend.
+- L'etat live Twitch ne degrade pas l'affichage des fiches en cas d'erreur ou
+  de limite API.
+
 ## Hypotheses
 
 - La page Notion communautaire est la source initiale, mais son accessibilite et
@@ -846,6 +884,8 @@ Point de controle :
 - Le frontend demarre avec Vite, React et TypeScript.
 - Le developpement utilise Node.js `24.16.0` ou plus recent, en restant sur la
   branche LTS plutot que sur la branche Current.
-- Discord, Twitch et extraction admin sont des evolutions futures.
+- Discord, Twitch, l'etat live Twitch et extraction admin sont des evolutions
+  futures. Les evolutions SSO et live Twitch sont regroupees dans l'etape 12
+  pour eviter une integration API Twitch partielle et redondante.
 - Le VPS Hetzner pourra heberger le backend, le frontend, PostgreSQL et Nginx,
   sous reserve de verification de charge au moment du deploiement.
