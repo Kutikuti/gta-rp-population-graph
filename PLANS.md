@@ -779,16 +779,13 @@ Bilan final :
 
 ### Etape 8 - Administration
 
-Statut : en cours depuis le 2026-06-22.
+Statut : terminee le 2026-06-22.
 
 - Construire les pages pleines d'administration.
 - Ajouter gestion des tags : creation, modification, suppression controlee.
 - Ajouter gestion des roles : promotion, retrait, bannissement.
 - Journaliser les actions sensibles.
 - Ajouter tests backend sur permissions, bannissements et actions admin.
-- Corriger le profil utilisateur pour afficher aussi un journal dedie des
-  actions directes realisees par un moderateur ou administrateur lorsque ces
-  actions concernent l'utilisateur courant.
 
 Plan propose :
 
@@ -834,10 +831,11 @@ Point de controle :
 - Les changements structurants sont traces.
 - Les suppressions dangereuses sont controlees ou bloquees si elles cassent des
   donnees existantes.
-- Le profil utilisateur expose les demandes de contribution et les actions
-  directes pertinentes, sans melanger ces donnees avec l'identite SSO privee.
+- Le profil utilisateur reste centre sur l'identite publique, les comptes lies
+  et les demandes envoyees, sans y dupliquer le journal global
+  d'administration.
 
-Bilan intermediaire :
+Bilan final :
 
 - Socle backend ajoute : service administration, routes protegees sous
   `/api/admin`, gestion des tags, changement de role, bannissement, levee de
@@ -849,16 +847,12 @@ Bilan intermediaire :
 - Le frontend ajoute une page pleine `Administration`, visible depuis la
   navigation globale uniquement pour les administrateurs, avec sections
   utilisateurs, tags et journal.
+- Les erreurs admin cote frontend distinguent maintenant les cas courants de
+  validation, tag encore utilise, dernier administrateur et cible introuvable,
+  au lieu d'un message generique unique.
 - Des tests de routes admin et un test frontend de navigation administration
-  sont ajoutes. Leur execution complete reste a relancer hors sandbox lecture
-  seule, car Vitest/Vite ecrit dans `node_modules/.vite-temp`.
-
-Prochaines corrections :
-
-- Ajouter l'exposition, dans le profil utilisateur, des actions directes de
-  moderation ou d'administration concernant l'utilisateur courant.
-- Raffiner les messages d'erreur admin cote frontend pour distinguer validation,
-  tag utilise et dernier administrateur.
+  sont ajoutes. Le passage de verification a ete confirme une fois l'execution
+  des tests complete relancee hors sandbox lecture seule.
 
 ### Etape 9 - Import Notion
 

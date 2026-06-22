@@ -276,10 +276,48 @@ export type AdminTagInput = {
   description: string | null;
 };
 
+export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(message: string, status: number, code: string | null) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 const env = import.meta.env as { readonly VITE_API_BASE_URL?: string };
 const API_BASE_URL = env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
+
+const buildApiError = async (response: Response) => {
+  let message = `Erreur API ${String(response.status)}`;
+  let code: string | null = null;
+
+  try {
+    const body = (await response.json()) as {
+      error?: {
+        code?: string;
+        message?: string;
+      };
+    };
+
+    if (body.error?.message) {
+      message = body.error.message;
+    }
+
+    if (body.error?.code) {
+      code = body.error.code;
+    }
+  } catch {
+    // Ignore invalid or empty error bodies and keep the fallback message.
+  }
+
+  return new ApiRequestError(message, response.status, code);
+};
 
 export const resolveApiAssetUrl = (path: string | null) => {
   if (!path) {
@@ -304,7 +342,7 @@ const fetchJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Erreur API ${String(response.status)}`);
+    throw await buildApiError(response);
   }
 
   return (await response.json()) as T;
@@ -323,7 +361,7 @@ const deleteJson = async <T>(path: string): Promise<T | null> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Erreur API ${String(response.status)}`);
+    throw await buildApiError(response);
   }
 
   if (response.status === 204) {
@@ -424,7 +462,7 @@ export const logout = async () => {
   });
 
   if (!response.ok) {
-    throw new Error(`Erreur API ${String(response.status)}`);
+    throw await buildApiError(response);
   }
 };
 

@@ -293,9 +293,9 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(
-      await screen.findByText("Impossible de charger les données publiques.")
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Impossible de charger les données publiques."
+    );
     expect(screen.queryByText("Chargement du graphe...")).not.toBeInTheDocument();
   });
 
@@ -467,6 +467,98 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Viewer Example")).toBeInTheDocument();
     expect(screen.getByText("Famille Morel")).toBeInTheDocument();
+  });
+
+  it("shows a specific admin error when trying to remove the last administrator", async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL, _init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000913",
+            email: "admin@example.test",
+            displayName: "Admin Example",
+            mustChooseDisplayName: false,
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000003",
+              name: "administrator"
+            },
+            isBanned: false
+          }
+        });
+      }
+
+      if (url.includes("/api/admin/dashboard")) {
+        return jsonResponse({
+          users: [
+            {
+              id: "last-admin",
+              email: "admin@example.test",
+              displayName: "Admin Example",
+              role: {
+                id: "00000000-0000-4000-8000-000000000003",
+                name: "administrator"
+              },
+              isBanned: false,
+              createdAt: now,
+              lastLoginAt: null
+            }
+          ],
+          tags: [{ ...tag, usageCount: 1 }],
+          actions: []
+        });
+      }
+
+      if (url.includes("/api/admin/users/last-admin/role")) {
+        return Promise.resolve({
+          ok: false,
+          status: 409,
+          json: () =>
+            Promise.resolve({
+              error: {
+                code: "LAST_ADMIN",
+                message: "Impossible de retirer le dernier administrateur actif."
+              }
+            })
+        } as Response);
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([camille.streamer]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Administration" }));
+    await user.selectOptions(screen.getByDisplayValue("Administrateur"), "user");
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Impossible de retirer le dernier administrateur actif."
+    );
   });
 
   it("shows an auth error returned by the OAuth callback", async () => {

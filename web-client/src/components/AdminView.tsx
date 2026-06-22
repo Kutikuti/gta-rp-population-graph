@@ -5,6 +5,7 @@ import {
   type AdminTag,
   type AdminTagInput,
   type AdminUser,
+  ApiRequestError,
   type AuthSession,
   banAdminUser,
   createAdminTag,
@@ -64,6 +65,27 @@ const normalizeTagInput = (input: AdminTagInput): AdminTagInput => ({
   colorHex: input.colorHex,
   description: input.description?.trim() ? input.description.trim() : null
 });
+
+const adminErrorMessage = (error: unknown) => {
+  if (!(error instanceof ApiRequestError)) {
+    return "L'action d'administration a échoué.";
+  }
+
+  switch (error.code) {
+    case "VALIDATION_ERROR":
+      return "Les données saisies sont invalides. Vérifie les champs du formulaire.";
+    case "TAG_IN_USE":
+      return "Ce tag est encore utilisé par des fiches et ne peut pas être supprimé.";
+    case "LAST_ADMIN":
+      return "Impossible de retirer le dernier administrateur actif.";
+    case "TAG_NOT_FOUND":
+      return "Ce tag n'existe plus ou a déjà été supprimé.";
+    case "USER_NOT_FOUND":
+      return "Cet utilisateur n'existe plus ou n'est plus disponible.";
+    default:
+      return error.message || "L'action d'administration a échoué.";
+  }
+};
 
 export function AdminView({ session, onError }: AdminViewProps) {
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
@@ -127,8 +149,8 @@ export function AdminView({ session, onError }: AdminViewProps) {
       await action();
       await loadDashboard();
       setFeedback(message);
-    } catch {
-      onError("L'action d'administration a échoué.");
+    } catch (error) {
+      onError(adminErrorMessage(error));
     }
   };
 

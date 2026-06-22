@@ -35,6 +35,7 @@ function App() {
 
   const handleError = useCallback((message: string) => {
     setError(message);
+    setToast({ tone: "error", message });
   }, []);
 
   const { graph, isBootLoading, refreshPublicGraphData, tags } = usePublicGraphData(handleError);
