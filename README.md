@@ -9,6 +9,7 @@ personnages, leurs informations publiques, leurs streamers et leurs liens RP.
 
 - Explorer les personnages via un graphe interactif.
 - Consulter une fiche detaillee pour chaque personnage.
+- Partager un lien direct vers une fiche precise avec recentrage du graphe.
 - Rechercher et filtrer par nom, surnom, streamer, matricule, tag ou statut.
 - Proposer des modifications via un systeme de moderation.
 - Garder un historique des changements valides.
@@ -41,14 +42,16 @@ La securite du serveur est la priorite numero 1 du developpement.
 
 ## Etat actuel
 
-Le socle de l'etape 1 est initialise : backend Express TypeScript et frontend
-Vite React TypeScript, avec Biome, tests, build et validation d'environnement.
+Le socle backend/frontend, la base PostgreSQL, les routes publiques de
+consultation, Google OAuth, la contribution moderee, la moderation, le profil
+utilisateur et les photos securisees sont en place.
 
-L'etape 2 est terminee : Sequelize est configure, la base PostgreSQL peut
-etre creee via `npm run db:ensure`, la migration initiale cree le schema
-metier, les seeds produisent un graphe de developpement exploitable et les
-checks backend passent. L'etape 3 est demarree avec les premieres routes
-publiques de consultation.
+La fiche publique et les formulaires de modification supportent maintenant :
+
+- un bloc medias distinct avec streamer existant ou nouveau streamer ;
+- les liens publics Twitch, Kick, YouTube, Instagram et TikTok ;
+- l'edition des parentes RP ;
+- un lien partageable vers une fiche publique via l'URL.
 
 ## Lancement local
 

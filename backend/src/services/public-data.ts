@@ -130,6 +130,11 @@ export type PublicCharacterList = {
   offset: number;
 };
 
+export type PublicCharacterReference = {
+  id: string;
+  fullName: string;
+};
+
 export type PublicCharacterMatches = {
   ids: string[];
   total: number;
@@ -178,8 +183,10 @@ export type PublicHistoryEntry = {
 
 export type PublicDataService = {
   listCharacters(filters: CharacterListFilters): Promise<PublicCharacterList>;
+  listCharacterDirectory(): Promise<PublicCharacterReference[]>;
   listCharacterMatches(filters: CharacterMatchFilters): Promise<PublicCharacterMatches>;
   getCharacter(id: string): Promise<PublicCharacterDetail | null>;
+  listStreamers(): Promise<PublicStreamer[]>;
   listTags(): Promise<PublicTag[]>;
   getGraph(): Promise<PublicGraph>;
   listHistory(filters: HistoryFilters): Promise<PublicHistoryEntry[]>;
@@ -365,6 +372,21 @@ export class SequelizePublicDataService implements PublicDataService {
     };
   }
 
+  async listCharacterDirectory(): Promise<PublicCharacterReference[]> {
+    const characters = await models.Character.findAll({
+      attributes: ["id", "firstName", "lastName"],
+      order: [
+        ["lastName", "ASC"],
+        ["firstName", "ASC"]
+      ]
+    });
+
+    return characters.map((character) => ({
+      id: character.id,
+      fullName: fullName(character)
+    }));
+  }
+
   async listCharacterMatches(filters: CharacterMatchFilters): Promise<PublicCharacterMatches> {
     const result = await models.Character.findAndCountAll({
       attributes: ["id"],
@@ -406,6 +428,14 @@ export class SequelizePublicDataService implements PublicDataService {
   async listTags(): Promise<PublicTag[]> {
     const tags = await models.Tag.findAll({ order: [["name", "ASC"]] });
     return tags.map(serializeTag);
+  }
+
+  async listStreamers(): Promise<PublicStreamer[]> {
+    const streamers = await models.Streamer.findAll({
+      order: [["publicName", "ASC"]]
+    });
+
+    return streamers.map(serializeStreamer).filter((streamer) => streamer !== null);
   }
 
   async getGraph(): Promise<PublicGraph> {

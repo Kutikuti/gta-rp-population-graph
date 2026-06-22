@@ -4,6 +4,7 @@ import { type PublicDataService, SequelizePublicDataService } from "../../servic
 import { createPublicCharactersRouter } from "./characters.js";
 import { createPublicGraphRouter } from "./graph.js";
 import { createPublicHistoryRouter } from "./history.js";
+import { createPublicStreamersRouter } from "./streamers.js";
 import { createPublicTagsRouter } from "./tags.js";
 
 export const createPublicRouter = (
@@ -13,6 +14,7 @@ export const createPublicRouter = (
 
   router.use("/characters", createPublicCharactersRouter(publicDataService));
   router.use("/tags", createPublicTagsRouter(publicDataService));
+  router.use("/streamers", createPublicStreamersRouter(publicDataService));
   router.use("/graph", createPublicGraphRouter(publicDataService));
   router.use("/history", createPublicHistoryRouter(publicDataService));
 

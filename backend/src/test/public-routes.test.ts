@@ -9,10 +9,12 @@ import type {
   PublicCharacterDetail,
   PublicCharacterList,
   PublicCharacterMatches,
+  PublicCharacterReference,
   PublicCharacterSummary,
   PublicDataService,
   PublicGraph,
   PublicHistoryEntry,
+  PublicStreamer,
   PublicTag
 } from "../services/public-data.js";
 
@@ -39,6 +41,23 @@ const tags: PublicTag[] = [
     type: "business",
     colorHex: "#38c7ff",
     description: "Entreprise fictive."
+  }
+];
+
+const streamers: PublicStreamer[] = [
+  {
+    id: "00000000-0000-4000-8000-000000000201",
+    publicName: "NovaRP",
+    primaryPlatform: "twitch",
+    socialLinks: { twitch: "https://twitch.tv/example-novarp" },
+    verificationStatus: "community"
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000202",
+    publicName: "AxleLive",
+    primaryPlatform: "twitch",
+    socialLinks: { twitch: "https://twitch.tv/example-axlelive" },
+    verificationStatus: "community"
   }
 ];
 
@@ -165,6 +184,11 @@ const history: PublicHistoryEntry[] = [
   }
 ];
 
+const directory: PublicCharacterReference[] = [
+  { id: camille.id, fullName: camille.fullName },
+  { id: malik.id, fullName: malik.fullName }
+];
+
 const filterCharacters = (filters: CharacterMatchFilters) =>
   [camille, malik].filter((character) => {
     const query = filters.q?.toLocaleLowerCase("fr-FR");
@@ -203,6 +227,9 @@ const createFixtureService = (): PublicDataService => ({
       offset: filters.offset
     });
   },
+  listCharacterDirectory() {
+    return Promise.resolve(directory);
+  },
   listCharacterMatches(filters: CharacterMatchFilters) {
     const items = filterCharacters(filters);
 
@@ -216,6 +243,9 @@ const createFixtureService = (): PublicDataService => ({
   },
   listTags() {
     return Promise.resolve(tags);
+  },
+  listStreamers() {
+    return Promise.resolve(streamers);
   },
   getGraph() {
     return Promise.resolve(graph);
@@ -247,6 +277,15 @@ describe("public consultation API", () => {
       fullName: "Camille Morel",
       streamer: { publicName: "NovaRP" }
     });
+  });
+
+  it("returns the public character directory", async () => {
+    const response = await request(app).get("/api/characters/directory");
+
+    expect(response.status).toBe(200);
+    const body = response.body as PublicCharacterReference[];
+
+    expect(body).toEqual(directory);
   });
 
   it("returns validation errors for invalid public filters", async () => {
@@ -291,19 +330,23 @@ describe("public consultation API", () => {
     expect(body.error.code).toBe("CHARACTER_NOT_FOUND");
   });
 
-  it("returns tags, graph elements and public history", async () => {
-    const [tagsResponse, graphResponse, historyResponse] = await Promise.all([
+  it("returns tags, streamers, graph elements and public history", async () => {
+    const [tagsResponse, streamersResponse, graphResponse, historyResponse] = await Promise.all([
       request(app).get("/api/tags"),
+      request(app).get("/api/streamers"),
       request(app).get("/api/graph"),
       request(app).get("/api/history")
     ]);
 
     expect(tagsResponse.status).toBe(200);
     const tagsBody = tagsResponse.body as PublicTag[];
+    const streamersBody = streamersResponse.body as PublicStreamer[];
     const graphBody = graphResponse.body as PublicGraph;
     const historyBody = historyResponse.body as PublicHistoryEntry[];
 
     expect(tagsBody).toHaveLength(2);
+    expect(streamersResponse.status).toBe(200);
+    expect(streamersBody).toHaveLength(2);
     expect(graphResponse.status).toBe(200);
     expect(graphBody.nodes).toHaveLength(2);
     expect(graphBody.edges[0]?.data).toMatchObject({

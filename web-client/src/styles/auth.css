@@ -36,6 +36,17 @@
   padding: 5px 8px;
 }
 
+.auth-user-card {
+  min-height: 34px;
+  text-align: left;
+}
+
+.auth-user-card.is-active,
+.auth-user-card:hover {
+  border-color: #68c7ff;
+  background: #0b2d49;
+}
+
 .auth-status {
   color: #d9efff;
   font-size: 0.78rem;

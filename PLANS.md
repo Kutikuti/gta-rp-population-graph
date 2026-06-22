@@ -27,6 +27,8 @@ Inclus :
 - Vue principale avec graphe interactif.
 - Recherche et filtres persistants.
 - Fiche personnage.
+- Lien partageable vers une fiche personnage, ouvrant directement la vue graphe
+  centree sur ce personnage avec sa fiche ouverte.
 - Historique de fiche deplieable avec detail des champs modifies.
 - Photo optionnelle de personnage, ajoutee uniquement via modification de fiche
   existante, avec upload securise et recadrage rond pour le graphe.
@@ -128,6 +130,8 @@ Informations attendues :
 - Echelon entreprise.
 - Matricule entreprise.
 - Telephone.
+- Bloc medias distinct dans le formulaire d'edition, avec streamer existant,
+  proposition de nouveau streamer si absent, photo et liens publics.
 - Streamer associe.
 - Reseaux du streamer ou du personnage : Twitch, Kick, YouTube, Instagram,
   TikTok.
@@ -187,6 +191,10 @@ Chaque relation doit pouvoir porter :
 Les relations familiales asymetriques sont directionnelles. Les relations de
 couple et fratrie sont symetriques pour l'affichage, meme si elles sont
 stockees une seule fois.
+
+Dans l'edition d'une fiche, les parentes RP sont gerees dans un bloc dedie.
+L'utilisateur, le moderateur ou l'administrateur editent la relation du point
+de vue du personnage courant : `Parent`, `Enfant`, `Fratrie`, `Couple`.
 
 ### ChangeRequest
 
@@ -249,8 +257,10 @@ stockees une seule fois.
 Routes a prevoir :
 
 - `GET /api/characters`
+- `GET /api/characters/directory`
 - `GET /api/characters/:id`
 - `GET /api/graph`
+- `GET /api/streamers`
 - `GET /api/tags`
 - `GET /api/history`
 - `GET /api/me`
@@ -681,10 +691,9 @@ Bilan final :
 
 Points reportes ou a surveiller :
 
-- Les tags, relations RP et streamers ne sont pas encore modifiables par ce
-  flux. Ils sont hors perimetre de cette etape et devront etre ajoutes avec
-  validations dediees pour eviter les relations incoherentes et les suppressions
-  implicites.
+- Les tags ne sont pas encore modifiables par ce flux. Ils restent hors
+  perimetre de cette etape et devront etre ajoutes avec des validations dediees
+  pour eviter les incoherences et les suppressions implicites.
 - Les doublons exacts nom/prenom sont bloques cote serveur pour les creations,
   mais les doublons approximatifs restent a traiter par l'interface et par la
   moderation jusqu'a l'ajout d'une recherche de similarite plus fine.
@@ -757,14 +766,16 @@ Bilan intermediaire :
 - Le nettoyage des photos temporaires orphelines est gere par un job dedie
   `npm run photo:cleanup`, prevu pour etre lance periodiquement par PM2 avec
   `cron_restart`.
+- Des tests backend couvrent maintenant les principaux refus d'upload photo :
+  SVG, signature invalide, MIME incoherent, image illisible et payload trop
+  volumineux. Un test frontend verrouille aussi le comportement du graphe :
+  photo presente => aucune initiale affichee dans le noeud.
 
 Vigilances restantes :
 
 - La liste du profil affiche les demandes utilisateur, mais pas encore un
   journal dedie des actions directes realisees par un moderateur ou
   administrateur.
-- Ajouter des tests backend dedies aux refus d'upload : taille excessive, SVG,
-  MIME incoherent, signature invalide et image illisible.
 
 ### Etape 8 - Administration
 

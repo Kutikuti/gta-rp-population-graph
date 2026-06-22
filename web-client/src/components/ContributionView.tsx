@@ -9,8 +9,12 @@ import {
   createChangeRequest,
   createCharacterCreationRequest,
   editCharacterDirectly,
+  listCharacterDirectory,
   listMyChangeRequests,
+  listStreamers,
   type PublicCharacterDetail,
+  type PublicCharacterReference,
+  type PublicStreamer,
   uploadCharacterPhotoDraft
 } from "../api";
 import { formatDate } from "../utils/format";
@@ -53,11 +57,13 @@ const snapshotFromSearch = (context: CharacterCreationContext): CharacterSnapsho
     businessBadgeNumber: null,
     phoneNumber: null,
     streamerId: null,
+    streamerName: null,
     socialLinks: null,
     groupName: null,
     groupRole: null,
     district: null,
     isRpDeath: false,
+    relationships: [],
     policeRank: null,
     policeBadgeNumber: null,
     previousCharacters: null,
@@ -97,6 +103,8 @@ export function ContributionView({
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [isPhotoUploading, setIsPhotoUploading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [streamers, setStreamers] = useState<PublicStreamer[]>([]);
+  const [characterOptions, setCharacterOptions] = useState<PublicCharacterReference[]>([]);
 
   useEffect(() => {
     setSnapshot(snapshotFromProps(character, creationContext));
@@ -129,6 +137,27 @@ export function ContributionView({
       isActive = false;
     };
   }, [onError, session]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    Promise.all([listStreamers(), listCharacterDirectory()])
+      .then(([streamerItems, characterItems]) => {
+        if (!isActive) {
+          return;
+        }
+
+        setStreamers(streamerItems);
+        setCharacterOptions(characterItems);
+      })
+      .catch(() => {
+        onError("Impossible de charger les données du formulaire.");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [onError]);
 
   const submit = async () => {
     if (!snapshot || (!character && !creationContext)) {
@@ -193,7 +222,9 @@ export function ContributionView({
           <p className="eyebrow">Contribution</p>
           <h2 id="contribution-title">
             {character && !creationContext
-              ? `Proposer une correction pour ${character.fullName}`
+              ? canEditDirectly(session)
+                ? `Modifier la fiche de ${character.fullName}`
+                : `Proposer une correction pour ${character.fullName}`
               : "Proposer une nouvelle fiche"}
           </h2>
         </div>
@@ -209,6 +240,9 @@ export function ContributionView({
             {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
             <CharacterSnapshotForm
               snapshot={snapshot}
+              characterOptions={characterOptions}
+              currentCharacterId={character?.id ?? null}
+              streamers={streamers}
               submitLabel={
                 character && !creationContext && canEditDirectly(session)
                   ? "Appliquer la modification"

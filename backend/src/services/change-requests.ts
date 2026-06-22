@@ -5,10 +5,17 @@ import {
   type changeRequestTypes,
   type DataSource,
   lifeStatuses,
+  relationshipTypes,
   verificationStatuses
 } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
-import type { ChangeRequest, Character, JsonObject, SocialLinks } from "../db/models/index.js";
+import type {
+  ChangeRequest,
+  Character,
+  CharacterRelationship,
+  JsonObject,
+  SocialLinks
+} from "../db/models/index.js";
 import {
   assertPendingCharacterPhotoExists,
   deletePendingCharacterPhoto,
@@ -71,6 +78,13 @@ const previousCharactersSchema = z
   .optional()
   .transform((value) => value ?? null);
 
+const relationshipDraftSchema = z
+  .object({
+    characterId: z.uuid(),
+    type: z.enum(relationshipTypes)
+  })
+  .strict();
+
 export const characterSnapshotSchema = z
   .object({
     firstName: z.string().trim().min(1).max(120),
@@ -89,11 +103,13 @@ export const characterSnapshotSchema = z
       .nullable()
       .optional()
       .transform((value) => value ?? null),
+    streamerName: nullableText(160),
     socialLinks: socialLinksSchema,
     groupName: nullableText(160),
     groupRole: nullableText(120),
     district: nullableText(120),
     isRpDeath: z.boolean().default(false),
+    relationships: z.array(relationshipDraftSchema).default([]),
     policeRank: nullableText(120),
     policeBadgeNumber: nullableText(80),
     previousCharacters: previousCharactersSchema,
@@ -138,7 +154,7 @@ export const directCharacterEditSchema = z.object({
 export type CharacterSnapshot = z.infer<typeof characterSnapshotSchema>;
 export type CharacterCreationContext = z.infer<typeof characterCreationContextSchema>;
 
-type ChangeValue = string | boolean | JsonObject | SocialLinks | null;
+type ChangeValue = string | boolean | JsonObject | JsonObject[] | SocialLinks | null;
 
 export type FieldChange = {
   old: ChangeValue;
@@ -152,6 +168,7 @@ export type ChangeRequestSummary = {
   requestType: (typeof changeRequestTypes)[number];
   characterId: string | null;
   characterName: string | null;
+  proposedStreamerName: string | null;
   userId: string;
   userDisplayName: string | null;
   status: "pending" | "approved" | "rejected";
@@ -201,30 +218,121 @@ const isoDate = (value: Date | null) => (value ? value.toISOString() : null);
 
 const editableFields = Object.keys(characterSnapshotSchema.shape) as Array<keyof CharacterSnapshot>;
 
-const characterToSnapshot = (character: Character): CharacterSnapshot => ({
-  firstName: character.firstName,
-  lastName: character.lastName,
-  nickname: character.nickname,
-  birthDate: character.birthDate,
-  lifeStatus: character.lifeStatus,
-  deathOrDepartureDate: character.deathOrDepartureDate,
-  photoUrl: character.photoUrl,
-  businessName: character.businessName,
-  businessRank: character.businessRank,
-  businessBadgeNumber: character.businessBadgeNumber,
-  phoneNumber: character.phoneNumber,
-  streamerId: character.streamerId,
-  socialLinks: character.socialLinks,
-  groupName: character.groupName,
-  groupRole: character.groupRole,
-  district: character.district,
-  isRpDeath: character.isRpDeath,
-  policeRank: character.policeRank,
-  policeBadgeNumber: character.policeBadgeNumber,
-  previousCharacters: character.previousCharacters as Record<string, string> | null,
-  verificationStatus: character.verificationStatus,
-  sourceNote: character.sourceNote
+const relationshipLabelByType: Record<(typeof relationshipTypes)[number], string> = {
+  parent: "Parent",
+  child: "Enfant",
+  sibling: "Fratrie",
+  couple: "Couple"
+};
+
+const relationshipDirectionByType: Record<
+  (typeof relationshipTypes)[number],
+  "directed" | "symmetric"
+> = {
+  parent: "directed",
+  child: "directed",
+  sibling: "symmetric",
+  couple: "symmetric"
+};
+
+const invertRelationshipType = (type: (typeof relationshipTypes)[number]) => {
+  if (type === "parent") {
+    return "child";
+  }
+
+  if (type === "child") {
+    return "parent";
+  }
+
+  return type;
+};
+
+const normalizeRelationshipDrafts = (
+  relationships: CharacterSnapshot["relationships"],
+  currentCharacterId?: string
+) => {
+  const seen = new Set<string>();
+
+  return relationships
+    .filter((relationship) => relationship.characterId !== currentCharacterId)
+    .filter((relationship) => {
+      const key = `${relationship.type}:${relationship.characterId}`;
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) =>
+      `${left.type}:${left.characterId}`.localeCompare(`${right.type}:${right.characterId}`, "fr")
+    );
+};
+
+const mapRelationshipToDraft = (
+  relationship: CharacterRelationship,
+  currentCharacterId: string
+): CharacterSnapshot["relationships"][number] => ({
+  characterId:
+    relationship.sourceCharacterId === currentCharacterId
+      ? relationship.targetCharacterId
+      : relationship.sourceCharacterId,
+  type:
+    relationship.direction === "directed" && relationship.sourceCharacterId !== currentCharacterId
+      ? invertRelationshipType(relationship.type)
+      : relationship.type
 });
+
+const loadCharacterRelationshipDrafts = async (
+  characterId: string,
+  transaction?: Transaction
+): Promise<CharacterSnapshot["relationships"]> => {
+  const relationships = await models.CharacterRelationship.findAll({
+    attributes: ["sourceCharacterId", "targetCharacterId", "type", "direction"],
+    where: {
+      [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
+    },
+    transaction
+  });
+
+  return normalizeRelationshipDrafts(
+    relationships.map((relationship) => mapRelationshipToDraft(relationship, characterId)),
+    characterId
+  );
+};
+
+const characterToSnapshot = async (
+  character: Character,
+  transaction?: Transaction
+): Promise<CharacterSnapshot> => {
+  return {
+    firstName: character.firstName,
+    lastName: character.lastName,
+    nickname: character.nickname,
+    birthDate: character.birthDate,
+    lifeStatus: character.lifeStatus,
+    deathOrDepartureDate: character.deathOrDepartureDate,
+    photoUrl: character.photoUrl,
+    businessName: character.businessName,
+    businessRank: character.businessRank,
+    businessBadgeNumber: character.businessBadgeNumber,
+    phoneNumber: character.phoneNumber,
+    streamerId: character.streamerId,
+    streamerName: null,
+    socialLinks: character.socialLinks,
+    groupName: character.groupName,
+    groupRole: character.groupRole,
+    district: character.district,
+    isRpDeath: character.isRpDeath,
+    relationships: await loadCharacterRelationshipDrafts(character.id, transaction),
+    policeRank: character.policeRank,
+    policeBadgeNumber: character.policeBadgeNumber,
+    previousCharacters: character.previousCharacters as Record<string, string> | null,
+    verificationStatus: character.verificationStatus,
+    sourceNote: character.sourceNote
+  };
+};
 
 const stableJson = (value: unknown) => JSON.stringify(value ?? null);
 
@@ -246,7 +354,41 @@ export const calculateCharacterDiff = (
     return changes;
   }, {});
 
-const serializeChangeRequest = (request: ChangeRequest): ChangeRequestSummary => ({
+const extractProposedStreamerId = (request: ChangeRequest) => {
+  const streamerId = request.proposedSnapshot.streamerId;
+
+  return typeof streamerId === "string" && streamerId ? streamerId : null;
+};
+
+const buildProposedStreamerNameMap = async (requests: ChangeRequest[]) => {
+  const streamerIds = [
+    ...new Set(
+      requests
+        .map(extractProposedStreamerId)
+        .filter((streamerId): streamerId is string => Boolean(streamerId))
+    )
+  ];
+
+  if (streamerIds.length === 0) {
+    return new Map<string, string>();
+  }
+
+  const streamers = await models.Streamer.findAll({
+    attributes: ["id", "publicName"],
+    where: {
+      id: {
+        [Op.in]: streamerIds
+      }
+    }
+  });
+
+  return new Map(streamers.map((streamer) => [streamer.id, streamer.publicName] as const));
+};
+
+const serializeChangeRequest = (
+  request: ChangeRequest,
+  proposedStreamerNames: ReadonlyMap<string, string>
+): ChangeRequestSummary => ({
   id: request.id,
   requestType: request.requestType,
   characterId: request.characterId,
@@ -255,6 +397,16 @@ const serializeChangeRequest = (request: ChangeRequest): ChangeRequestSummary =>
     : request.requestType === "create"
       ? `${String(request.proposedSnapshot.firstName)} ${String(request.proposedSnapshot.lastName)}`
       : null,
+  proposedStreamerName: (() => {
+    const streamerId = extractProposedStreamerId(request);
+    const streamerName = request.proposedSnapshot.streamerName;
+
+    if (typeof streamerName === "string" && streamerName.trim()) {
+      return streamerName;
+    }
+
+    return streamerId ? (proposedStreamerNames.get(streamerId) ?? null) : null;
+  })(),
   userId: request.userId,
   userDisplayName: request.user?.displayName ?? null,
   status: request.status,
@@ -268,6 +420,18 @@ const serializeChangeRequest = (request: ChangeRequest): ChangeRequestSummary =>
   updatedAt: request.updatedAt.toISOString()
 });
 
+const serializeChangeRequests = async (requests: ChangeRequest[]) => {
+  const proposedStreamerNames = await buildProposedStreamerNameMap(requests);
+
+  return requests.map((request) => serializeChangeRequest(request, proposedStreamerNames));
+};
+
+const serializeSingleChangeRequest = async (request: ChangeRequest) => {
+  const [summary] = await serializeChangeRequests([request]);
+
+  return summary ?? null;
+};
+
 const requestInclude = [
   { association: "character", attributes: ["id", "firstName", "lastName"], required: false },
   { association: "user", attributes: ["id", "displayName"] },
@@ -280,7 +444,106 @@ const reloadRequest = async (id: string, transaction?: Transaction) => {
     transaction
   });
 
-  return request ? serializeChangeRequest(request) : null;
+  return request ? serializeSingleChangeRequest(request) : null;
+};
+
+const resolveStreamerId = async (snapshot: CharacterSnapshot, transaction: Transaction) => {
+  if (snapshot.streamerId) {
+    const streamer = await models.Streamer.findByPk(snapshot.streamerId, {
+      attributes: ["id"],
+      transaction
+    });
+
+    if (!streamer) {
+      throw new Error(`Streamer ${snapshot.streamerId} is missing.`);
+    }
+
+    return streamer.id;
+  }
+
+  if (!snapshot.streamerName) {
+    return null;
+  }
+
+  const existing = await models.Streamer.findOne({
+    attributes: ["id"],
+    where: {
+      publicName: {
+        [Op.iLike]: snapshot.streamerName
+      }
+    },
+    transaction
+  });
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const created = await models.Streamer.create(
+    {
+      publicName: snapshot.streamerName,
+      primaryPlatform: null,
+      socialLinks: null,
+      verificationStatus: snapshot.verificationStatus
+    },
+    { transaction }
+  );
+
+  return created.id;
+};
+
+const applyRelationships = async (
+  characterId: string,
+  snapshot: CharacterSnapshot,
+  source: DataSource,
+  transaction: Transaction
+) => {
+  const relationships = normalizeRelationshipDrafts(snapshot.relationships, characterId);
+  const relationshipIds = relationships.map((relationship) => relationship.characterId);
+
+  if (relationshipIds.length > 0) {
+    const existingCharacters = await models.Character.findAll({
+      attributes: ["id"],
+      where: {
+        id: {
+          [Op.in]: relationshipIds
+        }
+      },
+      transaction
+    });
+
+    if (existingCharacters.length !== relationshipIds.length) {
+      throw new Error("A related character is missing.");
+    }
+  }
+
+  await models.CharacterRelationship.destroy({
+    where: {
+      type: {
+        [Op.in]: relationshipTypes
+      },
+      [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
+    },
+    transaction
+  });
+
+  if (relationships.length === 0) {
+    return;
+  }
+
+  await models.CharacterRelationship.bulkCreate(
+    relationships.map((relationship) => ({
+      sourceCharacterId: characterId,
+      targetCharacterId: relationship.characterId,
+      type: relationship.type,
+      direction: relationshipDirectionByType[relationship.type],
+      label: relationshipLabelByType[relationship.type],
+      description: null,
+      source,
+      verificationStatus: snapshot.verificationStatus
+    })),
+    { transaction }
+  );
 };
 
 const applySnapshot = async (
@@ -289,19 +552,45 @@ const applySnapshot = async (
   source: DataSource,
   transaction: Transaction
 ) => {
+  const streamerId = await resolveStreamerId(snapshot, transaction);
+
   await character.update(
     {
-      ...snapshot,
+      firstName: snapshot.firstName,
+      lastName: snapshot.lastName,
+      nickname: snapshot.nickname,
+      birthDate: snapshot.birthDate,
+      lifeStatus: snapshot.lifeStatus,
+      deathOrDepartureDate: snapshot.deathOrDepartureDate,
+      photoUrl: snapshot.photoUrl,
+      businessName: snapshot.businessName,
+      businessRank: snapshot.businessRank,
+      businessBadgeNumber: snapshot.businessBadgeNumber,
+      phoneNumber: snapshot.phoneNumber,
+      streamerId,
+      socialLinks: snapshot.socialLinks,
+      groupName: snapshot.groupName,
+      groupRole: snapshot.groupRole,
+      district: snapshot.district,
+      isRpDeath: snapshot.isRpDeath,
+      policeRank: snapshot.policeRank,
+      policeBadgeNumber: snapshot.policeBadgeNumber,
+      previousCharacters: snapshot.previousCharacters,
+      verificationStatus: snapshot.verificationStatus,
+      sourceNote: snapshot.sourceNote,
       dataSource: source
     },
     { transaction }
   );
+
+  await applyRelationships(character.id, snapshot, source, transaction);
 };
 
 const prepareSnapshotForWrite = async (
   snapshot: CharacterSnapshot
 ): Promise<CharacterSnapshot> => ({
   ...snapshot,
+  relationships: normalizeRelationshipDrafts(snapshot.relationships),
   photoUrl: await promoteCharacterPhotoIfPending(snapshot.photoUrl)
 });
 
@@ -410,7 +699,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       order: [["createdAt", "DESC"]]
     });
 
-    return requests.map(serializeChangeRequest);
+    return serializeChangeRequests(requests);
   }
 
   async listModerationChangeRequests(
@@ -422,7 +711,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       order: [["createdAt", "DESC"]]
     });
 
-    return requests.map(serializeChangeRequest);
+    return serializeChangeRequests(requests);
   }
 
   async getModerationChangeRequest(id: string): Promise<ChangeRequestSummary | null> {
@@ -454,11 +743,33 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       if (request.requestType === "create") {
         character = await models.Character.create(
           {
-            ...proposedSnapshot,
+            firstName: proposedSnapshot.firstName,
+            lastName: proposedSnapshot.lastName,
+            nickname: proposedSnapshot.nickname,
+            birthDate: proposedSnapshot.birthDate,
+            lifeStatus: proposedSnapshot.lifeStatus,
+            deathOrDepartureDate: proposedSnapshot.deathOrDepartureDate,
+            photoUrl: proposedSnapshot.photoUrl,
+            businessName: proposedSnapshot.businessName,
+            businessRank: proposedSnapshot.businessRank,
+            businessBadgeNumber: proposedSnapshot.businessBadgeNumber,
+            phoneNumber: proposedSnapshot.phoneNumber,
+            streamerId: null,
+            socialLinks: proposedSnapshot.socialLinks,
+            groupName: proposedSnapshot.groupName,
+            groupRole: proposedSnapshot.groupRole,
+            district: proposedSnapshot.district,
+            isRpDeath: proposedSnapshot.isRpDeath,
+            policeRank: proposedSnapshot.policeRank,
+            policeBadgeNumber: proposedSnapshot.policeBadgeNumber,
+            previousCharacters: proposedSnapshot.previousCharacters,
+            verificationStatus: proposedSnapshot.verificationStatus,
+            sourceNote: proposedSnapshot.sourceNote,
             dataSource: "contribution"
           },
           { transaction }
         );
+        await applySnapshot(character, proposedSnapshot, "contribution", transaction);
       } else if (request.characterId) {
         character = await models.Character.findByPk(request.characterId, {
           transaction,
@@ -475,7 +786,8 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       }
 
       const resolvedChanges =
-        changes ?? calculateCharacterDiff(characterToSnapshot(character), proposedSnapshot);
+        changes ??
+        calculateCharacterDiff(await characterToSnapshot(character, transaction), proposedSnapshot);
 
       if (request.requestType === "update") {
         await applySnapshot(character, proposedSnapshot, "contribution", transaction);
@@ -560,8 +872,9 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         await assertPendingCharacterPhotoExists(photoUrl, input.moderatorId);
       }
 
+      const currentSnapshot = await characterToSnapshot(character, transaction);
       const preparedSnapshot = await prepareSnapshotForWrite(input.snapshot);
-      const changes = calculateCharacterDiff(characterToSnapshot(character), preparedSnapshot);
+      const changes = calculateCharacterDiff(currentSnapshot, preparedSnapshot);
 
       await applySnapshot(character, preparedSnapshot, "moderation", transaction);
       await models.ChangeHistory.create(

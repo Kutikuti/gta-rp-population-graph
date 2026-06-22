@@ -57,10 +57,6 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.profile-layout {
-  grid-template-columns: minmax(0, 1fr) 360px;
-}
-
 .moderation-layout {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
@@ -146,6 +142,23 @@
 
 .wide-field {
   display: grid;
+}
+
+.relationship-draft-list {
+  display: grid;
+  gap: 10px;
+}
+
+.relationship-draft-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.compact-action {
+  min-height: 36px;
+  white-space: nowrap;
 }
 
 .form-actions,
@@ -245,8 +258,7 @@
   padding-top: 14px;
 }
 
-.profile-sso-panel h3,
-.side-work-panel h3 {
+.profile-sso-panel h3 {
   margin: 0;
   color: #eaf7ff;
   font-size: 0.92rem;
@@ -371,6 +383,20 @@
   padding: 10px;
 }
 
+.compact-request-list .request-list-item.is-expanded {
+  border-color: #65bfff;
+}
+
+.request-list-toggle {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
 .compact-request-list .request-list-item strong {
   min-width: 0;
   color: #dcefff;
@@ -381,6 +407,36 @@
 .compact-request-list .request-list-item small {
   color: #8fb2cf;
   font-size: 0.74rem;
+}
+
+.profile-request-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 12px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #123452;
+}
+
+.profile-request-change {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+  padding-right: 6px;
+}
+
+.profile-request-change span {
+  color: #8fcfff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.profile-request-change strong {
+  color: #dcefff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 860px) {
@@ -397,7 +453,8 @@
   .form-grid,
   .photo-upload-panel,
   .diff-row,
-  .profile-sso-actions {
+  .profile-sso-actions,
+  .relationship-draft-row {
     grid-template-columns: 1fr;
   }
 

@@ -87,6 +87,11 @@ export type PublicCharacterList = {
   offset: number;
 };
 
+export type PublicCharacterReference = {
+  id: string;
+  fullName: string;
+};
+
 export type PublicCharacterMatches = {
   ids: string[];
   total: number;
@@ -172,11 +177,16 @@ export type CharacterSnapshot = {
   businessBadgeNumber: string | null;
   phoneNumber: string | null;
   streamerId: string | null;
+  streamerName: string | null;
   socialLinks: SocialLinks | null;
   groupName: string | null;
   groupRole: string | null;
   district: string | null;
   isRpDeath: boolean;
+  relationships: Array<{
+    characterId: string;
+    type: "parent" | "child" | "sibling" | "couple";
+  }>;
   policeRank: string | null;
   policeBadgeNumber: string | null;
   previousCharacters: Record<string, string> | null;
@@ -196,6 +206,7 @@ export type ChangeRequestSummary = {
   requestType: ChangeRequestType;
   characterId: string | null;
   characterName: string | null;
+  proposedStreamerName: string | null;
   userId: string;
   userDisplayName: string | null;
   status: ChangeRequestStatus;
@@ -283,6 +294,9 @@ export const listCharacters = (filters: CharacterFilters) => {
   return fetchJson<PublicCharacterList>(`/api/characters?${params.toString()}`);
 };
 
+export const listCharacterDirectory = () =>
+  fetchJson<PublicCharacterReference[]>("/api/characters/directory");
+
 export const listCharacterMatches = (filters: CharacterFilters) => {
   const params = characterFilterParams(filters);
 
@@ -293,6 +307,8 @@ export const getCharacter = (id: string) =>
   fetchJson<PublicCharacterDetail>(`/api/characters/${id}`);
 
 export const listTags = () => fetchJson<PublicTag[]>("/api/tags");
+
+export const listStreamers = () => fetchJson<PublicStreamer[]>("/api/streamers");
 
 export const getGraph = () => fetchJson<PublicGraph>("/api/graph");
 
@@ -337,11 +353,27 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
   businessBadgeNumber: character.businessBadgeNumber,
   phoneNumber: character.phoneNumber,
   streamerId: character.streamer?.id ?? null,
+  streamerName: null,
   socialLinks: character.socialLinks,
   groupName: character.groupName,
   groupRole: character.groupRole,
   district: character.district,
   isRpDeath: character.isRpDeath,
+  relationships: [...character.relationships.outgoing, ...character.relationships.incoming].map(
+    (relationship) => ({
+      characterId: relationship.relatedCharacter.id,
+      type:
+        relationship.direction === "directed" &&
+        relationship.targetCharacterId === character.id &&
+        relationship.type === "parent"
+          ? "child"
+          : relationship.direction === "directed" &&
+              relationship.targetCharacterId === character.id &&
+              relationship.type === "child"
+            ? "parent"
+            : (relationship.type as "parent" | "child" | "sibling" | "couple")
+    })
+  ),
   policeRank: character.policeRank,
   policeBadgeNumber: character.policeBadgeNumber,
   previousCharacters: character.previousCharacters,

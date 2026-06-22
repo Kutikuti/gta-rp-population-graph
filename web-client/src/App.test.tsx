@@ -153,6 +153,17 @@ describe("App", () => {
         return jsonResponse([tag]);
       }
 
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([
+          { id: camille.id, fullName: camille.fullName },
+          { id: ines.id, fullName: ines.fullName }
+        ]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([camille.streamer]);
+      }
+
       if (url.includes("/api/graph")) {
         return jsonResponse({
           nodes: [camille, ines].map((character) => ({
@@ -288,6 +299,14 @@ describe("App", () => {
     expect(screen.queryByText("Chargement du graphe...")).not.toBeInTheDocument();
   });
 
+  it("opens a shared character link directly from the URL", async () => {
+    window.history.replaceState({}, "", `/?character=${camille.id}`);
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
+  });
+
   it("starts Google login from the header button", async () => {
     render(<App />);
 
@@ -331,6 +350,17 @@ describe("App", () => {
 
       if (url.includes("/api/tags")) {
         return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([
+          { id: camille.id, fullName: camille.fullName },
+          { id: ines.id, fullName: ines.fullName }
+        ]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([camille.streamer]);
       }
 
       if (url.includes("/api/graph")) {
@@ -396,6 +426,13 @@ describe("App", () => {
         return jsonResponse([tag]);
       }
 
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([
+          { id: camille.id, fullName: camille.fullName },
+          { id: ines.id, fullName: ines.fullName }
+        ]);
+      }
+
       if (url.includes("/api/graph")) {
         return jsonResponse({ nodes: [], edges: [] });
       }
@@ -410,6 +447,7 @@ describe("App", () => {
           requestType: "create",
           characterId: null,
           characterName: "Nadia Soler",
+          proposedStreamerName: null,
           userId: "00000000-0000-4000-8000-000000000901",
           userDisplayName: "Viewer Example",
           status: "pending",

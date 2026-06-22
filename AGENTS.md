@@ -86,6 +86,8 @@ Principes :
 - Recherche par nom, prenom, surnom, telephone, streamer, matricule, tag et
   statut vital.
 - Fiche personnage detaillee.
+- URL partageable vers une fiche precise, ouvrant la vue publique avec le
+  graphe centre sur le personnage et sa fiche ouverte.
 - Relations typees strictement RP entre personnages et limitees au noyau
   familial/couple : parent, enfant, fratrie, couple.
 - Les appartenances metier, police, quartier ou groupe restent des champs de
@@ -165,6 +167,14 @@ Le deploiement n'est pas encore implemente. Le plan cible :
 - Le bouton d'action d'une fiche personnage doit indiquer le comportement reel :
   `Proposer` pour un utilisateur simple, `Modifier` pour un moderateur ou un
   administrateur dont la modification est appliquee directement.
+- Dans l'edition d'une fiche, les champs doivent etre regroupes avec clarte :
+  bloc identite, organisation, contact, photo, medias, publication et parentes
+  RP. Eviter de melanger `streamer` ou `verification` dans un bloc `Statuts`.
+- Les parentes RP doivent etre editables depuis la fiche via un bloc dedie,
+  avec les types controles `parent`, `enfant`, `fratrie`, `couple`.
+- Le bloc medias doit permettre soit de rattacher un streamer existant, soit de
+  proposer un nouveau streamer par son nom public, ainsi que d'editer les liens
+  publics associes.
 - La photo d'un personnage est affichee dans un masque rond, notamment dans les
   noeuds du graphe. L'interface d'upload doit permettre de recadrer une image
   carree ou quasi-carree en deplacant/zoomant l'image sous un masque rond avant

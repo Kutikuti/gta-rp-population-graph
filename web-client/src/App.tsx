@@ -16,9 +16,11 @@ import { usePersistentFilters } from "./hooks/usePersistentFilters";
 import { usePublicGraphData } from "./hooks/usePublicGraphData";
 import { useSearchMatches } from "./hooks/useSearchMatches";
 
+const readInitialCharacterId = () => new URL(window.location.href).searchParams.get("character");
+
 function App() {
   const [filters, setFilters] = usePersistentFilters();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(readInitialCharacterId);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creationContext, setCreationContext] = useState<CharacterCreationContext | null>(null);
@@ -64,6 +66,18 @@ function App() {
       setActiveView("profile");
     }
   }, [authSession]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    if (selectedId) {
+      url.searchParams.set("character", selectedId);
+    } else {
+      url.searchParams.delete("character");
+    }
+
+    window.history.replaceState({}, "", url.toString());
+  }, [selectedId]);
 
   const closeDetails = useCallback(() => {
     setSelectedId(null);
@@ -174,6 +188,21 @@ function App() {
                 onContribute={() => {
                   setCreationContext(null);
                   setActiveView("contribution");
+                }}
+                onShare={async () => {
+                  if (!selectedId) {
+                    return;
+                  }
+
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("character", selectedId);
+
+                  try {
+                    await navigator.clipboard.writeText(url.toString());
+                    setToastMessage("Lien de la fiche copié.");
+                  } catch {
+                    setError("Le lien n'a pas pu être copié.");
+                  }
                 }}
               />
             ) : null}

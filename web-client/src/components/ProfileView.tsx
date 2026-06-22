@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 
-import type { AuthSession, ChangeRequestSummary } from "../api";
-import { listMyChangeRequests } from "../api";
+import type {
+  AuthSession,
+  ChangeRequestSummary,
+  CharacterSnapshot,
+  PublicCharacterReference
+} from "../api";
+import { listCharacterDirectory, listMyChangeRequests } from "../api";
+import { characterSnapshotFieldLabels } from "../constants";
+import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
 import { formatDate } from "../utils/format";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
 
@@ -22,11 +29,22 @@ const requestTypeLabels = {
   create: "Création"
 } as const;
 
+const visibleSnapshotEntries = (snapshot: CharacterSnapshot) =>
+  (
+    Object.entries(snapshot) as Array<
+      [keyof CharacterSnapshot, CharacterSnapshot[keyof CharacterSnapshot]]
+    >
+  )
+    .filter(([, value]) => value !== null && value !== "" && value !== undefined)
+    .filter(([field, value]) => field !== "isRpDeath" || value === true);
+
 export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileViewProps) {
   const [displayName, setDisplayName] = useState(
     session?.authenticated ? session.user.displayName : ""
   );
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
   const [requests, setRequests] = useState<ChangeRequestSummary[]>([]);
+  const [characterOptions, setCharacterOptions] = useState<PublicCharacterReference[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -48,6 +66,7 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
       .then((items) => {
         if (isActive) {
           setRequests(items);
+          setExpandedRequestId((current) => current ?? items[0]?.id ?? null);
         }
       })
       .catch(() => {
@@ -63,6 +82,24 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
       isActive = false;
     };
   }, [onError, session]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    listCharacterDirectory()
+      .then((items) => {
+        if (isActive) {
+          setCharacterOptions(items);
+        }
+      })
+      .catch(() => {
+        onError("Impossible de charger le répertoire des personnages.");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [onError]);
 
   if (!session?.authenticated) {
     return (
@@ -87,6 +124,10 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
     }
   };
 
+  const characterNames = new Map(
+    characterOptions.map((character) => [character.id, character.fullName] as const)
+  );
+
   return (
     <section className="full-page-view" aria-labelledby="profile-title">
       <div className="full-page-header">
@@ -96,7 +137,7 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
         </div>
       </div>
 
-      <div className="full-page-grid profile-layout">
+      <div className="full-page-grid single-column">
         <div className="work-panel profile-main-panel">
           {session.user.mustChooseDisplayName ? (
             <p className="inline-feedback warning-text">
@@ -141,29 +182,70 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
               </button>
             </div>
           </div>
-        </div>
 
-        <div className="work-panel side-work-panel">
-          <h3>Mes demandes</h3>
-          {isLoading ? <LoadingBlock label="Chargement des demandes..." /> : null}
-          {!isLoading && requests.length === 0 ? (
-            <EmptyBlock label="Aucune demande envoyée pour le moment." />
-          ) : null}
-          {!isLoading && requests.length > 0 ? (
-            <div className="request-list compact-request-list">
-              {requests.map((request) => (
-                <article key={request.id} className="request-list-item">
-                  <strong>
-                    {requestTypeLabels[request.requestType]} -{" "}
-                    {request.characterName ??
-                      `${request.proposedSnapshot.firstName} ${request.proposedSnapshot.lastName}`}
-                  </strong>
-                  <span>{statusLabels[request.status]}</span>
-                  <small>{formatDate(request.createdAt)}</small>
-                </article>
-              ))}
-            </div>
-          ) : null}
+          <div className="profile-sso-panel">
+            <h3>Mes demandes</h3>
+            {isLoading ? <LoadingBlock label="Chargement des demandes..." /> : null}
+            {!isLoading && requests.length === 0 ? (
+              <EmptyBlock label="Aucune demande envoyée pour le moment." />
+            ) : null}
+            {!isLoading && requests.length > 0 ? (
+              <div className="request-list compact-request-list">
+                {requests.map((request) => (
+                  <article
+                    key={request.id}
+                    className={`request-list-item ${expandedRequestId === request.id ? "is-expanded" : ""}`}
+                  >
+                    <button
+                      type="button"
+                      className="request-list-toggle"
+                      onClick={() => {
+                        setExpandedRequestId((current) =>
+                          current === request.id ? null : request.id
+                        );
+                      }}
+                    >
+                      <strong>
+                        {requestTypeLabels[request.requestType]} -{" "}
+                        {request.characterName ??
+                          `${request.proposedSnapshot.firstName} ${request.proposedSnapshot.lastName}`}
+                      </strong>
+                      <span>{statusLabels[request.status]}</span>
+                      <small>{formatDate(request.createdAt)}</small>
+                    </button>
+
+                    {expandedRequestId === request.id ? (
+                      <div className="profile-request-details">
+                        {visibleSnapshotEntries(request.proposedSnapshot).map(([field, value]) => {
+                          const requestStreamerMap =
+                            request.proposedStreamerName && request.proposedSnapshot.streamerId
+                              ? new Map([
+                                  [
+                                    request.proposedSnapshot.streamerId,
+                                    request.proposedStreamerName
+                                  ]
+                                ])
+                              : undefined;
+
+                          return (
+                            <div key={field} className="profile-request-change">
+                              <span>{characterSnapshotFieldLabels[field]}</span>
+                              <strong>
+                                {formatCharacterSnapshotValue(field, value, {
+                                  streamersById: requestStreamerMap,
+                                  charactersById: characterNames
+                                })}
+                              </strong>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </section>

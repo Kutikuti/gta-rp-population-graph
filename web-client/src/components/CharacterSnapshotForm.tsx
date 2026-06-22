@@ -1,14 +1,19 @@
 import {
   type CharacterSnapshot,
   type LifeStatus,
+  type PublicCharacterReference,
+  type PublicStreamer,
   resolveApiAssetUrl,
   type VerificationStatus
 } from "../api";
-import { lifeStatusLabels, verificationLabels } from "../constants";
+import { lifeStatusLabels, relationLabels, verificationLabels } from "../constants";
 import { CharacterPhotoUpload } from "./CharacterPhotoUpload";
 
 type CharacterSnapshotFormProps = {
   snapshot: CharacterSnapshot;
+  characterOptions: PublicCharacterReference[];
+  currentCharacterId: string | null;
+  streamers: PublicStreamer[];
   submitLabel: string;
   isSubmitting: boolean;
   canUploadPhoto: boolean;
@@ -25,6 +30,14 @@ const nullableValue = (value: string) => {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
 };
+
+const socialPlatforms = [
+  ["twitch", "Twitch"],
+  ["kick", "Kick"],
+  ["youtube", "YouTube"],
+  ["instagram", "Instagram"],
+  ["tiktok", "TikTok"]
+] as const;
 
 const fieldGroups: Array<{
   title: string;
@@ -66,6 +79,9 @@ const fieldGroups: Array<{
 
 export function CharacterSnapshotForm({
   snapshot,
+  characterOptions,
+  currentCharacterId,
+  streamers,
   submitLabel,
   isSubmitting,
   canUploadPhoto,
@@ -81,6 +97,11 @@ export function CharacterSnapshotForm({
       [key]: key === "firstName" || key === "lastName" ? value : nullableValue(value)
     });
   };
+
+  const availableCharacterOptions = characterOptions.filter(
+    (character) => character.id !== currentCharacterId
+  );
+  const relationshipType = (value: string) => value as "parent" | "child" | "sibling" | "couple";
 
   return (
     <form
@@ -155,6 +176,81 @@ export function CharacterSnapshotForm({
               }}
             />
           </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Médias</legend>
+        <div className="form-grid">
+          <label>
+            <span>Streamer existant</span>
+            <select
+              value={snapshot.streamerId ?? ""}
+              onChange={(event) => {
+                const nextStreamerId = nullableValue(event.target.value);
+                onChange({
+                  ...snapshot,
+                  streamerId: nextStreamerId,
+                  streamerName: nextStreamerId ? null : snapshot.streamerName
+                });
+              }}
+            >
+              <option value="">Aucun streamer</option>
+              {streamers.map((streamer) => (
+                <option key={streamer.id} value={streamer.id}>
+                  {streamer.publicName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Nouveau streamer</span>
+            <input
+              type="text"
+              value={textValue(snapshot.streamerName)}
+              placeholder="À créer si absent"
+              onChange={(event) => {
+                onChange({
+                  ...snapshot,
+                  streamerId: null,
+                  streamerName: nullableValue(event.target.value)
+                });
+              }}
+            />
+          </label>
+          {socialPlatforms.map(([platform, label]) => (
+            <label key={platform}>
+              <span>{label}</span>
+              <input
+                type="text"
+                value={textValue(snapshot.socialLinks?.[platform] ?? null)}
+                placeholder={`Lien ${label}`}
+                onChange={(event) => {
+                  const nextValue = nullableValue(event.target.value);
+                  const nextLinks = {
+                    ...(snapshot.socialLinks ?? {})
+                  };
+
+                  if (nextValue) {
+                    nextLinks[platform] = nextValue;
+                  } else {
+                    delete nextLinks[platform];
+                  }
+
+                  onChange({
+                    ...snapshot,
+                    socialLinks: Object.keys(nextLinks).length ? nextLinks : null
+                  });
+                }}
+              />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Publication</legend>
+        <div className="form-grid">
           <label>
             <span>Vérification</span>
             <select
@@ -173,16 +269,107 @@ export function CharacterSnapshotForm({
               ))}
             </select>
           </label>
-          <label className="checkbox-field">
-            <input
-              type="checkbox"
-              checked={snapshot.isRpDeath}
-              onChange={(event) => {
-                onChange({ ...snapshot, isRpDeath: event.target.checked });
-              }}
-            />
-            <span>Mort RP</span>
-          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Parentés RP</legend>
+        <div className="relationship-draft-list">
+          {snapshot.relationships.map((relationship, index) => (
+            <div
+              key={`${relationship.type}-${relationship.characterId}`}
+              className="relationship-draft-row"
+            >
+              <label>
+                <span>Lien</span>
+                <select
+                  value={relationship.type}
+                  onChange={(event) => {
+                    const nextRelationships = snapshot.relationships.map((current, currentIndex) =>
+                      currentIndex === index
+                        ? {
+                            ...current,
+                            type: relationshipType(event.target.value)
+                          }
+                        : current
+                    );
+
+                    onChange({ ...snapshot, relationships: nextRelationships });
+                  }}
+                >
+                  {Object.entries(relationLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Personnage</span>
+                <select
+                  value={relationship.characterId}
+                  onChange={(event) => {
+                    const nextRelationships = snapshot.relationships.map((current, currentIndex) =>
+                      currentIndex === index
+                        ? {
+                            ...current,
+                            characterId: event.target.value
+                          }
+                        : current
+                    );
+
+                    onChange({ ...snapshot, relationships: nextRelationships });
+                  }}
+                >
+                  <option value="">Sélectionner</option>
+                  {availableCharacterOptions.map((character) => (
+                    <option key={character.id} value={character.id}>
+                      {character.fullName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="ghost-button compact-action"
+                onClick={() => {
+                  onChange({
+                    ...snapshot,
+                    relationships: snapshot.relationships.filter(
+                      (_relationship, currentIndex) => currentIndex !== index
+                    )
+                  });
+                }}
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => {
+              const defaultCharacterId = availableCharacterOptions[0]?.id ?? "";
+
+              if (!defaultCharacterId) {
+                return;
+              }
+
+              onChange({
+                ...snapshot,
+                relationships: [
+                  ...snapshot.relationships,
+                  {
+                    characterId: defaultCharacterId,
+                    type: "parent"
+                  }
+                ]
+              });
+            }}
+            disabled={!availableCharacterOptions.length}
+          >
+            Ajouter un lien
+          </button>
         </div>
       </fieldset>
 

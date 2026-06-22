@@ -1,10 +1,12 @@
 import type { AuthSession } from "../api";
 
 type AuthControlsProps = {
+  activeView: "explore" | "contribution" | "moderation" | "profile";
   isLoading: boolean;
   session: AuthSession | null;
   loginHref: string;
   onLogout: () => void;
+  onProfile: () => void;
 };
 
 const roleLabels = {
@@ -21,7 +23,14 @@ const initialsFromName = (displayName: string) =>
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 
-export function AuthControls({ isLoading, session, loginHref, onLogout }: AuthControlsProps) {
+export function AuthControls({
+  activeView,
+  isLoading,
+  session,
+  loginHref,
+  onLogout,
+  onProfile
+}: AuthControlsProps) {
   if (isLoading) {
     return (
       <div className="auth-controls">
@@ -42,7 +51,11 @@ export function AuthControls({ isLoading, session, loginHref, onLogout }: AuthCo
 
   return (
     <div className="auth-controls">
-      <div className="auth-user-card">
+      <button
+        type="button"
+        className={`auth-user-card ${activeView === "profile" ? "is-active" : ""}`}
+        onClick={onProfile}
+      >
         {session.user.avatarUrl ? (
           <img
             src={session.user.avatarUrl}
@@ -59,7 +72,7 @@ export function AuthControls({ isLoading, session, loginHref, onLogout }: AuthCo
           <strong>{session.user.displayName}</strong>
           <small>{roleLabels[session.user.role.name]}</small>
         </div>
-      </div>
+      </button>
       <button type="button" className="ghost-button auth-button" onClick={onLogout}>
         Déconnexion
       </button>

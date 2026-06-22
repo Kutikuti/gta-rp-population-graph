@@ -9,6 +9,7 @@ type DetailsSidebarProps = {
   isLoading: boolean;
   onClose: () => void;
   onContribute: () => void;
+  onShare: () => void;
 };
 
 export function DetailsSidebar({
@@ -17,7 +18,8 @@ export function DetailsSidebar({
   history,
   isLoading,
   onClose,
-  onContribute
+  onContribute,
+  onShare
 }: DetailsSidebarProps) {
   return (
     <aside className="details-panel" aria-label="Fiche personnage">
@@ -33,6 +35,7 @@ export function DetailsSidebar({
           character={character}
           history={history}
           onContribute={onContribute}
+          onShare={onShare}
         />
       ) : null}
     </aside>

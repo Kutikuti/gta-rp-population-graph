@@ -58,20 +58,13 @@ export function AppHeader({
               Modération
             </button>
           ) : null}
-          {authSession?.authenticated ? (
-            <button
-              type="button"
-              className={`ghost-button ${activeView === "profile" ? "is-active" : ""}`}
-              onClick={onProfile}
-            >
-              Profil
-            </button>
-          ) : null}
           <AuthControls
+            activeView={activeView}
             isLoading={isAuthLoading}
             session={authSession}
             loginHref={getGoogleAuthUrl()}
             onLogout={onLogout}
+            onProfile={onProfile}
           />
         </div>
       </div>

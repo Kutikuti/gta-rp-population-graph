@@ -1,9 +1,8 @@
 import type {
   CharacterSnapshot,
-  LifeStatus,
   PublicCharacterDetail,
   PublicHistoryEntry,
-  VerificationStatus
+  PublicRelationship
 } from "../api";
 import { resolveApiAssetUrl } from "../api";
 import {
@@ -12,6 +11,7 @@ import {
   relationLabels,
   verificationLabels
 } from "../constants";
+import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
 import { compactValue, formatDate, socialEntries } from "../utils/format";
 
 type CharacterSheetProps = {
@@ -19,6 +19,7 @@ type CharacterSheetProps = {
   character: PublicCharacterDetail;
   history: PublicHistoryEntry[];
   onContribute: () => void;
+  onShare: () => void;
 };
 
 type HistoryChange = {
@@ -38,39 +39,28 @@ const isHistoryChange = (value: unknown): value is HistoryChange =>
       Object.keys(value).every((key) => key === "old" || key === "new")
   );
 
-const displayHistoryValue = (field: string, value: unknown) => {
-  if (value === null || value === undefined || value === "") {
-    return "Non renseigné";
-  }
-
-  if (field === "lifeStatus") {
-    return lifeStatusLabels[value as LifeStatus] ?? String(value);
-  }
-
-  if (field === "verificationStatus") {
-    return verificationLabels[value as VerificationStatus] ?? String(value);
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Oui" : "Non";
-  }
-
-  if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-
-  return String(value);
-};
+const relationshipNameMap = (relationships: PublicRelationship[]) =>
+  new Map(
+    relationships.map(
+      (relationship) =>
+        [relationship.relatedCharacter.id, relationship.relatedCharacter.fullName] as const
+    )
+  );
 
 export function CharacterSheet({
   canEditDirectly,
   character,
   history,
-  onContribute
+  onContribute,
+  onShare
 }: CharacterSheetProps) {
   const links = socialEntries(character.socialLinks ?? character.streamer?.socialLinks);
   const relationships = [...character.relationships.outgoing, ...character.relationships.incoming];
   const photoUrl = resolveApiAssetUrl(character.photoUrl);
+  const charactersById = relationshipNameMap(relationships);
+  const streamersById = character.streamer
+    ? new Map([[character.streamer.id, character.streamer.publicName]])
+    : undefined;
 
   return (
     <article className="character-sheet">
@@ -83,9 +73,14 @@ export function CharacterSheet({
             <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}</p>
           </div>
         </div>
-        <button type="button" className="ghost-button" onClick={onContribute}>
-          {canEditDirectly ? "Modifier" : "Proposer"}
-        </button>
+        <div className="sheet-header-actions">
+          <button type="button" className="ghost-button" onClick={onShare}>
+            Copier le lien
+          </button>
+          <button type="button" className="ghost-button" onClick={onContribute}>
+            {canEditDirectly ? "Modifier" : "Proposer"}
+          </button>
+        </div>
       </div>
 
       <dl className="metric-grid">
@@ -201,8 +196,22 @@ export function CharacterSheet({
                             ? characterSnapshotFieldLabels[field]
                             : field}
                         </strong>
-                        <span>{displayHistoryValue(field, change.old)}</span>
-                        <span>{displayHistoryValue(field, change.new)}</span>
+                        <span>
+                          {isKnownSnapshotField(field)
+                            ? formatCharacterSnapshotValue(field, change.old, {
+                                streamersById,
+                                charactersById
+                              })
+                            : String(change.old ?? "Non renseigné")}
+                        </span>
+                        <span>
+                          {isKnownSnapshotField(field)
+                            ? formatCharacterSnapshotValue(field, change.new, {
+                                streamersById,
+                                charactersById
+                              })
+                            : String(change.new ?? "Non renseigné")}
+                        </span>
                       </div>
                     ))}
                   </div>

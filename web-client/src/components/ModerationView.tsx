@@ -9,12 +9,15 @@ import {
   characterToSnapshot,
   editCharacterDirectly,
   getCharacter,
-  type LifeStatus,
+  listCharacterDirectory,
   listModerationChangeRequests,
-  rejectChangeRequest,
-  type VerificationStatus
+  listStreamers,
+  type PublicCharacterReference,
+  type PublicStreamer,
+  rejectChangeRequest
 } from "../api";
-import { characterSnapshotFieldLabels, lifeStatusLabels, verificationLabels } from "../constants";
+import { characterSnapshotFieldLabels } from "../constants";
+import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
 import { formatDate } from "../utils/format";
 import { CharacterSnapshotForm } from "./CharacterSnapshotForm";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
@@ -28,30 +31,6 @@ type ModerationViewProps = {
 const canModerate = (session: AuthSession | null) =>
   session?.authenticated &&
   (session.user.role.name === "moderator" || session.user.role.name === "administrator");
-
-const displayValue = (field: keyof CharacterSnapshot, value: unknown) => {
-  if (value === null || value === undefined || value === "") {
-    return "Non renseigné";
-  }
-
-  if (field === "lifeStatus") {
-    return lifeStatusLabels[value as LifeStatus] ?? String(value);
-  }
-
-  if (field === "verificationStatus") {
-    return verificationLabels[value as VerificationStatus] ?? String(value);
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Oui" : "Non";
-  }
-
-  if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-
-  return String(value);
-};
 
 const diffSnapshots = (current: CharacterSnapshot | null, proposed: CharacterSnapshot) => {
   if (!current) {
@@ -98,6 +77,8 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [lastChanges, setLastChanges] = useState<ChangeDiff | null>(null);
+  const [streamers, setStreamers] = useState<PublicStreamer[]>([]);
+  const [characterOptions, setCharacterOptions] = useState<PublicCharacterReference[]>([]);
 
   const selectedRequest =
     requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
@@ -136,6 +117,36 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
       isActive = false;
     };
   }, [onError, session]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    Promise.all([listStreamers(), listCharacterDirectory()])
+      .then(([streamerItems, characterItems]) => {
+        if (!isActive) {
+          return;
+        }
+
+        setStreamers(streamerItems);
+        setCharacterOptions(characterItems);
+      })
+      .catch(() => {
+        onError("Impossible de charger les données du formulaire.");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [onError]);
+
+  const streamerNames = useMemo(
+    () => new Map(streamers.map((streamer) => [streamer.id, streamer.publicName] as const)),
+    [streamers]
+  );
+  const characterNames = useMemo(
+    () => new Map(characterOptions.map((character) => [character.id, character.fullName] as const)),
+    [characterOptions]
+  );
 
   useEffect(() => {
     if (!selectedRequest) {
@@ -328,9 +339,19 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
                       >
                         <strong>{characterSnapshotFieldLabels[change.field]}</strong>
                         {!isCreationRequest ? (
-                          <span>{displayValue(change.field, change.oldValue)}</span>
+                          <span>
+                            {formatCharacterSnapshotValue(change.field, change.oldValue, {
+                              streamersById: streamerNames,
+                              charactersById: characterNames
+                            })}
+                          </span>
                         ) : null}
-                        <span>{displayValue(change.field, change.newValue)}</span>
+                        <span>
+                          {formatCharacterSnapshotValue(change.field, change.newValue, {
+                            streamersById: streamerNames,
+                            charactersById: characterNames
+                          })}
+                        </span>
                       </div>
                     ))
                   ) : (
@@ -372,6 +393,9 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
                     <h3>Édition directe modérateur</h3>
                     <CharacterSnapshotForm
                       snapshot={editSnapshot}
+                      characterOptions={characterOptions}
+                      currentCharacterId={selectedRequest.characterId}
+                      streamers={streamers}
                       submitLabel="Appliquer directement"
                       isSubmitting={isSubmitting}
                       canUploadPhoto={false}

@@ -6,6 +6,14 @@ import { idParamSchema, parseCharacterFilters, parseCharacterMatchFilters } from
 export const createPublicCharactersRouter = (publicDataService: PublicDataService) => {
   const router = Router();
 
+  router.get("/directory", async (_request, response, next) => {
+    try {
+      response.json(await publicDataService.listCharacterDirectory());
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/", async (request, response, next) => {
     try {
       const filters = parseCharacterFilters(request.query);
