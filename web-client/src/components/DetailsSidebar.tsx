@@ -24,7 +24,7 @@ export function DetailsSidebar({
   return (
     <aside className="details-panel" aria-label="Fiche personnage">
       <button type="button" className="panel-icon-button details-close-button" onClick={onClose}>
-        Fermer
+        X
       </button>
       {isLoading ? <LoadingBlock label="Chargement de la fiche..." /> : null}
       {!isLoading && !character ? (
