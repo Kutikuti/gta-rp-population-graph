@@ -390,14 +390,91 @@ describe("App", () => {
     expect(await screen.findByText("Déconnexion effectuée.")).toBeInTheDocument();
   });
 
+  it("opens the administration view for administrators", async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000913",
+            email: "admin@example.test",
+            displayName: "Admin Example",
+            mustChooseDisplayName: false,
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000003",
+              name: "administrator"
+            },
+            isBanned: false
+          }
+        });
+      }
+
+      if (url.includes("/api/admin/dashboard")) {
+        return jsonResponse({
+          users: [
+            {
+              id: "00000000-0000-4000-8000-000000000901",
+              email: "viewer@example.test",
+              displayName: "Viewer Example",
+              role: {
+                id: "00000000-0000-4000-8000-000000000001",
+                name: "user"
+              },
+              isBanned: false,
+              createdAt: now,
+              lastLoginAt: null
+            }
+          ],
+          tags: [{ ...tag, usageCount: 1 }],
+          actions: []
+        });
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([camille.streamer]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Administration" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Contrôle des données et accès" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Viewer Example")).toBeInTheDocument();
+    expect(screen.getByText("Famille Morel")).toBeInTheDocument();
+  });
+
   it("shows an auth error returned by the OAuth callback", async () => {
     window.history.replaceState({}, "", "/?auth_error=banned");
 
     render(<App />);
 
-    expect(
-      await screen.findByText("Ce compte n'est pas autorisé à contribuer.")
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent("Ton compte a été banni.");
   });
 
   it("lets a connected user propose a new character after an empty search", async () => {

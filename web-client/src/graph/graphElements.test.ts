@@ -30,10 +30,12 @@ describe("toCytoscapeElements", () => {
       edges: []
     };
 
-    expect(toCytoscapeElements(graph)[0]?.data).toMatchObject({
-      displayLabel: "CM",
-      photoUrl: null
+    const data = toCytoscapeElements(graph)[0]?.data;
+
+    expect(data).toMatchObject({
+      displayLabel: "CM"
     });
+    expect(data).not.toHaveProperty("photoUrl");
   });
 
   it("hides initials when a character photo is available", () => {

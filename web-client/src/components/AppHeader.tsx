@@ -7,8 +7,9 @@ type AppHeaderProps = {
     message: string;
   } | null;
   authSession: AuthSession | null;
-  activeView: "explore" | "contribution" | "moderation" | "profile";
+  activeView: "explore" | "contribution" | "moderation" | "administration" | "profile";
   isAuthLoading: boolean;
+  onAdministration: () => void;
   onExplore: () => void;
   onLogout: () => void;
   onModeration: () => void;
@@ -19,11 +20,15 @@ const canModerate = (session: AuthSession | null) =>
   session?.authenticated &&
   (session.user.role.name === "moderator" || session.user.role.name === "administrator");
 
+const canAdmin = (session: AuthSession | null) =>
+  session?.authenticated && session.user.role.name === "administrator";
+
 export function AppHeader({
   authFeedback,
   authSession,
   activeView,
   isAuthLoading,
+  onAdministration,
   onExplore,
   onLogout,
   onModeration,
@@ -56,6 +61,15 @@ export function AppHeader({
               onClick={onModeration}
             >
               Modération
+            </button>
+          ) : null}
+          {canAdmin(authSession) ? (
+            <button
+              type="button"
+              className={`ghost-button ${activeView === "administration" ? "is-active" : ""}`}
+              onClick={onAdministration}
+            >
+              Administration
             </button>
           ) : null}
           <AuthControls

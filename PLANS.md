@@ -779,7 +779,7 @@ Bilan final :
 
 ### Etape 8 - Administration
 
-Statut : a preparer.
+Statut : en cours depuis le 2026-06-22.
 
 - Construire les pages pleines d'administration.
 - Ajouter gestion des tags : creation, modification, suppression controlee.
@@ -836,6 +836,29 @@ Point de controle :
   donnees existantes.
 - Le profil utilisateur expose les demandes de contribution et les actions
   directes pertinentes, sans melanger ces donnees avec l'identite SSO privee.
+
+Bilan intermediaire :
+
+- Socle backend ajoute : service administration, routes protegees sous
+  `/api/admin`, gestion des tags, changement de role, bannissement, levee de
+  bannissement et tableau de bord admin.
+- Une table `admin_actions` est ajoutee pour journaliser les actions sensibles
+  avec acteur, cible, type d'action et details des changements.
+- Les suppressions de tags utilises sont bloquees et le retrait du dernier
+  administrateur est refuse.
+- Le frontend ajoute une page pleine `Administration`, visible depuis la
+  navigation globale uniquement pour les administrateurs, avec sections
+  utilisateurs, tags et journal.
+- Des tests de routes admin et un test frontend de navigation administration
+  sont ajoutes. Leur execution complete reste a relancer hors sandbox lecture
+  seule, car Vitest/Vite ecrit dans `node_modules/.vite-temp`.
+
+Prochaines corrections :
+
+- Ajouter l'exposition, dans le profil utilisateur, des actions directes de
+  moderation ou d'administration concernant l'utilisateur courant.
+- Raffiner les messages d'erreur admin cote frontend pour distinguer validation,
+  tag utilise et dernier administrateur.
 
 ### Etape 9 - Import Notion
 

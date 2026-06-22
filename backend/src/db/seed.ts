@@ -48,6 +48,7 @@ try {
     });
     await models.ChangeHistory.destroy({ where: {}, transaction });
     await models.ChangeRequest.destroy({ where: {}, transaction });
+    await models.AdminAction.destroy({ where: {}, transaction });
     await models.Ban.destroy({ where: {}, transaction });
 
     await models.Character.destroy({

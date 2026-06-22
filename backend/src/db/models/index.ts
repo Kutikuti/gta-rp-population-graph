@@ -55,6 +55,7 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare updatedAt: CreationOptional<Date>;
 
   declare role?: NonAttribute<Role>;
+  declare bans?: NonAttribute<Ban[]>;
 }
 
 export class Ban extends Model<InferAttributes<Ban>, InferCreationAttributes<Ban>> {
@@ -69,6 +70,24 @@ export class Ban extends Model<InferAttributes<Ban>, InferCreationAttributes<Ban
 
   declare user?: NonAttribute<User>;
   declare bannedBy?: NonAttribute<User>;
+}
+
+export class AdminAction extends Model<
+  InferAttributes<AdminAction>,
+  InferCreationAttributes<AdminAction>
+> {
+  declare id: CreationOptional<string>;
+  declare actorUserId: ForeignKey<User["id"]> | null;
+  declare targetUserId: ForeignKey<User["id"]> | null;
+  declare action: string;
+  declare targetType: string;
+  declare targetId: string | null;
+  declare changes: JsonObject;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  declare actor?: NonAttribute<User | null>;
+  declare targetUser?: NonAttribute<User | null>;
 }
 
 export class Streamer extends Model<InferAttributes<Streamer>, InferCreationAttributes<Streamer>> {
@@ -267,6 +286,39 @@ export const initModels = (sequelize: Sequelize) => {
       updatedAt: DataTypes.DATE
     },
     { sequelize, tableName: "bans" }
+  );
+
+  AdminAction.init(
+    {
+      id: uuidPrimaryKey,
+      actorUserId: DataTypes.UUID,
+      targetUserId: DataTypes.UUID,
+      action: {
+        type: DataTypes.STRING(80),
+        allowNull: false
+      },
+      targetType: {
+        type: DataTypes.STRING(80),
+        allowNull: false
+      },
+      targetId: DataTypes.UUID,
+      changes: {
+        type: DataTypes.JSONB,
+        allowNull: false
+      },
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
+    },
+    {
+      sequelize,
+      tableName: "admin_actions",
+      indexes: [
+        { fields: ["actor_user_id"] },
+        { fields: ["target_user_id"] },
+        { fields: ["target_type"] },
+        { fields: ["action"] }
+      ]
+    }
   );
 
   Streamer.init(
@@ -516,6 +568,11 @@ export const initModels = (sequelize: Sequelize) => {
   Ban.belongsTo(User, { foreignKey: "userId", as: "user" });
   Ban.belongsTo(User, { foreignKey: "bannedByUserId", as: "bannedBy" });
 
+  User.hasMany(AdminAction, { foreignKey: "actorUserId", as: "adminActions" });
+  User.hasMany(AdminAction, { foreignKey: "targetUserId", as: "targetedAdminActions" });
+  AdminAction.belongsTo(User, { foreignKey: "actorUserId", as: "actor" });
+  AdminAction.belongsTo(User, { foreignKey: "targetUserId", as: "targetUser" });
+
   Streamer.hasMany(Character, { foreignKey: "streamerId", as: "characters" });
   Character.belongsTo(Streamer, { foreignKey: "streamerId", as: "streamer" });
 
@@ -564,6 +621,7 @@ export const initModels = (sequelize: Sequelize) => {
     Role,
     User,
     Ban,
+    AdminAction,
     Streamer,
     Character,
     Tag,

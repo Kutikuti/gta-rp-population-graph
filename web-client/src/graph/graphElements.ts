@@ -17,11 +17,12 @@ const getCharacterInitials = (name: string) => {
 export const toCytoscapeElements = (graph: PublicGraph): ElementDefinition[] => [
   ...graph.nodes.map((node) => {
     const photoUrl = resolveApiAssetUrl(node.data.photoUrl);
+    const { photoUrl: _rawPhotoUrl, ...nodeData } = node.data;
 
     return {
       data: {
-        ...node.data,
-        photoUrl,
+        ...nodeData,
+        ...(photoUrl ? { photoUrl } : {}),
         displayLabel: photoUrl ? "" : getCharacterInitials(node.data.fullName || node.data.label)
       }
     };

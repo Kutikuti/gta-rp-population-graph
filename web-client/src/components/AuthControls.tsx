@@ -1,7 +1,7 @@
 import type { AuthSession } from "../api";
 
 type AuthControlsProps = {
-  activeView: "explore" | "contribution" | "moderation" | "profile";
+  activeView: "explore" | "contribution" | "moderation" | "administration" | "profile";
   isLoading: boolean;
   session: AuthSession | null;
   loginHref: string;

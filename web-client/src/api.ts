@@ -224,6 +224,58 @@ export type CharacterCreationContext = CharacterFilters & {
   matchTotal: number;
 };
 
+export type AdminUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: {
+    id: string;
+    name: RoleName;
+  };
+  isBanned: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export type AdminTag = {
+  id: string;
+  name: string;
+  type: "family" | "district" | "organization" | "business" | "other" | null;
+  colorHex: string;
+  description: string | null;
+  usageCount: number;
+};
+
+export type AdminActionEntry = {
+  id: string;
+  actor: {
+    id: string;
+    displayName: string;
+  } | null;
+  targetUser: {
+    id: string;
+    displayName: string;
+  } | null;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  changes: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type AdminDashboard = {
+  users: AdminUser[];
+  tags: AdminTag[];
+  actions: AdminActionEntry[];
+};
+
+export type AdminTagInput = {
+  name: string;
+  type: AdminTag["type"];
+  colorHex: string;
+  description: string | null;
+};
+
 const env = import.meta.env as { readonly VITE_API_BASE_URL?: string };
 const API_BASE_URL = env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -263,6 +315,23 @@ const sendJson = async <T>(path: string, method: "POST" | "PATCH", body?: unknow
     method,
     body: body ? JSON.stringify(body) : undefined
   });
+
+const deleteJson = async <T>(path: string): Promise<T | null> => {
+  const response = await fetch(buildApiUrl(path), {
+    method: "DELETE",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erreur API ${String(response.status)}`);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return (await response.json()) as T;
+};
 
 const appendParam = (params: URLSearchParams, key: string, value: string) => {
   if (value.trim()) {
@@ -328,6 +397,25 @@ export const getGoogleAuthUrl = () => buildApiUrl("/api/auth/google");
 
 export const updateProfileDisplayName = (displayName: string) =>
   sendJson<{ user: AuthenticatedUser }>("/api/profile/display-name", "PATCH", { displayName });
+
+export const getAdminDashboard = () => fetchJson<AdminDashboard>("/api/admin/dashboard");
+
+export const createAdminTag = (input: AdminTagInput) =>
+  sendJson<AdminTag>("/api/admin/tags", "POST", input);
+
+export const updateAdminTag = (id: string, input: AdminTagInput) =>
+  sendJson<AdminTag>(`/api/admin/tags/${id}`, "PATCH", input);
+
+export const deleteAdminTag = (id: string) => deleteJson<never>(`/api/admin/tags/${id}`);
+
+export const updateAdminUserRole = (id: string, role: RoleName) =>
+  sendJson<AdminUser>(`/api/admin/users/${id}/role`, "PATCH", { role });
+
+export const banAdminUser = (id: string, reason: string) =>
+  sendJson<AdminUser>(`/api/admin/users/${id}/ban`, "POST", { reason });
+
+export const revokeAdminUserBan = (id: string) =>
+  deleteJson<AdminUser>(`/api/admin/users/${id}/ban`);
 
 export const logout = async () => {
   const response = await fetch(buildApiUrl("/api/auth/logout"), {

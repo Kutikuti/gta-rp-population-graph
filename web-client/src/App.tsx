@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { CharacterCreationContext, CharacterFilters } from "./api";
 import "./App.css";
+import { AdminView } from "./components/AdminView";
 import { AppHeader } from "./components/AppHeader";
 import { ContributionView } from "./components/ContributionView";
 import { DetailsSidebar } from "./components/DetailsSidebar";
@@ -24,9 +25,12 @@ function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creationContext, setCreationContext] = useState<CharacterCreationContext | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
   const [activeView, setActiveView] = useState<
-    "explore" | "contribution" | "moderation" | "profile"
+    "explore" | "contribution" | "moderation" | "administration" | "profile"
   >("explore");
 
   const handleError = useCallback((message: string) => {
@@ -47,18 +51,24 @@ function App() {
     (authSession.user.role.name === "moderator" || authSession.user.role.name === "administrator");
 
   useEffect(() => {
-    if (!toastMessage) {
+    if (!toast) {
       return undefined;
     }
 
     const timeoutId = window.setTimeout(() => {
-      setToastMessage(null);
+      setToast(null);
     }, 4000);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [toastMessage]);
+  }, [toast]);
+
+  useEffect(() => {
+    if (authFeedback?.tone === "error") {
+      setToast(authFeedback);
+    }
+  }, [authFeedback]);
 
   useEffect(() => {
     if (authSession?.authenticated && authSession.user.mustChooseDisplayName) {
@@ -107,7 +117,7 @@ function App() {
 
   const handleContributionSubmitted = (message: string, closeContribution: boolean) => {
     if (message) {
-      setToastMessage(message);
+      setToast({ tone: "success", message });
     }
 
     if (closeContribution) {
@@ -132,6 +142,9 @@ function App() {
           authFeedback={authFeedback}
           authSession={authSession}
           isAuthLoading={isAuthLoading}
+          onAdministration={() => {
+            setActiveView("administration");
+          }}
           onExplore={() => {
             setCreationContext(null);
             setActiveView("explore");
@@ -199,7 +212,7 @@ function App() {
 
                   try {
                     await navigator.clipboard.writeText(url.toString());
-                    setToastMessage("Lien de la fiche copié.");
+                    setToast({ tone: "success", message: "Lien de la fiche copié." });
                   } catch {
                     setError("Le lien n'a pas pu être copié.");
                   }
@@ -227,6 +240,9 @@ function App() {
             onError={handleError}
           />
         ) : null}
+        {activeView === "administration" ? (
+          <AdminView session={authSession} onError={handleError} />
+        ) : null}
         {activeView === "profile" ? (
           <ProfileView
             session={authSession}
@@ -234,9 +250,9 @@ function App() {
             onError={handleError}
           />
         ) : null}
-        {toastMessage ? (
-          <div className="app-toast" role="status" aria-live="polite">
-            {toastMessage}
+        {toast ? (
+          <div className={`app-toast app-toast-${toast.tone}`} role="status" aria-live="polite">
+            {toast.message}
           </div>
         ) : null}
       </section>

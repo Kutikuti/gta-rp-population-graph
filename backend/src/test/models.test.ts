@@ -20,6 +20,7 @@ afterAll(async () => {
 describe("database models", () => {
   it("registers the expected business models", () => {
     expect(Object.keys(sequelize.models).sort()).toEqual([
+      "AdminAction",
       "Ban",
       "ChangeHistory",
       "ChangeRequest",

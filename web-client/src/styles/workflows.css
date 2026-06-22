@@ -63,6 +63,18 @@
   gap: 16px;
 }
 
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 16px;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.admin-log-panel {
+  grid-column: 1 / -1;
+}
+
 .work-panel {
   border: 1px solid #123c5f;
   background: rgba(5, 16, 27, 0.94);
@@ -70,10 +82,82 @@
 }
 
 .side-work-panel,
-.moderation-list-panel {
+.moderation-list-panel,
+.admin-panel,
+.admin-list {
   display: grid;
   align-content: start;
   gap: 12px;
+}
+
+.admin-panel h3 {
+  margin: 0;
+  color: #dff4ff;
+  font-size: 0.95rem;
+}
+
+.admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #123452;
+  background: rgba(2, 8, 17, 0.64);
+  padding: 10px;
+}
+
+.admin-row > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.admin-row strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f0f9ff;
+  font-size: 0.85rem;
+}
+
+.admin-row small {
+  color: #8fb2cf;
+  font-size: 0.72rem;
+}
+
+.admin-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-row-actions input {
+  width: 140px;
+}
+
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-form label {
+  display: grid;
+  gap: 6px;
+  color: #a9c9e4;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.admin-form label:last-of-type {
+  grid-column: 1 / -1;
+}
+
+.tag-color-swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #dff4ff;
 }
 
 .moderation-detail-panel {
@@ -118,6 +202,11 @@
 }
 
 .snapshot-form input,
+.admin-form input,
+.admin-form select,
+.admin-form textarea,
+.admin-row-actions input,
+.admin-row-actions select,
 .snapshot-form select,
 .snapshot-form textarea,
 .moderation-actions textarea {
@@ -450,12 +539,27 @@
 
   .full-page-grid,
   .moderation-layout,
+  .admin-layout,
+  .admin-row,
+  .admin-form,
   .form-grid,
   .photo-upload-panel,
   .diff-row,
   .profile-sso-actions,
   .relationship-draft-row {
     grid-template-columns: 1fr;
+  }
+
+  .admin-log-panel {
+    grid-column: auto;
+  }
+
+  .admin-row-actions {
+    justify-content: stretch;
+  }
+
+  .admin-row-actions > * {
+    flex: 1;
   }
 
   .photo-upload-feedback {

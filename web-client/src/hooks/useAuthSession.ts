@@ -9,7 +9,7 @@ export type AuthFeedback = {
 
 const authErrorMessages: Record<string, string> = {
   access_denied: "Connexion Google annulée.",
-  banned: "Ce compte n'est pas autorisé à contribuer.",
+  banned: "Ton compte a été banni.",
   invalid_state: "La vérification de connexion a expiré. Réessaie.",
   oauth_disabled: "La connexion Google n'est pas disponible.",
   oauth_exchange_failed: "La connexion Google n'a pas pu aboutir."
@@ -20,26 +20,34 @@ const readAuthRedirectResult = () => {
   const auth = url.searchParams.get("auth");
   const authError = url.searchParams.get("auth_error");
 
-  if (!auth && !authError) {
-    return null;
+  return authError ?? auth;
+};
+
+const clearAuthRedirectResult = () => {
+  const url = new URL(window.location.href);
+
+  if (!url.searchParams.has("auth") && !url.searchParams.has("auth_error")) {
+    return;
   }
 
   url.searchParams.delete("auth");
   url.searchParams.delete("auth_error");
   window.history.replaceState({}, "", url.toString());
-
-  return authError ?? auth;
 };
 
 export function useAuthSession(onError: (message: string) => void) {
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback | null>(null);
-  const [authRedirectResult, setAuthRedirectResult] = useState<string | null>(null);
+  const [authRedirectResult, setAuthRedirectResult] = useState<string | null>(
+    readAuthRedirectResult
+  );
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
-    setAuthRedirectResult(readAuthRedirectResult());
-  }, []);
+    if (authRedirectResult) {
+      clearAuthRedirectResult();
+    }
+  }, [authRedirectResult]);
 
   useEffect(() => {
     let ignore = false;

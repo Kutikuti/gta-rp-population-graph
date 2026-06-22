@@ -5,6 +5,14 @@ export const formatDate = (value: string | null) =>
       }).format(new Date(value))
     : "Non renseigné";
 
+export const formatDateTime = (value: string | null) =>
+  value
+    ? new Intl.DateTimeFormat("fr-FR", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(new Date(value))
+    : "Non renseigné";
+
 export const compactValue = (value: string | null | undefined) => value || "Non renseigné";
 
 export const socialEntries = (links: Record<string, string> | null | undefined) =>
