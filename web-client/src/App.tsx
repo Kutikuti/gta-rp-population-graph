@@ -8,6 +8,7 @@ import { ContributionView } from "./components/ContributionView";
 import { DetailsSidebar } from "./components/DetailsSidebar";
 import { GraphPanel } from "./components/GraphPanel";
 import { ModerationView } from "./components/ModerationView";
+import { NotionImportsView } from "./components/NotionImportsView";
 import { ProfileView } from "./components/ProfileView";
 import { SearchSidebar } from "./components/SearchSidebar";
 import { initialFilters } from "./constants";
@@ -30,7 +31,7 @@ function App() {
     message: string;
   } | null>(null);
   const [activeView, setActiveView] = useState<
-    "explore" | "contribution" | "moderation" | "administration" | "profile"
+    "explore" | "contribution" | "moderation" | "administration" | "imports" | "profile"
   >("explore");
 
   const handleError = useCallback((message: string) => {
@@ -161,6 +162,9 @@ function App() {
             setCreationContext(null);
             setActiveView("explore");
           }}
+          onImports={() => {
+            setActiveView("imports");
+          }}
           onLogout={handleLogout}
           onModeration={() => {
             setActiveView("moderation");
@@ -254,6 +258,9 @@ function App() {
         ) : null}
         {activeView === "administration" ? (
           <AdminView session={authSession} onError={handleError} />
+        ) : null}
+        {activeView === "imports" ? (
+          <NotionImportsView session={authSession} onError={handleError} />
         ) : null}
         {activeView === "profile" ? (
           <ProfileView

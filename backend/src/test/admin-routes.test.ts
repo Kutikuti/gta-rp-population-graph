@@ -5,6 +5,8 @@ import { createApp } from "../app.js";
 import type { RoleName } from "../db/enums.js";
 import type {
   AdminDashboard,
+  AdminNotionImportBatch,
+  AdminNotionImportDetail,
   AdminService,
   AdminTag,
   AdminUser,
@@ -65,6 +67,38 @@ const adminTag: AdminTag = {
   usageCount: 2
 };
 
+const notionImportBatch: AdminNotionImportBatch = {
+  id: "00000000-0000-4000-8000-000000000701",
+  sourceName: "Flashback Whitelist V6",
+  status: "reported",
+  sourceSnapshot: { pageCount: 2 },
+  totals: { new: 2 },
+  createdAt: "2026-06-23T00:00:00.000Z",
+  updatedAt: "2026-06-23T00:00:00.000Z"
+};
+
+const notionImportDetail: AdminNotionImportDetail = {
+  batch: notionImportBatch,
+  entries: [
+    {
+      status: "new",
+      pageId: "page-ada",
+      fullName: "Ada Lovelace",
+      lifeStatus: "alive",
+      streamer: "AdaLive",
+      twitch: "https://twitch.example/adalive",
+      business: "Laboratoire",
+      group: "Analystes",
+      tags: "Tech",
+      sourceUrl: "https://example.test/page-ada",
+      rawContent: { pageId: "page-ada" },
+      mappedSnapshot: { firstName: "Ada", lastName: "Lovelace" },
+      mappingReport: { errors: [] },
+      createdAt: "2026-06-23T00:00:00.000Z"
+    }
+  ]
+};
+
 class FixtureAuthService implements AuthService {
   private readonly usersById = new Map(Object.values(authUsers).map((user) => [user.id, user]));
 
@@ -117,6 +151,14 @@ class FixtureAdminService implements AdminService {
 
   async getDashboard() {
     return this.dashboard;
+  }
+
+  async listNotionImports() {
+    return [notionImportBatch];
+  }
+
+  async getNotionImportDetail(batchId: string) {
+    return batchId === notionImportBatch.id ? notionImportDetail : null;
   }
 
   async createTag(_actorUserId: string, input: TagInput) {
@@ -207,6 +249,32 @@ describe("admin routes", () => {
     expect(response.status).toBe(200);
     expect(response.body.users).toHaveLength(1);
     expect(response.body.tags[0]).toMatchObject({ name: "Quartier Nord", usageCount: 2 });
+  });
+
+  it("returns notion import batches to administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.get("/api/admin/notion-imports");
+
+    expect(response.status).toBe(200);
+    expect(response.body[0]).toMatchObject({
+      id: notionImportBatch.id,
+      sourceName: "Flashback Whitelist V6"
+    });
+  });
+
+  it("returns notion import detail to administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.get(`/api/admin/notion-imports/${notionImportBatch.id}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.entries[0]).toMatchObject({
+      fullName: "Ada Lovelace",
+      status: "new"
+    });
   });
 
   it("validates tag creation payloads", async () => {

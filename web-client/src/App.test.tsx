@@ -474,6 +474,113 @@ describe("App", () => {
     expect(screen.getByText("Famille Morel")).toBeInTheDocument();
   });
 
+  it("opens the Notion imports preview for administrators", async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000913",
+            email: "admin@example.test",
+            displayName: "Admin Example",
+            mustChooseDisplayName: false,
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000003",
+              name: "administrator"
+            },
+            isBanned: false
+          }
+        });
+      }
+
+      if (url.endsWith("/api/admin/notion-imports")) {
+        return jsonResponse([
+          {
+            id: "batch-1",
+            sourceName: "Flashback Whitelist V6",
+            status: "reported",
+            sourceSnapshot: { pageCount: 1 },
+            totals: { new: 1, updated: 0, unchanged: 0, missing: 0, failed: 0 },
+            createdAt: now,
+            updatedAt: now
+          }
+        ]);
+      }
+
+      if (url.includes("/api/admin/notion-imports/batch-1")) {
+        return jsonResponse({
+          batch: {
+            id: "batch-1",
+            sourceName: "Flashback Whitelist V6",
+            status: "reported",
+            sourceSnapshot: { pageCount: 1 },
+            totals: { new: 1, updated: 0, unchanged: 0, missing: 0, failed: 0 },
+            createdAt: now,
+            updatedAt: now
+          },
+          entries: [
+            {
+              status: "new",
+              pageId: "page-ada",
+              fullName: "Ada Lovelace",
+              lifeStatus: "alive",
+              streamer: "AdaLive",
+              twitch: "adalive",
+              business: "Laboratoire",
+              group: "Analystes",
+              tags: "Tech",
+              sourceUrl: "https://example.test/page-ada",
+              rawContent: { pageId: "page-ada" },
+              mappedSnapshot: { firstName: "Ada", lastName: "Lovelace" },
+              mappingReport: { errors: [] },
+              createdAt: now
+            }
+          ]
+        });
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([camille.streamer]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Imports" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Prévisualisation des fiches importées" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Flashback Whitelist V6")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText("Ada Lovelace")).toHaveLength(2);
+    });
+    expect(screen.getAllByText("adalive")).toHaveLength(2);
+  });
+
   it("shows a specific admin error when trying to remove the last administrator", async () => {
     vi.mocked(fetch).mockImplementation((input: RequestInfo | URL, _init?: RequestInit) => {
       const url = input instanceof Request ? input.url : input.toString();

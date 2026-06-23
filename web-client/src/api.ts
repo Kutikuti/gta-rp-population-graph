@@ -271,6 +271,38 @@ export type AdminDashboard = {
   actions: AdminActionEntry[];
 };
 
+export type AdminNotionImportBatch = {
+  id: string;
+  sourceName: string;
+  status: string;
+  sourceSnapshot: Record<string, unknown>;
+  totals: Record<string, number>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminNotionImportEntry = {
+  status: "new" | "updated" | "unchanged" | "missing" | "failed";
+  pageId: string;
+  fullName: string;
+  lifeStatus: string | null;
+  streamer: string | null;
+  twitch: string | null;
+  business: string | null;
+  group: string | null;
+  tags: string;
+  sourceUrl: string | null;
+  rawContent: Record<string, unknown>;
+  mappedSnapshot: Record<string, unknown>;
+  mappingReport: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type AdminNotionImportDetail = {
+  batch: AdminNotionImportBatch;
+  entries: AdminNotionImportEntry[];
+};
+
 export type AdminTagInput = {
   name: string;
   type: AdminTag["type"];
@@ -439,6 +471,12 @@ export const updateProfileDisplayName = (displayName: string) =>
   sendJson<{ user: AuthenticatedUser }>("/api/profile/display-name", "PATCH", { displayName });
 
 export const getAdminDashboard = () => fetchJson<AdminDashboard>("/api/admin/dashboard");
+
+export const listAdminNotionImports = () =>
+  fetchJson<AdminNotionImportBatch[]>("/api/admin/notion-imports");
+
+export const getAdminNotionImportDetail = (id: string) =>
+  fetchJson<AdminNotionImportDetail>(`/api/admin/notion-imports/${id}`);
 
 export const createAdminTag = (input: AdminTagInput) =>
   sendJson<AdminTag>("/api/admin/tags", "POST", input);

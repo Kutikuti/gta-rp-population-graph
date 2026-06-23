@@ -861,11 +861,81 @@ Bilan final :
 
 - Creer un importeur page par page pour la source Notion communautaire.
 - Stocker les donnees brutes importees.
+- Permettre de relancer l'import pendant que la source Notion continue
+  d'evoluer, en mettant a jour les donnees brutes et les rapports sans publier
+  automatiquement.
 - Mapper les champs vers personnages, reseaux, police, anciens personnages,
   tags, relations et photos.
 - Produire un rapport avant insertion : champs reconnus, champs manquants,
   relations detectees, relations ambigues.
 - Ajouter des tests avec exemples figes.
+
+Plan propose :
+
+- Socle de stockage import :
+  - ajouter une table de lots d'import Notion pour tracer la source, la date,
+    l'etat du lot, le rapport global et l'utilisateur qui valide plus tard ;
+  - ajouter une table d'entrees brutes par page/personnage, avec URL ou
+    identifiant source stable Notion, contenu brut JSON/texte, hash de contenu,
+    date de derniere observation, statut de mapping et erreurs detectees ;
+  - conserver l'historique des versions importees ou, a minima, le dernier hash
+    valide avec les anciens/nouveaux contenus utiles au rapport de diff ;
+  - ne jamais ecrire directement dans `characters`, `streamers`, `tags` ou
+    `character_relationships` pendant la collecte ou le mapping.
+- Importeur Notion :
+  - commencer par un import manuel a partir de contenus exportes ou colles en
+    exemples figes, afin de confirmer la structure reelle avant d'ajouter une
+    dependance API Notion ;
+  - ajouter une commande de scraping de la page publique Notion qui recupere
+    l'URL source, parcourt les sous-pages accessibles et produit directement
+    les entrees brutes du rapport, car aucun export CSV fiable n'est disponible ;
+  - isoler le parseur dans un service dedie, sans logique de publication ;
+  - rendre la collecte rejouable et idempotente : une page deja importee est
+    mise a jour si son hash change, ignoree si elle est identique, et marquee
+    comme absente si elle n'apparait plus dans une source complete ;
+  - conserver le contenu brut complet pour permettre une relecture humaine et
+    un remapping sans reperdre la source.
+- Mapping :
+  - produire un `Character` candidat avec `dataSource: "notion"` et
+    `verificationStatus: "imported"` ou `"to_check"` selon la confiance du
+    champ ;
+  - mapper separement les streamers, liens publics, champs police,
+    anciens personnages, tags et relations RP autorisees ;
+  - classer les relations non resolues ou ambigues dans le rapport au lieu de
+    creer des liens incertains ;
+  - ignorer ou signaler explicitement les donnees hors perimetre MVP, en
+    particulier les relations non RP ou non limitees au noyau familial/couple.
+- Rapport avant publication :
+  - generer un rapport lisible listant champs reconnus, champs inconnus,
+    champs manquants, doublons probables, tags a creer, streamers a rattacher,
+    relations resolues et relations ambigues ;
+  - afficher par defaut un resume terminal compact, avec option JSON complete
+    pour debug, afin d'eviter de noyer les centaines de fiches importees ;
+  - ajouter une commande de previsualisation du dernier lot importee sous forme
+    de tableau de candidats personnages, sans publication publique ;
+  - separer les entrees nouvelles, modifiees, inchangees, supprimees ou
+    absentes de la source, afin de suivre l'actualisation continue du Notion
+    pendant la preparation du site ;
+  - afficher clairement les erreurs de parsing et les decisions de mapping
+    automatiques, sans les masquer derriere un succes global ;
+  - prevoir une commande backend qui produit le rapport sans mutation des
+    donnees publiques.
+- Validation humaine :
+  - garder la publication hors automatisme pour cette etape : le rapport sert a
+    preparer une validation humaine et une future interface ou commande
+    d'application controlee ;
+  - si une insertion controlee est ajoutee dans l'etape, elle doit creer les
+    historiques necessaires et appliquer les memes contraintes de slug, tags,
+    streamers et relations que les flux moderes existants.
+- Tests et securite :
+  - ajouter des fixtures Notion anonymisees et figees dans les tests, sans
+    donnees personnelles reelles non justifiees ;
+  - tester le parsing nominal, les champs inconnus, les relations ambigues, les
+    doublons de nom, les statuts de verification et l'absence de publication
+    automatique ;
+  - refuser les photos distantes ou fichiers importes non controles dans le
+    premier jet ; les photos Notion doivent etre seulement referencees dans le
+    rapport tant que le pipeline photo securise n'est pas explicitement branche.
 
 Point de controle :
 

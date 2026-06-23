@@ -7,10 +7,11 @@ type AppHeaderProps = {
     message: string;
   } | null;
   authSession: AuthSession | null;
-  activeView: "explore" | "contribution" | "moderation" | "administration" | "profile";
+  activeView: "explore" | "contribution" | "moderation" | "administration" | "imports" | "profile";
   isAuthLoading: boolean;
   onAdministration: () => void;
   onExplore: () => void;
+  onImports: () => void;
   onLogout: () => void;
   onModeration: () => void;
   onProfile: () => void;
@@ -30,6 +31,7 @@ export function AppHeader({
   isAuthLoading,
   onAdministration,
   onExplore,
+  onImports,
   onLogout,
   onModeration,
   onProfile
@@ -64,13 +66,22 @@ export function AppHeader({
             </button>
           ) : null}
           {canAdmin(authSession) ? (
-            <button
-              type="button"
-              className={`ghost-button ${activeView === "administration" ? "is-active" : ""}`}
-              onClick={onAdministration}
-            >
-              Administration
-            </button>
+            <>
+              <button
+                type="button"
+                className={`ghost-button ${activeView === "imports" ? "is-active" : ""}`}
+                onClick={onImports}
+              >
+                Imports
+              </button>
+              <button
+                type="button"
+                className={`ghost-button ${activeView === "administration" ? "is-active" : ""}`}
+                onClick={onAdministration}
+              >
+                Administration
+              </button>
+            </>
           ) : null}
           <AuthControls
             activeView={activeView}

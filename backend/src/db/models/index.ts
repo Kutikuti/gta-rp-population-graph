@@ -18,6 +18,10 @@ import {
   dataSources,
   type LifeStatus,
   lifeStatuses,
+  type NotionImportBatchStatus,
+  type NotionImportEntryStatus,
+  notionImportBatchStatuses,
+  notionImportEntryStatuses,
   type RelationshipDirection,
   type RelationshipType,
   type RoleName,
@@ -88,6 +92,45 @@ export class AdminAction extends Model<
 
   declare actor?: NonAttribute<User | null>;
   declare targetUser?: NonAttribute<User | null>;
+}
+
+export class NotionImportBatch extends Model<
+  InferAttributes<NotionImportBatch>,
+  InferCreationAttributes<NotionImportBatch>
+> {
+  declare id: CreationOptional<string>;
+  declare sourceName: string;
+  declare sourceSnapshot: JsonObject;
+  declare status: NotionImportBatchStatus;
+  declare report: JsonObject;
+  declare validatedByUserId: ForeignKey<User["id"]> | null;
+  declare validatedAt: Date | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  declare entries?: NonAttribute<NotionImportEntry[]>;
+  declare validatedBy?: NonAttribute<User | null>;
+}
+
+export class NotionImportEntry extends Model<
+  InferAttributes<NotionImportEntry>,
+  InferCreationAttributes<NotionImportEntry>
+> {
+  declare id: CreationOptional<string>;
+  declare batchId: ForeignKey<NotionImportBatch["id"]>;
+  declare sourcePageId: string;
+  declare sourceUrl: string | null;
+  declare rawContent: JsonObject;
+  declare contentHash: string;
+  declare previousContentHash: string | null;
+  declare status: NotionImportEntryStatus;
+  declare mappedSnapshot: JsonObject;
+  declare mappingReport: JsonObject;
+  declare lastSeenAt: Date;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  declare batch?: NonAttribute<NotionImportBatch>;
 }
 
 export class Streamer extends Model<InferAttributes<Streamer>, InferCreationAttributes<Streamer>> {
@@ -319,6 +362,88 @@ export const initModels = (sequelize: Sequelize) => {
         { fields: ["target_type"] },
         { fields: ["action"] }
       ]
+    }
+  );
+
+  NotionImportBatch.init(
+    {
+      id: uuidPrimaryKey,
+      sourceName: {
+        type: DataTypes.STRING(160),
+        allowNull: false
+      },
+      sourceSnapshot: {
+        type: DataTypes.JSONB,
+        allowNull: false
+      },
+      status: {
+        type: DataTypes.ENUM(...notionImportBatchStatuses),
+        allowNull: false,
+        defaultValue: "draft"
+      },
+      report: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {}
+      },
+      validatedByUserId: DataTypes.UUID,
+      validatedAt: DataTypes.DATE,
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
+    },
+    {
+      sequelize,
+      tableName: "notion_import_batches",
+      indexes: [{ fields: ["status"] }]
+    }
+  );
+
+  NotionImportEntry.init(
+    {
+      id: uuidPrimaryKey,
+      batchId: {
+        type: DataTypes.UUID,
+        allowNull: false
+      },
+      sourcePageId: {
+        type: DataTypes.STRING(240),
+        allowNull: false
+      },
+      sourceUrl: DataTypes.TEXT,
+      rawContent: {
+        type: DataTypes.JSONB,
+        allowNull: false
+      },
+      contentHash: {
+        type: DataTypes.STRING(64),
+        allowNull: false
+      },
+      previousContentHash: DataTypes.STRING(64),
+      status: {
+        type: DataTypes.ENUM(...notionImportEntryStatuses),
+        allowNull: false
+      },
+      mappedSnapshot: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {}
+      },
+      mappingReport: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {}
+      },
+      lastSeenAt: {
+        type: DataTypes.DATE,
+        allowNull: false
+      },
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
+    },
+    {
+      sequelize,
+      tableName: "notion_import_entries",
+      indexes: [{ fields: ["batch_id"] }, { fields: ["source_page_id"] }, { fields: ["status"] }]
     }
   );
 
@@ -580,6 +705,14 @@ export const initModels = (sequelize: Sequelize) => {
   AdminAction.belongsTo(User, { foreignKey: "actorUserId", as: "actor" });
   AdminAction.belongsTo(User, { foreignKey: "targetUserId", as: "targetUser" });
 
+  User.hasMany(NotionImportBatch, {
+    foreignKey: "validatedByUserId",
+    as: "validatedNotionImportBatches"
+  });
+  NotionImportBatch.belongsTo(User, { foreignKey: "validatedByUserId", as: "validatedBy" });
+  NotionImportBatch.hasMany(NotionImportEntry, { foreignKey: "batchId", as: "entries" });
+  NotionImportEntry.belongsTo(NotionImportBatch, { foreignKey: "batchId", as: "batch" });
+
   Streamer.hasMany(Character, { foreignKey: "streamerId", as: "characters" });
   Character.belongsTo(Streamer, { foreignKey: "streamerId", as: "streamer" });
 
@@ -629,6 +762,8 @@ export const initModels = (sequelize: Sequelize) => {
     User,
     Ban,
     AdminAction,
+    NotionImportBatch,
+    NotionImportEntry,
     Streamer,
     Character,
     Tag,

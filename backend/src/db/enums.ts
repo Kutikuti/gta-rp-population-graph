@@ -30,3 +30,15 @@ export type ChangeRequestStatus = (typeof changeRequestStatuses)[number];
 
 export const changeRequestTypes = ["update", "create"] as const;
 export type ChangeRequestType = (typeof changeRequestTypes)[number];
+
+export const notionImportBatchStatuses = ["draft", "mapped", "reported", "failed"] as const;
+export type NotionImportBatchStatus = (typeof notionImportBatchStatuses)[number];
+
+export const notionImportEntryStatuses = [
+  "new",
+  "updated",
+  "unchanged",
+  "missing",
+  "failed"
+] as const;
+export type NotionImportEntryStatus = (typeof notionImportEntryStatuses)[number];

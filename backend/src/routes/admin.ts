@@ -49,6 +49,34 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
     }
   });
 
+  router.get("/notion-imports", async (_request, response, next) => {
+    try {
+      response.json(await adminService.listNotionImports());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/notion-imports/:id", async (request, response, next) => {
+    try {
+      const detail = await adminService.getNotionImportDetail(request.params.id);
+
+      if (!detail) {
+        response.status(404).json({
+          error: {
+            code: "NOTION_IMPORT_NOT_FOUND",
+            message: "Lot d'import Notion introuvable."
+          }
+        });
+        return;
+      }
+
+      response.json(detail);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/tags", async (request, response, next) => {
     try {
       const input = tagInputSchema.parse(request.body);

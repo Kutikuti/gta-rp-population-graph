@@ -27,6 +27,8 @@ describe("database models", () => {
       "Character",
       "CharacterRelationship",
       "CharacterTag",
+      "NotionImportBatch",
+      "NotionImportEntry",
       "Role",
       "Streamer",
       "Tag",
@@ -54,6 +56,12 @@ describe("database models", () => {
     );
     expect(Object.keys(models.ChangeHistory.associations)).toEqual(
       expect.arrayContaining(["character", "changeRequest", "moderator"])
+    );
+    expect(Object.keys(models.NotionImportBatch.associations)).toEqual(
+      expect.arrayContaining(["entries", "validatedBy"])
+    );
+    expect(Object.keys(models.NotionImportEntry.associations)).toEqual(
+      expect.arrayContaining(["batch"])
     );
   });
 });

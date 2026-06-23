@@ -1,8 +1,17 @@
 import { Op, type Transaction } from "sequelize";
 
 import { type RoleName, roleNames, type TagType, tagTypes } from "../db/enums.js";
-import { initModels, type JsonObject, Role, type Tag, type User } from "../db/models/index.js";
+import {
+  initModels,
+  type JsonObject,
+  type NotionImportBatch,
+  type NotionImportEntry,
+  Role,
+  type Tag,
+  type User
+} from "../db/models/index.js";
 import { createSequelize } from "../db/sequelize.js";
+import { type NotionImportPreviewItem, previewNotionImportEntry } from "./notion-import.js";
 
 const sequelize = createSequelize();
 const models = initModels(sequelize);
@@ -52,6 +61,28 @@ export type AdminDashboard = {
   actions: AdminActionEntry[];
 };
 
+export type AdminNotionImportBatch = {
+  id: string;
+  sourceName: string;
+  status: string;
+  sourceSnapshot: JsonObject;
+  totals: Record<string, number>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminNotionImportEntry = NotionImportPreviewItem & {
+  rawContent: JsonObject;
+  mappedSnapshot: JsonObject;
+  mappingReport: JsonObject;
+  createdAt: string;
+};
+
+export type AdminNotionImportDetail = {
+  batch: AdminNotionImportBatch;
+  entries: AdminNotionImportEntry[];
+};
+
 export type TagInput = {
   name: string;
   type: TagType | null;
@@ -65,6 +96,8 @@ export type BanInput = {
 
 export type AdminService = {
   getDashboard(): Promise<AdminDashboard>;
+  listNotionImports(): Promise<AdminNotionImportBatch[]>;
+  getNotionImportDetail(batchId: string): Promise<AdminNotionImportDetail | null>;
   createTag(actorUserId: string, input: TagInput): Promise<AdminTag>;
   updateTag(actorUserId: string, tagId: string, input: TagInput): Promise<AdminTag | null>;
   deleteTag(actorUserId: string, tagId: string): Promise<"deleted" | "in_use" | "not_found">;
@@ -112,6 +145,27 @@ const serializeTag = (tag: Tag, usageCount = 0): AdminTag => ({
   usageCount
 });
 
+const serializeImportBatch = (batch: NotionImportBatch): AdminNotionImportBatch => ({
+  id: batch.id,
+  sourceName: batch.sourceName,
+  status: batch.status,
+  sourceSnapshot: batch.sourceSnapshot,
+  totals:
+    batch.report && typeof batch.report === "object" && "totals" in batch.report
+      ? ((batch.report as { totals?: Record<string, number> }).totals ?? {})
+      : {},
+  createdAt: batch.createdAt.toISOString(),
+  updatedAt: batch.updatedAt.toISOString()
+});
+
+const serializeImportEntry = (entry: NotionImportEntry): AdminNotionImportEntry => ({
+  ...previewNotionImportEntry(entry),
+  rawContent: entry.rawContent,
+  mappedSnapshot: entry.mappedSnapshot,
+  mappingReport: entry.mappingReport,
+  createdAt: entry.createdAt.toISOString()
+});
+
 const userInclude = [
   { model: Role, as: "role" },
   { model: models.Ban, as: "bans", required: false, where: activeBanWhere }
@@ -150,6 +204,36 @@ export class SequelizeAdminService implements AdminService {
         changes: action.changes,
         createdAt: action.createdAt.toISOString()
       }))
+    };
+  }
+
+  async listNotionImports(): Promise<AdminNotionImportBatch[]> {
+    const batches = await models.NotionImportBatch.findAll({
+      order: [["createdAt", "DESC"]],
+      limit: 20
+    });
+
+    return batches.map(serializeImportBatch);
+  }
+
+  async getNotionImportDetail(batchId: string): Promise<AdminNotionImportDetail | null> {
+    const batch = await models.NotionImportBatch.findByPk(batchId);
+
+    if (!batch) {
+      return null;
+    }
+
+    const entries = await models.NotionImportEntry.findAll({
+      where: { batchId },
+      order: [
+        ["status", "ASC"],
+        ["createdAt", "ASC"]
+      ]
+    });
+
+    return {
+      batch: serializeImportBatch(batch),
+      entries: entries.map(serializeImportEntry)
     };
   }
 
