@@ -72,6 +72,67 @@ describe("notion import mapping", () => {
     expect(result.report.photoReferences).toEqual(["https://example.com/ada.webp"]);
   });
 
+  it("maps Flashback status, police fields and group tags from Notion properties", () => {
+    const aliveResult = mapNotionPage({
+      pageId: "page-heitor",
+      properties: {
+        Prenom: "Heitor Leite",
+        Nom: "JR",
+        "Statut vital": "En vie",
+        "Métier/entreprise": "SASP",
+        Poste: "Rookie",
+        Matricule: "99",
+        Famille: "Leite JR",
+        Groupes: "Aucun groupe"
+      }
+    });
+    const deceasedResult = mapNotionPage({
+      pageId: "page-lune",
+      properties: {
+        Prenom: "Lune",
+        Nom: "Suarez",
+        "Statut vital": "Mort/Morte",
+        "Métier/entreprise": "SASD",
+        Poste: "Député 2",
+        Matricule: "110",
+        Famille: "Suarez",
+        Groupes: "Aucun groupe"
+      }
+    });
+    const groupResult = mapNotionPage({
+      pageId: "page-paolo",
+      properties: {
+        Prenom: "Paolo Benavides de",
+        Nom: "Alva",
+        "Statut vital": "En vie",
+        "Métier/entreprise": "Université,SAMD",
+        Poste: "Etudiant,Brancardier",
+        Famille: "Benavides de Alva",
+        Groupes: "Richman Lane,6block",
+        Quartier: "6block"
+      }
+    });
+
+    expect(aliveResult.mapped).toMatchObject({
+      lifeStatus: "alive",
+      policeRank: "Rookie",
+      policeBadgeNumber: "99",
+      tags: []
+    });
+    expect(deceasedResult.mapped).toMatchObject({
+      lifeStatus: "deceased",
+      policeRank: "Député 2",
+      policeBadgeNumber: "110",
+      tags: []
+    });
+    expect(groupResult.mapped.tags).toEqual(["Richman Lane", "6block"]);
+    expect(groupResult.mapped.policeRank).toBeNull();
+    expect(groupResult.mapped.policeBadgeNumber).toBeNull();
+    expect(groupResult.report.recognizedFields).toEqual(
+      expect.arrayContaining(["Famille", "Groupes", "Statut vital"])
+    );
+  });
+
   it("marks incomplete pages as failed candidates instead of silently publishing them", () => {
     const plan = buildNotionImportPlan(
       {

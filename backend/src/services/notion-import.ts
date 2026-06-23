@@ -131,8 +131,8 @@ const fieldAliases = {
   youtube: ["youtube", "youTube"],
   instagram: ["instagram"],
   tiktok: ["tiktok", "tikTok"],
-  policeRank: ["grade police", "policeRank", "police_rank"],
-  policeBadgeNumber: ["matricule police", "policeBadgeNumber", "police_badge_number"],
+  policeRank: ["grade police", "rang police", "poste", "policeRank", "police_rank"],
+  policeBadgeNumber: ["matricule police", "matricule", "policeBadgeNumber", "police_badge_number"],
   previousCharacters: [
     "anciens personnages",
     "previousCharacters",
@@ -143,7 +143,8 @@ const fieldAliases = {
     "v4",
     "v5"
   ],
-  tags: ["tags", "tag", "famille"],
+  familyName: ["famille"],
+  tags: ["tags", "tag"],
   relationships: ["relations", "relationships", "parentes rp", "parentés rp"],
   photoReferences: ["photo", "image", "avatar", "photoUrl", "photo_url"]
 } as const;
@@ -183,6 +184,32 @@ const listValue = (value: unknown): string[] => {
   return values.map((item) => item.trim()).filter(Boolean);
 };
 
+const withoutEmptyNotionValues = (values: string[]) =>
+  values.filter((value) => {
+    const normalized = value
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .trim()
+      .toLowerCase();
+
+    return !["aucun groupe", "aucun groupes", "aucune groupe", "aucune groupes"].includes(
+      normalized
+    );
+  });
+
+const isPoliceBusiness = (value: string | null) => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+
+  return /\b(sasp|sasd|lspd|bcso|police|sheriff)\b/.test(normalized);
+};
+
 const relationshipListValue = (value: unknown): JsonObject[] => {
   if (!Array.isArray(value)) {
     const text = stringValue(value);
@@ -215,17 +242,22 @@ const relationshipListValue = (value: unknown): JsonObject[] => {
 };
 
 const mapLifeStatus = (value: unknown): MappedNotionCharacter["lifeStatus"] => {
-  const raw = stringValue(value)?.toLowerCase();
+  const raw = stringValue(value)
+    ?.normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
 
   if (!raw) {
     return "unknown";
   }
 
-  if (["vivant", "alive"].includes(raw)) {
+  if (["vivant", "vivante", "en vie", "alive"].includes(raw)) {
     return "alive";
   }
 
-  if (["mort", "decede", "décédé", "deceased"].includes(raw)) {
+  if (
+    ["mort", "morte", "mort/morte", "decede", "decedee", "decede/decedee", "deceased"].includes(raw)
+  ) {
     return "deceased";
   }
 
@@ -282,8 +314,21 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const properties = page.properties;
   const firstName = stringValue(findValue(properties, fieldAliases.firstName));
   const lastName = stringValue(findValue(properties, fieldAliases.lastName));
+  const businessName = stringValue(findValue(properties, fieldAliases.businessName));
+  const groupName = stringValue(findValue(properties, fieldAliases.groupName));
   const relationships = relationshipListValue(findValue(properties, fieldAliases.relationships));
   const photoReferences = listValue(findValue(properties, fieldAliases.photoReferences));
+  const explicitTags = listValue(findValue(properties, fieldAliases.tags));
+  const groupTags = withoutEmptyNotionValues(listValue(groupName));
+  const explicitPoliceRank = stringValue(
+    findValue(properties, ["grade police", "rang police", "policeRank", "police_rank"])
+  );
+  const genericPost = stringValue(findValue(properties, ["poste"]));
+  const explicitPoliceBadgeNumber = stringValue(
+    findValue(properties, ["matricule police", "policeBadgeNumber", "police_badge_number"])
+  );
+  const genericBadgeNumber = stringValue(findValue(properties, ["matricule"]));
+  const shouldMapGenericPoliceFields = isPoliceBusiness(businessName);
   const missingFields = [firstName ? null : "firstName", lastName ? null : "lastName"].filter(
     (field): field is string => Boolean(field)
   );
@@ -307,16 +352,17 @@ export const mapNotionPage = (page: NotionPageInput) => {
     phoneNumber: stringValue(findValue(properties, fieldAliases.phoneNumber)),
     streamerPublicName: stringValue(findValue(properties, fieldAliases.streamerPublicName)),
     socialLinks: cleanSocialLinks,
-    businessName: stringValue(findValue(properties, fieldAliases.businessName)),
-    groupName: stringValue(findValue(properties, fieldAliases.groupName)),
+    businessName,
+    groupName,
     groupRole: stringValue(findValue(properties, fieldAliases.groupRole)),
     district: stringValue(findValue(properties, fieldAliases.district)),
-    policeRank: stringValue(findValue(properties, fieldAliases.policeRank)),
-    policeBadgeNumber: stringValue(findValue(properties, fieldAliases.policeBadgeNumber)),
+    policeRank: explicitPoliceRank ?? (shouldMapGenericPoliceFields ? genericPost : null),
+    policeBadgeNumber:
+      explicitPoliceBadgeNumber ?? (shouldMapGenericPoliceFields ? genericBadgeNumber : null),
     previousCharacters: {
       raw: findValue(properties, fieldAliases.previousCharacters) ?? null
     },
-    tags: listValue(findValue(properties, fieldAliases.tags)),
+    tags: explicitTags.length > 0 ? explicitTags : groupTags,
     relationships,
     photoReferences,
     dataSource: "notion",
