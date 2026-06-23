@@ -32,6 +32,12 @@
   padding: 104px 24px 32px;
 }
 
+.imports-page {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .full-page-header,
 .full-page-grid,
 .moderation-layout {
@@ -77,6 +83,8 @@
   gap: 16px;
   width: min(1320px, 100%);
   margin: 0 auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .admin-log-panel {
@@ -110,6 +118,13 @@
   display: grid;
   align-content: start;
   gap: 12px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.imports-main-panel {
+  align-content: stretch;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .imports-batches-panel h3,
@@ -162,6 +177,16 @@
   border-collapse: collapse;
 }
 
+.imports-table-scroll {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #143d60;
+}
+
+.imports-table-scroll .imports-table {
+  border: 0;
+}
+
 .imports-table th,
 .imports-table td {
   border-bottom: 1px solid #143d60;
@@ -177,6 +202,9 @@
 }
 
 .imports-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   color: #8fb2cf;
   background: #03101b;
   font-size: 0.68rem;
@@ -753,6 +781,7 @@
   .full-page-grid,
   .moderation-layout,
   .admin-layout,
+  .imports-layout,
   .admin-row,
   .admin-form,
   .form-grid,
@@ -781,5 +810,19 @@
 
   .full-page-view {
     padding: 138px 12px 24px;
+  }
+
+  .imports-page {
+    overflow-y: auto;
+  }
+
+  .imports-layout {
+    min-height: auto;
+  }
+
+  .imports-batches-panel,
+  .imports-main-panel,
+  .imports-detail-panel {
+    overflow: visible;
   }
 }

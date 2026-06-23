@@ -123,7 +123,7 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
   }
 
   return (
-    <section className="full-page-view" aria-labelledby="imports-title">
+    <section className="full-page-view imports-page" aria-labelledby="imports-title">
       <div className="full-page-header">
         <div>
           <p className="eyebrow">Imports Notion</p>
@@ -197,51 +197,53 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
             ))}
           </div>
 
-          <table className="imports-table">
-            <thead>
-              <tr>
-                <th>Statut</th>
-                <th>Personnage</th>
-                <th>Twitch</th>
-                <th>Organisation</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEntries.map((entry) => (
-                <tr
-                  key={entry.pageId}
-                  className={selectedPageId === entry.pageId ? "is-active" : ""}
-                >
-                  <td>
-                    <button
-                      type="button"
-                      className="imports-row-button"
-                      onClick={() => {
-                        setSelectedPageId(entry.pageId);
-                      }}
-                    >
-                      <span className={`status-pill status-pill-${entry.status}`}>
-                        {statusLabels[entry.status]}
-                      </span>
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="imports-row-button"
-                      onClick={() => {
-                        setSelectedPageId(entry.pageId);
-                      }}
-                    >
-                      <strong>{entry.fullName}</strong>
-                    </button>
-                  </td>
-                  <td>{entry.twitch ?? entry.streamer ?? "-"}</td>
-                  <td>{entry.group ?? entry.business ?? "-"}</td>
+          <div className="imports-table-scroll">
+            <table className="imports-table">
+              <thead>
+                <tr>
+                  <th>Statut</th>
+                  <th>Personnage</th>
+                  <th>Twitch</th>
+                  <th>Organisation</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredEntries.map((entry) => (
+                  <tr
+                    key={entry.pageId}
+                    className={selectedPageId === entry.pageId ? "is-active" : ""}
+                  >
+                    <td>
+                      <button
+                        type="button"
+                        className="imports-row-button"
+                        onClick={() => {
+                          setSelectedPageId(entry.pageId);
+                        }}
+                      >
+                        <span className={`status-pill status-pill-${entry.status}`}>
+                          {statusLabels[entry.status]}
+                        </span>
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="imports-row-button"
+                        onClick={() => {
+                          setSelectedPageId(entry.pageId);
+                        }}
+                      >
+                        <strong>{entry.fullName}</strong>
+                      </button>
+                    </td>
+                    <td>{entry.twitch ?? entry.streamer ?? "-"}</td>
+                    <td>{entry.group ?? entry.business ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <aside className="work-panel imports-detail-panel">
