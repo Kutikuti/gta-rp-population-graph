@@ -9,6 +9,7 @@ type NotionBlockValue = {
   content?: string[];
   collection_id?: string;
   format?: {
+    display_source?: unknown;
     page_cover?: unknown;
     page_icon?: unknown;
     social_media_image_preview_url?: unknown;
@@ -52,6 +53,21 @@ const compact = <T>(values: Array<T | null | undefined>) =>
   values.filter((value): value is T => value !== null && value !== undefined);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const maxRateLimitRetries = 8;
+
+const retryDelayMs = (response: Response, attempt: number) => {
+  const retryAfter = response.headers.get("retry-after");
+
+  if (retryAfter) {
+    const retrySeconds = Number.parseInt(retryAfter, 10);
+
+    if (Number.isFinite(retrySeconds) && retrySeconds >= 0) {
+      return retrySeconds * 1000;
+    }
+  }
+
+  return Math.min(30_000, 1_500 * 2 ** attempt);
+};
 
 const unwrapRecordValue = <T>(record: { value?: T | { value?: T } } | undefined): T | null => {
   const value = record?.value;
@@ -217,8 +233,8 @@ const loadPageChunk = async (
     })
   });
 
-  if (response.status === 429 && attempt < 5) {
-    await delay((attempt + 1) * 1500);
+  if (response.status === 429 && attempt < maxRateLimitRetries) {
+    await delay(retryDelayMs(response, attempt));
     return loadPageChunk(pageId, fetchImpl, attempt + 1);
   }
 
@@ -253,8 +269,8 @@ const syncRecordValues = async (
     })
   });
 
-  if (response.status === 429 && attempt < 5) {
-    await delay((attempt + 1) * 1500);
+  if (response.status === 429 && attempt < maxRateLimitRetries) {
+    await delay(retryDelayMs(response, attempt));
     return syncRecordValues(pageIds, spaceId, fetchImpl, attempt + 1);
   }
 
@@ -270,6 +286,21 @@ const blockValues = (recordMap: NotionRecordMap) =>
   Object.values(recordMap.block ?? {}).flatMap((record) =>
     compact([unwrapRecordValue<NotionBlockValue>(record)])
   );
+
+const mergeRecordMaps = (base: NotionRecordMap, extra: NotionRecordMap): NotionRecordMap => ({
+  block: {
+    ...(base.block ?? {}),
+    ...(extra.block ?? {})
+  },
+  collection: {
+    ...(base.collection ?? {}),
+    ...(extra.collection ?? {})
+  },
+  collection_view: {
+    ...(base.collection_view ?? {}),
+    ...(extra.collection_view ?? {})
+  }
+});
 
 const collectionValues = (recordMap: NotionRecordMap) =>
   Object.values(recordMap.collection ?? {}).flatMap((record) =>
@@ -300,7 +331,7 @@ const notionPageUrl = (sourceUrl: string, pageId: string) => {
   return `${base.origin}/${pageId.replaceAll("-", "")}`;
 };
 
-const notionImageReference = (value: unknown, pageId: string) => {
+const notionImageReference = (value: unknown, blockId: string, spaceId?: string) => {
   if (typeof value !== "string") {
     return null;
   }
@@ -316,7 +347,17 @@ const notionImageReference = (value: unknown, pageId: string) => {
   }
 
   if (reference.startsWith("attachment:")) {
-    return `https://www.notion.so/image/${encodeURIComponent(reference)}?table=block&id=${pageId}&cache=v2`;
+    const url = new URL(`https://www.notion.so/image/${encodeURIComponent(reference)}`);
+    url.searchParams.set("table", "block");
+    url.searchParams.set("id", blockId);
+    url.searchParams.set("cache", "v2");
+    url.searchParams.set("width", "2000");
+
+    if (spaceId) {
+      url.searchParams.set("spaceId", spaceId);
+    }
+
+    return url.toString();
   }
 
   if (reference.startsWith("/")) {
@@ -326,12 +367,72 @@ const notionImageReference = (value: unknown, pageId: string) => {
   return null;
 };
 
-const pagePhotoReferences = (pageBlock: NotionBlockValue) =>
-  compact([
-    notionImageReference(pageBlock.format?.page_icon, pageBlock.id),
-    notionImageReference(pageBlock.format?.page_cover, pageBlock.id),
-    notionImageReference(pageBlock.format?.social_media_image_preview_url, pageBlock.id)
+const descendantBlocks = (recordMap: NotionRecordMap, rootIds: string[]) => {
+  const blocksById = new Map(blockValues(recordMap).map((block) => [block.id, block] as const));
+  const visited = new Set<string>();
+  const stack = [...rootIds];
+  const descendants: NotionBlockValue[] = [];
+
+  while (stack.length > 0) {
+    const blockId = stack.shift();
+
+    if (!blockId || visited.has(blockId)) {
+      continue;
+    }
+
+    visited.add(blockId);
+
+    const block = blocksById.get(blockId);
+
+    if (!block) {
+      continue;
+    }
+
+    descendants.push(block);
+
+    for (const childId of block.content ?? []) {
+      stack.push(childId);
+    }
+  }
+
+  return descendants;
+};
+
+const uniquePhotoReferences = (references: Array<string | null>) => [
+  ...new Set(compact(references))
+];
+
+const pagePhotoReferences = (recordMap: NotionRecordMap, pageBlock: NotionBlockValue) => {
+  const inlineMedia = descendantBlocks(recordMap, pageBlock.content ?? []).flatMap((block) => {
+    if (!["image", "file", "pdf", "video", "audio"].includes(block.type)) {
+      return [];
+    }
+
+    return compact([notionImageReference(block.format?.display_source, block.id, block.space_id)]);
+  });
+
+  const pageMedia = compact([
+    notionImageReference(pageBlock.format?.page_icon, pageBlock.id, pageBlock.space_id),
+    notionImageReference(pageBlock.format?.page_cover, pageBlock.id, pageBlock.space_id),
+    notionImageReference(
+      pageBlock.format?.social_media_image_preview_url,
+      pageBlock.id,
+      pageBlock.space_id
+    )
   ]);
+
+  if (inlineMedia.length > 0) {
+    return uniquePhotoReferences(inlineMedia);
+  }
+
+  return uniquePhotoReferences(pageMedia);
+};
+
+const recordMapHasBlock = (recordMap: NotionRecordMap, blockId: string) =>
+  Object.prototype.hasOwnProperty.call(recordMap.block ?? {}, blockId);
+
+const missingDirectChildBlockIds = (recordMap: NotionRecordMap, pageBlock: NotionBlockValue) =>
+  (pageBlock.content ?? []).filter((childId) => !recordMapHasBlock(recordMap, childId));
 
 const schemaNameByPropertyId = (recordMap: NotionRecordMap) => {
   const collection = collectionValues(recordMap).find(
@@ -351,6 +452,7 @@ const schemaNameByPropertyId = (recordMap: NotionRecordMap) => {
 };
 
 const propertiesFromPageBlock = (
+  recordMap: NotionRecordMap,
   pageBlock: NotionBlockValue,
   schemaNames: Map<string, string>
 ): Record<string, unknown> => {
@@ -367,7 +469,7 @@ const propertiesFromPageBlock = (
 
   const title = pageTitle(pageBlock);
   const fallbackName = splitTitleName(title);
-  const photoReferences = pagePhotoReferences(pageBlock);
+  const photoReferences = pagePhotoReferences(recordMap, pageBlock);
 
   properties["Titre Notion"] = title;
 
@@ -443,7 +545,7 @@ const scrapeCollectionPages = async (
       pages.push({
         pageId,
         url: notionPageUrl(sourceUrl, pageId),
-        properties: propertiesFromPageBlock(pageBlock, rootSchemaNames)
+        properties: propertiesFromPageBlock(recordMap, pageBlock, rootSchemaNames)
       });
     }
 
@@ -453,13 +555,30 @@ const scrapeCollectionPages = async (
   for (const pageIds of chunk(ids, 50)) {
     await delay(250);
 
-    const recordMap = await syncRecordValues(pageIds, source.spaceId, fetchImpl);
+    let recordMap = await syncRecordValues(pageIds, source.spaceId, fetchImpl);
+    const missingChildIds = [
+      ...new Set(
+        blockValues(recordMap)
+          .filter((block) => block.type === "page")
+          .flatMap((pageBlock) => missingDirectChildBlockIds(recordMap, pageBlock))
+      )
+    ];
+
+    for (const childIds of chunk(missingChildIds, 50)) {
+      if (childIds.length === 0) {
+        continue;
+      }
+
+      await delay(400);
+      const childRecordMap = await syncRecordValues(childIds, source.spaceId, fetchImpl);
+      recordMap = mergeRecordMaps(recordMap, childRecordMap);
+    }
 
     for (const pageBlock of blockValues(recordMap).filter((block) => block.type === "page")) {
       pages.push({
         pageId: pageBlock.id,
         url: notionPageUrl(sourceUrl, pageBlock.id),
-        properties: propertiesFromPageBlock(pageBlock, rootSchemaNames)
+        properties: propertiesFromPageBlock(recordMap, pageBlock, rootSchemaNames)
       });
     }
   }
@@ -488,7 +607,7 @@ export const scrapePublicNotionPage = async (
     const title = pageTitle(pageBlock);
     const properties = parsePropertiesFromText(textBlocks(recordMap));
     const fallbackName = splitTitleName(title);
-    const photoReferences = pagePhotoReferences(pageBlock);
+    const photoReferences = pagePhotoReferences(recordMap, pageBlock);
 
     if (!properties.Prenom && fallbackName.firstName) {
       properties.Prenom = fallbackName.firstName;
@@ -517,7 +636,7 @@ export const scrapePublicNotionPage = async (
     const title = rootBlock ? pageTitle(rootBlock) : "Flashback Whitelist V6";
     const properties = parsePropertiesFromText(textBlocks(rootRecordMap));
     const fallbackName = splitTitleName(title);
-    const photoReferences = rootBlock ? pagePhotoReferences(rootBlock) : [];
+    const photoReferences = rootBlock ? pagePhotoReferences(rootRecordMap, rootBlock) : [];
 
     if (!properties.Prenom && fallbackName.firstName) {
       properties.Prenom = fallbackName.firstName;

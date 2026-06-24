@@ -5,9 +5,11 @@ import {
   type AdminNotionImportDetail,
   type AdminNotionImportEntry,
   type AuthSession,
+  type LifeStatus,
   getAdminNotionImportDetail,
   listAdminNotionImports
 } from "../api";
+import { lifeStatusLabels } from "../constants";
 import { formatDateTime } from "../utils/format";
 
 type NotionImportsViewProps = {
@@ -264,7 +266,12 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
               <dl className="import-detail-list">
                 <div>
                   <dt>Vie</dt>
-                  <dd>{selectedEntry.lifeStatus ?? "-"}</dd>
+                  <dd>
+                    {selectedEntry.lifeStatus
+                      ? (lifeStatusLabels[selectedEntry.lifeStatus as LifeStatus] ??
+                        selectedEntry.lifeStatus)
+                      : "-"}
+                  </dd>
                 </div>
                 <div>
                   <dt>Twitch</dt>

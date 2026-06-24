@@ -108,6 +108,89 @@ describe("notion scraper", () => {
     });
   });
 
+  it("prefers image blocks inside the page content and builds attachment URLs from the image block id", async () => {
+    const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
+    const characterId = "34b07fc3-2f6c-80fa-a3e7-d0067ef268bc";
+    const imageBlockId = "36607fc3-2f6c-8050-aa68-cb48f49179a8";
+    const fetchMock = async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+
+      if (body.pageId === rootId) {
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [rootId]: {
+                value: {
+                  id: rootId,
+                  type: "page",
+                  properties: { title: [["Flashback Whitelist V6"]] },
+                  content: [characterId]
+                }
+              },
+              [characterId]: {
+                value: {
+                  id: characterId,
+                  type: "page",
+                  properties: { title: [["Abel Simango"]] }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      return jsonResponse({
+        recordMap: {
+          block: {
+            [characterId]: {
+              value: {
+                id: characterId,
+                type: "page",
+                properties: { title: [["Abel Simango"]] },
+                content: [imageBlockId],
+                format: {
+                  social_media_image_preview_url:
+                    "attachment:65577dd0-c9bb-4bbc-9516-796f781b7cc3:SocialMediaPreviewImage.png"
+                }
+              }
+            },
+            [imageBlockId]: {
+              value: {
+                id: imageBlockId,
+                type: "image",
+                space_id: "174a582a-d105-4b37-963c-91844b8ef4a1",
+                format: {
+                  display_source: "attachment:7b1897ff-04ba-4e49-94ca-9634b6595086:Abel_Simango.jpg"
+                },
+                properties: { title: [["Abel Simango.JPG"]] }
+              }
+            }
+          }
+        }
+      });
+    };
+
+    const input = await scrapePublicNotionPage(
+      "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+      { fetch: fetchMock }
+    );
+
+    expect(input.pages).toEqual([
+      {
+        pageId: characterId,
+        url: "https://www.notion.so/34b07fc32f6c80faa3e7d0067ef268bc",
+        properties: {
+          Prenom: "Abel",
+          Nom: "Simango",
+          "Titre Notion": "Abel Simango",
+          Photo: [
+            "https://www.notion.so/image/attachment%3A7b1897ff-04ba-4e49-94ca-9634b6595086%3AAbel_Simango.jpg?table=block&id=36607fc3-2f6c-8050-aa68-cb48f49179a8&cache=v2&width=2000&spaceId=174a582a-d105-4b37-963c-91844b8ef4a1"
+          ]
+        }
+      }
+    ]);
+  });
+
   it("loads collection view rows from page_sort and maps schema property names", async () => {
     const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
     const collectionId = "5bf2e238-dead-4ad6-8a19-10f4c9bfdce2";
@@ -236,7 +319,153 @@ describe("notion scraper", () => {
           "Métier/entreprise": "Aucun métier/entreprise",
           Photo: [
             "https://www.notion.so/images/page-cover/met_william_morris_1875_willow.jpg",
-            "https://www.notion.so/image/attachment%3A65577dd0-c9bb-4bbc-9516-796f781b7cc3%3ASocialMediaPreviewImage.png?table=block&id=35107fc3-2f6c-80c3-9da0-c5ce0cd351d3&cache=v2"
+            "https://www.notion.so/image/attachment%3A65577dd0-c9bb-4bbc-9516-796f781b7cc3%3ASocialMediaPreviewImage.png?table=block&id=35107fc3-2f6c-80c3-9da0-c5ce0cd351d3&cache=v2&width=2000"
+          ]
+        }
+      }
+    ]);
+  });
+
+  it("loads missing image child blocks with a second batch sync when syncRecordValues omits them", async () => {
+    const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
+    const collectionId = "5bf2e238-dead-4ad6-8a19-10f4c9bfdce2";
+    const viewId = "34d07fc3-2f6c-80b5-aefe-000c0049dbff";
+    const characterId = "34b07fc3-2f6c-80fa-a3e7-d0067ef268bc";
+    const imageBlockId = "36607fc3-2f6c-8050-aa68-cb48f49179a8";
+    const calls: string[] = [];
+    const fetchMock = async (url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+
+      if (url.endsWith("/loadPageChunk")) {
+        calls.push(`load:${body.pageId}`);
+
+        if (body.pageId === rootId) {
+          return jsonResponse({
+            recordMap: {
+              block: {
+                [rootId]: {
+                  value: {
+                    value: {
+                      id: rootId,
+                      type: "page",
+                      properties: { title: [["Flashback Whitelist V6"]] }
+                    }
+                  }
+                },
+                "collection-block": {
+                  value: {
+                    value: {
+                      id: "collection-block",
+                      type: "collection_view",
+                      collection_id: collectionId,
+                      view_ids: [viewId]
+                    }
+                  }
+                }
+              },
+              collection_view: {
+                [viewId]: {
+                  value: {
+                    value: {
+                      id: viewId,
+                      type: "gallery",
+                      name: "Tous",
+                      page_sort: [characterId],
+                      format: {
+                        collection_pointer: {
+                          id: collectionId,
+                          spaceId: "174a582a-d105-4b37-963c-91844b8ef4a1"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              collection: {
+                [collectionId]: {
+                  value: {
+                    value: {
+                      id: collectionId,
+                      schema: {
+                        title: { name: "Nom", type: "title" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        throw new Error(`Unexpected loadPageChunk call for ${String(body.pageId)}`);
+      }
+
+      const requestedIds = body.requests?.map(
+        (request: { pointer: { id: string } }) => request.pointer.id
+      );
+      calls.push(`sync:${requestedIds.join(",")}`);
+
+      if (requestedIds.includes(imageBlockId)) {
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [imageBlockId]: {
+                value: {
+                  value: {
+                    id: imageBlockId,
+                    type: "image",
+                    space_id: "174a582a-d105-4b37-963c-91844b8ef4a1",
+                    format: {
+                      display_source:
+                        "attachment:7b1897ff-04ba-4e49-94ca-9634b6595086:Abel_Simango.jpg"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      return jsonResponse({
+        recordMap: {
+          block: {
+            [characterId]: {
+              value: {
+                value: {
+                  id: characterId,
+                  type: "page",
+                  properties: { title: [["Abel Simango"]] },
+                  content: [imageBlockId],
+                  format: {
+                    social_media_image_preview_url:
+                      "attachment:65577dd0-c9bb-4bbc-9516-796f781b7cc3:SocialMediaPreviewImage.png"
+                  }
+                }
+              }
+            }
+          },
+          collection: {}
+        }
+      });
+    };
+
+    const input = await scrapePublicNotionPage(
+      "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+      { fetch: fetchMock }
+    );
+
+    expect(calls).toEqual([`load:${rootId}`, `sync:${characterId}`, `sync:${imageBlockId}`]);
+    expect(input.pages).toEqual([
+      {
+        pageId: characterId,
+        url: "https://www.notion.so/34b07fc32f6c80faa3e7d0067ef268bc",
+        properties: {
+          Prenom: "Abel",
+          Nom: "Simango",
+          "Titre Notion": "Abel Simango",
+          Photo: [
+            "https://www.notion.so/image/attachment%3A7b1897ff-04ba-4e49-94ca-9634b6595086%3AAbel_Simango.jpg?table=block&id=36607fc3-2f6c-8050-aa68-cb48f49179a8&cache=v2&width=2000&spaceId=174a582a-d105-4b37-963c-91844b8ef4a1"
           ]
         }
       }
