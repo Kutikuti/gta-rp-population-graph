@@ -116,6 +116,159 @@ npm run db:seed
 npm run db:migrate:executed
 ```
 
+## Commandes disponibles
+
+### Backend
+
+Toutes les commandes backend se lancent depuis `backend/`.
+
+```bash
+cd backend
+```
+
+| Commande | Usage |
+| --- | --- |
+| `npm run dev` | Demarre l'API Express en mode watch. |
+| `npm run build` | Compile le backend TypeScript dans `dist/`. |
+| `npm run start` | Lance le backend compile depuis `dist/index.js`. |
+| `npm run lint` | Lance Biome en mode lint. |
+| `npm run check` | Lance Biome en mode check complet. |
+| `npm run format` | Formate les fichiers backend avec Biome. |
+| `npm test` | Lance tous les tests backend avec Vitest. |
+| `npm run test:watch` | Lance Vitest en mode watch. |
+| `npm run db:ensure` | Cree la base de developpement si elle n'existe pas. |
+| `npm run db:migrate` | Applique les migrations en attente. |
+| `npm run db:migrate:undo` | Annule la derniere migration appliquee. |
+| `npm run db:migrate:pending` | Liste les migrations en attente. |
+| `npm run db:migrate:executed` | Liste les migrations deja appliquees. |
+| `npm run db:seed` | Insere les donnees de seed. |
+| `npm run db:reset` | Rejoue toutes les migrations puis les seeds. |
+| `npm run notion:scrape-report` | Scrape une URL Notion publique puis enregistre un rapport d'import. |
+| `npm run notion:import-report` | Importe un fichier JSON Notion prepare puis enregistre un rapport. |
+| `npm run notion:preview` | Affiche une previsualisation terminale d'un batch Notion importe. |
+| `npm run photo:cleanup` | Nettoie les brouillons de photos expires. |
+
+Exemples utiles :
+
+```bash
+cd backend
+npm test
+npm run check
+npm run build
+```
+
+```bash
+cd backend
+npm run db:ensure
+npm run db:migrate
+npm run db:seed
+```
+
+### Import Notion
+
+La source initiale est la page publique Notion Flashback Whitelist V6. Le flux
+normal consiste a scraper l'URL publique, enregistrer un batch d'import, puis
+controler le rapport et la previsualisation avant toute publication future.
+
+Scraper directement la page Notion publique :
+
+```bash
+cd backend
+npm run notion:scrape-report -- "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c"
+```
+
+Afficher le meme rapport en JSON complet :
+
+```bash
+cd backend
+npm run notion:scrape-report -- "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c" --json
+```
+
+Importer un fichier JSON prepare, si un export de travail existe :
+
+```bash
+cd backend
+npm run notion:import-report -- ./data/notion-import.json
+```
+
+Importer ce fichier avec une sortie JSON :
+
+```bash
+cd backend
+npm run notion:import-report -- ./data/notion-import.json --json
+```
+
+Previsualiser le dernier batch importe dans le terminal :
+
+```bash
+cd backend
+npm run notion:preview
+```
+
+Previsualiser un batch precis :
+
+```bash
+cd backend
+npm run notion:preview -- <batch-id>
+```
+
+Limiter le nombre de lignes affichees :
+
+```bash
+cd backend
+npm run notion:preview -- --limit=50
+```
+
+Previsualiser un batch precis en JSON :
+
+```bash
+cd backend
+npm run notion:preview -- <batch-id> --json
+```
+
+Notes importantes :
+
+- Le scrape Notion ecrit uniquement des donnees de travail dans les tables
+  `notion_import_batches` et `notion_import_entries`.
+- Ces imports ne publient pas encore les fiches dans les donnees publiques.
+- Les donnees Notion restent communautaires et doivent etre verifiees avant
+  publication.
+- Il est possible de relancer le scrape plusieurs fois : les pages sont classees
+  en `new`, `updated`, `unchanged`, `missing` ou `failed`.
+
+### Frontend
+
+Toutes les commandes frontend se lancent depuis `web-client/`.
+
+```bash
+cd web-client
+```
+
+| Commande | Usage |
+| --- | --- |
+| `npm run dev` | Demarre Vite en local avec `--host 0.0.0.0`. |
+| `npm run build` | Type-check puis compile le frontend de production. |
+| `npm run preview` | Sert le build Vite localement. |
+| `npm run lint` | Lance Biome en mode lint. |
+| `npm run check` | Lance Biome en mode check complet. |
+| `npm run format` | Formate les fichiers frontend avec Biome. |
+| `npm test` | Lance tous les tests frontend avec Vitest. |
+| `npm run test:watch` | Lance Vitest en mode watch. |
+
+Exemples utiles :
+
+```bash
+cd web-client
+npm run dev
+```
+
+```bash
+cd web-client
+npm test
+npm run check
+npm run build
+```
+
 ## Authentification locale
 
 Le socle d'authentification MVP utilise Google OAuth cote backend avec session
