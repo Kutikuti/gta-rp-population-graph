@@ -25,6 +25,14 @@ const baseInput = {
         Telephone: "555-0101",
         Streamer: "AdaLive",
         Tags: ["Famille", "Tech"],
+        V6: ["Analia Cruz", "Milo Vega"],
+        "Père relation": "Victor Lovelace",
+        "Frères/Soeurs relation": "Byron Lovelace",
+        "Couple relation": "Grace Hopper",
+        "Est oncle/tante": "Noah Example",
+        "Ex/Exs relation": "Charles Babbage",
+        "Oncle relation": "Henri Example",
+        "Tante relation": "Julia Example",
         Twitch: "https://twitch.example/adalive",
         Relations: [
           { type: "couple", target: "Grace Hopper" },
@@ -62,8 +70,40 @@ describe("notion import mapping", () => {
       dataSource: "notion",
       verificationStatus: "imported"
     });
+    expect(result.mapped.relationships).toEqual(
+      expect.arrayContaining([
+        { type: "couple", target: "Grace Hopper" },
+        { type: "collegue", target: "Charles Babbage" },
+        { type: "previous_character", target: "Analia Cruz" },
+        { type: "previous_character", target: "Milo Vega" },
+        { type: "parent", target: "Victor Lovelace" },
+        { type: "sibling", target: "Byron Lovelace" },
+        { type: "couple_reference", target: "Grace Hopper" },
+        { type: "aunt_or_uncle_reference", target: "Noah Example" },
+        { type: "ex_partner_reference", target: "Charles Babbage" },
+        { type: "uncle_reference", target: "Henri Example" },
+        { type: "aunt_reference", target: "Julia Example" }
+      ])
+    );
+    expect(result.mapped.previousCharacters).toEqual({
+      raw: null,
+      v6: ["Analia Cruz", "Milo Vega"]
+    });
     expect(result.report.recognizedFields).toEqual(
-      expect.arrayContaining(["Prenom", "Nom", "Streamer", "Photo"])
+      expect.arrayContaining([
+        "Prenom",
+        "Nom",
+        "Streamer",
+        "Photo",
+        "V6",
+        "Père relation",
+        "Frères/Soeurs relation",
+        "Couple relation",
+        "Est oncle/tante",
+        "Ex/Exs relation",
+        "Oncle relation",
+        "Tante relation"
+      ])
     );
     expect(result.report.unknownFields).toEqual(["Champ inconnu"]);
     expect(result.report.ambiguousRelations).toEqual([

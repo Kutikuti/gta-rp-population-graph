@@ -5,11 +5,12 @@ import {
   type AdminNotionImportDetail,
   type AdminNotionImportEntry,
   type AuthSession,
-  type LifeStatus,
   getAdminNotionImportDetail,
-  listAdminNotionImports
+  type LifeStatus,
+  listAdminNotionImports,
+  type VerificationStatus
 } from "../api";
-import { lifeStatusLabels } from "../constants";
+import { lifeStatusLabels, verificationLabels } from "../constants";
 import { formatDateTime } from "../utils/format";
 
 type NotionImportsViewProps = {
@@ -37,6 +38,8 @@ const statusOptions: Array<AdminNotionImportEntry["status"] | "all"> = [
 const count = (batch: AdminNotionImportBatch, key: string) => batch.totals[key] ?? 0;
 
 const jsonPreview = (value: unknown) => JSON.stringify(value, null, 2);
+const snapshotString = (snapshot: Record<string, unknown>, key: string) =>
+  typeof snapshot[key] === "string" && snapshot[key].trim() ? snapshot[key].trim() : null;
 
 export function NotionImportsView({ session, onError }: NotionImportsViewProps) {
   const [batches, setBatches] = useState<AdminNotionImportBatch[]>([]);
@@ -270,6 +273,19 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                     {selectedEntry.lifeStatus
                       ? (lifeStatusLabels[selectedEntry.lifeStatus as LifeStatus] ??
                         selectedEntry.lifeStatus)
+                      : "-"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Vérification</dt>
+                  <dd>
+                    {snapshotString(selectedEntry.mappedSnapshot, "verificationStatus")
+                      ? (verificationLabels[
+                          snapshotString(
+                            selectedEntry.mappedSnapshot,
+                            "verificationStatus"
+                          ) as VerificationStatus
+                        ] ?? snapshotString(selectedEntry.mappedSnapshot, "verificationStatus"))
                       : "-"}
                   </dd>
                 </div>

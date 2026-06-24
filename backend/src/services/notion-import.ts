@@ -157,6 +157,29 @@ const fieldAliases = {
     "v4",
     "v5"
   ],
+  legacyCharacterLinks: ["v6"],
+  parentRelationships: [
+    "est parent",
+    "père relation",
+    "pere relation",
+    "mère relation",
+    "mere relation"
+  ],
+  siblingRelationships: [
+    "frères/soeurs relation",
+    "freres/soeurs relation",
+    "frères/soeurs relations",
+    "freres/soeurs relations",
+    "frères/sœurs relation",
+    "freres/sœurs relation",
+    "frères/sœurs relations",
+    "freres/sœurs relations"
+  ],
+  informativeCoupleRelationships: ["couple relation"],
+  informativeAuntOrUncleRelationships: ["est oncle/tante"],
+  informativeExRelationships: ["ex/exs relation"],
+  informativeUncleRelationships: ["oncle relation"],
+  informativeAuntRelationships: ["tante relation"],
   familyName: ["famille"],
   tags: ["tags", "tag"],
   relationships: ["relations", "relationships", "parentes rp", "parentés rp"],
@@ -352,9 +375,36 @@ const ambiguousRelationships = (relationships: JsonObject[]) =>
     return (
       !type ||
       !target ||
-      !["parent", "enfant", "child", "fratrie", "sibling", "couple"].includes(type)
+      ![
+        "parent",
+        "enfant",
+        "child",
+        "fratrie",
+        "sibling",
+        "couple",
+        "previous_character",
+        "couple_reference",
+        "aunt_or_uncle_reference",
+        "ex_partner_reference",
+        "uncle_reference",
+        "aunt_reference",
+        "ancien personnage",
+        "anciens personnages"
+      ].includes(type)
     );
   });
+
+const relationshipEntriesFromField = (value: unknown, type: string) =>
+  listValue(value).map(
+    (target) =>
+      ({
+        type,
+        target
+      }) as JsonObject
+  );
+
+const previousCharacterRelationshipList = (value: unknown) =>
+  relationshipEntriesFromField(value, "previous_character");
 
 export const mapNotionPage = (page: NotionPageInput) => {
   const properties = page.properties;
@@ -362,7 +412,41 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const lastName = stringValue(findValue(properties, fieldAliases.lastName));
   const businessName = stringValue(findValue(properties, fieldAliases.businessName));
   const groupName = stringValue(findValue(properties, fieldAliases.groupName));
-  const relationships = relationshipListValue(findValue(properties, fieldAliases.relationships));
+  const previousCharacterLinks = listValue(
+    findValue(properties, fieldAliases.legacyCharacterLinks)
+  );
+  const relationships = [
+    ...relationshipListValue(findValue(properties, fieldAliases.relationships)),
+    ...previousCharacterRelationshipList(findValue(properties, fieldAliases.legacyCharacterLinks)),
+    ...relationshipEntriesFromField(
+      findValue(properties, fieldAliases.parentRelationships),
+      "parent"
+    ),
+    ...relationshipEntriesFromField(
+      findValue(properties, fieldAliases.siblingRelationships),
+      "sibling"
+    ),
+    ...relationshipEntriesFromField(
+      findValue(properties, fieldAliases.informativeCoupleRelationships),
+      "couple_reference"
+    ),
+    ...relationshipEntriesFromField(
+      findValue(properties, fieldAliases.informativeAuntOrUncleRelationships),
+      "aunt_or_uncle_reference"
+    ),
+    ...relationshipEntriesFromField(
+      findValue(properties, fieldAliases.informativeExRelationships),
+      "ex_partner_reference"
+    ),
+    ...relationshipEntriesFromField(
+      findValue(properties, fieldAliases.informativeUncleRelationships),
+      "uncle_reference"
+    ),
+    ...relationshipEntriesFromField(
+      findValue(properties, fieldAliases.informativeAuntRelationships),
+      "aunt_reference"
+    )
+  ];
   const photoReferences = listValue(findValue(properties, fieldAliases.photoReferences));
   const lifeStatus = mapLifeStatus(findValue(properties, fieldAliases.lifeStatus));
   const deathOrDepartureDate = dateValue(findValue(properties, fieldAliases.deathOrDepartureDate));
@@ -411,7 +495,8 @@ export const mapNotionPage = (page: NotionPageInput) => {
     policeBadgeNumber:
       explicitPoliceBadgeNumber ?? (shouldMapGenericPoliceFields ? genericBadgeNumber : null),
     previousCharacters: {
-      raw: findValue(properties, fieldAliases.previousCharacters) ?? null
+      raw: findValue(properties, fieldAliases.previousCharacters) ?? null,
+      v6: previousCharacterLinks
     },
     tags: explicitTags.length > 0 ? explicitTags : groupTags,
     relationships,

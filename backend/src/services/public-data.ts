@@ -7,6 +7,7 @@ import type {
   TagType,
   VerificationStatus
 } from "../db/enums.js";
+import { graphRelationshipTypes } from "../db/enums.js";
 import { models } from "../db/index.js";
 import {
   Character,
@@ -16,6 +17,7 @@ import {
   Streamer,
   Tag
 } from "../db/models/index.js";
+import { relationshipGraphVisible } from "./character-relationships.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -95,6 +97,7 @@ export type PublicRelationship = {
   sourceCharacterId: string;
   targetCharacterId: string;
   type: RelationshipType;
+  graphVisible: boolean;
   direction: RelationshipDirection;
   label: string;
   description: string | null;
@@ -258,6 +261,7 @@ const serializeRelationship = (
     sourceCharacterId: relationship.sourceCharacterId,
     targetCharacterId: relationship.targetCharacterId,
     type: relationship.type,
+    graphVisible: relationshipGraphVisible(relationship.type),
     direction: relationship.direction,
     label: relationship.label,
     description: relationship.description,
@@ -452,7 +456,14 @@ export class SequelizePublicDataService implements PublicDataService {
           ["firstName", "ASC"]
         ]
       }),
-      models.CharacterRelationship.findAll({ order: [["label", "ASC"]] })
+      models.CharacterRelationship.findAll({
+        where: {
+          type: {
+            [Op.in]: graphRelationshipTypes
+          }
+        },
+        order: [["label", "ASC"]]
+      })
     ]);
 
     return {

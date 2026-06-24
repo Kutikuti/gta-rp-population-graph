@@ -99,6 +99,7 @@ const camilleDetail = {
         sourceCharacterId: camille.id,
         targetCharacterId: ines.id,
         type: "sibling",
+        graphVisible: true,
         direction: "symmetric",
         label: "Soeurs",
         description: null,

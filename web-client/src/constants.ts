@@ -27,8 +27,16 @@ export const relationLabels: Record<string, string> = {
   parent: "Parent",
   child: "Enfant",
   sibling: "Fratrie",
-  couple: "Couple"
+  couple: "Couple",
+  previous_character: "Ancien personnage",
+  couple_reference: "Couple",
+  aunt_or_uncle_reference: "Oncle ou tante",
+  ex_partner_reference: "Ex",
+  uncle_reference: "Oncle",
+  aunt_reference: "Tante"
 };
+
+export const editableRelationTypes = ["parent", "child", "sibling", "couple"] as const;
 
 export const characterSnapshotFieldLabels: Record<keyof CharacterSnapshot, string> = {
   firstName: "Prénom",

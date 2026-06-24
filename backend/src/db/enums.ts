@@ -19,8 +19,21 @@ export type DataSource = (typeof dataSources)[number];
 export const tagTypes = ["family", "district", "organization", "business", "other"] as const;
 export type TagType = (typeof tagTypes)[number];
 
-export const relationshipTypes = ["parent", "child", "sibling", "couple"] as const;
+export const graphRelationshipTypes = ["parent", "child", "sibling", "couple"] as const;
+export const informativeRelationshipTypes = [
+  "previous_character",
+  "couple_reference",
+  "aunt_or_uncle_reference",
+  "ex_partner_reference",
+  "uncle_reference",
+  "aunt_reference"
+] as const;
+export const relationshipTypes = [
+  ...graphRelationshipTypes,
+  ...informativeRelationshipTypes
+] as const;
 export type RelationshipType = (typeof relationshipTypes)[number];
+export const editableRelationshipTypes = graphRelationshipTypes;
 
 export const relationshipDirections = ["directed", "symmetric"] as const;
 export type RelationshipDirection = (typeof relationshipDirections)[number];

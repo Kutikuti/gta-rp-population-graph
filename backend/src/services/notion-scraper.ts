@@ -99,7 +99,46 @@ export const extractNotionPageId = (url: string) => {
   )}-${id.slice(20)}`;
 };
 
-const plainText = (value: unknown): string | null => {
+const pageMentionIdFromAnnotations = (annotations: unknown[]) => {
+  for (const annotation of annotations) {
+    if (!Array.isArray(annotation) || annotation[0] !== "p" || typeof annotation[1] !== "string") {
+      continue;
+    }
+
+    return annotation[1];
+  }
+
+  return null;
+};
+
+const dateTextFromAnnotations = (annotations: unknown[]) => {
+  for (const annotation of annotations) {
+    if (
+      !Array.isArray(annotation) ||
+      annotation[0] !== "d" ||
+      !annotation[1] ||
+      typeof annotation[1] !== "object" ||
+      !("start_date" in annotation[1])
+    ) {
+      continue;
+    }
+
+    const startDate = (annotation[1] as { start_date?: unknown }).start_date;
+
+    if (typeof startDate === "string" && startDate.trim()) {
+      return startDate.trim();
+    }
+  }
+
+  return null;
+};
+
+const pageTitleFromRecordMap = (recordMap: NotionRecordMap, pageId: string) => {
+  const block = unwrapRecordValue<NotionBlockValue>(recordMap.block?.[pageId]);
+  return block ? plainText(block.properties?.title, recordMap) : null;
+};
+
+const plainText = (value: unknown, recordMap?: NotionRecordMap): string | null => {
   if (typeof value === "string") {
     return value.trim() || null;
   }
@@ -108,45 +147,34 @@ const plainText = (value: unknown): string | null => {
     return null;
   }
 
-  for (const segment of value) {
-    if (!Array.isArray(segment) || !Array.isArray(segment[1])) {
-      continue;
-    }
-
-    const dateAnnotation = segment[1].find((annotation) => {
-      return (
-        Array.isArray(annotation) &&
-        annotation[0] === "d" &&
-        annotation[1] &&
-        typeof annotation[1] === "object" &&
-        "start_date" in annotation[1]
-      );
-    });
-
-    if (
-      Array.isArray(dateAnnotation) &&
-      dateAnnotation[1] &&
-      typeof dateAnnotation[1] === "object"
-    ) {
-      const startDate = (dateAnnotation[1] as { start_date?: unknown }).start_date;
-
-      if (typeof startDate === "string" && startDate.trim()) {
-        return startDate.trim();
-      }
-    }
-  }
-
   const text = value
     .map((segment) => {
       if (typeof segment === "string") {
         return segment;
       }
 
-      if (Array.isArray(segment) && typeof segment[0] === "string") {
-        return segment[0];
+      if (!Array.isArray(segment) || typeof segment[0] !== "string") {
+        return "";
       }
 
-      return "";
+      const rawText = segment[0];
+      const annotations = Array.isArray(segment[1]) ? segment[1] : [];
+      const dateText = dateTextFromAnnotations(annotations);
+
+      if (dateText) {
+        return dateText;
+      }
+
+      if (rawText === "‣" && recordMap) {
+        const pageId = pageMentionIdFromAnnotations(annotations);
+        const title = pageId ? pageTitleFromRecordMap(recordMap, pageId) : null;
+
+        if (title) {
+          return title;
+        }
+      }
+
+      return rawText;
     })
     .join("")
     .trim();
@@ -154,7 +182,8 @@ const plainText = (value: unknown): string | null => {
   return text || null;
 };
 
-const pageTitle = (block: NotionBlockValue) => plainText(block.properties?.title) ?? "Sans titre";
+const pageTitle = (block: NotionBlockValue, recordMap?: NotionRecordMap) =>
+  plainText(block.properties?.title, recordMap) ?? "Sans titre";
 
 const splitTitleName = (title: string) => {
   const clean = title.trim().replace(/\s+/g, " ");
@@ -323,7 +352,7 @@ const textBlocks = (recordMap: NotionRecordMap) =>
       return [];
     }
 
-    return compact([plainText(block.properties?.title)]);
+    return compact([plainText(block.properties?.title, recordMap)]);
   });
 
 const notionPageUrl = (sourceUrl: string, pageId: string) => {
@@ -429,10 +458,37 @@ const pagePhotoReferences = (recordMap: NotionRecordMap, pageBlock: NotionBlockV
 };
 
 const recordMapHasBlock = (recordMap: NotionRecordMap, blockId: string) =>
-  Object.prototype.hasOwnProperty.call(recordMap.block ?? {}, blockId);
+  Object.hasOwn(recordMap.block ?? {}, blockId);
 
 const missingDirectChildBlockIds = (recordMap: NotionRecordMap, pageBlock: NotionBlockValue) =>
   (pageBlock.content ?? []).filter((childId) => !recordMapHasBlock(recordMap, childId));
+
+const pageMentionIds = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const ids: string[] = [];
+
+  for (const segment of value) {
+    if (!Array.isArray(segment) || !Array.isArray(segment[1])) {
+      continue;
+    }
+
+    const pageId = pageMentionIdFromAnnotations(segment[1]);
+
+    if (pageId) {
+      ids.push(pageId);
+    }
+  }
+
+  return ids;
+};
+
+const missingMentionedPageIds = (recordMap: NotionRecordMap, pageBlock: NotionBlockValue) => {
+  const ids = Object.values(pageBlock.properties ?? {}).flatMap((value) => pageMentionIds(value));
+  return [...new Set(ids)].filter((pageId) => !recordMapHasBlock(recordMap, pageId));
+};
 
 const schemaNameByPropertyId = (recordMap: NotionRecordMap) => {
   const collection = collectionValues(recordMap).find(
@@ -460,14 +516,14 @@ const propertiesFromPageBlock = (
 
   for (const [propertyId, value] of Object.entries(pageBlock.properties ?? {})) {
     const propertyName = schemaNames.get(propertyId) ?? propertyId;
-    const text = plainText(value);
+    const text = plainText(value, recordMap);
 
     if (text) {
       properties[propertyName] = text;
     }
   }
 
-  const title = pageTitle(pageBlock);
+  const title = pageTitle(pageBlock, recordMap);
   const fallbackName = splitTitleName(title);
   const photoReferences = pagePhotoReferences(recordMap, pageBlock);
 
@@ -563,8 +619,15 @@ const scrapeCollectionPages = async (
           .flatMap((pageBlock) => missingDirectChildBlockIds(recordMap, pageBlock))
       )
     ];
+    const missingMentionIds = [
+      ...new Set(
+        blockValues(recordMap)
+          .filter((block) => block.type === "page")
+          .flatMap((pageBlock) => missingMentionedPageIds(recordMap, pageBlock))
+      )
+    ];
 
-    for (const childIds of chunk(missingChildIds, 50)) {
+    for (const childIds of chunk([...new Set([...missingChildIds, ...missingMentionIds])], 50)) {
       if (childIds.length === 0) {
         continue;
       }
@@ -574,7 +637,9 @@ const scrapeCollectionPages = async (
       recordMap = mergeRecordMaps(recordMap, childRecordMap);
     }
 
-    for (const pageBlock of blockValues(recordMap).filter((block) => block.type === "page")) {
+    for (const pageBlock of pageIds
+      .map((pageId) => unwrapRecordValue<NotionBlockValue>(recordMap.block?.[pageId]))
+      .filter((block): block is NotionBlockValue => block !== null && block.type === "page")) {
       pages.push({
         pageId: pageBlock.id,
         url: notionPageUrl(sourceUrl, pageBlock.id),
@@ -604,7 +669,7 @@ export const scrapePublicNotionPage = async (
       continue;
     }
 
-    const title = pageTitle(pageBlock);
+    const title = pageTitle(pageBlock, recordMap);
     const properties = parsePropertiesFromText(textBlocks(recordMap));
     const fallbackName = splitTitleName(title);
     const photoReferences = pagePhotoReferences(recordMap, pageBlock);
@@ -633,7 +698,7 @@ export const scrapePublicNotionPage = async (
 
   if (pages.length === 0) {
     const rootBlock = blockValues(rootRecordMap).find((block) => block.id === rootPageId);
-    const title = rootBlock ? pageTitle(rootBlock) : "Flashback Whitelist V6";
+    const title = rootBlock ? pageTitle(rootBlock, rootRecordMap) : "Flashback Whitelist V6";
     const properties = parsePropertiesFromText(textBlocks(rootRecordMap));
     const fallbackName = splitTitleName(title);
     const photoReferences = rootBlock ? pagePhotoReferences(rootRecordMap, rootBlock) : [];

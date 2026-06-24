@@ -2,6 +2,8 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import {
   changeRequestStatuses,
+  graphRelationshipTypes,
+  informativeRelationshipTypes,
   lifeStatuses,
   relationshipTypes,
   roleNames,
@@ -40,7 +42,27 @@ describe("database models", () => {
     expect(roleNames).toEqual(["user", "moderator", "administrator"]);
     expect(lifeStatuses).toEqual(["alive", "deceased", "left", "unknown"]);
     expect(verificationStatuses).toContain("to_check");
-    expect(relationshipTypes).toEqual(["parent", "child", "sibling", "couple"]);
+    expect(graphRelationshipTypes).toEqual(["parent", "child", "sibling", "couple"]);
+    expect(informativeRelationshipTypes).toEqual([
+      "previous_character",
+      "couple_reference",
+      "aunt_or_uncle_reference",
+      "ex_partner_reference",
+      "uncle_reference",
+      "aunt_reference"
+    ]);
+    expect(relationshipTypes).toEqual([
+      "parent",
+      "child",
+      "sibling",
+      "couple",
+      "previous_character",
+      "couple_reference",
+      "aunt_or_uncle_reference",
+      "ex_partner_reference",
+      "uncle_reference",
+      "aunt_reference"
+    ]);
     expect(changeRequestStatuses).toEqual(["pending", "approved", "rejected"]);
   });
 

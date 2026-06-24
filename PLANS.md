@@ -179,6 +179,19 @@ Relations typees :
 - Fratrie.
 - Couple.
 
+Extension future a prevoir :
+
+- Relation `ancien personnage` ou equivalente pour rattacher plusieurs fiches
+  au meme joueur quand la source communautaire le permet, par exemple via le
+  champ Notion `V6`.
+- D'autres types de relations pourront exister uniquement dans la fiche
+  personnage, sans etre affiches dans le graphe public. Le modele devra donc
+  distinguer a terme les relations visibles sur le graphe et les relations
+  informatives reservees a la fiche.
+- Cette distinction doit passer par le modele persistant `character_relationships`
+  avec une regle explicite par type : certaines relations sont stockees,
+  exposees dans la fiche et deliberement exclues du graphe public.
+
 Les appartenances metier, police, quartier, organisation ou groupe restent des
 champs de fiche ou des tags. Elles ne sont pas des relations du graphe public
 MVP, afin de garder le graphe centre sur les liens narratifs forts.
@@ -901,6 +914,17 @@ Plan propose :
     champ ;
   - mapper separement les streamers, liens publics, champs police,
     anciens personnages, tags et relations RP autorisees ;
+  - traiter explicitement le champ Notion `V6` comme un candidat pour les
+    anciens personnages et, plus tard, comme source potentielle d'une relation
+    dediee `ancien personnage` non affichee dans le graphe public ;
+  - absorber aussi les champs relationnels Notion specifiques comme
+    `Couple relation`, `Est oncle/tante`, `Ex/Exs relation`, `Oncle relation`
+    et `Tante relation` en relations informatives hors graphe, ainsi que
+    `Père relation`, `Mère relation`, `Est parent` et les variantes
+    `Frères/Soeurs` quand elles correspondent a des relations deja connues ;
+  - persister ces relations informatives dans `character_relationships` avec
+    une regle explicite `visible en fiche, pas dans le graphe` afin d'eviter
+    une logique parallele entre import Notion et modele metier ;
   - classer les relations non resolues ou ambigues dans le rapport au lieu de
     creer des liens incertains ;
   - ignorer ou signaler explicitement les donnees hors perimetre MVP, en

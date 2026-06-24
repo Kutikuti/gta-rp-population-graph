@@ -79,6 +79,10 @@ Principes :
   le MVP.
 - Les relations documentees concernent uniquement les personnages et le RP, pas
   les relations reelles entre streamers.
+- Le champ Notion `V6`, lorsqu'il est present, doit etre considere comme une
+  piste de rattachement vers les anciens personnages du meme joueur. Ce besoin
+  pourra conduire a ajouter un type de relation dedie, distinct des relations
+  familiales affichees dans le graphe public.
 
 # Fonctionnalites MVP
 
@@ -96,6 +100,13 @@ Principes :
   familial/couple : parent, enfant, fratrie, couple.
 - Les appartenances metier, police, quartier ou groupe restent des champs de
   fiche ou des tags, pas des relations du graphe public.
+- A moyen terme, certaines relations supplementaires pourront exister sans etre
+  affichees dans le graphe public, uniquement dans la fiche personnage. Le
+  modele de relations doit donc pouvoir evoluer au-dela des seules relations
+  visibles sur le graphe.
+- Cette evolution est desormais attendue dans `character_relationships` lui-meme
+  avec une regle explicite par type : visible dans la fiche, et visible ou non
+  dans le graphe public selon la nature de la relation.
 - Tags administrables.
 - Demandes de modification par utilisateur connecte simple.
 - Demandes de creation de fiche par utilisateur connecte, proposees depuis la

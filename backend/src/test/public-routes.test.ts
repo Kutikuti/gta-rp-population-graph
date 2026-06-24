@@ -127,6 +127,7 @@ const camilleDetail: PublicCharacterDetail = {
         sourceCharacterId: camille.id,
         targetCharacterId: malik.id,
         type: "sibling",
+        graphVisible: true,
         direction: "symmetric",
         label: "Fratrie",
         description: "Relation familiale fictive.",

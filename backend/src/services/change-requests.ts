@@ -4,8 +4,8 @@ import { z } from "zod";
 import {
   type changeRequestTypes,
   type DataSource,
+  editableRelationshipTypes,
   lifeStatuses,
-  relationshipTypes,
   verificationStatuses
 } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
@@ -23,6 +23,12 @@ import {
   isPendingCharacterPhotoToken,
   promoteCharacterPhotoIfPending
 } from "./character-photos.js";
+import {
+  invertRelationshipType,
+  isEditableRelationshipType,
+  relationshipDirection,
+  relationshipLabel
+} from "./character-relationships.js";
 import { generateUniqueCharacterSlug } from "./character-slug.js";
 
 const emptyToNull = (value: string | null | undefined) => {
@@ -82,7 +88,7 @@ const previousCharactersSchema = z
 const relationshipDraftSchema = z
   .object({
     characterId: z.uuid(),
-    type: z.enum(relationshipTypes)
+    type: z.enum(editableRelationshipTypes)
   })
   .strict();
 
@@ -219,35 +225,6 @@ const isoDate = (value: Date | null) => (value ? value.toISOString() : null);
 
 const editableFields = Object.keys(characterSnapshotSchema.shape) as Array<keyof CharacterSnapshot>;
 
-const relationshipLabelByType: Record<(typeof relationshipTypes)[number], string> = {
-  parent: "Parent",
-  child: "Enfant",
-  sibling: "Fratrie",
-  couple: "Couple"
-};
-
-const relationshipDirectionByType: Record<
-  (typeof relationshipTypes)[number],
-  "directed" | "symmetric"
-> = {
-  parent: "directed",
-  child: "directed",
-  sibling: "symmetric",
-  couple: "symmetric"
-};
-
-const invertRelationshipType = (type: (typeof relationshipTypes)[number]) => {
-  if (type === "parent") {
-    return "child";
-  }
-
-  if (type === "child") {
-    return "parent";
-  }
-
-  return type;
-};
-
 const normalizeRelationshipDrafts = (
   relationships: CharacterSnapshot["relationships"],
   currentCharacterId?: string
@@ -274,16 +251,24 @@ const normalizeRelationshipDrafts = (
 const mapRelationshipToDraft = (
   relationship: CharacterRelationship,
   currentCharacterId: string
-): CharacterSnapshot["relationships"][number] => ({
-  characterId:
-    relationship.sourceCharacterId === currentCharacterId
-      ? relationship.targetCharacterId
-      : relationship.sourceCharacterId,
-  type:
+): CharacterSnapshot["relationships"][number] => {
+  const type =
     relationship.direction === "directed" && relationship.sourceCharacterId !== currentCharacterId
       ? invertRelationshipType(relationship.type)
-      : relationship.type
-});
+      : relationship.type;
+
+  if (!isEditableRelationshipType(type)) {
+    throw new Error(`Relationship type ${type} is not editable in character snapshots.`);
+  }
+
+  return {
+    characterId:
+      relationship.sourceCharacterId === currentCharacterId
+        ? relationship.targetCharacterId
+        : relationship.sourceCharacterId,
+    type
+  };
+};
 
 const loadCharacterRelationshipDrafts = async (
   characterId: string,
@@ -292,6 +277,9 @@ const loadCharacterRelationshipDrafts = async (
   const relationships = await models.CharacterRelationship.findAll({
     attributes: ["sourceCharacterId", "targetCharacterId", "type", "direction"],
     where: {
+      type: {
+        [Op.in]: editableRelationshipTypes
+      },
       [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
     },
     transaction
@@ -521,7 +509,7 @@ const applyRelationships = async (
   await models.CharacterRelationship.destroy({
     where: {
       type: {
-        [Op.in]: relationshipTypes
+        [Op.in]: editableRelationshipTypes
       },
       [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
     },
@@ -537,8 +525,8 @@ const applyRelationships = async (
       sourceCharacterId: characterId,
       targetCharacterId: relationship.characterId,
       type: relationship.type,
-      direction: relationshipDirectionByType[relationship.type],
-      label: relationshipLabelByType[relationship.type],
+      direction: relationshipDirection(relationship.type),
+      label: relationshipLabel(relationship.type),
       description: null,
       source,
       verificationStatus: snapshot.verificationStatus

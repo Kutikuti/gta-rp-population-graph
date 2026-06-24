@@ -471,4 +471,173 @@ describe("notion scraper", () => {
       }
     ]);
   });
+
+  it("resolves page mentions in relation properties to the linked character titles", async () => {
+    const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
+    const collectionId = "5bf2e238-dead-4ad6-8a19-10f4c9bfdce2";
+    const viewId = "34d07fc3-2f6c-80b5-aefe-000c0049dbff";
+    const characterId = "35007fc3-2f6c-8014-b39e-f9aedd61a59d";
+    const parentId = "35007fc3-2f6c-8000-aaaa-bbbbbbbbbbbb";
+    const siblingId = "35007fc3-2f6c-8000-cccc-dddddddddddd";
+    const coupleId = "35007fc3-2f6c-8000-eeee-ffffffffffff";
+    const calls: string[] = [];
+    const fetchMock = async (url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+
+      if (url.endsWith("/loadPageChunk")) {
+        calls.push(`load:${body.pageId}`);
+
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [rootId]: {
+                value: {
+                  value: {
+                    id: rootId,
+                    type: "page",
+                    properties: { title: [["Flashback Whitelist V6"]] }
+                  }
+                }
+              },
+              "collection-block": {
+                value: {
+                  value: {
+                    id: "collection-block",
+                    type: "collection_view",
+                    collection_id: collectionId,
+                    view_ids: [viewId]
+                  }
+                }
+              }
+            },
+            collection_view: {
+              [viewId]: {
+                value: {
+                  value: {
+                    id: viewId,
+                    type: "gallery",
+                    name: "Tous",
+                    page_sort: [characterId],
+                    format: {
+                      collection_pointer: {
+                        id: collectionId,
+                        spaceId: "174a582a-d105-4b37-963c-91844b8ef4a1"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            collection: {
+              [collectionId]: {
+                value: {
+                  value: {
+                    id: collectionId,
+                    schema: {
+                      title: { name: "Nom", type: "title" },
+                      p1: { name: "Père relation", type: "relation" },
+                      s1: { name: "Frères/Soeurs relation", type: "relation" },
+                      c1: { name: "Couple relation", type: "relation" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      const requestedIds = body.requests?.map(
+        (request: { pointer: { id: string } }) => request.pointer.id
+      );
+      calls.push(`sync:${requestedIds.join(",")}`);
+
+      if (
+        requestedIds.includes(parentId) ||
+        requestedIds.includes(siblingId) ||
+        requestedIds.includes(coupleId)
+      ) {
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [parentId]: {
+                value: {
+                  value: {
+                    id: parentId,
+                    type: "page",
+                    properties: { title: [["Marcus Campbell"]] }
+                  }
+                }
+              },
+              [siblingId]: {
+                value: {
+                  value: {
+                    id: siblingId,
+                    type: "page",
+                    properties: { title: [["Tara Campbell"]] }
+                  }
+                }
+              },
+              [coupleId]: {
+                value: {
+                  value: {
+                    id: coupleId,
+                    type: "page",
+                    properties: { title: [["Noah Rivers"]] }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      return jsonResponse({
+        recordMap: {
+          block: {
+            [characterId]: {
+              value: {
+                value: {
+                  id: characterId,
+                  type: "page",
+                  properties: {
+                    title: [["Jada Campbell"]],
+                    p1: [["‣", [["p", parentId]]]],
+                    s1: [["‣", [["p", siblingId]]]],
+                    c1: [["‣", [["p", coupleId]]]]
+                  }
+                }
+              }
+            }
+          },
+          collection: {}
+        }
+      });
+    };
+
+    const input = await scrapePublicNotionPage(
+      "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+      { fetch: fetchMock }
+    );
+
+    expect(calls).toEqual([
+      `load:${rootId}`,
+      `sync:${characterId}`,
+      `sync:${parentId},${siblingId},${coupleId}`
+    ]);
+    expect(input.pages).toEqual([
+      {
+        pageId: characterId,
+        url: "https://www.notion.so/35007fc32f6c8014b39ef9aedd61a59d",
+        properties: {
+          Prenom: "Jada",
+          Nom: "Campbell",
+          "Titre Notion": "Jada Campbell",
+          "Père relation": "Marcus Campbell",
+          "Frères/Soeurs relation": "Tara Campbell",
+          "Couple relation": "Noah Rivers"
+        }
+      }
+    ]);
+  });
 });

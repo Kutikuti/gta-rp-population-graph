@@ -53,6 +53,7 @@ export type PublicRelationship = {
   sourceCharacterId: string;
   targetCharacterId: string;
   type: string;
+  graphVisible: boolean;
   direction: string;
   label: string;
   description: string | null;
@@ -526,8 +527,9 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
   groupRole: character.groupRole,
   district: character.district,
   isRpDeath: character.isRpDeath,
-  relationships: [...character.relationships.outgoing, ...character.relationships.incoming].map(
-    (relationship) => ({
+  relationships: [...character.relationships.outgoing, ...character.relationships.incoming]
+    .filter((relationship) => relationship.graphVisible)
+    .map((relationship) => ({
       characterId: relationship.relatedCharacter.id,
       type:
         relationship.direction === "directed" &&
@@ -539,8 +541,7 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
               relationship.type === "child"
             ? "parent"
             : (relationship.type as "parent" | "child" | "sibling" | "couple")
-    })
-  ),
+    })),
   policeRank: character.policeRank,
   policeBadgeNumber: character.policeBadgeNumber,
   previousCharacters: character.previousCharacters,

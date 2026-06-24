@@ -6,7 +6,12 @@ import {
   resolveApiAssetUrl,
   type VerificationStatus
 } from "../api";
-import { lifeStatusLabels, relationLabels, verificationLabels } from "../constants";
+import {
+  editableRelationTypes,
+  lifeStatusLabels,
+  relationLabels,
+  verificationLabels
+} from "../constants";
 import { CharacterPhotoUpload } from "./CharacterPhotoUpload";
 
 type CharacterSnapshotFormProps = {
@@ -101,7 +106,7 @@ export function CharacterSnapshotForm({
   const availableCharacterOptions = characterOptions.filter(
     (character) => character.id !== currentCharacterId
   );
-  const relationshipType = (value: string) => value as "parent" | "child" | "sibling" | "couple";
+  const relationshipType = (value: string) => value as (typeof editableRelationTypes)[number];
 
   return (
     <form
@@ -297,9 +302,9 @@ export function CharacterSnapshotForm({
                     onChange({ ...snapshot, relationships: nextRelationships });
                   }}
                 >
-                  {Object.entries(relationLabels).map(([value, label]) => (
+                  {editableRelationTypes.map((value) => (
                     <option key={value} value={value}>
-                      {label}
+                      {relationLabels[value]}
                     </option>
                   ))}
                 </select>
