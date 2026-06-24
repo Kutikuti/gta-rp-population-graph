@@ -8,6 +8,11 @@ type NotionBlockValue = {
   properties?: Record<string, unknown>;
   content?: string[];
   collection_id?: string;
+  format?: {
+    page_cover?: unknown;
+    page_icon?: unknown;
+    social_media_image_preview_url?: unknown;
+  };
   space_id?: string;
   view_ids?: string[];
 };
@@ -85,6 +90,34 @@ const plainText = (value: unknown): string | null => {
 
   if (!Array.isArray(value)) {
     return null;
+  }
+
+  for (const segment of value) {
+    if (!Array.isArray(segment) || !Array.isArray(segment[1])) {
+      continue;
+    }
+
+    const dateAnnotation = segment[1].find((annotation) => {
+      return (
+        Array.isArray(annotation) &&
+        annotation[0] === "d" &&
+        annotation[1] &&
+        typeof annotation[1] === "object" &&
+        "start_date" in annotation[1]
+      );
+    });
+
+    if (
+      Array.isArray(dateAnnotation) &&
+      dateAnnotation[1] &&
+      typeof dateAnnotation[1] === "object"
+    ) {
+      const startDate = (dateAnnotation[1] as { start_date?: unknown }).start_date;
+
+      if (typeof startDate === "string" && startDate.trim()) {
+        return startDate.trim();
+      }
+    }
   }
 
   const text = value
@@ -267,6 +300,39 @@ const notionPageUrl = (sourceUrl: string, pageId: string) => {
   return `${base.origin}/${pageId.replaceAll("-", "")}`;
 };
 
+const notionImageReference = (value: unknown, pageId: string) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const reference = value.trim();
+
+  if (!reference) {
+    return null;
+  }
+
+  if (/^https?:\/\//iu.test(reference)) {
+    return reference;
+  }
+
+  if (reference.startsWith("attachment:")) {
+    return `https://www.notion.so/image/${encodeURIComponent(reference)}?table=block&id=${pageId}&cache=v2`;
+  }
+
+  if (reference.startsWith("/")) {
+    return `https://www.notion.so${reference}`;
+  }
+
+  return null;
+};
+
+const pagePhotoReferences = (pageBlock: NotionBlockValue) =>
+  compact([
+    notionImageReference(pageBlock.format?.page_icon, pageBlock.id),
+    notionImageReference(pageBlock.format?.page_cover, pageBlock.id),
+    notionImageReference(pageBlock.format?.social_media_image_preview_url, pageBlock.id)
+  ]);
+
 const schemaNameByPropertyId = (recordMap: NotionRecordMap) => {
   const collection = collectionValues(recordMap).find(
     (candidate) => candidate.schema || candidate.deleted_schema
@@ -301,8 +367,13 @@ const propertiesFromPageBlock = (
 
   const title = pageTitle(pageBlock);
   const fallbackName = splitTitleName(title);
+  const photoReferences = pagePhotoReferences(pageBlock);
 
   properties["Titre Notion"] = title;
+
+  if (photoReferences.length > 0) {
+    properties.Photo = photoReferences;
+  }
 
   if (!properties.Prenom && fallbackName.firstName) {
     properties.Prenom = fallbackName.firstName;
@@ -417,6 +488,7 @@ export const scrapePublicNotionPage = async (
     const title = pageTitle(pageBlock);
     const properties = parsePropertiesFromText(textBlocks(recordMap));
     const fallbackName = splitTitleName(title);
+    const photoReferences = pagePhotoReferences(pageBlock);
 
     if (!properties.Prenom && fallbackName.firstName) {
       properties.Prenom = fallbackName.firstName;
@@ -424,6 +496,10 @@ export const scrapePublicNotionPage = async (
 
     if (!properties.Nom && fallbackName.lastName) {
       properties.Nom = fallbackName.lastName;
+    }
+
+    if (photoReferences.length > 0) {
+      properties.Photo = photoReferences;
     }
 
     pages.push({
@@ -441,6 +517,7 @@ export const scrapePublicNotionPage = async (
     const title = rootBlock ? pageTitle(rootBlock) : "Flashback Whitelist V6";
     const properties = parsePropertiesFromText(textBlocks(rootRecordMap));
     const fallbackName = splitTitleName(title);
+    const photoReferences = rootBlock ? pagePhotoReferences(rootBlock) : [];
 
     if (!properties.Prenom && fallbackName.firstName) {
       properties.Prenom = fallbackName.firstName;
@@ -448,6 +525,10 @@ export const scrapePublicNotionPage = async (
 
     if (!properties.Nom && fallbackName.lastName) {
       properties.Nom = fallbackName.lastName;
+    }
+
+    if (photoReferences.length > 0) {
+      properties.Photo = photoReferences;
     }
 
     pages.push({

@@ -291,6 +291,7 @@ export type AdminNotionImportEntry = {
   business: string | null;
   group: string | null;
   tags: string;
+  photoReferences: string[];
   sourceUrl: string | null;
   rawContent: Record<string, unknown>;
   mappedSnapshot: Record<string, unknown>;

@@ -35,6 +35,7 @@ export type MappedNotionCharacter = {
   lastName: string | null;
   nickname: string | null;
   lifeStatus: "alive" | "deceased" | "left" | "unknown";
+  deathOrDepartureDate: string | null;
   phoneNumber: string | null;
   streamerPublicName: string | null;
   socialLinks: JsonObject;
@@ -42,6 +43,7 @@ export type MappedNotionCharacter = {
   groupName: string | null;
   groupRole: string | null;
   district: string | null;
+  isRpDeath: boolean;
   policeRank: string | null;
   policeBadgeNumber: string | null;
   previousCharacters: JsonObject;
@@ -112,6 +114,7 @@ export type NotionImportPreviewItem = {
   business: string | null;
   group: string | null;
   tags: string;
+  photoReferences: string[];
   sourceUrl: string | null;
 };
 
@@ -120,6 +123,17 @@ const fieldAliases = {
   lastName: ["nom", "lastName", "last_name", "last name"],
   nickname: ["surnom", "nickname", "alias"],
   lifeStatus: ["statut", "statut vital", "lifeStatus", "life_status"],
+  deathOrDepartureDate: [
+    "date",
+    "date de mort",
+    "date de mort rp",
+    "date de décès",
+    "date de deces",
+    "date de départ",
+    "date de depart",
+    "deathOrDepartureDate",
+    "death_or_departure_date"
+  ],
   phoneNumber: ["telephone", "téléphone", "phone", "phoneNumber", "phone_number"],
   streamerPublicName: ["streamer", "streameur", "streamerPublicName"],
   businessName: ["métier/entreprise", "metier/entreprise", "entreprise", "businessName"],
@@ -268,6 +282,38 @@ const mapLifeStatus = (value: unknown): MappedNotionCharacter["lifeStatus"] => {
   return "unknown";
 };
 
+const dateValue = (value: unknown): string | null => {
+  const raw = stringValue(value);
+
+  if (!raw || raw === "‣") {
+    return null;
+  }
+
+  const isoDate = raw.match(/\b\d{4}-\d{2}-\d{2}\b/u)?.[0];
+
+  if (isoDate) {
+    return isoDate;
+  }
+
+  const frenchDate = raw.match(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b/u);
+
+  if (!frenchDate) {
+    return null;
+  }
+
+  const [, day, month, year] = frenchDate;
+
+  if (!day || !month || !year) {
+    return null;
+  }
+
+  const paddedDay = day.padStart(2, "0");
+  const paddedMonth = month.padStart(2, "0");
+  const fullYear = year.length === 2 ? `20${year}` : year;
+
+  return `${fullYear}-${paddedMonth}-${paddedDay}`;
+};
+
 const stableJson = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(stableJson).join(",")}]`;
@@ -318,6 +364,8 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const groupName = stringValue(findValue(properties, fieldAliases.groupName));
   const relationships = relationshipListValue(findValue(properties, fieldAliases.relationships));
   const photoReferences = listValue(findValue(properties, fieldAliases.photoReferences));
+  const lifeStatus = mapLifeStatus(findValue(properties, fieldAliases.lifeStatus));
+  const deathOrDepartureDate = dateValue(findValue(properties, fieldAliases.deathOrDepartureDate));
   const explicitTags = listValue(findValue(properties, fieldAliases.tags));
   const groupTags = withoutEmptyNotionValues(listValue(groupName));
   const explicitPoliceRank = stringValue(
@@ -348,7 +396,9 @@ export const mapNotionPage = (page: NotionPageInput) => {
     firstName,
     lastName,
     nickname: stringValue(findValue(properties, fieldAliases.nickname)),
-    lifeStatus: mapLifeStatus(findValue(properties, fieldAliases.lifeStatus)),
+    lifeStatus,
+    deathOrDepartureDate:
+      lifeStatus === "deceased" || lifeStatus === "left" ? deathOrDepartureDate : null,
     phoneNumber: stringValue(findValue(properties, fieldAliases.phoneNumber)),
     streamerPublicName: stringValue(findValue(properties, fieldAliases.streamerPublicName)),
     socialLinks: cleanSocialLinks,
@@ -356,6 +406,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
     groupName,
     groupRole: stringValue(findValue(properties, fieldAliases.groupRole)),
     district: stringValue(findValue(properties, fieldAliases.district)),
+    isRpDeath: lifeStatus === "deceased",
     policeRank: explicitPoliceRank ?? (shouldMapGenericPoliceFields ? genericPost : null),
     policeBadgeNumber:
       explicitPoliceBadgeNumber ?? (shouldMapGenericPoliceFields ? genericBadgeNumber : null),
@@ -656,6 +707,11 @@ export const previewNotionImportEntry = (
   const tags = Array.isArray(snapshot.tags)
     ? snapshot.tags.filter((tag): tag is string => typeof tag === "string").join(", ")
     : "";
+  const photoReferences = Array.isArray(snapshot.photoReferences)
+    ? snapshot.photoReferences.filter(
+        (reference): reference is string => typeof reference === "string"
+      )
+    : [];
   const firstName = snapshotString(snapshot, "firstName");
   const lastName = snapshotString(snapshot, "lastName");
 
@@ -669,6 +725,7 @@ export const previewNotionImportEntry = (
     business: snapshotString(snapshot, "businessName"),
     group: snapshotString(snapshot, "groupName"),
     tags,
+    photoReferences,
     sourceUrl: entry.sourceUrl
   };
 };

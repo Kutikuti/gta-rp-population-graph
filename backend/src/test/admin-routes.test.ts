@@ -90,6 +90,7 @@ const notionImportDetail: AdminNotionImportDetail = {
       business: "Laboratoire",
       group: "Analystes",
       tags: "Tech",
+      photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"],
       sourceUrl: "https://example.test/page-ada",
       rawContent: { pageId: "page-ada" },
       mappedSnapshot: { firstName: "Ada", lastName: "Lovelace" },

@@ -532,6 +532,7 @@ describe("App", () => {
               business: "Laboratoire",
               group: "Analystes",
               tags: "Tech",
+              photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"],
               sourceUrl: "https://example.test/page-ada",
               rawContent: { pageId: "page-ada" },
               mappedSnapshot: { firstName: "Ada", lastName: "Lovelace" },
@@ -579,6 +580,10 @@ describe("App", () => {
       expect(screen.getAllByText("Ada Lovelace")).toHaveLength(2);
     });
     expect(screen.getAllByText("adalive")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Photo Notion 1" })).toHaveAttribute(
+      "href",
+      "https://secure.notion-static.com/ada-avatar.webp"
+    );
   });
 
   it("shows a specific admin error when trying to remove the last administrator", async () => {

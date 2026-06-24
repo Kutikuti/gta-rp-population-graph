@@ -57,7 +57,10 @@ describe("notion scraper", () => {
                 id: characterId,
                 type: "page",
                 properties: { title: [["Ada Lovelace"]] },
-                content: ["text-1", "text-2"]
+                content: ["text-1", "text-2"],
+                format: {
+                  page_icon: "https://secure.notion-static.com/ada-avatar.webp"
+                }
               }
             },
             "text-1": {
@@ -97,6 +100,7 @@ describe("notion scraper", () => {
             Streamer: "AdaLive",
             Tags: ["Famille", "Tech"],
             Relations: "couple: Grace Hopper",
+            Photo: ["https://secure.notion-static.com/ada-avatar.webp"],
             "Titre Notion": "Ada Lovelace"
           }
         }
@@ -160,6 +164,7 @@ describe("notion scraper", () => {
                     id: collectionId,
                     schema: {
                       title: { name: "Nom", type: "title" },
+                      date: { name: "Date", type: "date" },
                       nq_z: { name: "Twitch", type: "text" },
                       uJKq: { name: "Métier/entreprise", type: "multi_select" }
                     }
@@ -181,8 +186,27 @@ describe("notion scraper", () => {
                   type: "page",
                   properties: {
                     title: [["Lavina Navaro"]],
+                    date: [
+                      [
+                        "‣",
+                        [
+                          [
+                            "d",
+                            {
+                              type: "date",
+                              start_date: "2026-05-26"
+                            }
+                          ]
+                        ]
+                      ]
+                    ],
                     nq_z: [["emstazy"]],
                     uJKq: [["Aucun métier/entreprise"]]
+                  },
+                  format: {
+                    page_cover: "/images/page-cover/met_william_morris_1875_willow.jpg",
+                    social_media_image_preview_url:
+                      "attachment:65577dd0-c9bb-4bbc-9516-796f781b7cc3:SocialMediaPreviewImage.png"
                   }
                 }
               }
@@ -207,8 +231,13 @@ describe("notion scraper", () => {
           Prenom: "Lavina",
           Nom: "Navaro",
           "Titre Notion": "Lavina Navaro",
+          Date: "2026-05-26",
           Twitch: "emstazy",
-          "Métier/entreprise": "Aucun métier/entreprise"
+          "Métier/entreprise": "Aucun métier/entreprise",
+          Photo: [
+            "https://www.notion.so/images/page-cover/met_william_morris_1875_willow.jpg",
+            "https://www.notion.so/image/attachment%3A65577dd0-c9bb-4bbc-9516-796f781b7cc3%3ASocialMediaPreviewImage.png?table=block&id=35107fc3-2f6c-80c3-9da0-c5ce0cd351d3&cache=v2"
+          ]
         }
       }
     ]);

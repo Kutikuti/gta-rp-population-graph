@@ -79,6 +79,7 @@ describe("notion import mapping", () => {
         Prenom: "Heitor Leite",
         Nom: "JR",
         "Statut vital": "En vie",
+        Date: "12/02/2026",
         "Métier/entreprise": "SASP",
         Poste: "Rookie",
         Matricule: "99",
@@ -92,6 +93,7 @@ describe("notion import mapping", () => {
         Prenom: "Lune",
         Nom: "Suarez",
         "Statut vital": "Mort/Morte",
+        Date: "2026-02-12",
         "Métier/entreprise": "SASD",
         Poste: "Député 2",
         Matricule: "110",
@@ -115,12 +117,16 @@ describe("notion import mapping", () => {
 
     expect(aliveResult.mapped).toMatchObject({
       lifeStatus: "alive",
+      deathOrDepartureDate: null,
+      isRpDeath: false,
       policeRank: "Rookie",
       policeBadgeNumber: "99",
       tags: []
     });
     expect(deceasedResult.mapped).toMatchObject({
       lifeStatus: "deceased",
+      deathOrDepartureDate: "2026-02-12",
+      isRpDeath: true,
       policeRank: "Député 2",
       policeBadgeNumber: "110",
       tags: []
@@ -128,8 +134,8 @@ describe("notion import mapping", () => {
     expect(groupResult.mapped.tags).toEqual(["Richman Lane", "6block"]);
     expect(groupResult.mapped.policeRank).toBeNull();
     expect(groupResult.mapped.policeBadgeNumber).toBeNull();
-    expect(groupResult.report.recognizedFields).toEqual(
-      expect.arrayContaining(["Famille", "Groupes", "Statut vital"])
+    expect(deceasedResult.report.recognizedFields).toEqual(
+      expect.arrayContaining(["Date", "Famille", "Groupes", "Statut vital"])
     );
   });
 
@@ -276,7 +282,8 @@ describe("notion import mapping", () => {
         socialLinks: { twitch: "https://twitch.example/adalive" },
         businessName: "Laboratoire",
         groupName: "Analystes",
-        tags: ["Famille", "Tech"]
+        tags: ["Famille", "Tech"],
+        photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"]
       }
     });
 
@@ -290,6 +297,7 @@ describe("notion import mapping", () => {
       business: "Laboratoire",
       group: "Analystes",
       tags: "Famille, Tech",
+      photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"],
       sourceUrl: "https://example.com/page-ada"
     });
   });

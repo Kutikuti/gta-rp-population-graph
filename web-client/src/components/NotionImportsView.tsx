@@ -282,7 +282,20 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                   <dt>Tags</dt>
                   <dd>{selectedEntry.tags || "-"}</dd>
                 </div>
+                <div>
+                  <dt>Photos</dt>
+                  <dd>{selectedEntry.photoReferences.length}</dd>
+                </div>
               </dl>
+              {selectedEntry.photoReferences.length > 0 ? (
+                <div className="import-photo-list">
+                  {selectedEntry.photoReferences.map((reference, index) => (
+                    <a key={reference} href={reference} target="_blank" rel="noreferrer">
+                      Photo Notion {index + 1}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
               <details open>
                 <summary>Snapshot mappé</summary>
                 <pre>{jsonPreview(selectedEntry.mappedSnapshot)}</pre>
