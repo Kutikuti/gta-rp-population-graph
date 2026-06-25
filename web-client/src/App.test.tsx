@@ -511,6 +511,33 @@ describe("App", () => {
         ]);
       }
 
+      if (url.includes("/api/admin/notion-imports/batch-1/entries/page-ada/apply")) {
+        return jsonResponse({
+          status: "applied",
+          characterId: "00000000-0000-4000-8000-000000000301",
+          created: true,
+          entry: {
+            status: "new",
+            pageId: "page-ada",
+            fullName: "Ada Lovelace",
+            lifeStatus: "alive",
+            streamer: "AdaLive",
+            twitch: "adalive",
+            business: "Laboratoire",
+            group: "Analystes",
+            tags: "Tech",
+            photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"],
+            sourceUrl: "https://example.test/page-ada",
+            rawContent: { pageId: "page-ada" },
+            mappedSnapshot: { firstName: "Ada", lastName: "Lovelace" },
+            mappingReport: { errors: [] },
+            appliedCharacterId: "00000000-0000-4000-8000-000000000301",
+            appliedAt: now,
+            createdAt: now
+          }
+        });
+      }
+
       if (url.includes("/api/admin/notion-imports/batch-1")) {
         return jsonResponse({
           batch: {
@@ -538,6 +565,8 @@ describe("App", () => {
               rawContent: { pageId: "page-ada" },
               mappedSnapshot: { firstName: "Ada", lastName: "Lovelace" },
               mappingReport: { errors: [] },
+              appliedCharacterId: null,
+              appliedAt: null,
               createdAt: now
             }
           ]

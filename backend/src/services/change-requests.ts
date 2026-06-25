@@ -488,7 +488,9 @@ const applyRelationships = async (
   transaction: Transaction
 ) => {
   const relationships = normalizeRelationshipDrafts(snapshot.relationships, characterId);
-  const relationshipIds = relationships.map((relationship) => relationship.characterId);
+  const relationshipIds = [
+    ...new Set(relationships.map((relationship) => relationship.characterId))
+  ];
 
   if (relationshipIds.length > 0) {
     const existingCharacters = await models.Character.findAll({

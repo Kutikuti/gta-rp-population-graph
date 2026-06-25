@@ -948,6 +948,14 @@ Plan propose :
   - garder la publication hors automatisme pour cette etape : le rapport sert a
     preparer une validation humaine et une future interface ou commande
     d'application controlee ;
+  - privilegier un fonctionnement hybride : import technique par batch pour le
+    scraping, le diff et le rapport, puis application manuelle fiche par fiche
+    vers le modele public afin de limiter les doublons et les mauvais
+    rattachements ;
+  - permettre ensuite, fiche par fiche, un import explicite de la photo Notion
+    depuis l'interface admin, uniquement apres application de la fiche, en
+    telechargeant l'image cote backend puis en la reencodant dans le pipeline
+    photo securise local plutot qu'en conservant une URL distante ;
   - si une insertion controlee est ajoutee dans l'etape, elle doit creer les
     historiques necessaires et appliquer les memes contraintes de slug, tags,
     streamers et relations que les flux moderes existants.
@@ -957,9 +965,10 @@ Plan propose :
   - tester le parsing nominal, les champs inconnus, les relations ambigues, les
     doublons de nom, les statuts de verification et l'absence de publication
     automatique ;
-  - refuser les photos distantes ou fichiers importes non controles dans le
-    premier jet ; les photos Notion doivent etre seulement referencees dans le
-    rapport tant que le pipeline photo securise n'est pas explicitement branche.
+- refuser toute photo distante non controlee ; l'import photo Notion, quand il
+  est declenche par un administrateur, doit rester borne aux domaines Notion
+  attendus, avec verification MIME/signature, limite de taille et reencodage
+  local via le pipeline photo securise deja utilise pour les contributions.
 
 Point de controle :
 
@@ -973,6 +982,9 @@ Point de controle :
   d'erreurs.
 - Revue des risques XSS, injection SQL, fuite de secrets, enumeration abusive
   et abus de formulaires.
+- Remplacer le store de session memoire par un store persistant, idealement
+  PostgreSQL ou equivalent, pour eviter la perte de session lors des
+  redemarrages backend et rapprocher le comportement local de la production.
 - Ajouter ou renforcer les tests sur les zones sensibles.
 - Faire un point de refactor : duplication, complexite, permissions, structure
   frontend et lisibilite des services backend.

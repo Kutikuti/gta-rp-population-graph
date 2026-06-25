@@ -77,6 +77,79 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
     }
   });
 
+  router.post("/notion-imports/:id/entries/:pageId/apply", async (request, response, next) => {
+    try {
+      const result = await adminService.applyNotionImportEntry({
+        actorUserId: request.currentUser?.id ?? "",
+        batchId: request.params.id,
+        pageId: request.params.pageId
+      });
+
+      if (result.status === "not_found") {
+        response.status(404).json({
+          error: {
+            code: "NOTION_IMPORT_ENTRY_NOT_FOUND",
+            message: "Entrée d'import Notion introuvable."
+          }
+        });
+        return;
+      }
+
+      if (result.status === "invalid") {
+        response.status(409).json({
+          error: {
+            code: result.code,
+            message: result.message,
+            details: result.details ?? null
+          }
+        });
+        return;
+      }
+
+      response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(
+    "/notion-imports/:id/entries/:pageId/import-photo",
+    async (request, response, next) => {
+      try {
+        const result = await adminService.importNotionImportEntryPhoto({
+          actorUserId: request.currentUser?.id ?? "",
+          batchId: request.params.id,
+          pageId: request.params.pageId
+        });
+
+        if (result.status === "not_found") {
+          response.status(404).json({
+            error: {
+              code: "NOTION_IMPORT_ENTRY_NOT_FOUND",
+              message: "Entrée d'import Notion introuvable."
+            }
+          });
+          return;
+        }
+
+        if (result.status === "invalid") {
+          response.status(409).json({
+            error: {
+              code: result.code,
+              message: result.message,
+              details: result.details ?? null
+            }
+          });
+          return;
+        }
+
+        response.json(result);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
   router.post("/tags", async (request, response, next) => {
     try {
       const input = tagInputSchema.parse(request.body);

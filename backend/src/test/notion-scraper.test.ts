@@ -283,7 +283,7 @@ describe("notion scraper", () => {
                         ]
                       ]
                     ],
-                    nq_z: [["emstazy"]],
+                    nq_z: [["emstazy", [["a", "https://twitch.tv/emstazy"]]]],
                     uJKq: [["Aucun métier/entreprise"]]
                   },
                   format: {
@@ -315,7 +315,7 @@ describe("notion scraper", () => {
           Nom: "Navaro",
           "Titre Notion": "Lavina Navaro",
           Date: "2026-05-26",
-          Twitch: "emstazy",
+          Twitch: "https://twitch.tv/emstazy",
           "Métier/entreprise": "Aucun métier/entreprise",
           Photo: [
             "https://www.notion.so/images/page-cover/met_william_morris_1875_willow.jpg",

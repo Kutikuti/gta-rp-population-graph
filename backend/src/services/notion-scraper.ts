@@ -133,6 +133,22 @@ const dateTextFromAnnotations = (annotations: unknown[]) => {
   return null;
 };
 
+const linkUrlFromAnnotations = (annotations: unknown[]) => {
+  for (const annotation of annotations) {
+    if (!Array.isArray(annotation) || annotation[0] !== "a" || typeof annotation[1] !== "string") {
+      continue;
+    }
+
+    const url = annotation[1].trim();
+
+    if (url) {
+      return url;
+    }
+  }
+
+  return null;
+};
+
 const pageTitleFromRecordMap = (recordMap: NotionRecordMap, pageId: string) => {
   const block = unwrapRecordValue<NotionBlockValue>(recordMap.block?.[pageId]);
   return block ? plainText(block.properties?.title, recordMap) : null;
@@ -180,6 +196,26 @@ const plainText = (value: unknown, recordMap?: NotionRecordMap): string | null =
     .trim();
 
   return text || null;
+};
+
+const linkUrl = (value: unknown): string | null => {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  for (const segment of value) {
+    if (!Array.isArray(segment) || !Array.isArray(segment[1])) {
+      continue;
+    }
+
+    const url = linkUrlFromAnnotations(segment[1]);
+
+    if (url) {
+      return url;
+    }
+  }
+
+  return null;
 };
 
 const pageTitle = (block: NotionBlockValue, recordMap?: NotionRecordMap) =>
@@ -242,6 +278,19 @@ const parsePropertiesFromText = (texts: string[]) => {
 
   return properties;
 };
+
+const socialPropertyNames = new Set([
+  "twitch",
+  "kick",
+  "youtube",
+  "you tube",
+  "instagram",
+  "tiktok",
+  "tik tok"
+]);
+
+const isSocialPropertyName = (propertyName: string) =>
+  socialPropertyNames.has(normalizeLabel(propertyName).toLowerCase());
 
 const loadPageChunk = async (
   pageId: string,
@@ -516,7 +565,9 @@ const propertiesFromPageBlock = (
 
   for (const [propertyId, value] of Object.entries(pageBlock.properties ?? {})) {
     const propertyName = schemaNames.get(propertyId) ?? propertyId;
-    const text = plainText(value, recordMap);
+    const text = isSocialPropertyName(propertyName)
+      ? (linkUrl(value) ?? plainText(value, recordMap))
+      : plainText(value, recordMap);
 
     if (text) {
       properties[propertyName] = text;

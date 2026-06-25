@@ -4,8 +4,11 @@ import {
   type AdminNotionImportBatch,
   type AdminNotionImportDetail,
   type AdminNotionImportEntry,
+  ApiRequestError,
   type AuthSession,
+  applyAdminNotionImportEntry,
   getAdminNotionImportDetail,
+  importAdminNotionEntryPhoto,
   type LifeStatus,
   listAdminNotionImports,
   type VerificationStatus
@@ -41,6 +44,46 @@ const jsonPreview = (value: unknown) => JSON.stringify(value, null, 2);
 const snapshotString = (snapshot: Record<string, unknown>, key: string) =>
   typeof snapshot[key] === "string" && snapshot[key].trim() ? snapshot[key].trim() : null;
 
+const notionImportApplyErrorMessage = (error: unknown) => {
+  if (!(error instanceof ApiRequestError)) {
+    return "La fiche importée n'a pas pu être appliquée.";
+  }
+
+  switch (error.code) {
+    case "NOTION_IMPORT_ENTRY_NOT_APPLICABLE":
+      return "Cette entrée est en erreur ou absente de la source, elle ne peut pas être appliquée.";
+    case "NOTION_IMPORT_ENTRY_INVALID_SNAPSHOT":
+      return "Le snapshot mappé est incomplet. Corrige d'abord le mapping.";
+    case "NOTION_IMPORT_ENTRY_AMBIGUOUS_CHARACTER":
+      return "Plusieurs fiches existantes correspondent déjà à ce nom. Le rattachement manuel sera nécessaire.";
+    case "NOTION_IMPORT_ENTRY_UNRESOLVED_RELATIONSHIPS":
+      return "Certaines relations restent ambiguës. Le rattachement automatique a été bloqué pour éviter une mauvaise liaison.";
+    case "NOTION_IMPORT_ENTRY_NOT_FOUND":
+      return "Cette entrée d'import n'existe plus.";
+    default:
+      return error.message || "La fiche importée n'a pas pu être appliquée.";
+  }
+};
+
+const notionImportPhotoErrorMessage = (error: unknown) => {
+  if (!(error instanceof ApiRequestError)) {
+    return "La photo Notion n'a pas pu être importée.";
+  }
+
+  switch (error.code) {
+    case "NOTION_IMPORT_ENTRY_PHOTO_REQUIRES_APPLY":
+      return "Applique d'abord la fiche avant d'importer sa photo.";
+    case "NOTION_IMPORT_ENTRY_NO_PHOTO":
+      return "Cette fiche importée ne contient pas de photo exploitable.";
+    case "NOTION_IMPORT_ENTRY_INVALID_PHOTO":
+      return error.message || "La photo distante a été refusée par le pipeline de sécurité.";
+    case "NOTION_IMPORT_ENTRY_NOT_FOUND":
+      return "Cette entrée d'import n'existe plus.";
+    default:
+      return error.message || "La photo Notion n'a pas pu être importée.";
+  }
+};
+
 export function NotionImportsView({ session, onError }: NotionImportsViewProps) {
   const [batches, setBatches] = useState<AdminNotionImportBatch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
@@ -48,6 +91,9 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<AdminNotionImportEntry["status"] | "all">("all");
   const [isLoading, setIsLoading] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [isImportingPhoto, setIsImportingPhoto] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const canAdmin = session?.authenticated && session.user.role.name === "administrator";
 
@@ -100,6 +146,59 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
     () => detail?.entries.find((entry) => entry.pageId === selectedPageId) ?? null,
     [detail, selectedPageId]
   );
+
+  const refreshSelectedBatch = useCallback(async () => {
+    if (!selectedBatchId) {
+      return;
+    }
+
+    const nextDetail = await getAdminNotionImportDetail(selectedBatchId);
+    setDetail(nextDetail);
+    setSelectedPageId((current) => current ?? nextDetail.entries[0]?.pageId ?? null);
+  }, [selectedBatchId]);
+
+  const handleApplyEntry = useCallback(async () => {
+    if (!selectedBatchId || !selectedEntry) {
+      return;
+    }
+
+    setIsApplying(true);
+    setFeedback(null);
+
+    try {
+      const result = await applyAdminNotionImportEntry(selectedBatchId, selectedEntry.pageId);
+      await Promise.all([loadBatches(), refreshSelectedBatch()]);
+      setSelectedPageId(result.entry.pageId);
+      setFeedback(
+        result.created
+          ? "Fiche créée depuis l'import Notion."
+          : "Fiche mise à jour depuis l'import Notion."
+      );
+    } catch (error) {
+      onError(notionImportApplyErrorMessage(error));
+    } finally {
+      setIsApplying(false);
+    }
+  }, [loadBatches, onError, refreshSelectedBatch, selectedBatchId, selectedEntry]);
+
+  const handleImportPhoto = useCallback(async () => {
+    if (!selectedBatchId || !selectedEntry) {
+      return;
+    }
+
+    setIsImportingPhoto(true);
+    setFeedback(null);
+
+    try {
+      await importAdminNotionEntryPhoto(selectedBatchId, selectedEntry.pageId);
+      await Promise.all([loadBatches(), refreshSelectedBatch()]);
+      setFeedback("Photo Notion importée sur la fiche.");
+    } catch (error) {
+      onError(notionImportPhotoErrorMessage(error));
+    } finally {
+      setIsImportingPhoto(false);
+    }
+  }, [loadBatches, onError, refreshSelectedBatch, selectedBatchId, selectedEntry]);
 
   if (!session?.authenticated) {
     return (
@@ -266,6 +365,31 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                   Page Notion
                 </a>
               ) : null}
+              <button
+                type="button"
+                className="ghost-button primary-action"
+                onClick={() => void handleApplyEntry()}
+                disabled={
+                  isApplying ||
+                  selectedEntry.status === "failed" ||
+                  selectedEntry.status === "missing"
+                }
+              >
+                {isApplying ? "Application..." : "Appliquer la fiche"}
+              </button>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => void handleImportPhoto()}
+                disabled={
+                  isImportingPhoto ||
+                  !selectedEntry.appliedCharacterId ||
+                  selectedEntry.photoReferences.length === 0
+                }
+              >
+                {isImportingPhoto ? "Import photo..." : "Importer la photo"}
+              </button>
+              {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
               <dl className="import-detail-list">
                 <div>
                   <dt>Vie</dt>
@@ -309,9 +433,18 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                   <dt>Photos</dt>
                   <dd>{selectedEntry.photoReferences.length}</dd>
                 </div>
+                <div>
+                  <dt>Application</dt>
+                  <dd>{selectedEntry.appliedAt ? formatDateTime(selectedEntry.appliedAt) : "-"}</dd>
+                </div>
               </dl>
               {selectedEntry.photoReferences.length > 0 ? (
                 <div className="import-photo-list">
+                  <img
+                    src={selectedEntry.photoReferences[0]}
+                    alt={selectedEntry.fullName}
+                    className="sheet-photo"
+                  />
                   {selectedEntry.photoReferences.map((reference, index) => (
                     <a key={reference} href={reference} target="_blank" rel="noreferrer">
                       Photo Notion {index + 1}

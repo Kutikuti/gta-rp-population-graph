@@ -7,6 +7,7 @@ import type {
   AdminDashboard,
   AdminNotionImportBatch,
   AdminNotionImportDetail,
+  AdminNotionImportEntry,
   AdminService,
   AdminTag,
   AdminUser,
@@ -95,6 +96,8 @@ const notionImportDetail: AdminNotionImportDetail = {
       rawContent: { pageId: "page-ada" },
       mappedSnapshot: { firstName: "Ada", lastName: "Lovelace" },
       mappingReport: { errors: [] },
+      appliedCharacterId: null,
+      appliedAt: null,
       createdAt: "2026-06-23T00:00:00.000Z"
     }
   ]
@@ -160,6 +163,50 @@ class FixtureAdminService implements AdminService {
 
   async getNotionImportDetail(batchId: string) {
     return batchId === notionImportBatch.id ? notionImportDetail : null;
+  }
+
+  async applyNotionImportEntry(_input: { actorUserId: string; batchId: string; pageId: string }) {
+    const baseEntry = notionImportDetail.entries[0];
+
+    if (!baseEntry) {
+      throw new Error("Missing notion import entry fixture.");
+    }
+
+    const entry: AdminNotionImportEntry = {
+      ...baseEntry,
+      appliedCharacterId: "00000000-0000-4000-8000-000000000301",
+      appliedAt: "2026-06-24T00:00:00.000Z"
+    };
+
+    return {
+      status: "applied" as const,
+      entry,
+      characterId: "00000000-0000-4000-8000-000000000301",
+      created: true
+    };
+  }
+
+  async importNotionImportEntryPhoto(_input: {
+    actorUserId: string;
+    batchId: string;
+    pageId: string;
+  }) {
+    const baseEntry = notionImportDetail.entries[0];
+
+    if (!baseEntry) {
+      throw new Error("Missing notion import entry fixture.");
+    }
+
+    return {
+      status: "imported" as const,
+      entry: {
+        ...baseEntry,
+        appliedCharacterId: "00000000-0000-4000-8000-000000000301",
+        appliedAt: "2026-06-24T00:00:00.000Z"
+      },
+      characterId: "00000000-0000-4000-8000-000000000301",
+      photoUrl: "/uploads/characters/ada-photo.webp"
+    };
   }
 
   async createTag(_actorUserId: string, input: TagInput) {
@@ -275,6 +322,42 @@ describe("admin routes", () => {
     expect(response.body.entries[0]).toMatchObject({
       fullName: "Ada Lovelace",
       status: "new"
+    });
+  });
+
+  it("applies one notion import entry for administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.post(
+      `/api/admin/notion-imports/${notionImportBatch.id}/entries/page-ada/apply`
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      status: "applied",
+      characterId: "00000000-0000-4000-8000-000000000301",
+      created: true,
+      entry: {
+        pageId: "page-ada",
+        appliedCharacterId: "00000000-0000-4000-8000-000000000301"
+      }
+    });
+  });
+
+  it("imports one notion photo for administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.post(
+      `/api/admin/notion-imports/${notionImportBatch.id}/entries/page-ada/import-photo`
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      status: "imported",
+      characterId: "00000000-0000-4000-8000-000000000301",
+      photoUrl: "/uploads/characters/ada-photo.webp"
     });
   });
 

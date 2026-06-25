@@ -127,10 +127,15 @@ export class NotionImportEntry extends Model<
   declare mappedSnapshot: JsonObject;
   declare mappingReport: JsonObject;
   declare lastSeenAt: Date;
+  declare appliedCharacterId: ForeignKey<Character["id"]> | null;
+  declare appliedByUserId: ForeignKey<User["id"]> | null;
+  declare appliedAt: Date | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
   declare batch?: NonAttribute<NotionImportBatch>;
+  declare appliedCharacter?: NonAttribute<Character | null>;
+  declare appliedBy?: NonAttribute<User | null>;
 }
 
 export class Streamer extends Model<InferAttributes<Streamer>, InferCreationAttributes<Streamer>> {
@@ -437,13 +442,23 @@ export const initModels = (sequelize: Sequelize) => {
         type: DataTypes.DATE,
         allowNull: false
       },
+      appliedCharacterId: DataTypes.UUID,
+      appliedByUserId: DataTypes.UUID,
+      appliedAt: DataTypes.DATE,
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE
     },
     {
       sequelize,
       tableName: "notion_import_entries",
-      indexes: [{ fields: ["batch_id"] }, { fields: ["source_page_id"] }, { fields: ["status"] }]
+      indexes: [
+        { fields: ["batch_id"] },
+        { fields: ["source_page_id"] },
+        { fields: ["status"] },
+        { fields: ["applied_character_id"] },
+        { fields: ["applied_by_user_id"] },
+        { fields: ["applied_at"] }
+      ]
     }
   );
 
@@ -709,9 +724,22 @@ export const initModels = (sequelize: Sequelize) => {
     foreignKey: "validatedByUserId",
     as: "validatedNotionImportBatches"
   });
+  User.hasMany(NotionImportEntry, {
+    foreignKey: "appliedByUserId",
+    as: "appliedNotionImportEntries"
+  });
   NotionImportBatch.belongsTo(User, { foreignKey: "validatedByUserId", as: "validatedBy" });
   NotionImportBatch.hasMany(NotionImportEntry, { foreignKey: "batchId", as: "entries" });
   NotionImportEntry.belongsTo(NotionImportBatch, { foreignKey: "batchId", as: "batch" });
+  NotionImportEntry.belongsTo(User, { foreignKey: "appliedByUserId", as: "appliedBy" });
+  Character.hasMany(NotionImportEntry, {
+    foreignKey: "appliedCharacterId",
+    as: "appliedNotionImportEntries"
+  });
+  NotionImportEntry.belongsTo(Character, {
+    foreignKey: "appliedCharacterId",
+    as: "appliedCharacter"
+  });
 
   Streamer.hasMany(Character, { foreignKey: "streamerId", as: "characters" });
   Character.belongsTo(Streamer, { foreignKey: "streamerId", as: "streamer" });

@@ -5,12 +5,21 @@ import sharp, { type Metadata } from "sharp";
 
 import { env } from "../config/env.js";
 
+type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
+
 const allowedContentTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const contentTypeFormats = {
   "image/jpeg": "jpeg",
   "image/png": "png",
   "image/webp": "webp"
 } as const;
+const allowedRemotePhotoHosts = new Set([
+  "www.notion.so",
+  "notion.so",
+  "secure.notion-static.com",
+  "www.notion-static.com",
+  "img.notionusercontent.com"
+]);
 const pendingPhotoPattern =
   /^pending-photo:([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}):([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/u;
 
@@ -63,6 +72,110 @@ const detectSignatureFormat = (buffer: Buffer) => {
   return null;
 };
 
+const assertAllowedRemotePhotoUrl = (value: string) => {
+  let url: URL;
+
+  try {
+    url = new URL(value);
+  } catch {
+    throw new InvalidCharacterPhotoError("URL de photo distante invalide.");
+  }
+
+  if (url.protocol !== "https:") {
+    throw new InvalidCharacterPhotoError("Seules les URLs HTTPS sont autorisees.");
+  }
+
+  if (!allowedRemotePhotoHosts.has(url.hostname.toLowerCase())) {
+    throw new InvalidCharacterPhotoError("Cette source distante n'est pas autorisee.");
+  }
+
+  return url;
+};
+
+const normalizeContentType = (value: string | null) =>
+  value?.split(";")[0]?.trim().toLowerCase() ?? "";
+
+const readResponseBuffer = async (response: Response, maxBytes: number) => {
+  const contentLength = Number.parseInt(response.headers.get("content-length") ?? "", 10);
+
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new InvalidCharacterPhotoError("La photo distante depasse la taille maximale autorisee.");
+  }
+
+  if (!response.body) {
+    throw new InvalidCharacterPhotoError("La photo distante est illisible.");
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    if (!value) {
+      continue;
+    }
+
+    total += value.byteLength;
+
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new InvalidCharacterPhotoError(
+        "La photo distante depasse la taille maximale autorisee."
+      );
+    }
+
+    chunks.push(Buffer.from(value));
+  }
+
+  return Buffer.concat(chunks, total);
+};
+
+const normalizeCharacterPhotoBuffer = async (input: { buffer: Buffer; contentType: string }) => {
+  const signatureFormat = detectSignatureFormat(input.buffer);
+  const expectedFormat = contentTypeFormats[input.contentType as keyof typeof contentTypeFormats];
+
+  if (
+    !allowedContentTypes.has(input.contentType) ||
+    !signatureFormat ||
+    signatureFormat !== expectedFormat
+  ) {
+    throw new InvalidCharacterPhotoError("Format d'image refuse.");
+  }
+
+  const image = sharp(input.buffer, {
+    animated: false,
+    failOn: "warning",
+    limitInputPixels: 16_000_000
+  });
+  let metadata: Metadata;
+
+  try {
+    metadata = await image.metadata();
+  } catch {
+    throw new InvalidCharacterPhotoError("Image illisible.");
+  }
+
+  if (!metadata.width || !metadata.height || !metadata.format) {
+    throw new InvalidCharacterPhotoError("Image illisible.");
+  }
+
+  if (!["jpeg", "png", "webp"].includes(metadata.format)) {
+    throw new InvalidCharacterPhotoError("Format d'image refuse.");
+  }
+
+  return image
+    .rotate()
+    .resize(512, 512, { fit: "cover", position: "centre" })
+    .webp({ quality: 86, effort: 4 })
+    .toBuffer();
+};
+
 const pendingPhotoPath = (userId: string, photoId: string) =>
   resolve(tmpDir, `${userId}.${photoId}.webp`);
 
@@ -106,54 +219,74 @@ export const createCharacterPhotoDraft = async (input: {
   buffer: Buffer;
   contentType: string;
 }) => {
-  const signatureFormat = detectSignatureFormat(input.buffer);
-  const expectedFormat = contentTypeFormats[input.contentType as keyof typeof contentTypeFormats];
-
-  if (
-    !allowedContentTypes.has(input.contentType) ||
-    !signatureFormat ||
-    signatureFormat !== expectedFormat
-  ) {
-    throw new InvalidCharacterPhotoError("Format d'image refuse.");
-  }
-
-  const image = sharp(input.buffer, {
-    animated: false,
-    failOn: "warning",
-    limitInputPixels: 16_000_000
-  });
-  let metadata: Metadata;
-
-  try {
-    metadata = await image.metadata();
-  } catch {
-    throw new InvalidCharacterPhotoError("Image illisible.");
-  }
-
-  if (!metadata.width || !metadata.height || !metadata.format) {
-    throw new InvalidCharacterPhotoError("Image illisible.");
-  }
-
-  if (!["jpeg", "png", "webp"].includes(metadata.format)) {
-    throw new InvalidCharacterPhotoError("Format d'image refuse.");
-  }
-
   const photoId = randomUUID();
   const fileName = `${input.userId}.${photoId}.webp`;
   const filePath = resolve(tmpDir, fileName);
 
   await mkdir(tmpDir, { recursive: true });
-  const output = await image
-    .rotate()
-    .resize(512, 512, { fit: "cover", position: "centre" })
-    .webp({ quality: 86, effort: 4 })
-    .toBuffer();
+  const output = await normalizeCharacterPhotoBuffer(input);
 
   await writeFile(filePath, output, { flag: "wx" });
 
   return {
     photoUrl: `pending-photo:${input.userId}:${photoId}`
   };
+};
+
+export const importCharacterPhotoFromRemoteUrl = async (
+  input: { url: string; fetchImpl?: FetchLike } = { url: "" }
+) => {
+  const remoteUrl = assertAllowedRemotePhotoUrl(input.url);
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const response = await fetchImpl(remoteUrl.toString(), {
+    method: "GET",
+    redirect: "follow",
+    headers: {
+      accept: "image/jpeg,image/png,image/webp"
+    }
+  });
+
+  if (!response.ok) {
+    throw new InvalidCharacterPhotoError(
+      `Le telechargement de la photo distante a echoue (HTTP ${response.status}).`
+    );
+  }
+
+  assertAllowedRemotePhotoUrl(response.url || remoteUrl.toString());
+
+  const contentType = normalizeContentType(response.headers.get("content-type"));
+
+  if (!allowedContentTypes.has(contentType)) {
+    throw new InvalidCharacterPhotoError("Le format de la photo distante n'est pas autorise.");
+  }
+
+  const buffer = await readResponseBuffer(response, env.PHOTO_UPLOAD_MAX_BYTES);
+  const output = await normalizeCharacterPhotoBuffer({ buffer, contentType });
+  const photoId = randomUUID();
+  const fileName = `${photoId}.webp`;
+
+  await mkdir(characterDir, { recursive: true });
+  await writeFile(resolve(characterDir, fileName), output, { flag: "wx" });
+
+  return characterPhotoPublicPath(fileName);
+};
+
+export const deleteStoredCharacterPhoto = async (photoUrl: string | null | undefined) => {
+  if (!photoUrl?.startsWith("/uploads/characters/")) {
+    return;
+  }
+
+  const fileName = photoUrl.slice("/uploads/characters/".length);
+
+  if (!/^[0-9a-f-]+\.webp$/u.test(fileName)) {
+    return;
+  }
+
+  try {
+    await unlink(resolve(characterDir, fileName));
+  } catch {
+    // Best-effort cleanup: replacing a photo must not fail because an old file is already missing.
+  }
 };
 
 export const promoteCharacterPhotoIfPending = async (photoUrl: string | null) => {

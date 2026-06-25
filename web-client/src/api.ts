@@ -297,12 +297,28 @@ export type AdminNotionImportEntry = {
   rawContent: Record<string, unknown>;
   mappedSnapshot: Record<string, unknown>;
   mappingReport: Record<string, unknown>;
+  appliedCharacterId: string | null;
+  appliedAt: string | null;
   createdAt: string;
 };
 
 export type AdminNotionImportDetail = {
   batch: AdminNotionImportBatch;
   entries: AdminNotionImportEntry[];
+};
+
+export type ApplyAdminNotionImportEntryResult = {
+  status: "applied";
+  entry: AdminNotionImportEntry;
+  characterId: string;
+  created: boolean;
+};
+
+export type ImportAdminNotionEntryPhotoResult = {
+  status: "imported";
+  entry: AdminNotionImportEntry;
+  characterId: string;
+  photoUrl: string;
 };
 
 export type AdminTagInput = {
@@ -384,6 +400,12 @@ const fetchJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   return (await response.json()) as T;
 };
 
+const fetchFreshJson = async <T>(path: string, init?: RequestInit): Promise<T> =>
+  fetchJson<T>(path, {
+    ...init,
+    cache: "no-store"
+  });
+
 const sendJson = async <T>(path: string, method: "POST" | "PATCH", body?: unknown): Promise<T> =>
   fetchJson<T>(path, {
     method,
@@ -443,17 +465,17 @@ export const listCharacterDirectory = () =>
 export const listCharacterMatches = (filters: CharacterFilters) => {
   const params = characterFilterParams(filters);
 
-  return fetchJson<PublicCharacterMatches>(`/api/characters/matches?${params.toString()}`);
+  return fetchFreshJson<PublicCharacterMatches>(`/api/characters/matches?${params.toString()}`);
 };
 
 export const getCharacter = (id: string) =>
-  fetchJson<PublicCharacterDetail>(`/api/characters/${id}`);
+  fetchFreshJson<PublicCharacterDetail>(`/api/characters/${id}`);
 
-export const listTags = () => fetchJson<PublicTag[]>("/api/tags");
+export const listTags = () => fetchFreshJson<PublicTag[]>("/api/tags");
 
 export const listStreamers = () => fetchJson<PublicStreamer[]>("/api/streamers");
 
-export const getGraph = () => fetchJson<PublicGraph>("/api/graph");
+export const getGraph = () => fetchFreshJson<PublicGraph>("/api/graph");
 
 export const listHistory = (characterId?: string) => {
   const params = new URLSearchParams({ limit: "20" });
@@ -462,7 +484,7 @@ export const listHistory = (characterId?: string) => {
     params.set("characterId", characterId);
   }
 
-  return fetchJson<PublicHistoryEntry[]>(`/api/history?${params.toString()}`);
+  return fetchFreshJson<PublicHistoryEntry[]>(`/api/history?${params.toString()}`);
 };
 
 export const getAuthSession = () => fetchJson<AuthSession>("/api/auth/session");
@@ -479,6 +501,18 @@ export const listAdminNotionImports = () =>
 
 export const getAdminNotionImportDetail = (id: string) =>
   fetchJson<AdminNotionImportDetail>(`/api/admin/notion-imports/${id}`);
+
+export const applyAdminNotionImportEntry = (batchId: string, pageId: string) =>
+  sendJson<ApplyAdminNotionImportEntryResult>(
+    `/api/admin/notion-imports/${batchId}/entries/${encodeURIComponent(pageId)}/apply`,
+    "POST"
+  );
+
+export const importAdminNotionEntryPhoto = (batchId: string, pageId: string) =>
+  sendJson<ImportAdminNotionEntryPhotoResult>(
+    `/api/admin/notion-imports/${batchId}/entries/${encodeURIComponent(pageId)}/import-photo`,
+    "POST"
+  );
 
 export const createAdminTag = (input: AdminTagInput) =>
   sendJson<AdminTag>("/api/admin/tags", "POST", input);

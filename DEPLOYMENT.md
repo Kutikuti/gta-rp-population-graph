@@ -65,6 +65,11 @@ par Nginx : l'API expose uniquement les fichiers valides sous
 `/uploads/characters`. Les brouillons temporaires restent internes sous
 `tmp/`.
 
+Les photos issues des imports Notion ne doivent pas etre servies directement
+depuis une URL distante. L'administration telecharge la photo au moment de
+l'action `Importer la photo`, puis le backend la valide, la reencode et la
+stocke localement comme n'importe quelle photo approuvee.
+
 ## Creation de la base
 
 Le script suivant cree la base `DB_NAME` si elle n'existe pas encore :

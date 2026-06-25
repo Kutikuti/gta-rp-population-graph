@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   createCharacterPhotoDraft,
-  InvalidCharacterPhotoError
+  InvalidCharacterPhotoError,
+  importCharacterPhotoFromRemoteUrl
 } from "../services/character-photos.js";
 
 const userId = "00000000-0000-4000-8000-000000000911";
@@ -57,6 +58,41 @@ describe("character photo validation", () => {
         userId,
         contentType: "image/png",
         buffer: Buffer.concat([pngSignature, Buffer.from("broken")])
+      })
+    ).rejects.toBeInstanceOf(InvalidCharacterPhotoError);
+  });
+
+  it("imports a remote notion photo through the secured pipeline", async () => {
+    const png = await sharp({
+      create: {
+        width: 16,
+        height: 16,
+        channels: 3,
+        background: "#0e72c9"
+      }
+    })
+      .png()
+      .toBuffer();
+
+    const photoUrl = await importCharacterPhotoFromRemoteUrl({
+      url: "https://www.notion.so/image/test.png",
+      fetchImpl: async () =>
+        new Response(png, {
+          status: 200,
+          headers: {
+            "content-type": "image/png",
+            "content-length": String(png.byteLength)
+          }
+        })
+    });
+
+    expect(photoUrl).toMatch(/^\/uploads\/characters\/[0-9a-f-]+\.webp$/u);
+  });
+
+  it("rejects remote photos outside the Notion allowlist", async () => {
+    await expect(
+      importCharacterPhotoFromRemoteUrl({
+        url: "https://example.com/ada.png"
       })
     ).rejects.toBeInstanceOf(InvalidCharacterPhotoError);
   });
