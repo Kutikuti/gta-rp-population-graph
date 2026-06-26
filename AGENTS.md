@@ -70,6 +70,9 @@ Principes :
 - Prevoir un statut ou indicateur de verification quand l'information est
   importee ou communautaire.
 - Garder un historique des modifications validees.
+- Le suivi des imports Notion doit rester exploitable en administration :
+  tri stable des fiches importees, recherche par nom et distinction claire
+  entre fiches deja appliquees et restant a traiter.
 - Privilegier un flux de contribution modere plutot que l'ecriture directe par
   les utilisateurs simples.
 - Ne pas exposer publiquement les noms et prenoms fournis par les fournisseurs
@@ -83,6 +86,12 @@ Principes :
   piste de rattachement vers les anciens personnages du meme joueur. Ce besoin
   pourra conduire a ajouter un type de relation dedie, distinct des relations
   familiales affichees dans le graphe public.
+- Lors de l'import Notion, les liens publics doivent conserver l'URL cible
+  reelle du lien et pas seulement son texte visible.
+- L'application d'une fiche Notion ne doit pas etre bloquee uniquement parce
+  qu'une relation cible une autre fiche Notion pas encore appliquee ; ces
+  relations doivent pouvoir se completer ensuite sans creer de doublon
+  symetrique.
 
 # Fonctionnalites MVP
 

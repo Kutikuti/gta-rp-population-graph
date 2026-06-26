@@ -55,6 +55,14 @@ La fiche publique et les formulaires de modification supportent maintenant :
   `prenom-nom`, avec suffixe numerote si un doublon existe, et mis a jour si le
   nom public du personnage change.
 
+Le workflow d'import Notion est egalement operationnel cote administration :
+
+- scraping batch par batch sans publication automatique ;
+- revue fiche par fiche avant application ;
+- import manuel de la photo Notion seulement apres application de la fiche ;
+- liste des fiches importees triable de maniere stable par nom, avec recherche
+  et suivi `a faire` / `appliquee`.
+
 ## Lancement local
 
 Version Node.js attendue : `24.16.0` ou plus recente. Les fichiers `.nvmrc` et
@@ -235,6 +243,15 @@ Notes importantes :
   publication.
 - Il est possible de relancer le scrape plusieurs fois : les pages sont classees
   en `new`, `updated`, `unchanged`, `missing` ou `failed`.
+- Dans l'interface d'administration, les fiches importees peuvent ensuite etre
+  triees par nom, recherchees et filtrees entre `Toutes`, `Non appliquees` et
+  `Appliquees` pour suivre l'avancement.
+- Les liens sociaux recuperes depuis Notion doivent conserver l'URL cible
+  reelle lorsqu'un texte de lien est mis en forme dans la page source.
+- Les relations vers d'autres fiches Notion ne doivent pas bloquer
+  l'application d'une fiche si la fiche cible n'a pas encore ete appliquee ;
+  elles sont completees progressivement lors des applications suivantes, en
+  evitant les doublons symetriques.
 
 ### Frontend
 

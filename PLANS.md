@@ -344,6 +344,9 @@ Routes a prevoir :
 - Rapport des relations detectees et des relations impossibles a relier
   automatiquement.
 - Validation humaine avant publication des donnees importees.
+- Vue d'administration dediee pour suivre les batches importes avec tri stable
+  par nom, recherche textuelle et filtres sur l'etat d'application
+  `a faire` / `appliquee`, afin de suivre les imports restants.
 
 ## Design
 
@@ -872,6 +875,8 @@ Bilan final :
 
 ### Etape 9 - Import Notion
 
+Statut : en cours avance.
+
 - Creer un importeur page par page pour la source Notion communautaire.
 - Stocker les donnees brutes importees.
 - Permettre de relancer l'import pendant que la source Notion continue
@@ -956,6 +961,10 @@ Plan propose :
     depuis l'interface admin, uniquement apres application de la fiche, en
     telechargeant l'image cote backend puis en la reencodant dans le pipeline
     photo securise local plutot qu'en conservant une URL distante ;
+  - l'application d'une fiche importee ne doit pas etre bloquee uniquement
+    parce que certaines relations pointent vers d'autres fiches Notion pas
+    encore appliquees ; ces relations doivent pouvoir etre completees au fur et
+    a mesure des applications ulterieures, sans creer de doublon symetrique ;
   - si une insertion controlee est ajoutee dans l'etape, elle doit creer les
     historiques necessaires et appliquer les memes contraintes de slug, tags,
     streamers et relations que les flux moderes existants.
@@ -969,6 +978,28 @@ Plan propose :
   est declenche par un administrateur, doit rester borne aux domaines Notion
   attendus, avec verification MIME/signature, limite de taille et reencodage
   local via le pipeline photo securise deja utilise pour les contributions.
+
+Realisation actuelle :
+
+- Scraping Notion public batch par batch avec stockage des donnees brutes et
+  du snapshot mappe, sans publication automatique.
+- Interface admin de previsualisation des imports avec detail par fiche,
+  application manuelle, import manuel de photo apres application, tri
+  alphabetique stable, recherche par nom et suivi `a faire` / `appliquee`.
+- Mapping des reseaux sociaux base sur les URL reelles ciblees dans Notion,
+  et pas uniquement sur le texte visible.
+- Gestion des relations importees dans `character_relationships`, y compris des
+  relations informatives hors graphe comme `ancien personnage`, avec evitemment
+  des doublons symetriques deja connus.
+
+Reste a verrouiller avant cloture :
+
+- consolider les tests backend figes autour du parsing Notion et des cas
+  ambigus ;
+- verifier de bout en bout la gestion des fiches marquees `missing` sur des
+  imports successifs ;
+- relire la documentation operateur finale pour figer le workflow
+  scrape -> revue -> application fiche par fiche -> import photo.
 
 Point de controle :
 
