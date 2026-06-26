@@ -187,7 +187,7 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
             <h3>Mes demandes</h3>
             {isLoading ? <LoadingBlock label="Chargement des demandes..." /> : null}
             {!isLoading && requests.length === 0 ? (
-              <EmptyBlock label="Aucune demande envoyée pour le moment." />
+              <p className="muted-text">Aucune demande envoyée pour le moment.</p>
             ) : null}
             {!isLoading && requests.length > 0 ? (
               <div className="request-list compact-request-list">

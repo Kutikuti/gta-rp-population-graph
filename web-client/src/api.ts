@@ -429,6 +429,21 @@ const deleteJson = async <T>(path: string): Promise<T | null> => {
   return (await response.json()) as T;
 };
 
+const normalizeSnapshotRelationships = (relationships: CharacterSnapshot["relationships"]) => {
+  const seen = new Set<string>();
+
+  return relationships.filter((relationship) => {
+    const key = `${relationship.type}:${relationship.characterId}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
 const appendParam = (params: URLSearchParams, key: string, value: string) => {
   if (value.trim()) {
     params.set(key, value.trim());
@@ -561,21 +576,23 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
   groupRole: character.groupRole,
   district: character.district,
   isRpDeath: character.isRpDeath,
-  relationships: [...character.relationships.outgoing, ...character.relationships.incoming]
-    .filter((relationship) => relationship.graphVisible)
-    .map((relationship) => ({
-      characterId: relationship.relatedCharacter.id,
-      type:
-        relationship.direction === "directed" &&
-        relationship.targetCharacterId === character.id &&
-        relationship.type === "parent"
-          ? "child"
-          : relationship.direction === "directed" &&
-              relationship.targetCharacterId === character.id &&
-              relationship.type === "child"
-            ? "parent"
-            : (relationship.type as "parent" | "child" | "sibling" | "couple")
-    })),
+  relationships: normalizeSnapshotRelationships(
+    [...character.relationships.outgoing, ...character.relationships.incoming]
+      .filter((relationship) => relationship.graphVisible)
+      .map((relationship) => ({
+        characterId: relationship.relatedCharacter.id,
+        type:
+          relationship.direction === "directed" &&
+          relationship.targetCharacterId === character.id &&
+          relationship.type === "parent"
+            ? "child"
+            : relationship.direction === "directed" &&
+                relationship.targetCharacterId === character.id &&
+                relationship.type === "child"
+              ? "parent"
+              : (relationship.type as "parent" | "child" | "sibling" | "couple")
+      }))
+  ),
   policeRank: character.policeRank,
   policeBadgeNumber: character.policeBadgeNumber,
   previousCharacters: character.previousCharacters,

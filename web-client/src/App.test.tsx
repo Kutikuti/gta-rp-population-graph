@@ -545,11 +545,30 @@ describe("App", () => {
             sourceName: "Flashback Whitelist V6",
             status: "reported",
             sourceSnapshot: { pageCount: 1 },
-            totals: { new: 1, updated: 0, unchanged: 0, missing: 0, failed: 0 },
+            totals: { new: 2, updated: 0, unchanged: 0, missing: 0, failed: 0 },
             createdAt: now,
             updatedAt: now
           },
           entries: [
+            {
+              status: "new",
+              pageId: "page-zoe",
+              fullName: "Zoe Washburne",
+              lifeStatus: "alive",
+              streamer: null,
+              twitch: null,
+              business: null,
+              group: null,
+              tags: "",
+              photoReferences: [],
+              sourceUrl: "https://example.test/page-zoe",
+              rawContent: { pageId: "page-zoe" },
+              mappedSnapshot: { firstName: "Zoe", lastName: "Washburne" },
+              mappingReport: { errors: [] },
+              appliedCharacterId: "00000000-0000-4000-8000-000000000302",
+              appliedAt: now,
+              createdAt: now
+            },
             {
               status: "new",
               pageId: "page-ada",
@@ -606,14 +625,28 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "Prévisualisation des fiches importées" })
     ).toBeInTheDocument();
     expect(screen.getByText("Flashback Whitelist V6")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(screen.getAllByText("Ada Lovelace")).toHaveLength(2);
-    });
-    expect(screen.getAllByText("adalive")).toHaveLength(2);
+    expect(screen.getAllByText("Ada Lovelace").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Zoe Washburne").length).toBeGreaterThan(0);
+    expect(screen.getByText("adalive")).toBeInTheDocument();
+    expect(screen.getAllByText("À faire")).toHaveLength(1);
+    expect(screen.getAllByText("Appliquée")).toHaveLength(1);
+
+    const rows = screen.getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Ada Lovelace");
+    expect(rows[2]).toHaveTextContent("Zoe Washburne");
+
+    await user.click(screen.getByRole("button", { name: "Ada Lovelace" }));
     expect(screen.getByRole("link", { name: "Photo Notion 1" })).toHaveAttribute(
       "href",
       "https://secure.notion-static.com/ada-avatar.webp"
     );
+
+    await user.click(screen.getByRole("button", { name: "Non appliquées" }));
+    expect(screen.getAllByText("Ada Lovelace").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Zoe Washburne")).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole("searchbox"), "ada");
+    expect(screen.getAllByText("Ada Lovelace").length).toBeGreaterThan(0);
   });
 
   it("shows a specific admin error when trying to remove the last administrator", async () => {

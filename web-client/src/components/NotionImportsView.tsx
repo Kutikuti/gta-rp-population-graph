@@ -18,6 +18,7 @@ import { formatDateTime } from "../utils/format";
 
 type NotionImportsViewProps = {
   session: AuthSession | null;
+  onDataChanged: () => Promise<void>;
   onError: (message: string) => void;
 };
 
@@ -37,6 +38,8 @@ const statusOptions: Array<AdminNotionImportEntry["status"] | "all"> = [
   "unchanged",
   "missing"
 ];
+const appliedOptions = ["all", "pending", "applied"] as const;
+type AppliedFilter = (typeof appliedOptions)[number];
 
 const count = (batch: AdminNotionImportBatch, key: string) => batch.totals[key] ?? 0;
 
@@ -84,12 +87,14 @@ const notionImportPhotoErrorMessage = (error: unknown) => {
   }
 };
 
-export function NotionImportsView({ session, onError }: NotionImportsViewProps) {
+export function NotionImportsView({ session, onDataChanged, onError }: NotionImportsViewProps) {
   const [batches, setBatches] = useState<AdminNotionImportBatch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminNotionImportDetail | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<AdminNotionImportEntry["status"] | "all">("all");
+  const [appliedFilter, setAppliedFilter] = useState<AppliedFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [isImportingPhoto, setIsImportingPhoto] = useState(false);
@@ -136,11 +141,36 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
   }, [canAdmin, onError, selectedBatchId]);
 
   const filteredEntries = useMemo(() => {
-    const entries = detail?.entries ?? [];
-    return statusFilter === "all"
-      ? entries
-      : entries.filter((entry) => entry.status === statusFilter);
-  }, [detail, statusFilter]);
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase("fr");
+
+    return [...(detail?.entries ?? [])]
+      .filter((entry) => statusFilter === "all" || entry.status === statusFilter)
+      .filter((entry) => {
+        if (appliedFilter === "all") {
+          return true;
+        }
+
+        return appliedFilter === "applied"
+          ? Boolean(entry.appliedCharacterId)
+          : !entry.appliedCharacterId;
+      })
+      .filter((entry) => {
+        if (!normalizedQuery) {
+          return true;
+        }
+
+        return entry.fullName.toLocaleLowerCase("fr").includes(normalizedQuery);
+      })
+      .sort((left, right) => {
+        const nameComparison = left.fullName.localeCompare(right.fullName, "fr");
+
+        if (nameComparison !== 0) {
+          return nameComparison;
+        }
+
+        return left.pageId.localeCompare(right.pageId, "fr");
+      });
+  }, [appliedFilter, detail, searchQuery, statusFilter]);
 
   const selectedEntry = useMemo(
     () => detail?.entries.find((entry) => entry.pageId === selectedPageId) ?? null,
@@ -167,7 +197,7 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
 
     try {
       const result = await applyAdminNotionImportEntry(selectedBatchId, selectedEntry.pageId);
-      await Promise.all([loadBatches(), refreshSelectedBatch()]);
+      await Promise.all([loadBatches(), refreshSelectedBatch(), onDataChanged()]);
       setSelectedPageId(result.entry.pageId);
       setFeedback(
         result.created
@@ -179,7 +209,7 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
     } finally {
       setIsApplying(false);
     }
-  }, [loadBatches, onError, refreshSelectedBatch, selectedBatchId, selectedEntry]);
+  }, [loadBatches, onDataChanged, onError, refreshSelectedBatch, selectedBatchId, selectedEntry]);
 
   const handleImportPhoto = useCallback(async () => {
     if (!selectedBatchId || !selectedEntry) {
@@ -191,14 +221,14 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
 
     try {
       await importAdminNotionEntryPhoto(selectedBatchId, selectedEntry.pageId);
-      await Promise.all([loadBatches(), refreshSelectedBatch()]);
+      await Promise.all([loadBatches(), refreshSelectedBatch(), onDataChanged()]);
       setFeedback("Photo Notion importée sur la fiche.");
     } catch (error) {
       onError(notionImportPhotoErrorMessage(error));
     } finally {
       setIsImportingPhoto(false);
     }
-  }, [loadBatches, onError, refreshSelectedBatch, selectedBatchId, selectedEntry]);
+  }, [loadBatches, onDataChanged, onError, refreshSelectedBatch, selectedBatchId, selectedEntry]);
 
   if (!session?.authenticated) {
     return (
@@ -253,6 +283,7 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                 onClick={() => {
                   setSelectedBatchId(batch.id);
                   setSelectedPageId(null);
+                  setFeedback(null);
                 }}
               >
                 <strong>{batch.sourceName}</strong>
@@ -287,6 +318,14 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
           </div>
 
           <div className="imports-toolbar">
+            <input
+              type="search"
+              value={searchQuery}
+              placeholder="Rechercher un nom"
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+              }}
+            />
             {statusOptions.map((status) => (
               <button
                 key={status}
@@ -299,6 +338,22 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                 {status === "all" ? "Tous" : statusLabels[status]}
               </button>
             ))}
+            {appliedOptions.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                className={`ghost-button ${appliedFilter === filter ? "is-active" : ""}`}
+                onClick={() => {
+                  setAppliedFilter(filter);
+                }}
+              >
+                {filter === "all"
+                  ? "Toutes"
+                  : filter === "applied"
+                    ? "Appliquées"
+                    : "Non appliquées"}
+              </button>
+            ))}
           </div>
 
           <div className="imports-table-scroll">
@@ -307,6 +362,7 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                 <tr>
                   <th>Statut</th>
                   <th>Personnage</th>
+                  <th>Suivi</th>
                   <th>Twitch</th>
                   <th>Organisation</th>
                 </tr>
@@ -323,6 +379,7 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                         className="imports-row-button"
                         onClick={() => {
                           setSelectedPageId(entry.pageId);
+                          setFeedback(null);
                         }}
                       >
                         <span className={`status-pill status-pill-${entry.status}`}>
@@ -336,10 +393,20 @@ export function NotionImportsView({ session, onError }: NotionImportsViewProps) 
                         className="imports-row-button"
                         onClick={() => {
                           setSelectedPageId(entry.pageId);
+                          setFeedback(null);
                         }}
                       >
                         <strong>{entry.fullName}</strong>
                       </button>
+                    </td>
+                    <td>
+                      <span
+                        className={`status-pill ${
+                          entry.appliedCharacterId ? "status-pill-unchanged" : "status-pill-updated"
+                        }`}
+                      >
+                        {entry.appliedCharacterId ? "Appliquée" : "À faire"}
+                      </span>
                     </td>
                     <td>{entry.twitch ?? entry.streamer ?? "-"}</td>
                     <td>{entry.group ?? entry.business ?? "-"}</td>

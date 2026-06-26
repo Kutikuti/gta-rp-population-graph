@@ -585,8 +585,62 @@ const syncImportedRelationships = async (
     return;
   }
 
+  const symmetricRelationships = uniqueRelationships.filter(
+    (relationship) => relationshipDirection(relationship.type) === "symmetric"
+  );
+  const existingSymmetricKeys = new Set<string>();
+
+  if (symmetricRelationships.length > 0) {
+    const existingSymmetricRelationships = await models.CharacterRelationship.findAll({
+      attributes: ["sourceCharacterId", "targetCharacterId", "type"],
+      where: {
+        type: {
+          [Op.in]: [...new Set(symmetricRelationships.map((relationship) => relationship.type))]
+        },
+        [Op.or]: [
+          {
+            sourceCharacterId: characterId,
+            targetCharacterId: {
+              [Op.in]: symmetricRelationships.map((relationship) => relationship.targetCharacterId)
+            }
+          },
+          {
+            targetCharacterId: characterId,
+            sourceCharacterId: {
+              [Op.in]: symmetricRelationships.map((relationship) => relationship.targetCharacterId)
+            }
+          }
+        ]
+      },
+      transaction
+    });
+
+    for (const relationship of existingSymmetricRelationships) {
+      const pair = [relationship.sourceCharacterId, relationship.targetCharacterId]
+        .sort((left, right) => left.localeCompare(right, "fr"))
+        .join(":");
+      existingSymmetricKeys.add(`${relationship.type}:${pair}`);
+    }
+  }
+
+  const relationshipsToCreate = uniqueRelationships.filter((relationship) => {
+    if (relationshipDirection(relationship.type) !== "symmetric") {
+      return true;
+    }
+
+    const pair = [characterId, relationship.targetCharacterId]
+      .sort((left, right) => left.localeCompare(right, "fr"))
+      .join(":");
+
+    return !existingSymmetricKeys.has(`${relationship.type}:${pair}`);
+  });
+
+  if (relationshipsToCreate.length === 0) {
+    return;
+  }
+
   await models.CharacterRelationship.bulkCreate(
-    uniqueRelationships.map((relationship) => ({
+    relationshipsToCreate.map((relationship) => ({
       sourceCharacterId: characterId,
       targetCharacterId: relationship.targetCharacterId,
       type: relationship.type,

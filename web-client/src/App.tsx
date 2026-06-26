@@ -260,7 +260,11 @@ function App() {
           <AdminView session={authSession} onError={handleError} />
         ) : null}
         {activeView === "imports" ? (
-          <NotionImportsView session={authSession} onError={handleError} />
+          <NotionImportsView
+            session={authSession}
+            onDataChanged={refreshAfterModerationChange}
+            onError={handleError}
+          />
         ) : null}
         {activeView === "profile" ? (
           <ProfileView
