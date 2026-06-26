@@ -5,6 +5,8 @@ import {
   changeRequestTypes,
   dataSources,
   lifeStatuses,
+  notionImportBatchStatuses,
+  notionImportEntryStatuses,
   relationshipDirections,
   relationshipTypes,
   roleNames,
@@ -106,6 +108,10 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           type: DataTypes.STRING(160),
           allowNull: false
         },
+        display_name_chosen_at: {
+          type: DataTypes.DATE,
+          allowNull: true
+        },
         avatar_url: {
           type: DataTypes.TEXT,
           allowNull: true
@@ -162,6 +168,83 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
     );
 
     await queryInterface.createTable(
+      "admin_actions",
+      {
+        id: uuidPrimaryKey(DataTypes, literal),
+        actor_user_id: {
+          type: DataTypes.UUID,
+          allowNull: true,
+          references: { model: "users", key: "id" },
+          onUpdate: "CASCADE",
+          onDelete: "SET NULL"
+        },
+        target_user_id: {
+          type: DataTypes.UUID,
+          allowNull: true,
+          references: { model: "users", key: "id" },
+          onUpdate: "CASCADE",
+          onDelete: "SET NULL"
+        },
+        action: {
+          type: DataTypes.STRING(80),
+          allowNull: false
+        },
+        target_type: {
+          type: DataTypes.STRING(80),
+          allowNull: false
+        },
+        target_id: {
+          type: DataTypes.UUID,
+          allowNull: true
+        },
+        changes: {
+          type: DataTypes.JSONB,
+          allowNull: false
+        },
+        ...timestampColumns(DataTypes, literal)
+      },
+      { transaction }
+    );
+
+    await queryInterface.createTable(
+      "notion_import_batches",
+      {
+        id: uuidPrimaryKey(DataTypes, literal),
+        source_name: {
+          type: DataTypes.STRING(160),
+          allowNull: false
+        },
+        source_snapshot: {
+          type: DataTypes.JSONB,
+          allowNull: false
+        },
+        status: {
+          type: enumColumn(DataTypes),
+          allowNull: false,
+          defaultValue: "draft"
+        },
+        report: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+          defaultValue: {}
+        },
+        validated_by_user_id: {
+          type: DataTypes.UUID,
+          allowNull: true,
+          references: { model: "users", key: "id" },
+          onUpdate: "CASCADE",
+          onDelete: "SET NULL"
+        },
+        validated_at: {
+          type: DataTypes.DATE,
+          allowNull: true
+        },
+        ...timestampColumns(DataTypes, literal)
+      },
+      { transaction }
+    );
+
+    await queryInterface.createTable(
       "streamers",
       {
         id: uuidPrimaryKey(DataTypes, literal),
@@ -192,6 +275,10 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       "characters",
       {
         id: uuidPrimaryKey(DataTypes, literal),
+        public_slug: {
+          type: DataTypes.STRING(180),
+          allowNull: false
+        },
         first_name: {
           type: DataTypes.STRING(120),
           allowNull: false
@@ -486,7 +573,94 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       { transaction }
     );
 
+    await queryInterface.createTable(
+      "notion_import_entries",
+      {
+        id: uuidPrimaryKey(DataTypes, literal),
+        batch_id: {
+          type: DataTypes.UUID,
+          allowNull: false,
+          references: { model: "notion_import_batches", key: "id" },
+          onUpdate: "CASCADE",
+          onDelete: "CASCADE"
+        },
+        source_page_id: {
+          type: DataTypes.STRING(240),
+          allowNull: false
+        },
+        source_url: {
+          type: DataTypes.TEXT,
+          allowNull: true
+        },
+        raw_content: {
+          type: DataTypes.JSONB,
+          allowNull: false
+        },
+        content_hash: {
+          type: DataTypes.STRING(64),
+          allowNull: false
+        },
+        previous_content_hash: {
+          type: DataTypes.STRING(64),
+          allowNull: true
+        },
+        status: {
+          type: enumColumn(DataTypes),
+          allowNull: false
+        },
+        mapped_snapshot: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+          defaultValue: {}
+        },
+        mapping_report: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+          defaultValue: {}
+        },
+        last_seen_at: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          defaultValue: literal("CURRENT_TIMESTAMP")
+        },
+        applied_character_id: {
+          type: DataTypes.UUID,
+          allowNull: true,
+          references: { model: "characters", key: "id" },
+          onUpdate: "CASCADE",
+          onDelete: "SET NULL"
+        },
+        applied_by_user_id: {
+          type: DataTypes.UUID,
+          allowNull: true,
+          references: { model: "users", key: "id" },
+          onUpdate: "CASCADE",
+          onDelete: "SET NULL"
+        },
+        applied_at: {
+          type: DataTypes.DATE,
+          allowNull: true
+        },
+        ...timestampColumns(DataTypes, literal)
+      },
+      { transaction }
+    );
+
     await addEnumCheck(queryInterface, "roles", "name", roleNames, transaction);
+    await addEnumCheck(
+      queryInterface,
+      "notion_import_batches",
+      "status",
+      notionImportBatchStatuses,
+      transaction
+    );
+    await addEnumCheck(
+      queryInterface,
+      "notion_import_entries",
+      "status",
+      notionImportEntryStatuses,
+      transaction
+    );
     await addEnumCheck(
       queryInterface,
       "streamers",
@@ -551,6 +725,11 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       name: "characters_name_idx",
       transaction
     });
+    await queryInterface.addIndex("characters", ["public_slug"], {
+      name: "characters_public_slug_idx",
+      unique: true,
+      transaction
+    });
     await queryInterface.addIndex("characters", ["phone_number"], {
       name: "characters_phone_number_idx",
       transaction
@@ -579,8 +758,60 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       name: "change_requests_status_idx",
       transaction
     });
+    await queryInterface.addIndex("change_requests", ["user_id"], {
+      name: "change_requests_user_id_idx",
+      transaction
+    });
+    await queryInterface.addIndex("change_requests", ["character_id"], {
+      name: "change_requests_character_id_idx",
+      transaction
+    });
     await queryInterface.addIndex("change_requests", ["request_type"], {
       name: "change_requests_request_type_idx",
+      transaction
+    });
+    await queryInterface.addIndex("admin_actions", ["actor_user_id"], {
+      name: "admin_actions_actor_user_id_idx",
+      transaction
+    });
+    await queryInterface.addIndex("admin_actions", ["target_user_id"], {
+      name: "admin_actions_target_user_id_idx",
+      transaction
+    });
+    await queryInterface.addIndex("admin_actions", ["target_type"], {
+      name: "admin_actions_target_type_idx",
+      transaction
+    });
+    await queryInterface.addIndex("admin_actions", ["action"], {
+      name: "admin_actions_action_idx",
+      transaction
+    });
+    await queryInterface.addIndex("notion_import_batches", ["status"], {
+      name: "notion_import_batches_status_idx",
+      transaction
+    });
+    await queryInterface.addIndex("notion_import_entries", ["batch_id"], {
+      name: "notion_import_entries_batch_id_idx",
+      transaction
+    });
+    await queryInterface.addIndex("notion_import_entries", ["source_page_id"], {
+      name: "notion_import_entries_source_page_id_idx",
+      transaction
+    });
+    await queryInterface.addIndex("notion_import_entries", ["status"], {
+      name: "notion_import_entries_status_idx",
+      transaction
+    });
+    await queryInterface.addIndex("notion_import_entries", ["applied_character_id"], {
+      name: "notion_import_entries_applied_character_id_idx",
+      transaction
+    });
+    await queryInterface.addIndex("notion_import_entries", ["applied_by_user_id"], {
+      name: "notion_import_entries_applied_by_user_id_idx",
+      transaction
+    });
+    await queryInterface.addIndex("notion_import_entries", ["applied_at"], {
+      name: "notion_import_entries_applied_at_idx",
       transaction
     });
 
@@ -598,6 +829,9 @@ export const down = async ({ context }: MigrationParams<MigrationContext>) => {
   const { queryInterface } = context;
 
   await queryInterface.sequelize.transaction(async (transaction) => {
+    await queryInterface.dropTable("notion_import_entries", { transaction });
+    await queryInterface.dropTable("notion_import_batches", { transaction });
+    await queryInterface.dropTable("admin_actions", { transaction });
     await queryInterface.dropTable("change_histories", { transaction });
     await queryInterface.dropTable("change_requests", { transaction });
     await queryInterface.dropTable("character_relationships", { transaction });
