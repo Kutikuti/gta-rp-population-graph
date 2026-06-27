@@ -22,5 +22,8 @@ export class ApiError extends Error {
 export const notFoundError = (code: string, message: string, details?: JsonObject | null) =>
   new ApiError({ status: 404, code, message, details });
 
+export const badRequestError = (code: string, message: string, details?: JsonObject | null) =>
+  new ApiError({ status: 400, code, message, details });
+
 export const conflictError = (code: string, message: string, details?: JsonObject | null) =>
   new ApiError({ status: 409, code, message, details });

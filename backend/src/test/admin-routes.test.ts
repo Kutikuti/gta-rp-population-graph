@@ -270,11 +270,11 @@ const loginAs = async (agent: ReturnType<typeof request.agent>, code: keyof type
   await agent.get("/api/auth/google/callback").query({ code, state });
 };
 
-const createFixtureApp = () =>
+const createFixtureApp = (adminService: AdminService = new FixtureAdminService()) =>
   createApp({
     authService: new FixtureAuthService(),
     googleOauthClient: new FixtureGoogleOauthClient(),
-    adminService: new FixtureAdminService()
+    adminService
   });
 
 describe("admin routes", () => {
@@ -359,6 +359,50 @@ describe("admin routes", () => {
       characterId: "00000000-0000-4000-8000-000000000301",
       photoUrl: "/uploads/characters/ada-photo.webp"
     });
+  });
+
+  it("returns 400 when notion photo import fails with a request-style validation error", async () => {
+    class InvalidPhotoAdminService extends FixtureAdminService {
+      override async importNotionImportEntryPhoto() {
+        return {
+          status: "invalid" as const,
+          code: "NOTION_IMPORT_ENTRY_INVALID_PHOTO",
+          message: "La photo distante a été refusée."
+        };
+      }
+    }
+
+    const agent = request.agent(createFixtureApp(new InvalidPhotoAdminService()));
+    await loginAs(agent, "administrator");
+
+    const response = await agent.post(
+      `/api/admin/notion-imports/${notionImportBatch.id}/entries/page-ada/import-photo`
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("NOTION_IMPORT_ENTRY_INVALID_PHOTO");
+  });
+
+  it("returns 404 when notion photo import targets a missing applied character", async () => {
+    class MissingCharacterAdminService extends FixtureAdminService {
+      override async importNotionImportEntryPhoto() {
+        return {
+          status: "invalid" as const,
+          code: "NOTION_IMPORT_ENTRY_CHARACTER_NOT_FOUND",
+          message: "Le personnage lié à cette fiche importée est introuvable."
+        };
+      }
+    }
+
+    const agent = request.agent(createFixtureApp(new MissingCharacterAdminService()));
+    await loginAs(agent, "administrator");
+
+    const response = await agent.post(
+      `/api/admin/notion-imports/${notionImportBatch.id}/entries/page-ada/import-photo`
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe("NOTION_IMPORT_ENTRY_CHARACTER_NOT_FOUND");
   });
 
   it("validates tag creation payloads", async () => {

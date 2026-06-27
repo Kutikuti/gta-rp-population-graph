@@ -2,9 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { roleNames, tagTypes } from "../db/enums.js";
-import { conflictError, notFoundError } from "../middleware/api-error.js";
+import { badRequestError, conflictError, notFoundError } from "../middleware/api-error.js";
 import { requireRole } from "../middleware/auth.js";
 import { type AdminService, SequelizeAdminService } from "../services/admin.js";
+import type {
+  AdminNotionImportApplyResult,
+  AdminNotionImportPhotoResult
+} from "../services/admin-notion-imports.js";
 
 const nullableText = (max: number) =>
   z
@@ -28,6 +32,28 @@ const roleInputSchema = z.object({
 const banInputSchema = z.object({
   reason: z.string().trim().min(3).max(800)
 });
+
+const notionImportEntryNotFoundError = () =>
+  notFoundError("NOTION_IMPORT_ENTRY_NOT_FOUND", "Entrée d'import Notion introuvable.");
+
+const notionImportInvalidError = (
+  result: Extract<
+    AdminNotionImportApplyResult | AdminNotionImportPhotoResult,
+    { status: "invalid" }
+  >
+) => {
+  switch (result.code) {
+    case "NOTION_IMPORT_ENTRY_INVALID_SNAPSHOT":
+    case "NOTION_IMPORT_ENTRY_PHOTO_REQUIRES_APPLY":
+    case "NOTION_IMPORT_ENTRY_NO_PHOTO":
+    case "NOTION_IMPORT_ENTRY_INVALID_PHOTO":
+      return badRequestError(result.code, result.message, result.details ?? null);
+    case "NOTION_IMPORT_ENTRY_CHARACTER_NOT_FOUND":
+      return notFoundError(result.code, result.message, result.details ?? null);
+    default:
+      return conflictError(result.code, result.message, result.details ?? null);
+  }
+};
 
 export const createAdminRouter = (adminService: AdminService = new SequelizeAdminService()) => {
   const router = Router();
@@ -81,11 +107,11 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       });
 
       if (result.status === "not_found") {
-        throw notFoundError("NOTION_IMPORT_ENTRY_NOT_FOUND", "Entrée d'import Notion introuvable.");
+        throw notionImportEntryNotFoundError();
       }
 
       if (result.status === "invalid") {
-        throw conflictError(result.code, result.message, result.details ?? null);
+        throw notionImportInvalidError(result);
       }
 
       response.json(result);
@@ -105,14 +131,11 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
         });
 
         if (result.status === "not_found") {
-          throw notFoundError(
-            "NOTION_IMPORT_ENTRY_NOT_FOUND",
-            "Entrée d'import Notion introuvable."
-          );
+          throw notionImportEntryNotFoundError();
         }
 
         if (result.status === "invalid") {
-          throw conflictError(result.code, result.message, result.details ?? null);
+          throw notionImportInvalidError(result);
         }
 
         response.json(result);

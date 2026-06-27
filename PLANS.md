@@ -1009,7 +1009,7 @@ Point de controle :
 
 ### Etape 10 - Durcissement qualite et securite
 
-Statut : en cours le 2026-06-27.
+Statut : terminee le 2026-06-27.
 
 - Revue des validations d'entree, autorisations, rate limits, logs et gestion
   d'erreurs.
@@ -1098,25 +1098,30 @@ Premiere passe realisee :
   refus d'import avant application de fiche, absence de photo exploitable,
   rejet d'image invalide, suppression de l'ancienne photo apres succes et
   nettoyage de la nouvelle photo si une transaction echoue ensuite.
+- Les erreurs metier Notion remontees au front admin ont ete mieux harmonisees
+  entre backend et frontend : la route admin distingue maintenant plus
+  clairement les cas `400`, `404` et `409` pour l'application/import photo,
+  et les helpers frontend couvrent aussi les codes metier jusque-la omis.
+- Cote frontend, la petite duplication restante sur les traductions
+  d'`ApiRequestError` a ete reduite avec un helper partage dedie, ce qui rend
+  les mappings d'erreurs admin et imports Notion plus coherents et plus simples
+  a etendre.
 
-Points de refactor identifies pour la suite de l'etape :
+Risques residuels et suites non bloquantes :
 
-- Cote frontend, les vues back-office les plus lourdes ont recu une premiere
-  passe de decoupage (`NotionImportsView`, `ModerationView`, `AdminView`).
-  Le risque principal se deplace maintenant vers la consolidation des
-  utilitaires partages et vers les gros fichiers Notion restants.
-- Le pipeline Notion est devenu plus robuste, mais ses fichiers principaux
-  restent volumineux : `notion-scraper.ts`, `notion-import.ts` et
-  `admin-notion-imports.ts` meritent maintenant une passe de decoupage par
-  responsabilites pour reduire le cout de maintenance et fiabiliser les
-  futures evolutions.
-- Les trois gros fichiers Notion qui concentraient la complexite
-  (`notion-import.ts`, `notion-scraper.ts`, `admin-notion-imports.ts`) ont
-  maintenant recu une premiere vraie passe de decoupage. La suite la plus utile
-  n'est plus un split structurel generaliste, mais une seconde passe plus fine
-  sur les points chauds restants si besoin: appels reseau/rate-limit Notion,
-  mutualisation supplementaire des validations admin, et eventuels tests
-  backend plus cibles sur l'application des imports.
+- Les gros services Notion ont recu leur premiere vraie passe de decoupage.
+  Une seconde passe plus fine pourra etre faite plus tard si la zone rebouge,
+  mais ce n'est plus un prerequis de stabilisation.
+- Les appels reseau Notion sont mieux proteges contre les erreurs transitoires,
+  mais la source publique reste structurellement fragile a des changements
+  externes de format ou de politique de rate-limit.
+- Les tests backend couvrent mieux l'application/import photo Notion, mais ils
+  restent majoritairement bases sur mocks pour cette couche. Une couverture
+  d'integration plus profonde serait utile plus tard si l'environnement de test
+  de base devient plus simple a piloter.
+- Le frontend admin a maintenant des helpers d'erreurs plus coherents, mais une
+  mutualisation plus large pourra encore etre faite si d'autres espaces
+  proteges accumulent beaucoup de traductions metier.
 
 Point de controle :
 

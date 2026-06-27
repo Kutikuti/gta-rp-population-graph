@@ -1,5 +1,5 @@
 import type { AdminTag, AdminTagInput } from "../api";
-import { ApiRequestError } from "../api";
+import { apiErrorMessage } from "./api-error-shared";
 
 export const emptyTagInput: AdminTagInput = {
   name: "",
@@ -46,22 +46,11 @@ export const normalizeTagInput = (input: AdminTagInput): AdminTagInput => ({
 });
 
 export const adminErrorMessage = (error: unknown) => {
-  if (!(error instanceof ApiRequestError)) {
-    return "L'action d'administration a échoué.";
-  }
-
-  switch (error.code) {
-    case "VALIDATION_ERROR":
-      return "Les données saisies sont invalides. Vérifie les champs du formulaire.";
-    case "TAG_IN_USE":
-      return "Ce tag est encore utilisé par des fiches et ne peut pas être supprimé.";
-    case "LAST_ADMIN":
-      return "Impossible de retirer le dernier administrateur actif.";
-    case "TAG_NOT_FOUND":
-      return "Ce tag n'existe plus ou a déjà été supprimé.";
-    case "USER_NOT_FOUND":
-      return "Cet utilisateur n'existe plus ou n'est plus disponible.";
-    default:
-      return error.message || "L'action d'administration a échoué.";
-  }
+  return apiErrorMessage(error, "L'action d'administration a échoué.", {
+    VALIDATION_ERROR: "Les données saisies sont invalides. Vérifie les champs du formulaire.",
+    TAG_IN_USE: "Ce tag est encore utilisé par des fiches et ne peut pas être supprimé.",
+    LAST_ADMIN: "Impossible de retirer le dernier administrateur actif.",
+    TAG_NOT_FOUND: "Ce tag n'existe plus ou a déjà été supprimé.",
+    USER_NOT_FOUND: "Cet utilisateur n'existe plus ou n'est plus disponible."
+  });
 };

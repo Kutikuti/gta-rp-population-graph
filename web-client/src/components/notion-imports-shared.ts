@@ -4,8 +4,8 @@ import type {
   LifeStatus,
   VerificationStatus
 } from "../api";
-import { ApiRequestError } from "../api";
 import { lifeStatusLabels, verificationLabels } from "../constants";
+import { apiErrorMessage } from "./api-error-shared";
 
 export const notionImportStatusLabels: Record<AdminNotionImportEntry["status"], string> = {
   new: "Nouveau",
@@ -45,41 +45,30 @@ export const formatNotionVerificationStatus = (snapshot: Record<string, unknown>
 };
 
 export const notionImportApplyErrorMessage = (error: unknown) => {
-  if (!(error instanceof ApiRequestError)) {
-    return "La fiche importée n'a pas pu être appliquée.";
-  }
-
-  switch (error.code) {
-    case "NOTION_IMPORT_ENTRY_NOT_APPLICABLE":
-      return "Cette entrée est en erreur ou absente de la source, elle ne peut pas être appliquée.";
-    case "NOTION_IMPORT_ENTRY_INVALID_SNAPSHOT":
-      return "Le snapshot mappé est incomplet. Corrige d'abord le mapping.";
-    case "NOTION_IMPORT_ENTRY_AMBIGUOUS_CHARACTER":
-      return "Plusieurs fiches existantes correspondent déjà à ce nom. Le rattachement manuel sera nécessaire.";
-    case "NOTION_IMPORT_ENTRY_UNRESOLVED_RELATIONSHIPS":
-      return "Certaines relations restent ambiguës. Le rattachement automatique a été bloqué pour éviter une mauvaise liaison.";
-    case "NOTION_IMPORT_ENTRY_NOT_FOUND":
-      return "Cette entrée d'import n'existe plus.";
-    default:
-      return error.message || "La fiche importée n'a pas pu être appliquée.";
-  }
+  return apiErrorMessage(error, "La fiche importée n'a pas pu être appliquée.", {
+    NOTION_IMPORT_ENTRY_NOT_APPLICABLE:
+      "Cette entrée est en erreur ou absente de la source, elle ne peut pas être appliquée.",
+    NOTION_IMPORT_ENTRY_INVALID_SNAPSHOT:
+      "Le snapshot mappé est incomplet. Corrige d'abord le mapping.",
+    NOTION_IMPORT_ENTRY_AMBIGUOUS_CHARACTER:
+      "Plusieurs fiches existantes correspondent déjà à ce nom. Le rattachement manuel sera nécessaire.",
+    NOTION_IMPORT_ENTRY_UNRESOLVED_RELATIONSHIPS:
+      "Certaines relations restent ambiguës. Le rattachement automatique a été bloqué pour éviter une mauvaise liaison.",
+    NOTION_IMPORT_ENTRY_NOT_FOUND: "Cette entrée d'import n'existe plus."
+  });
 };
 
 export const notionImportPhotoErrorMessage = (error: unknown) => {
-  if (!(error instanceof ApiRequestError)) {
-    return "La photo Notion n'a pas pu être importée.";
-  }
-
-  switch (error.code) {
-    case "NOTION_IMPORT_ENTRY_PHOTO_REQUIRES_APPLY":
-      return "Applique d'abord la fiche avant d'importer sa photo.";
-    case "NOTION_IMPORT_ENTRY_NO_PHOTO":
-      return "Cette fiche importée ne contient pas de photo exploitable.";
-    case "NOTION_IMPORT_ENTRY_INVALID_PHOTO":
-      return error.message || "La photo distante a été refusée par le pipeline de sécurité.";
-    case "NOTION_IMPORT_ENTRY_NOT_FOUND":
-      return "Cette entrée d'import n'existe plus.";
-    default:
-      return error.message || "La photo Notion n'a pas pu être importée.";
-  }
+  return apiErrorMessage(error, "La photo Notion n'a pas pu être importée.", {
+    NOTION_IMPORT_ENTRY_PHOTO_REQUIRES_APPLY:
+      "Applique d'abord la fiche avant d'importer sa photo.",
+    NOTION_IMPORT_ENTRY_INVALID_SNAPSHOT:
+      "Le snapshot mappé est incomplet. Corrige d'abord le mapping.",
+    NOTION_IMPORT_ENTRY_NO_PHOTO: "Cette fiche importée ne contient pas de photo exploitable.",
+    NOTION_IMPORT_ENTRY_INVALID_PHOTO:
+      "La photo distante a été refusée par le pipeline de sécurité.",
+    NOTION_IMPORT_ENTRY_CHARACTER_NOT_FOUND:
+      "Le personnage lié à cette fiche importée est introuvable.",
+    NOTION_IMPORT_ENTRY_NOT_FOUND: "Cette entrée d'import n'existe plus."
+  });
 };
