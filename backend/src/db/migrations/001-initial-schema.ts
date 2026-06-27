@@ -207,6 +207,27 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
     );
 
     await queryInterface.createTable(
+      "user_sessions",
+      {
+        sid: {
+          type: DataTypes.STRING(255),
+          allowNull: false,
+          primaryKey: true
+        },
+        data: {
+          type: DataTypes.JSONB,
+          allowNull: false
+        },
+        expires_at: {
+          type: DataTypes.DATE,
+          allowNull: false
+        },
+        ...timestampColumns(DataTypes, literal)
+      },
+      { transaction }
+    );
+
+    await queryInterface.createTable(
       "notion_import_batches",
       {
         id: uuidPrimaryKey(DataTypes, literal),

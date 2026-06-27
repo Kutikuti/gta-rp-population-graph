@@ -94,6 +94,17 @@ export class AdminAction extends Model<
   declare targetUser?: NonAttribute<User | null>;
 }
 
+export class UserSession extends Model<
+  InferAttributes<UserSession>,
+  InferCreationAttributes<UserSession>
+> {
+  declare sid: string;
+  declare data: JsonObject;
+  declare expiresAt: Date;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
 export class NotionImportBatch extends Model<
   InferAttributes<NotionImportBatch>,
   InferCreationAttributes<NotionImportBatch>
@@ -367,6 +378,31 @@ export const initModels = (sequelize: Sequelize) => {
         { fields: ["target_type"] },
         { fields: ["action"] }
       ]
+    }
+  );
+
+  UserSession.init(
+    {
+      sid: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        primaryKey: true
+      },
+      data: {
+        type: DataTypes.JSONB,
+        allowNull: false
+      },
+      expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false
+      },
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
+    },
+    {
+      sequelize,
+      tableName: "user_sessions",
+      indexes: [{ fields: ["expires_at"] }]
     }
   );
 

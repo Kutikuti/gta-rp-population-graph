@@ -38,6 +38,8 @@ const envSchema = z
     SESSION_COOKIE_NAME: z.string().min(1).default("gta_rp_session"),
     SESSION_COOKIE_SECURE: booleanFromString,
     SESSION_COOKIE_SAME_SITE: z.enum(["lax", "strict", "none"]).default("lax"),
+    SESSION_TTL_HOURS: numberFromString(168),
+    SESSION_CLEANUP_INTERVAL_MINUTES: numberFromString(60),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     GOOGLE_CALLBACK_URL: z.url().optional(),

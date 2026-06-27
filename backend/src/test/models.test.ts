@@ -34,7 +34,8 @@ describe("database models", () => {
       "Role",
       "Streamer",
       "Tag",
-      "User"
+      "User",
+      "UserSession"
     ]);
   });
 

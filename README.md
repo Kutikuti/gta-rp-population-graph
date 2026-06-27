@@ -298,6 +298,10 @@ Flux local actuel :
 - Google renvoie ensuite vers `/api/auth/google/callback`.
 - Le frontend relit la session via `/api/auth/session` et affiche le compte
   connecte dans l'en-tete.
+- Hors environnement de test, la session serveur est maintenant stockee en
+  PostgreSQL : un redemarrage du backend ne doit donc plus deconnecter
+  l'utilisateur tant que le cookie navigateur reste present et que la migration
+  de session a bien ete appliquee.
 
 Points utiles en local :
 

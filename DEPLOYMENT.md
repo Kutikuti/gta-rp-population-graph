@@ -46,6 +46,8 @@ Variables critiques :
 - `SESSION_SECRET`
 - `SESSION_COOKIE_SECURE=true`
 - `SESSION_COOKIE_SAME_SITE`
+- `SESSION_TTL_HOURS`
+- `SESSION_CLEANUP_INTERVAL_MINUTES`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `GOOGLE_CALLBACK_URL`
@@ -58,6 +60,12 @@ Variables critiques :
 - `PHOTO_DRAFT_MAX_AGE_HOURS`
 
 `SESSION_SECRET` doit etre long, aleatoire et different de la valeur d'exemple.
+
+Le backend utilise desormais un store de session persistant en PostgreSQL pour
+eviter la perte des sessions lors des redemarrages applicatifs. Les sessions
+sont stockees dans la table `user_sessions`, avec une expiration serveur
+pilotee par `SESSION_TTL_HOURS` et un nettoyage periodique des lignes expirees
+toutes les `SESSION_CLEANUP_INTERVAL_MINUTES`.
 
 Par defaut, les photos sont stockees sous `backend/storage/uploads`, ignore par
 Git. En production, conserver ce dossier hors du repertoire servi directement
@@ -106,6 +114,10 @@ npm run db:migrate:pending
 ```
 
 Le dernier `pending` doit retourner une liste vide.
+
+La migration `002-session-store.ts` cree la table `user_sessions` necessaire au
+store de session persistant. Tant qu'elle n'est pas appliquee, l'API ne doit
+pas etre redemarree en production ou en environnement partage.
 
 La migration des slugs publics de personnages backfill automatiquement la
 colonne `public_slug` a partir du nom et prenom existants, au format lisible

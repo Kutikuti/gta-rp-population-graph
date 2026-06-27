@@ -1,6 +1,5 @@
 import type express from "express";
 import { Router } from "express";
-import session from "express-session";
 
 import { env } from "../config/env.js";
 import { destroySession, regenerateSession } from "../middleware/auth.js";
@@ -17,18 +16,6 @@ export type AuthRouterDependencies = {
   authService: AuthService;
   googleOauthClient: GoogleOauthClient;
 };
-
-export const sessionMiddleware = session({
-  secret: env.SESSION_SECRET,
-  name: env.SESSION_COOKIE_NAME,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: env.SESSION_COOKIE_SAME_SITE,
-    secure: env.NODE_ENV === "production" && env.SESSION_COOKIE_SECURE
-  }
-});
 
 const sessionPayload = (request: express.Request) =>
   request.currentUser

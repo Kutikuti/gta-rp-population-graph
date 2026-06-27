@@ -4,10 +4,11 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
 import { env } from "./config/env.js";
+import { sessionMiddleware } from "./config/session.js";
 import { loadCurrentUser } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { createAdminRouter } from "./routes/admin.js";
-import { createAuthRouter, sessionMiddleware } from "./routes/auth.js";
+import { createAuthRouter } from "./routes/auth.js";
 import { createContributionsRouter } from "./routes/contributions.js";
 import { healthRouter } from "./routes/health.js";
 import { createModerationRouter } from "./routes/moderation.js";

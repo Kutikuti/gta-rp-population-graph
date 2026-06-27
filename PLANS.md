@@ -875,7 +875,7 @@ Bilan final :
 
 ### Etape 9 - Import Notion
 
-Statut : en cours avance.
+Statut : terminee le 2026-06-27.
 
 - Creer un importeur page par page pour la source Notion communautaire.
 - Stocker les donnees brutes importees.
@@ -992,14 +992,14 @@ Realisation actuelle :
   relations informatives hors graphe comme `ancien personnage`, avec evitemment
   des doublons symetriques deja connus.
 
-Reste a verrouiller avant cloture :
+Validation de cloture :
 
-- consolider les tests backend figes autour du parsing Notion et des cas
-  ambigus ;
-- verifier de bout en bout la gestion des fiches marquees `missing` sur des
-  imports successifs ;
-- relire la documentation operateur finale pour figer le workflow
-  scrape -> revue -> application fiche par fiche -> import photo.
+- Les tests backend figes couvrent le mapping d'import, le replay avec statuts
+  `new` / `updated` / `unchanged` / `missing`, le scraper Notion, les mentions
+  de pages dans les relations, les photos Notion securisees et les routes admin
+  de previsualisation/application/import photo.
+- La documentation operateur a ete alignee sur le workflow reel :
+  scrape -> revue admin -> application fiche par fiche -> import photo.
 
 Point de controle :
 
@@ -1008,6 +1008,8 @@ Point de controle :
 - Les erreurs de parsing sont visibles et non silencieuses.
 
 ### Etape 10 - Durcissement qualite et securite
+
+Statut : en cours le 2026-06-27.
 
 - Revue des validations d'entree, autorisations, rate limits, logs et gestion
   d'erreurs.
@@ -1019,6 +1021,17 @@ Point de controle :
 - Ajouter ou renforcer les tests sur les zones sensibles.
 - Faire un point de refactor : duplication, complexite, permissions, structure
   frontend et lisibilite des services backend.
+
+Premiere passe realisee :
+
+- Store de session memoire remplace hors tests par un store persistant
+  PostgreSQL, pour eviter la perte de session lors des redemarrages backend.
+- Table `user_sessions` ajoutee au schema et a la pile de migrations, avec
+  expiration serveur et nettoyage periodique.
+- Configuration des sessions extraite dans un module dedie pour clarifier le
+  branchement applicatif et limiter le couplage avec la route OAuth.
+- Tests ajoutes sur le calcul d'expiration des sessions et validations relancees
+  sur les routes d'authentification.
 
 Point de controle :
 
