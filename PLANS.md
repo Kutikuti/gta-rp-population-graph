@@ -1071,6 +1071,19 @@ Premiere passe realisee :
   extraction des mutations d'approbation et d'edition directe vers un module
   dedie, pour mieux separer validation, orchestration de service et application
   effective des changements sur les fiches.
+- `notion-import.ts` a commence sa passe de decoupage avec extraction des
+  schemas d'entree dans `notion-import-schema.ts` et du mapping/rapport dans
+  `notion-import-mapping.ts`, tout en conservant la persistance et le plan
+  d'import dans le service principal pour limiter le risque de regression.
+- `notion-scraper.ts` a recu a son tour une extraction des types et helpers
+  purs vers `notion-scraper-shared.ts`, ce qui laisse dans le fichier principal
+  les appels reseau Notion, l'hydratation des dependances manquantes et
+  l'orchestration du scrape public.
+- `admin-notion-imports.ts` a ete decoupe a son tour entre un module partage
+  de types/serializers/parsing (`admin-notion-imports-shared.ts`) et un module
+  de persistance metier (`admin-notion-imports-persistence.ts`) pour alleguer
+  le service principal sans modifier les flux d'application de fiche et
+  d'import photo.
 
 Points de refactor identifies pour la suite de l'etape :
 
@@ -1083,10 +1096,13 @@ Points de refactor identifies pour la suite de l'etape :
   `admin-notion-imports.ts` meritent maintenant une passe de decoupage par
   responsabilites pour reduire le cout de maintenance et fiabiliser les
   futures evolutions.
-- La prochaine passe recommandee est de commencer par `notion-import.ts`,
-  ensuite `notion-scraper.ts`, puis `admin-notion-imports.ts`, afin de
-  conserver des diffs relisibles et de limiter le risque sur le workflow
-  d'import/apply.
+- Les trois gros fichiers Notion qui concentraient la complexite
+  (`notion-import.ts`, `notion-scraper.ts`, `admin-notion-imports.ts`) ont
+  maintenant recu une premiere vraie passe de decoupage. La suite la plus utile
+  n'est plus un split structurel generaliste, mais une seconde passe plus fine
+  sur les points chauds restants si besoin: appels reseau/rate-limit Notion,
+  mutualisation supplementaire des validations admin, et eventuels tests
+  backend plus cibles sur l'application des imports.
 
 Point de controle :
 
