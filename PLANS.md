@@ -1088,6 +1088,16 @@ Premiere passe realisee :
   sur les reponses `5xx` et sur certaines erreurs reseau transitoires, plus
   des tests dedies pour eviter une regression silencieuse sur le comportement
   de reprise apres erreur.
+- La couverture backend sur l'import Notion ne repose plus seulement sur les
+  routes admin : des tests unitaires ciblent maintenant le service
+  `SequelizeAdminNotionImportService` sur des cas sensibles comme
+  l'ambiguite de rattachement de fiche, l'ambiguite de relations importees et
+  la regeneration du slug public quand un import modifie le nom public d'un
+  personnage.
+- Cette couverture a aussi ete etendue aux chemins photo sensibles :
+  refus d'import avant application de fiche, absence de photo exploitable,
+  rejet d'image invalide, suppression de l'ancienne photo apres succes et
+  nettoyage de la nouvelle photo si une transaction echoue ensuite.
 
 Points de refactor identifies pour la suite de l'etape :
 
