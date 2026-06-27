@@ -23,39 +23,80 @@ import {
   schemaNameByPropertyId,
   splitTitleName,
   textBlocks,
+  transientRetryDelayMs,
   unwrapRecordValue
 } from "./notion-scraper-shared.js";
+
+const isRetryableFetchError = (error: unknown) =>
+  error instanceof TypeError || (error instanceof Error && error.name === "AbortError");
+
+const requestNotionRecordMap = async (input: {
+  url: string;
+  body: Record<string, unknown>;
+  fetchImpl: FetchLike;
+  attempt: number;
+  failureMessage: string;
+}): Promise<NotionRecordMap> => {
+  let response: Response;
+
+  try {
+    response = await input.fetchImpl(input.url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify(input.body)
+    });
+  } catch (error) {
+    if (isRetryableFetchError(error) && input.attempt < maxRateLimitRetries) {
+      await delay(transientRetryDelayMs(input.attempt));
+      return requestNotionRecordMap({
+        ...input,
+        attempt: input.attempt + 1
+      });
+    }
+
+    throw error;
+  }
+
+  if ((response.status === 429 || response.status >= 500) && input.attempt < maxRateLimitRetries) {
+    await delay(
+      response.status === 429
+        ? retryDelayMs(response, input.attempt)
+        : transientRetryDelayMs(input.attempt)
+    );
+    return requestNotionRecordMap({
+      ...input,
+      attempt: input.attempt + 1
+    });
+  }
+
+  if (!response.ok) {
+    throw new Error(`${input.failureMessage}: HTTP ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { recordMap?: NotionRecordMap };
+  return payload.recordMap ?? (payload as NotionRecordMap);
+};
 
 const loadPageChunk = async (
   pageId: string,
   fetchImpl: FetchLike,
   attempt = 0
 ): Promise<NotionRecordMap> => {
-  const response = await fetchImpl("https://www.notion.so/api/v3/loadPageChunk", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
+  return requestNotionRecordMap({
+    url: "https://www.notion.so/api/v3/loadPageChunk",
+    body: {
       pageId,
       limit: 100,
       cursor: { stack: [] },
       chunkNumber: 0,
       verticalColumns: false
-    })
+    },
+    fetchImpl,
+    attempt,
+    failureMessage: `Notion a refuse le chargement de la page ${pageId}`
   });
-
-  if (response.status === 429 && attempt < maxRateLimitRetries) {
-    await delay(retryDelayMs(response, attempt));
-    return loadPageChunk(pageId, fetchImpl, attempt + 1);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Notion a refuse le chargement de la page ${pageId}: HTTP ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { recordMap?: NotionRecordMap };
-  return payload.recordMap ?? (payload as NotionRecordMap);
 };
 
 const syncRecordValues = async (
@@ -64,12 +105,9 @@ const syncRecordValues = async (
   fetchImpl: FetchLike,
   attempt = 0
 ): Promise<NotionRecordMap> => {
-  const response = await fetchImpl("https://www.notion.so/api/v3/syncRecordValues", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
+  return requestNotionRecordMap({
+    url: "https://www.notion.so/api/v3/syncRecordValues",
+    body: {
       requests: pageIds.map((id) => ({
         pointer: {
           table: "block",
@@ -78,20 +116,11 @@ const syncRecordValues = async (
         },
         version: -1
       }))
-    })
+    },
+    fetchImpl,
+    attempt,
+    failureMessage: "Notion a refuse le chargement batch"
   });
-
-  if (response.status === 429 && attempt < maxRateLimitRetries) {
-    await delay(retryDelayMs(response, attempt));
-    return syncRecordValues(pageIds, spaceId, fetchImpl, attempt + 1);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Notion a refuse le chargement batch: HTTP ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { recordMap?: NotionRecordMap };
-  return payload.recordMap ?? (payload as NotionRecordMap);
 };
 
 const hydrateMissingPageDependencies = async (

@@ -69,6 +69,8 @@ export const retryDelayMs = (response: Response, attempt: number) => {
   return Math.min(30_000, 1_500 * 2 ** attempt);
 };
 
+export const transientRetryDelayMs = (attempt: number) => Math.min(30_000, 1_000 * 2 ** attempt);
+
 export const unwrapRecordValue = <T>(
   record: { value?: T | { value?: T } } | undefined
 ): T | null => {

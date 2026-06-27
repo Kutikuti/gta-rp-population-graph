@@ -1084,6 +1084,10 @@ Premiere passe realisee :
   de persistance metier (`admin-notion-imports-persistence.ts`) pour alleguer
   le service principal sans modifier les flux d'application de fiche et
   d'import photo.
+- Le client Notion du scraper a ete durci avec un retry explicite sur `429`,
+  sur les reponses `5xx` et sur certaines erreurs reseau transitoires, plus
+  des tests dedies pour eviter une regression silencieuse sur le comportement
+  de reprise apres erreur.
 
 Points de refactor identifies pour la suite de l'etape :
 

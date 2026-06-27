@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { extractNotionPageId, scrapePublicNotionPage } from "../services/notion-scraper.js";
 
@@ -9,6 +9,10 @@ const jsonResponse = (body: unknown) =>
   });
 
 describe("notion scraper", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("extracts a dashed Notion page id from a public URL", () => {
     expect(
       extractNotionPageId(
@@ -176,6 +180,152 @@ describe("notion scraper", () => {
     expect(input.pages[0]?.properties).toMatchObject({
       Tags: ["Famille", "Tech"],
       Relations: ["couple: Grace Hopper", "sibling: Byron Lovelace"]
+    });
+  });
+
+  it("retries loadPageChunk after a transient 429 response", async () => {
+    vi.useFakeTimers();
+    const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
+    const fetchMock = vi
+      .fn<(_url: string, init?: RequestInit) => Promise<Response>>()
+      .mockImplementationOnce(async () => {
+        return new Response("rate limited", {
+          status: 429,
+          headers: { "retry-after": "0" }
+        });
+      })
+      .mockImplementationOnce(async (_url, init) => {
+        const body = JSON.parse(String(init?.body));
+
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [body.pageId]: {
+                value: {
+                  id: body.pageId,
+                  type: "page",
+                  properties: { title: [["Flashback Whitelist V6"]] }
+                }
+              }
+            }
+          }
+        });
+      });
+
+    const promise = scrapePublicNotionPage(
+      "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+      { fetch: fetchMock }
+    );
+
+    await vi.runAllTimersAsync();
+    const input = await promise;
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(input.pages).toEqual([
+      {
+        pageId: rootId,
+        url: "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+        properties: {
+          Prenom: "Flashback Whitelist",
+          Nom: "V6",
+          "Titre Notion": "Flashback Whitelist V6"
+        }
+      }
+    ]);
+
+    vi.useRealTimers();
+  });
+
+  it("retries syncRecordValues after a transient network failure", async () => {
+    vi.useFakeTimers();
+    const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
+    const characterId = "11111111-2222-4333-8444-555555555555";
+    const fetchMock = vi
+      .fn<(_url: string, init?: RequestInit) => Promise<Response>>()
+      .mockImplementationOnce(async () =>
+        jsonResponse({
+          recordMap: {
+            block: {
+              [rootId]: {
+                value: {
+                  id: rootId,
+                  type: "page",
+                  properties: { title: [["Flashback Whitelist V6"]] },
+                  content: [characterId]
+                }
+              }
+            },
+            collection_view: {
+              "view-1": {
+                value: {
+                  id: "view-1",
+                  type: "table",
+                  page_sort: [characterId],
+                  format: {
+                    collection_pointer: {
+                      id: "collection-1",
+                      spaceId: "space-1"
+                    }
+                  }
+                }
+              }
+            },
+            collection: {
+              "collection-1": {
+                value: {
+                  id: "collection-1",
+                  schema: {
+                    title: { name: "Titre" },
+                    streamer: { name: "Streamer" }
+                  }
+                }
+              }
+            }
+          }
+        })
+      )
+      .mockImplementationOnce(async () => {
+        throw new TypeError("fetch failed");
+      })
+      .mockImplementationOnce(async (_url, init) => {
+        const body = JSON.parse(String(init?.body));
+        const requestedId = body.requests[0]?.pointer?.id;
+
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [requestedId]: {
+                value: {
+                  id: requestedId,
+                  type: "page",
+                  properties: {
+                    title: [["Ada Lovelace"]],
+                    streamer: [["AdaLive"]]
+                  }
+                }
+              }
+            }
+          }
+        });
+      });
+
+    const promise = scrapePublicNotionPage(
+      "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+      { fetch: fetchMock }
+    );
+
+    await vi.runAllTimersAsync();
+    const input = await promise;
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(input.pages[0]).toMatchObject({
+      pageId: characterId,
+      properties: {
+        Prenom: "Ada",
+        Nom: "Lovelace",
+        Streamer: "AdaLive",
+        "Titre Notion": "Ada Lovelace"
+      }
     });
   });
 
