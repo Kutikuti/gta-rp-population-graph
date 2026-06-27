@@ -108,6 +108,77 @@ describe("notion scraper", () => {
     });
   });
 
+  it("merges duplicated text properties instead of overwriting earlier values", async () => {
+    const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
+    const characterId = "11111111-2222-4333-8444-555555555555";
+    const fetchMock = async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+
+      if (body.pageId === rootId) {
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [rootId]: {
+                value: {
+                  id: rootId,
+                  type: "page",
+                  properties: { title: [["Flashback Whitelist V6"]] },
+                  content: [characterId]
+                }
+              },
+              [characterId]: {
+                value: {
+                  id: characterId,
+                  type: "page",
+                  properties: { title: [["Ada Lovelace"]] }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      return jsonResponse({
+        recordMap: {
+          block: {
+            [characterId]: {
+              value: {
+                id: characterId,
+                type: "page",
+                properties: { title: [["Ada Lovelace"]] },
+                content: ["text-1", "text-2"]
+              }
+            },
+            "text-1": {
+              value: {
+                id: "text-1",
+                type: "text",
+                properties: { title: [["Tags: Famille\nRelations: couple: Grace Hopper"]] }
+              }
+            },
+            "text-2": {
+              value: {
+                id: "text-2",
+                type: "text",
+                properties: { title: [["Tags: Tech\nRelations: sibling: Byron Lovelace"]] }
+              }
+            }
+          }
+        }
+      });
+    };
+
+    const input = await scrapePublicNotionPage(
+      "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+      { fetch: fetchMock }
+    );
+
+    expect(input.pages[0]?.properties).toMatchObject({
+      Tags: ["Famille", "Tech"],
+      Relations: ["couple: Grace Hopper", "sibling: Byron Lovelace"]
+    });
+  });
+
   it("prefers image blocks inside the page content and builds attachment URLs from the image block id", async () => {
     const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
     const characterId = "34b07fc3-2f6c-80fa-a3e7-d0067ef268bc";
@@ -639,5 +710,179 @@ describe("notion scraper", () => {
         }
       }
     ]);
+  });
+
+  it("hydrates nested missing mention blocks across several sync passes", async () => {
+    const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
+    const collectionId = "5bf2e238-dead-4ad6-8a19-10f4c9bfdce2";
+    const viewId = "34d07fc3-2f6c-80b5-aefe-000c0049dbff";
+    const characterId = "35007fc3-2f6c-8014-b39e-f9aedd61a59d";
+    const textBlockId = "text-with-mention";
+    const parentId = "35007fc3-2f6c-8000-aaaa-bbbbbbbbbbbb";
+    const calls: string[] = [];
+    const fetchMock = async (url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+
+      if (url.endsWith("/loadPageChunk")) {
+        calls.push(`load:${body.pageId}`);
+
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [rootId]: {
+                value: {
+                  value: {
+                    id: rootId,
+                    type: "page",
+                    properties: { title: [["Flashback Whitelist V6"]] }
+                  }
+                }
+              },
+              "collection-block": {
+                value: {
+                  value: {
+                    id: "collection-block",
+                    type: "collection_view",
+                    collection_id: collectionId,
+                    view_ids: [viewId]
+                  }
+                }
+              }
+            },
+            collection_view: {
+              [viewId]: {
+                value: {
+                  value: {
+                    id: viewId,
+                    type: "gallery",
+                    name: "Tous",
+                    page_sort: [characterId],
+                    format: {
+                      collection_pointer: {
+                        id: collectionId,
+                        spaceId: "174a582a-d105-4b37-963c-91844b8ef4a1"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            collection: {
+              [collectionId]: {
+                value: {
+                  value: {
+                    id: collectionId,
+                    schema: {
+                      title: { name: "Nom", type: "title" },
+                      rel: { name: "Père relation", type: "relation" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      const requestedIds = body.requests?.map(
+        (request: { pointer: { id: string } }) => request.pointer.id
+      );
+      calls.push(`sync:${requestedIds.join(",")}`);
+
+      if (requestedIds.includes(parentId) && requestedIds.includes(textBlockId)) {
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [textBlockId]: {
+                value: {
+                  value: {
+                    id: textBlockId,
+                    type: "text",
+                    properties: { title: [["‣", [["p", parentId]]]] }
+                  }
+                }
+              },
+              [parentId]: {
+                value: {
+                  value: {
+                    id: parentId,
+                    type: "page",
+                    properties: { title: [["Victor Lovelace"]] }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      if (requestedIds.includes(parentId)) {
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [parentId]: {
+                value: {
+                  value: {
+                    id: parentId,
+                    type: "page",
+                    properties: { title: [["Victor Lovelace"]] }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      if (requestedIds.includes(textBlockId)) {
+        return jsonResponse({
+          recordMap: {
+            block: {
+              [textBlockId]: {
+                value: {
+                  value: {
+                    id: textBlockId,
+                    type: "text",
+                    properties: { title: [["‣", [["p", parentId]]]] }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      return jsonResponse({
+        recordMap: {
+          block: {
+            [characterId]: {
+              value: {
+                value: {
+                  id: characterId,
+                  type: "page",
+                  properties: {
+                    title: [["Jada Campbell"]],
+                    rel: [["‣", [["p", parentId]]]]
+                  },
+                  content: [textBlockId]
+                }
+              }
+            }
+          }
+        }
+      });
+    };
+
+    const input = await scrapePublicNotionPage(
+      "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+      { fetch: fetchMock }
+    );
+
+    expect(calls).toEqual([
+      `load:${rootId}`,
+      `sync:${characterId}`,
+      `sync:${textBlockId},${parentId}`
+    ]);
+    expect(input.pages[0]?.properties["Père relation"]).toBe("Victor Lovelace");
   });
 });

@@ -16,54 +16,14 @@ import {
   type PublicStreamer,
   rejectChangeRequest
 } from "../api";
-import { characterSnapshotFieldLabels } from "../constants";
-import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
-import { formatDate } from "../utils/format";
-import { CharacterSnapshotForm } from "./CharacterSnapshotForm";
-import { EmptyBlock, LoadingBlock } from "./StateBlock";
+import { ModerationDetailPanel } from "./ModerationDetailPanel";
+import { ModerationRequestList } from "./ModerationRequestList";
+import { canModerate, diffSnapshots, getSelectedModerationRequest } from "./moderation-shared";
 
 type ModerationViewProps = {
   session: AuthSession | null;
   onDataChanged: () => Promise<void>;
   onError: (message: string) => void;
-};
-
-const canModerate = (session: AuthSession | null) =>
-  session?.authenticated &&
-  (session.user.role.name === "moderator" || session.user.role.name === "administrator");
-
-const diffSnapshots = (current: CharacterSnapshot | null, proposed: CharacterSnapshot) => {
-  if (!current) {
-    return Object.keys(proposed)
-      .filter((key) => {
-        const typedKey = key as keyof CharacterSnapshot;
-        return JSON.stringify(proposed[typedKey] ?? null) !== JSON.stringify(null);
-      })
-      .map((key) => {
-        const typedKey = key as keyof CharacterSnapshot;
-        return {
-          field: typedKey,
-          oldValue: null,
-          newValue: proposed[typedKey]
-        };
-      });
-  }
-
-  return Object.keys(proposed)
-    .filter((key) => {
-      const typedKey = key as keyof CharacterSnapshot;
-      return (
-        JSON.stringify(current[typedKey] ?? null) !== JSON.stringify(proposed[typedKey] ?? null)
-      );
-    })
-    .map((key) => {
-      const typedKey = key as keyof CharacterSnapshot;
-      return {
-        field: typedKey,
-        oldValue: current[typedKey],
-        newValue: proposed[typedKey]
-      };
-    });
 };
 
 export function ModerationView({ session, onDataChanged, onError }: ModerationViewProps) {
@@ -80,9 +40,7 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
   const [streamers, setStreamers] = useState<PublicStreamer[]>([]);
   const [characterOptions, setCharacterOptions] = useState<PublicCharacterReference[]>([]);
 
-  const selectedRequest =
-    requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
-  const isCreationRequest = selectedRequest?.requestType === "create";
+  const selectedRequest = getSelectedModerationRequest(requests, selectedId);
 
   useEffect(() => {
     if (!selectedId && requests[0]) {
@@ -263,155 +221,46 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
       </div>
 
       {!canModerate(session) ? (
-        <EmptyBlock label="Accès réservé aux modérateurs." />
+        <section className="work-panel moderation-detail-panel">
+          <p className="muted-copy">Accès réservé aux modérateurs.</p>
+        </section>
       ) : (
         <div className="moderation-layout">
-          <aside className="work-panel moderation-list-panel">
-            <h3>Demandes en attente</h3>
-            {isLoading ? <LoadingBlock label="Chargement..." /> : null}
-            {!isLoading && requests.length ? (
-              <div className="request-list">
-                {requests.map((request) => (
-                  <button
-                    type="button"
-                    key={request.id}
-                    className={`request-row selectable-row ${selectedRequest?.id === request.id ? "is-active" : ""}`}
-                    onClick={() => {
-                      setSelectedId(request.id);
-                      setFeedback(null);
-                      setLastChanges(null);
-                    }}
-                  >
-                    <strong className="request-title">
-                      {request.requestType === "create" ? (
-                        <span className="request-type-badge" title="Demande de création">
-                          <span aria-hidden="true">+</span>
-                          Création
-                        </span>
-                      ) : null}
-                      <span>{request.characterName ?? "Personnage supprimé"}</span>
-                    </strong>
-                    <span>{request.userDisplayName ?? "Utilisateur inconnu"}</span>
-                    <small>{formatDate(request.createdAt)}</small>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            {!isLoading && !requests.length ? (
-              <span className="muted-text">Aucune demande en attente.</span>
-            ) : null}
-          </aside>
+          <ModerationRequestList
+            isLoading={isLoading}
+            requests={requests}
+            selectedRequestId={selectedRequest?.id ?? null}
+            onSelectRequest={(requestId) => {
+              setSelectedId(requestId);
+              setFeedback(null);
+              setLastChanges(null);
+            }}
+          />
 
-          <div className="work-panel moderation-detail-panel">
-            {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
-            {lastChanges ? (
-              <p className="inline-feedback">
-                {Object.keys(lastChanges).length} champ modifié dans l'historique.
-              </p>
-            ) : null}
-            {isDetailLoading ? <LoadingBlock label="Chargement du détail..." /> : null}
-            {!isDetailLoading && selectedRequest ? (
-              <>
-                <div className="detail-heading">
-                  <div>
-                    <h3>
-                      {selectedRequest.characterName ??
-                        (isCreationRequest ? "Nouvelle fiche" : "Personnage supprimé")}
-                    </h3>
-                    <span className="request-kind-label">
-                      {isCreationRequest
-                        ? "Demande de création de fiche"
-                        : "Demande de modification de fiche"}
-                    </span>
-                    <span className="muted-text">
-                      Proposé par {selectedRequest.userDisplayName ?? "utilisateur inconnu"}
-                    </span>
-                  </div>
-                </div>
-
-                <section className="diff-panel">
-                  <h3>{isCreationRequest ? "Fiche candidate" : "Comparaison"}</h3>
-                  {visibleDiff.length ? (
-                    visibleDiff.map((change) => (
-                      <div
-                        key={change.field}
-                        className={`diff-row ${isCreationRequest ? "is-creation" : ""}`}
-                      >
-                        <strong>{characterSnapshotFieldLabels[change.field]}</strong>
-                        {!isCreationRequest ? (
-                          <span>
-                            {formatCharacterSnapshotValue(change.field, change.oldValue, {
-                              streamersById: streamerNames,
-                              charactersById: characterNames
-                            })}
-                          </span>
-                        ) : null}
-                        <span>
-                          {formatCharacterSnapshotValue(change.field, change.newValue, {
-                            streamersById: streamerNames,
-                            charactersById: characterNames
-                          })}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="muted-text">Aucun écart détecté avec la fiche actuelle.</span>
-                  )}
-                </section>
-
-                <div className="moderation-actions">
-                  <button
-                    type="button"
-                    className="ghost-button primary-action"
-                    disabled={isSubmitting}
-                    onClick={approveSelected}
-                  >
-                    Accepter
-                  </button>
-                  <label>
-                    <span>Commentaire de refus</span>
-                    <textarea
-                      rows={3}
-                      value={rejectComment}
-                      onChange={(event) => {
-                        setRejectComment(event.target.value);
-                      }}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="ghost-button danger-action"
-                    disabled={isSubmitting || !rejectComment.trim()}
-                    onClick={rejectSelected}
-                  >
-                    Refuser
-                  </button>
-                </div>
-
-                {editSnapshot && selectedRequest.requestType === "update" ? (
-                  <section className="direct-edit-panel">
-                    <h3>Édition directe modérateur</h3>
-                    <CharacterSnapshotForm
-                      snapshot={editSnapshot}
-                      characterOptions={characterOptions}
-                      currentCharacterId={selectedRequest.characterId}
-                      streamers={streamers}
-                      submitLabel="Appliquer directement"
-                      isSubmitting={isSubmitting}
-                      canUploadPhoto={false}
-                      isPhotoUploading={false}
-                      onCancel={() => {
-                        setEditSnapshot(selectedRequest.proposedSnapshot);
-                      }}
-                      onChange={setEditSnapshot}
-                      onPhotoUpload={async () => undefined}
-                      onSubmit={submitDirectEdit}
-                    />
-                  </section>
-                ) : null}
-              </>
-            ) : null}
-          </div>
+          <ModerationDetailPanel
+            characterNames={characterNames}
+            characterOptions={characterOptions}
+            editSnapshot={editSnapshot}
+            feedback={feedback}
+            isDetailLoading={isDetailLoading}
+            isSubmitting={isSubmitting}
+            lastChanges={lastChanges}
+            rejectComment={rejectComment}
+            selectedRequest={selectedRequest}
+            streamerNames={streamerNames}
+            streamers={streamers}
+            visibleDiff={visibleDiff}
+            onApprove={approveSelected}
+            onChangeEditSnapshot={setEditSnapshot}
+            onReject={rejectSelected}
+            onRejectCommentChange={setRejectComment}
+            onResetEditSnapshot={() => {
+              if (selectedRequest) {
+                setEditSnapshot(selectedRequest.proposedSnapshot);
+              }
+            }}
+            onSubmitDirectEdit={submitDirectEdit}
+          />
         </div>
       )}
     </section>

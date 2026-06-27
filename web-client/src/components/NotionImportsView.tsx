@@ -4,87 +4,25 @@ import {
   type AdminNotionImportBatch,
   type AdminNotionImportDetail,
   type AdminNotionImportEntry,
-  ApiRequestError,
   type AuthSession,
   applyAdminNotionImportEntry,
   getAdminNotionImportDetail,
   importAdminNotionEntryPhoto,
-  type LifeStatus,
-  listAdminNotionImports,
-  type VerificationStatus
+  listAdminNotionImports
 } from "../api";
-import { lifeStatusLabels, verificationLabels } from "../constants";
-import { formatDateTime } from "../utils/format";
+import { NotionImportDetailPanel } from "./NotionImportDetailPanel";
+import { NotionImportsBatchList } from "./NotionImportsBatchList";
+import { NotionImportsTable } from "./NotionImportsTable";
+import {
+  type NotionImportAppliedFilter,
+  notionImportApplyErrorMessage,
+  notionImportPhotoErrorMessage
+} from "./notion-imports-shared";
 
 type NotionImportsViewProps = {
   session: AuthSession | null;
   onDataChanged: () => Promise<void>;
   onError: (message: string) => void;
-};
-
-const statusLabels: Record<AdminNotionImportEntry["status"], string> = {
-  new: "Nouveau",
-  updated: "Modifié",
-  unchanged: "Inchangé",
-  missing: "Absent",
-  failed: "Erreur"
-};
-
-const statusOptions: Array<AdminNotionImportEntry["status"] | "all"> = [
-  "all",
-  "failed",
-  "new",
-  "updated",
-  "unchanged",
-  "missing"
-];
-const appliedOptions = ["all", "pending", "applied"] as const;
-type AppliedFilter = (typeof appliedOptions)[number];
-
-const count = (batch: AdminNotionImportBatch, key: string) => batch.totals[key] ?? 0;
-
-const jsonPreview = (value: unknown) => JSON.stringify(value, null, 2);
-const snapshotString = (snapshot: Record<string, unknown>, key: string) =>
-  typeof snapshot[key] === "string" && snapshot[key].trim() ? snapshot[key].trim() : null;
-
-const notionImportApplyErrorMessage = (error: unknown) => {
-  if (!(error instanceof ApiRequestError)) {
-    return "La fiche importée n'a pas pu être appliquée.";
-  }
-
-  switch (error.code) {
-    case "NOTION_IMPORT_ENTRY_NOT_APPLICABLE":
-      return "Cette entrée est en erreur ou absente de la source, elle ne peut pas être appliquée.";
-    case "NOTION_IMPORT_ENTRY_INVALID_SNAPSHOT":
-      return "Le snapshot mappé est incomplet. Corrige d'abord le mapping.";
-    case "NOTION_IMPORT_ENTRY_AMBIGUOUS_CHARACTER":
-      return "Plusieurs fiches existantes correspondent déjà à ce nom. Le rattachement manuel sera nécessaire.";
-    case "NOTION_IMPORT_ENTRY_UNRESOLVED_RELATIONSHIPS":
-      return "Certaines relations restent ambiguës. Le rattachement automatique a été bloqué pour éviter une mauvaise liaison.";
-    case "NOTION_IMPORT_ENTRY_NOT_FOUND":
-      return "Cette entrée d'import n'existe plus.";
-    default:
-      return error.message || "La fiche importée n'a pas pu être appliquée.";
-  }
-};
-
-const notionImportPhotoErrorMessage = (error: unknown) => {
-  if (!(error instanceof ApiRequestError)) {
-    return "La photo Notion n'a pas pu être importée.";
-  }
-
-  switch (error.code) {
-    case "NOTION_IMPORT_ENTRY_PHOTO_REQUIRES_APPLY":
-      return "Applique d'abord la fiche avant d'importer sa photo.";
-    case "NOTION_IMPORT_ENTRY_NO_PHOTO":
-      return "Cette fiche importée ne contient pas de photo exploitable.";
-    case "NOTION_IMPORT_ENTRY_INVALID_PHOTO":
-      return error.message || "La photo distante a été refusée par le pipeline de sécurité.";
-    case "NOTION_IMPORT_ENTRY_NOT_FOUND":
-      return "Cette entrée d'import n'existe plus.";
-    default:
-      return error.message || "La photo Notion n'a pas pu être importée.";
-  }
 };
 
 export function NotionImportsView({ session, onDataChanged, onError }: NotionImportsViewProps) {
@@ -93,7 +31,7 @@ export function NotionImportsView({ session, onDataChanged, onError }: NotionImp
   const [detail, setDetail] = useState<AdminNotionImportDetail | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<AdminNotionImportEntry["status"] | "all">("all");
-  const [appliedFilter, setAppliedFilter] = useState<AppliedFilter>("all");
+  const [appliedFilter, setAppliedFilter] = useState<NotionImportAppliedFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
@@ -273,269 +211,43 @@ export function NotionImportsView({ session, onDataChanged, onError }: NotionImp
           <h3>Lots</h3>
           {isLoading && batches.length === 0 ? <p className="muted-copy">Chargement...</p> : null}
           <div className="request-list">
-            {batches.map((batch) => (
-              <button
-                key={batch.id}
-                type="button"
-                className={`request-row selectable-row ${
-                  selectedBatchId === batch.id ? "is-active" : ""
-                }`}
-                onClick={() => {
-                  setSelectedBatchId(batch.id);
-                  setSelectedPageId(null);
-                  setFeedback(null);
-                }}
-              >
-                <strong>{batch.sourceName}</strong>
-                <small>{formatDateTime(batch.createdAt)}</small>
-                <small>
-                  {count(batch, "new")} nouveaux · {count(batch, "failed")} erreurs ·{" "}
-                  {count(batch, "missing")} absents
-                </small>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="work-panel imports-main-panel">
-          <div className="imports-summary">
-            <div>
-              <span>Nouveaux</span>
-              <strong>{detail ? count(detail.batch, "new") : 0}</strong>
-            </div>
-            <div>
-              <span>Modifiés</span>
-              <strong>{detail ? count(detail.batch, "updated") : 0}</strong>
-            </div>
-            <div>
-              <span>Erreurs</span>
-              <strong>{detail ? count(detail.batch, "failed") : 0}</strong>
-            </div>
-            <div>
-              <span>Absents</span>
-              <strong>{detail ? count(detail.batch, "missing") : 0}</strong>
-            </div>
-          </div>
-
-          <div className="imports-toolbar">
-            <input
-              type="search"
-              value={searchQuery}
-              placeholder="Rechercher un nom"
-              onChange={(event) => {
-                setSearchQuery(event.target.value);
+            <NotionImportsBatchList
+              batches={batches}
+              isLoading={isLoading}
+              selectedBatchId={selectedBatchId}
+              onSelectBatch={(batchId) => {
+                setSelectedBatchId(batchId);
+                setSelectedPageId(null);
+                setFeedback(null);
               }}
             />
-            {statusOptions.map((status) => (
-              <button
-                key={status}
-                type="button"
-                className={`ghost-button ${statusFilter === status ? "is-active" : ""}`}
-                onClick={() => {
-                  setStatusFilter(status);
-                }}
-              >
-                {status === "all" ? "Tous" : statusLabels[status]}
-              </button>
-            ))}
-            {appliedOptions.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                className={`ghost-button ${appliedFilter === filter ? "is-active" : ""}`}
-                onClick={() => {
-                  setAppliedFilter(filter);
-                }}
-              >
-                {filter === "all"
-                  ? "Toutes"
-                  : filter === "applied"
-                    ? "Appliquées"
-                    : "Non appliquées"}
-              </button>
-            ))}
-          </div>
-
-          <div className="imports-table-scroll">
-            <table className="imports-table">
-              <thead>
-                <tr>
-                  <th>Statut</th>
-                  <th>Personnage</th>
-                  <th>Suivi</th>
-                  <th>Twitch</th>
-                  <th>Organisation</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEntries.map((entry) => (
-                  <tr
-                    key={entry.pageId}
-                    className={selectedPageId === entry.pageId ? "is-active" : ""}
-                  >
-                    <td>
-                      <button
-                        type="button"
-                        className="imports-row-button"
-                        onClick={() => {
-                          setSelectedPageId(entry.pageId);
-                          setFeedback(null);
-                        }}
-                      >
-                        <span className={`status-pill status-pill-${entry.status}`}>
-                          {statusLabels[entry.status]}
-                        </span>
-                      </button>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="imports-row-button"
-                        onClick={() => {
-                          setSelectedPageId(entry.pageId);
-                          setFeedback(null);
-                        }}
-                      >
-                        <strong>{entry.fullName}</strong>
-                      </button>
-                    </td>
-                    <td>
-                      <span
-                        className={`status-pill ${
-                          entry.appliedCharacterId ? "status-pill-unchanged" : "status-pill-updated"
-                        }`}
-                      >
-                        {entry.appliedCharacterId ? "Appliquée" : "À faire"}
-                      </span>
-                    </td>
-                    <td>{entry.twitch ?? entry.streamer ?? "-"}</td>
-                    <td>{entry.group ?? entry.business ?? "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </section>
 
-        <aside className="work-panel imports-detail-panel">
-          <h3>Détail</h3>
-          {selectedEntry ? (
-            <>
-              <div className="import-detail-heading">
-                <strong>{selectedEntry.fullName}</strong>
-                <span className={`status-pill status-pill-${selectedEntry.status}`}>
-                  {statusLabels[selectedEntry.status]}
-                </span>
-              </div>
-              {selectedEntry.sourceUrl ? (
-                <a href={selectedEntry.sourceUrl} target="_blank" rel="noreferrer">
-                  Page Notion
-                </a>
-              ) : null}
-              <button
-                type="button"
-                className="ghost-button primary-action"
-                onClick={() => void handleApplyEntry()}
-                disabled={
-                  isApplying ||
-                  selectedEntry.status === "failed" ||
-                  selectedEntry.status === "missing"
-                }
-              >
-                {isApplying ? "Application..." : "Appliquer la fiche"}
-              </button>
-              <button
-                type="button"
-                className="ghost-button"
-                onClick={() => void handleImportPhoto()}
-                disabled={
-                  isImportingPhoto ||
-                  !selectedEntry.appliedCharacterId ||
-                  selectedEntry.photoReferences.length === 0
-                }
-              >
-                {isImportingPhoto ? "Import photo..." : "Importer la photo"}
-              </button>
-              {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
-              <dl className="import-detail-list">
-                <div>
-                  <dt>Vie</dt>
-                  <dd>
-                    {selectedEntry.lifeStatus
-                      ? (lifeStatusLabels[selectedEntry.lifeStatus as LifeStatus] ??
-                        selectedEntry.lifeStatus)
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Vérification</dt>
-                  <dd>
-                    {snapshotString(selectedEntry.mappedSnapshot, "verificationStatus")
-                      ? (verificationLabels[
-                          snapshotString(
-                            selectedEntry.mappedSnapshot,
-                            "verificationStatus"
-                          ) as VerificationStatus
-                        ] ?? snapshotString(selectedEntry.mappedSnapshot, "verificationStatus"))
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Twitch</dt>
-                  <dd>{selectedEntry.twitch ?? selectedEntry.streamer ?? "-"}</dd>
-                </div>
-                <div>
-                  <dt>Métier</dt>
-                  <dd>{selectedEntry.business ?? "-"}</dd>
-                </div>
-                <div>
-                  <dt>Groupe</dt>
-                  <dd>{selectedEntry.group ?? "-"}</dd>
-                </div>
-                <div>
-                  <dt>Tags</dt>
-                  <dd>{selectedEntry.tags || "-"}</dd>
-                </div>
-                <div>
-                  <dt>Photos</dt>
-                  <dd>{selectedEntry.photoReferences.length}</dd>
-                </div>
-                <div>
-                  <dt>Application</dt>
-                  <dd>{selectedEntry.appliedAt ? formatDateTime(selectedEntry.appliedAt) : "-"}</dd>
-                </div>
-              </dl>
-              {selectedEntry.photoReferences.length > 0 ? (
-                <div className="import-photo-list">
-                  <img
-                    src={selectedEntry.photoReferences[0]}
-                    alt={selectedEntry.fullName}
-                    className="sheet-photo"
-                  />
-                  {selectedEntry.photoReferences.map((reference, index) => (
-                    <a key={reference} href={reference} target="_blank" rel="noreferrer">
-                      Photo Notion {index + 1}
-                    </a>
-                  ))}
-                </div>
-              ) : null}
-              <details open>
-                <summary>Snapshot mappé</summary>
-                <pre>{jsonPreview(selectedEntry.mappedSnapshot)}</pre>
-              </details>
-              <details>
-                <summary>Rapport</summary>
-                <pre>{jsonPreview(selectedEntry.mappingReport)}</pre>
-              </details>
-              <details>
-                <summary>Brut Notion</summary>
-                <pre>{jsonPreview(selectedEntry.rawContent)}</pre>
-              </details>
-            </>
-          ) : (
-            <p className="muted-copy">Sélectionne une fiche importée.</p>
-          )}
-        </aside>
+        <NotionImportsTable
+          detail={detail}
+          filteredEntries={filteredEntries}
+          searchQuery={searchQuery}
+          selectedPageId={selectedPageId}
+          statusFilter={statusFilter}
+          appliedFilter={appliedFilter}
+          onSearchQueryChange={setSearchQuery}
+          onStatusFilterChange={setStatusFilter}
+          onAppliedFilterChange={setAppliedFilter}
+          onSelectEntry={(pageId) => {
+            setSelectedPageId(pageId);
+            setFeedback(null);
+          }}
+        />
+
+        <NotionImportDetailPanel
+          feedback={feedback}
+          isApplying={isApplying}
+          isImportingPhoto={isImportingPhoto}
+          selectedEntry={selectedEntry}
+          onApplyEntry={() => void handleApplyEntry()}
+          onImportPhoto={() => void handleImportPhoto()}
+        />
       </div>
     </section>
   );

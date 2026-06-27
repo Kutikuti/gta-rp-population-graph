@@ -241,6 +241,30 @@ const normalizeLabel = (label: string) =>
     .replace(/^[*-]\s*/, "")
     .replace(/\s+/g, " ");
 
+const appendPropertyValue = (
+  properties: Record<string, unknown>,
+  key: string,
+  value: string | string[]
+) => {
+  const existing = properties[key];
+  const nextValues = Array.isArray(value) ? value : [value];
+
+  if (existing === undefined) {
+    properties[key] = Array.isArray(value) ? value : value;
+    return;
+  }
+
+  const merged = [
+    ...(Array.isArray(existing) ? existing : [existing]).filter(
+      (item): item is string => typeof item === "string" && item.trim().length > 0
+    ),
+    ...nextValues
+  ];
+  const unique = [...new Set(merged.map((item) => item.trim()).filter(Boolean))];
+
+  properties[key] = unique.length <= 1 ? (unique[0] ?? null) : unique;
+};
+
 const parsePropertiesFromText = (texts: string[]) => {
   const properties: Record<string, unknown> = {};
 
@@ -267,12 +291,16 @@ const parsePropertiesFromText = (texts: string[]) => {
         continue;
       }
 
-      properties[key] = value.includes(",")
-        ? value
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : value;
+      appendPropertyValue(
+        properties,
+        key,
+        value.includes(",")
+          ? value
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean)
+          : value
+      );
     }
   }
 
@@ -359,6 +387,17 @@ const syncRecordValues = async (
   const payload = (await response.json()) as { recordMap?: NotionRecordMap };
   return payload.recordMap ?? (payload as NotionRecordMap);
 };
+
+const missingPageDependencyIds = (recordMap: NotionRecordMap) => [
+  ...new Set(
+    blockValues(recordMap)
+      .filter((block) => block.type === "page")
+      .flatMap((pageBlock) => [
+        ...missingDirectChildBlockIds(recordMap, pageBlock),
+        ...missingMentionedPageIds(recordMap, pageBlock)
+      ])
+  )
+];
 
 const blockValues = (recordMap: NotionRecordMap) =>
   Object.values(recordMap.block ?? {}).flatMap((record) =>
@@ -539,6 +578,44 @@ const missingMentionedPageIds = (recordMap: NotionRecordMap, pageBlock: NotionBl
   return [...new Set(ids)].filter((pageId) => !recordMapHasBlock(recordMap, pageId));
 };
 
+const hydrateMissingPageDependencies = async (
+  recordMap: NotionRecordMap,
+  spaceId: string,
+  fetchImpl: FetchLike,
+  maxPasses = 4
+) => {
+  let hydrated = recordMap;
+  let previousMissingSignature: string | null = null;
+
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    const missingIds = missingPageDependencyIds(hydrated);
+
+    if (missingIds.length === 0) {
+      break;
+    }
+
+    const missingSignature = missingIds.join(",");
+
+    if (missingSignature === previousMissingSignature) {
+      break;
+    }
+
+    previousMissingSignature = missingSignature;
+
+    for (const childIds of chunk(missingIds, 50)) {
+      if (childIds.length === 0) {
+        continue;
+      }
+
+      await delay(400);
+      const childRecordMap = await syncRecordValues(childIds, spaceId, fetchImpl);
+      hydrated = mergeRecordMaps(hydrated, childRecordMap);
+    }
+  }
+
+  return hydrated;
+};
+
 const schemaNameByPropertyId = (recordMap: NotionRecordMap) => {
   const collection = collectionValues(recordMap).find(
     (candidate) => candidate.schema || candidate.deleted_schema
@@ -663,30 +740,7 @@ const scrapeCollectionPages = async (
     await delay(250);
 
     let recordMap = await syncRecordValues(pageIds, source.spaceId, fetchImpl);
-    const missingChildIds = [
-      ...new Set(
-        blockValues(recordMap)
-          .filter((block) => block.type === "page")
-          .flatMap((pageBlock) => missingDirectChildBlockIds(recordMap, pageBlock))
-      )
-    ];
-    const missingMentionIds = [
-      ...new Set(
-        blockValues(recordMap)
-          .filter((block) => block.type === "page")
-          .flatMap((pageBlock) => missingMentionedPageIds(recordMap, pageBlock))
-      )
-    ];
-
-    for (const childIds of chunk([...new Set([...missingChildIds, ...missingMentionIds])], 50)) {
-      if (childIds.length === 0) {
-        continue;
-      }
-
-      await delay(400);
-      const childRecordMap = await syncRecordValues(childIds, source.spaceId, fetchImpl);
-      recordMap = mergeRecordMaps(recordMap, childRecordMap);
-    }
+    recordMap = await hydrateMissingPageDependencies(recordMap, source.spaceId, fetchImpl);
 
     for (const pageBlock of pageIds
       .map((pageId) => unwrapRecordValue<NotionBlockValue>(recordMap.block?.[pageId]))

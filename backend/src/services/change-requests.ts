@@ -1,193 +1,39 @@
-import { Op, type Transaction } from "sequelize";
-import { z } from "zod";
-
-import {
-  type changeRequestTypes,
-  type DataSource,
-  editableRelationshipTypes,
-  lifeStatuses,
-  verificationStatuses
-} from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
-import type {
-  ChangeRequest,
-  Character,
-  CharacterRelationship,
-  JsonObject,
-  SocialLinks
-} from "../db/models/index.js";
+import type { JsonObject } from "../db/models/index.js";
+import {
+  applyDirectCharacterEdit,
+  approvePendingChangeRequest
+} from "./change-request-mutations.js";
+import {
+  type CharacterCreationContext,
+  type CharacterSnapshot,
+  characterSnapshotSchema
+} from "./change-request-schemas.js";
+import type { ChangeDiff } from "./change-request-snapshots.js";
+import {
+  type ChangeRequestSummary,
+  hasExactNameDuplicate,
+  reloadChangeRequestSummary,
+  requestInclude,
+  serializeChangeRequests
+} from "./change-request-summaries.js";
 import {
   assertPendingCharacterPhotoExists,
   deletePendingCharacterPhoto,
   InvalidCharacterPhotoError,
-  isPendingCharacterPhotoToken,
-  promoteCharacterPhotoIfPending
+  isPendingCharacterPhotoToken
 } from "./character-photos.js";
-import {
-  invertRelationshipType,
-  isEditableRelationshipType,
-  relationshipDirection,
-  relationshipLabel
-} from "./character-relationships.js";
-import { generateUniqueCharacterSlug } from "./character-slug.js";
 
-const emptyToNull = (value: string | null | undefined) => {
-  if (typeof value !== "string") {
-    return value ?? null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
-};
-
-const nullableText = (max: number) =>
-  z.string().trim().max(max).nullable().optional().transform(emptyToNull);
-
-const dateOnly = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .nullable()
-  .optional()
-  .transform(emptyToNull);
-
-const socialLinksSchema = z
-  .object({
-    twitch: nullableText(300),
-    kick: nullableText(300),
-    youtube: nullableText(300),
-    instagram: nullableText(300),
-    tiktok: nullableText(300)
-  })
-  .strict()
-  .nullable()
-  .optional()
-  .transform((value): SocialLinks | null => {
-    if (!value) {
-      return null;
-    }
-
-    const links: SocialLinks = {};
-
-    for (const key of ["twitch", "kick", "youtube", "instagram", "tiktok"] as const) {
-      const link = value[key];
-
-      if (link) {
-        links[key] = link;
-      }
-    }
-
-    return Object.keys(links).length ? links : null;
-  });
-
-const previousCharactersSchema = z
-  .record(z.string().trim().min(1).max(40), z.string().trim().min(1).max(160))
-  .nullable()
-  .optional()
-  .transform((value) => value ?? null);
-
-const relationshipDraftSchema = z
-  .object({
-    characterId: z.uuid(),
-    type: z.enum(editableRelationshipTypes)
-  })
-  .strict();
-
-export const characterSnapshotSchema = z
-  .object({
-    firstName: z.string().trim().min(1).max(120),
-    lastName: z.string().trim().min(1).max(120),
-    nickname: nullableText(160),
-    birthDate: dateOnly,
-    lifeStatus: z.enum(lifeStatuses),
-    deathOrDepartureDate: dateOnly,
-    photoUrl: nullableText(600),
-    businessName: nullableText(160),
-    businessRank: nullableText(120),
-    businessBadgeNumber: nullableText(80),
-    phoneNumber: nullableText(40),
-    streamerId: z
-      .uuid()
-      .nullable()
-      .optional()
-      .transform((value) => value ?? null),
-    streamerName: nullableText(160),
-    socialLinks: socialLinksSchema,
-    groupName: nullableText(160),
-    groupRole: nullableText(120),
-    district: nullableText(120),
-    isRpDeath: z.boolean().default(false),
-    relationships: z.array(relationshipDraftSchema).default([]),
-    policeRank: nullableText(120),
-    policeBadgeNumber: nullableText(80),
-    previousCharacters: previousCharactersSchema,
-    verificationStatus: z.enum(verificationStatuses),
-    sourceNote: nullableText(1000)
-  })
-  .strict();
-
-export const changeRequestCreateSchema = z.object({
-  characterId: z.uuid(),
-  proposedSnapshot: characterSnapshotSchema
-});
-
-export const characterCreationContextSchema = z
-  .object({
-    q: nullableText(200),
-    lifeStatus: nullableText(40),
-    tag: nullableText(120),
-    streamer: nullableText(160),
-    verificationStatus: nullableText(40),
-    matchTotal: z.number().int().min(0).max(100000).optional()
-  })
-  .strict();
-
-export const characterCreationRequestSchema = z.object({
-  proposedSnapshot: characterSnapshotSchema,
-  searchContext: characterCreationContextSchema
-});
-
-export const moderationListSchema = z.object({
-  status: z.enum(["pending", "approved", "rejected"]).optional()
-});
-
-export const rejectChangeRequestSchema = z.object({
-  comment: z.string().trim().min(1).max(1000)
-});
-
-export const directCharacterEditSchema = z.object({
-  snapshot: characterSnapshotSchema
-});
-
-export type CharacterSnapshot = z.infer<typeof characterSnapshotSchema>;
-export type CharacterCreationContext = z.infer<typeof characterCreationContextSchema>;
-
-type ChangeValue = string | boolean | JsonObject | JsonObject[] | SocialLinks | null;
-
-export type FieldChange = {
-  old: ChangeValue;
-  new: ChangeValue;
-};
-
-export type ChangeDiff = Record<string, FieldChange>;
-
-export type ChangeRequestSummary = {
-  id: string;
-  requestType: (typeof changeRequestTypes)[number];
-  characterId: string | null;
-  characterName: string | null;
-  proposedStreamerName: string | null;
-  userId: string;
-  userDisplayName: string | null;
-  status: "pending" | "approved" | "rejected";
-  proposedSnapshot: JsonObject;
-  searchContext: JsonObject | null;
-  reviewerId: string | null;
-  reviewerDisplayName: string | null;
-  moderatorComment: string | null;
-  resolvedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type { CharacterCreationContext, CharacterSnapshot } from "./change-request-schemas.js";
+export {
+  changeRequestCreateSchema,
+  characterCreationRequestSchema,
+  directCharacterEditSchema,
+  moderationListSchema,
+  rejectChangeRequestSchema
+} from "./change-request-schemas.js";
+export type { ChangeDiff } from "./change-request-snapshots.js";
+export type { ChangeRequestSummary } from "./change-request-summaries.js";
 
 export interface ChangeRequestService {
   createChangeRequest(input: {
@@ -221,410 +67,6 @@ export interface ChangeRequestService {
   }): Promise<{ characterId: string; changes: ChangeDiff } | null>;
 }
 
-const isoDate = (value: Date | null) => (value ? value.toISOString() : null);
-
-const editableFields = Object.keys(characterSnapshotSchema.shape) as Array<keyof CharacterSnapshot>;
-
-const normalizeRelationshipDrafts = (
-  relationships: CharacterSnapshot["relationships"],
-  currentCharacterId?: string
-) => {
-  const seen = new Set<string>();
-
-  return relationships
-    .filter((relationship) => relationship.characterId !== currentCharacterId)
-    .filter((relationship) => {
-      const key = `${relationship.type}:${relationship.characterId}`;
-
-      if (seen.has(key)) {
-        return false;
-      }
-
-      seen.add(key);
-      return true;
-    })
-    .sort((left, right) =>
-      `${left.type}:${left.characterId}`.localeCompare(`${right.type}:${right.characterId}`, "fr")
-    );
-};
-
-const mapRelationshipToDraft = (
-  relationship: CharacterRelationship,
-  currentCharacterId: string
-): CharacterSnapshot["relationships"][number] => {
-  const type =
-    relationship.direction === "directed" && relationship.sourceCharacterId !== currentCharacterId
-      ? invertRelationshipType(relationship.type)
-      : relationship.type;
-
-  if (!isEditableRelationshipType(type)) {
-    throw new Error(`Relationship type ${type} is not editable in character snapshots.`);
-  }
-
-  return {
-    characterId:
-      relationship.sourceCharacterId === currentCharacterId
-        ? relationship.targetCharacterId
-        : relationship.sourceCharacterId,
-    type
-  };
-};
-
-const loadCharacterRelationshipDrafts = async (
-  characterId: string,
-  transaction?: Transaction
-): Promise<CharacterSnapshot["relationships"]> => {
-  const relationships = await models.CharacterRelationship.findAll({
-    attributes: ["sourceCharacterId", "targetCharacterId", "type", "direction"],
-    where: {
-      type: {
-        [Op.in]: editableRelationshipTypes
-      },
-      [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
-    },
-    transaction
-  });
-
-  return normalizeRelationshipDrafts(
-    relationships.map((relationship) => mapRelationshipToDraft(relationship, characterId)),
-    characterId
-  );
-};
-
-const characterToSnapshot = async (
-  character: Character,
-  transaction?: Transaction
-): Promise<CharacterSnapshot> => {
-  return {
-    firstName: character.firstName,
-    lastName: character.lastName,
-    nickname: character.nickname,
-    birthDate: character.birthDate,
-    lifeStatus: character.lifeStatus,
-    deathOrDepartureDate: character.deathOrDepartureDate,
-    photoUrl: character.photoUrl,
-    businessName: character.businessName,
-    businessRank: character.businessRank,
-    businessBadgeNumber: character.businessBadgeNumber,
-    phoneNumber: character.phoneNumber,
-    streamerId: character.streamerId,
-    streamerName: null,
-    socialLinks: character.socialLinks,
-    groupName: character.groupName,
-    groupRole: character.groupRole,
-    district: character.district,
-    isRpDeath: character.isRpDeath,
-    relationships: await loadCharacterRelationshipDrafts(character.id, transaction),
-    policeRank: character.policeRank,
-    policeBadgeNumber: character.policeBadgeNumber,
-    previousCharacters: character.previousCharacters as Record<string, string> | null,
-    verificationStatus: character.verificationStatus,
-    sourceNote: character.sourceNote
-  };
-};
-
-const stableJson = (value: unknown) => JSON.stringify(value ?? null);
-
-export const calculateCharacterDiff = (
-  current: CharacterSnapshot,
-  proposed: CharacterSnapshot
-): ChangeDiff =>
-  editableFields.reduce<ChangeDiff>((changes, field) => {
-    const oldValue = current[field] as ChangeValue;
-    const newValue = proposed[field] as ChangeValue;
-
-    if (stableJson(oldValue) !== stableJson(newValue)) {
-      changes[field] = {
-        old: oldValue,
-        new: newValue
-      };
-    }
-
-    return changes;
-  }, {});
-
-const extractProposedStreamerId = (request: ChangeRequest) => {
-  const streamerId = request.proposedSnapshot.streamerId;
-
-  return typeof streamerId === "string" && streamerId ? streamerId : null;
-};
-
-const buildProposedStreamerNameMap = async (requests: ChangeRequest[]) => {
-  const streamerIds = [
-    ...new Set(
-      requests
-        .map(extractProposedStreamerId)
-        .filter((streamerId): streamerId is string => Boolean(streamerId))
-    )
-  ];
-
-  if (streamerIds.length === 0) {
-    return new Map<string, string>();
-  }
-
-  const streamers = await models.Streamer.findAll({
-    attributes: ["id", "publicName"],
-    where: {
-      id: {
-        [Op.in]: streamerIds
-      }
-    }
-  });
-
-  return new Map(streamers.map((streamer) => [streamer.id, streamer.publicName] as const));
-};
-
-const serializeChangeRequest = (
-  request: ChangeRequest,
-  proposedStreamerNames: ReadonlyMap<string, string>
-): ChangeRequestSummary => ({
-  id: request.id,
-  requestType: request.requestType,
-  characterId: request.characterId,
-  characterName: request.character
-    ? `${request.character.firstName} ${request.character.lastName}`
-    : request.requestType === "create"
-      ? `${String(request.proposedSnapshot.firstName)} ${String(request.proposedSnapshot.lastName)}`
-      : null,
-  proposedStreamerName: (() => {
-    const streamerId = extractProposedStreamerId(request);
-    const streamerName = request.proposedSnapshot.streamerName;
-
-    if (typeof streamerName === "string" && streamerName.trim()) {
-      return streamerName;
-    }
-
-    return streamerId ? (proposedStreamerNames.get(streamerId) ?? null) : null;
-  })(),
-  userId: request.userId,
-  userDisplayName: request.user?.displayName ?? null,
-  status: request.status,
-  proposedSnapshot: request.proposedSnapshot,
-  searchContext: request.searchContext,
-  reviewerId: request.reviewerId,
-  reviewerDisplayName: request.reviewer?.displayName ?? null,
-  moderatorComment: request.moderatorComment,
-  resolvedAt: isoDate(request.resolvedAt),
-  createdAt: request.createdAt.toISOString(),
-  updatedAt: request.updatedAt.toISOString()
-});
-
-const serializeChangeRequests = async (requests: ChangeRequest[]) => {
-  const proposedStreamerNames = await buildProposedStreamerNameMap(requests);
-
-  return requests.map((request) => serializeChangeRequest(request, proposedStreamerNames));
-};
-
-const serializeSingleChangeRequest = async (request: ChangeRequest) => {
-  const [summary] = await serializeChangeRequests([request]);
-
-  return summary ?? null;
-};
-
-const requestInclude = [
-  { association: "character", attributes: ["id", "firstName", "lastName"], required: false },
-  { association: "user", attributes: ["id", "displayName"] },
-  { association: "reviewer", attributes: ["id", "displayName"], required: false }
-];
-
-const reloadRequest = async (id: string, transaction?: Transaction) => {
-  const request = await models.ChangeRequest.findByPk(id, {
-    include: requestInclude,
-    transaction
-  });
-
-  return request ? serializeSingleChangeRequest(request) : null;
-};
-
-const resolveStreamerId = async (snapshot: CharacterSnapshot, transaction: Transaction) => {
-  if (snapshot.streamerId) {
-    const streamer = await models.Streamer.findByPk(snapshot.streamerId, {
-      attributes: ["id"],
-      transaction
-    });
-
-    if (!streamer) {
-      throw new Error(`Streamer ${snapshot.streamerId} is missing.`);
-    }
-
-    return streamer.id;
-  }
-
-  if (!snapshot.streamerName) {
-    return null;
-  }
-
-  const existing = await models.Streamer.findOne({
-    attributes: ["id"],
-    where: {
-      publicName: {
-        [Op.iLike]: snapshot.streamerName
-      }
-    },
-    transaction
-  });
-
-  if (existing) {
-    return existing.id;
-  }
-
-  const created = await models.Streamer.create(
-    {
-      publicName: snapshot.streamerName,
-      primaryPlatform: null,
-      socialLinks: null,
-      verificationStatus: snapshot.verificationStatus
-    },
-    { transaction }
-  );
-
-  return created.id;
-};
-
-const applyRelationships = async (
-  characterId: string,
-  snapshot: CharacterSnapshot,
-  source: DataSource,
-  transaction: Transaction
-) => {
-  const relationships = normalizeRelationshipDrafts(snapshot.relationships, characterId);
-  const relationshipIds = [
-    ...new Set(relationships.map((relationship) => relationship.characterId))
-  ];
-
-  if (relationshipIds.length > 0) {
-    const existingCharacters = await models.Character.findAll({
-      attributes: ["id"],
-      where: {
-        id: {
-          [Op.in]: relationshipIds
-        }
-      },
-      transaction
-    });
-
-    if (existingCharacters.length !== relationshipIds.length) {
-      throw new Error("A related character is missing.");
-    }
-  }
-
-  await models.CharacterRelationship.destroy({
-    where: {
-      type: {
-        [Op.in]: editableRelationshipTypes
-      },
-      [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
-    },
-    transaction
-  });
-
-  if (relationships.length === 0) {
-    return;
-  }
-
-  await models.CharacterRelationship.bulkCreate(
-    relationships.map((relationship) => ({
-      sourceCharacterId: characterId,
-      targetCharacterId: relationship.characterId,
-      type: relationship.type,
-      direction: relationshipDirection(relationship.type),
-      label: relationshipLabel(relationship.type),
-      description: null,
-      source,
-      verificationStatus: snapshot.verificationStatus
-    })),
-    { transaction }
-  );
-};
-
-const applySnapshot = async (
-  character: Character,
-  snapshot: CharacterSnapshot,
-  source: DataSource,
-  transaction: Transaction
-) => {
-  const streamerId = await resolveStreamerId(snapshot, transaction);
-  const shouldRefreshPublicSlug =
-    snapshot.firstName !== character.firstName || snapshot.lastName !== character.lastName;
-  const publicSlug = shouldRefreshPublicSlug
-    ? await generateUniqueCharacterSlug(
-        snapshot.firstName,
-        snapshot.lastName,
-        transaction,
-        character.id
-      )
-    : character.publicSlug;
-
-  await character.update(
-    {
-      publicSlug,
-      firstName: snapshot.firstName,
-      lastName: snapshot.lastName,
-      nickname: snapshot.nickname,
-      birthDate: snapshot.birthDate,
-      lifeStatus: snapshot.lifeStatus,
-      deathOrDepartureDate: snapshot.deathOrDepartureDate,
-      photoUrl: snapshot.photoUrl,
-      businessName: snapshot.businessName,
-      businessRank: snapshot.businessRank,
-      businessBadgeNumber: snapshot.businessBadgeNumber,
-      phoneNumber: snapshot.phoneNumber,
-      streamerId,
-      socialLinks: snapshot.socialLinks,
-      groupName: snapshot.groupName,
-      groupRole: snapshot.groupRole,
-      district: snapshot.district,
-      isRpDeath: snapshot.isRpDeath,
-      policeRank: snapshot.policeRank,
-      policeBadgeNumber: snapshot.policeBadgeNumber,
-      previousCharacters: snapshot.previousCharacters,
-      verificationStatus: snapshot.verificationStatus,
-      sourceNote: snapshot.sourceNote,
-      dataSource: source
-    },
-    { transaction }
-  );
-
-  await applyRelationships(character.id, snapshot, source, transaction);
-};
-
-const prepareSnapshotForWrite = async (
-  snapshot: CharacterSnapshot
-): Promise<CharacterSnapshot> => ({
-  ...snapshot,
-  relationships: normalizeRelationshipDrafts(snapshot.relationships),
-  photoUrl: await promoteCharacterPhotoIfPending(snapshot.photoUrl)
-});
-
-const calculateCharacterCreationDiff = (snapshot: CharacterSnapshot): ChangeDiff =>
-  editableFields.reduce<ChangeDiff>((changes, field) => {
-    const newValue = snapshot[field] as ChangeValue;
-
-    if (stableJson(newValue) !== stableJson(null)) {
-      changes[field] = {
-        old: null,
-        new: newValue
-      };
-    }
-
-    return changes;
-  }, {});
-
-const hasExactNameDuplicate = async (snapshot: CharacterSnapshot) => {
-  const firstName = snapshot.firstName.trim();
-  const lastName = snapshot.lastName.trim();
-
-  const duplicate = await models.Character.findOne({
-    attributes: ["id"],
-    where: {
-      firstName: { [Op.iLike]: firstName },
-      lastName: { [Op.iLike]: lastName }
-    }
-  });
-
-  return Boolean(duplicate);
-};
-
 export class SequelizeChangeRequestService implements ChangeRequestService {
   async createChangeRequest(input: {
     userId: string;
@@ -655,7 +97,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       resolvedAt: null
     });
 
-    return reloadRequest(request.id);
+    return reloadChangeRequestSummary(request.id);
   }
 
   async createCharacterCreationRequest(input: {
@@ -685,7 +127,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       resolvedAt: null
     });
 
-    const summary = await reloadRequest(request.id);
+    const summary = await reloadChangeRequestSummary(request.id);
 
     if (!summary) {
       throw new Error(`Change request ${request.id} could not be reloaded after creation.`);
@@ -717,7 +159,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
   }
 
   async getModerationChangeRequest(id: string): Promise<ChangeRequestSummary | null> {
-    return reloadRequest(id);
+    return reloadChangeRequestSummary(id);
   }
 
   async approveChangeRequest(input: {
@@ -734,98 +176,26 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         return null;
       }
 
-      const proposedSnapshot = await prepareSnapshotForWrite(
-        characterSnapshotSchema.parse(request.proposedSnapshot)
-      );
-      const changes =
-        request.requestType === "create" ? calculateCharacterCreationDiff(proposedSnapshot) : null;
+      const proposedSnapshot = characterSnapshotSchema.parse(request.proposedSnapshot);
 
-      let character: Character | null = null;
+      const approval = await approvePendingChangeRequest({
+        moderatorId: input.moderatorId,
+        proposedSnapshot,
+        request,
+        transaction
+      });
 
-      if (request.requestType === "create") {
-        character = await models.Character.create(
-          {
-            publicSlug: await generateUniqueCharacterSlug(
-              proposedSnapshot.firstName,
-              proposedSnapshot.lastName,
-              transaction
-            ),
-            firstName: proposedSnapshot.firstName,
-            lastName: proposedSnapshot.lastName,
-            nickname: proposedSnapshot.nickname,
-            birthDate: proposedSnapshot.birthDate,
-            lifeStatus: proposedSnapshot.lifeStatus,
-            deathOrDepartureDate: proposedSnapshot.deathOrDepartureDate,
-            photoUrl: proposedSnapshot.photoUrl,
-            businessName: proposedSnapshot.businessName,
-            businessRank: proposedSnapshot.businessRank,
-            businessBadgeNumber: proposedSnapshot.businessBadgeNumber,
-            phoneNumber: proposedSnapshot.phoneNumber,
-            streamerId: null,
-            socialLinks: proposedSnapshot.socialLinks,
-            groupName: proposedSnapshot.groupName,
-            groupRole: proposedSnapshot.groupRole,
-            district: proposedSnapshot.district,
-            isRpDeath: proposedSnapshot.isRpDeath,
-            policeRank: proposedSnapshot.policeRank,
-            policeBadgeNumber: proposedSnapshot.policeBadgeNumber,
-            previousCharacters: proposedSnapshot.previousCharacters,
-            verificationStatus: proposedSnapshot.verificationStatus,
-            sourceNote: proposedSnapshot.sourceNote,
-            dataSource: "contribution"
-          },
-          { transaction }
-        );
-        await applySnapshot(character, proposedSnapshot, "contribution", transaction);
-      } else if (request.characterId) {
-        character = await models.Character.findByPk(request.characterId, {
-          transaction,
-          lock: transaction.LOCK.UPDATE
-        });
-
-        if (!character) {
-          return null;
-        }
-      }
-
-      if (!character) {
+      if (!approval) {
         return null;
       }
 
-      const resolvedChanges =
-        changes ??
-        calculateCharacterDiff(await characterToSnapshot(character, transaction), proposedSnapshot);
-
-      if (request.requestType === "update") {
-        await applySnapshot(character, proposedSnapshot, "contribution", transaction);
-      }
-      await models.ChangeHistory.create(
-        {
-          characterId: character.id,
-          changeRequestId: request.id,
-          moderatorId: input.moderatorId,
-          changes: resolvedChanges
-        },
-        { transaction }
-      );
-      await request.update(
-        {
-          status: "approved",
-          characterId: character.id,
-          proposedSnapshot: proposedSnapshot as unknown as JsonObject,
-          reviewerId: input.moderatorId,
-          resolvedAt: new Date()
-        },
-        { transaction }
-      );
-
-      const summary = await reloadRequest(request.id, transaction);
+      const summary = await reloadChangeRequestSummary(request.id, transaction);
 
       if (!summary) {
         throw new Error(`Change request ${request.id} could not be reloaded after approval.`);
       }
 
-      return { request: summary, changes: resolvedChanges };
+      return { request: summary, changes: approval.changes };
     });
   }
 
@@ -855,7 +225,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       resolvedAt: new Date()
     });
 
-    return reloadRequest(request.id);
+    return reloadChangeRequestSummary(request.id);
   }
 
   async editCharacterDirectly(input: {
@@ -879,22 +249,12 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         await assertPendingCharacterPhotoExists(photoUrl, input.moderatorId);
       }
 
-      const currentSnapshot = await characterToSnapshot(character, transaction);
-      const preparedSnapshot = await prepareSnapshotForWrite(input.snapshot);
-      const changes = calculateCharacterDiff(currentSnapshot, preparedSnapshot);
-
-      await applySnapshot(character, preparedSnapshot, "moderation", transaction);
-      await models.ChangeHistory.create(
-        {
-          characterId: character.id,
-          changeRequestId: null,
-          moderatorId: input.moderatorId,
-          changes
-        },
-        { transaction }
-      );
-
-      return { characterId: character.id, changes };
+      return applyDirectCharacterEdit({
+        character,
+        moderatorId: input.moderatorId,
+        snapshot: input.snapshot,
+        transaction
+      });
     });
   }
 }

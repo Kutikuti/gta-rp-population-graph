@@ -112,6 +112,32 @@ describe("notion import mapping", () => {
     expect(result.report.photoReferences).toEqual(["https://example.com/ada.webp"]);
   });
 
+  it("deduplicates repeated tags, relationships and photo references during mapping", () => {
+    const result = mapNotionPage({
+      pageId: "page-dedupe",
+      properties: {
+        Prenom: "Ada",
+        Nom: "Lovelace",
+        Tags: ["Famille", "Famille", "Tech"],
+        V6: ["Analia Cruz", "Analia Cruz"],
+        Relations: [
+          { type: "couple", target: "Grace Hopper" },
+          { type: "couple", target: "Grace Hopper" }
+        ],
+        "Père relation": ["Victor Lovelace", "Victor Lovelace"],
+        Photo: ["https://example.com/ada.webp", "https://example.com/ada.webp"]
+      }
+    });
+
+    expect(result.mapped.tags).toEqual(["Famille", "Tech"]);
+    expect(result.mapped.photoReferences).toEqual(["https://example.com/ada.webp"]);
+    expect(result.mapped.relationships).toEqual([
+      { type: "couple", target: "Grace Hopper" },
+      { type: "previous_character", target: "Analia Cruz" },
+      { type: "parent", target: "Victor Lovelace" }
+    ]);
+  });
+
   it("maps Flashback status, police fields and group tags from Notion properties", () => {
     const aliveResult = mapNotionPage({
       pageId: "page-heitor",

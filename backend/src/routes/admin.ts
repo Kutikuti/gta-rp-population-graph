@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { roleNames, tagTypes } from "../db/enums.js";
+import { conflictError, notFoundError } from "../middleware/api-error.js";
 import { requireRole } from "../middleware/auth.js";
 import { type AdminService, SequelizeAdminService } from "../services/admin.js";
 
@@ -62,13 +63,7 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       const detail = await adminService.getNotionImportDetail(request.params.id);
 
       if (!detail) {
-        response.status(404).json({
-          error: {
-            code: "NOTION_IMPORT_NOT_FOUND",
-            message: "Lot d'import Notion introuvable."
-          }
-        });
-        return;
+        throw notFoundError("NOTION_IMPORT_NOT_FOUND", "Lot d'import Notion introuvable.");
       }
 
       response.json(detail);
@@ -86,24 +81,11 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       });
 
       if (result.status === "not_found") {
-        response.status(404).json({
-          error: {
-            code: "NOTION_IMPORT_ENTRY_NOT_FOUND",
-            message: "Entrée d'import Notion introuvable."
-          }
-        });
-        return;
+        throw notFoundError("NOTION_IMPORT_ENTRY_NOT_FOUND", "Entrée d'import Notion introuvable.");
       }
 
       if (result.status === "invalid") {
-        response.status(409).json({
-          error: {
-            code: result.code,
-            message: result.message,
-            details: result.details ?? null
-          }
-        });
-        return;
+        throw conflictError(result.code, result.message, result.details ?? null);
       }
 
       response.json(result);
@@ -123,24 +105,14 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
         });
 
         if (result.status === "not_found") {
-          response.status(404).json({
-            error: {
-              code: "NOTION_IMPORT_ENTRY_NOT_FOUND",
-              message: "Entrée d'import Notion introuvable."
-            }
-          });
-          return;
+          throw notFoundError(
+            "NOTION_IMPORT_ENTRY_NOT_FOUND",
+            "Entrée d'import Notion introuvable."
+          );
         }
 
         if (result.status === "invalid") {
-          response.status(409).json({
-            error: {
-              code: result.code,
-              message: result.message,
-              details: result.details ?? null
-            }
-          });
-          return;
+          throw conflictError(result.code, result.message, result.details ?? null);
         }
 
         response.json(result);
@@ -169,13 +141,7 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       );
 
       if (!tag) {
-        response.status(404).json({
-          error: {
-            code: "TAG_NOT_FOUND",
-            message: "Tag introuvable."
-          }
-        });
-        return;
+        throw notFoundError("TAG_NOT_FOUND", "Tag introuvable.");
       }
 
       response.json(tag);
@@ -189,23 +155,14 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       const result = await adminService.deleteTag(request.currentUser?.id ?? "", request.params.id);
 
       if (result === "not_found") {
-        response.status(404).json({
-          error: {
-            code: "TAG_NOT_FOUND",
-            message: "Tag introuvable."
-          }
-        });
-        return;
+        throw notFoundError("TAG_NOT_FOUND", "Tag introuvable.");
       }
 
       if (result === "in_use") {
-        response.status(409).json({
-          error: {
-            code: "TAG_IN_USE",
-            message: "Ce tag est encore rattache a un ou plusieurs personnages."
-          }
-        });
-        return;
+        throw conflictError(
+          "TAG_IN_USE",
+          "Ce tag est encore rattache a un ou plusieurs personnages."
+        );
       }
 
       response.status(204).send();
@@ -224,23 +181,11 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       );
 
       if (user === "last_admin") {
-        response.status(409).json({
-          error: {
-            code: "LAST_ADMIN",
-            message: "Impossible de retirer le dernier administrateur actif."
-          }
-        });
-        return;
+        throw conflictError("LAST_ADMIN", "Impossible de retirer le dernier administrateur actif.");
       }
 
       if (!user) {
-        response.status(404).json({
-          error: {
-            code: "USER_NOT_FOUND",
-            message: "Utilisateur introuvable."
-          }
-        });
-        return;
+        throw notFoundError("USER_NOT_FOUND", "Utilisateur introuvable.");
       }
 
       response.json(user);
@@ -259,13 +204,7 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       );
 
       if (!user) {
-        response.status(404).json({
-          error: {
-            code: "USER_NOT_FOUND",
-            message: "Utilisateur introuvable."
-          }
-        });
-        return;
+        throw notFoundError("USER_NOT_FOUND", "Utilisateur introuvable.");
       }
 
       response.json(user);
@@ -282,13 +221,7 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
       );
 
       if (!user) {
-        response.status(404).json({
-          error: {
-            code: "USER_NOT_FOUND",
-            message: "Utilisateur introuvable."
-          }
-        });
-        return;
+        throw notFoundError("USER_NOT_FOUND", "Utilisateur introuvable.");
       }
 
       response.json(user);

@@ -195,6 +195,8 @@ const technicalImportFields = new Set(["titre notion"]);
 
 const normalizeKey = (value: string) => value.trim().toLowerCase();
 
+const uniqueStrings = (values: string[]) => [...new Set(values)];
+
 const stringValue = (value: unknown): string | null => {
   if (typeof value !== "string") {
     return null;
@@ -218,7 +220,7 @@ const listValue = (value: unknown): string[] => {
   }
 
   const values = Array.isArray(parsed.data) ? parsed.data : parsed.data.split(",");
-  return values.map((item) => item.trim()).filter(Boolean);
+  return uniqueStrings(values.map((item) => item.trim()).filter(Boolean));
 };
 
 const withoutEmptyNotionValues = (values: string[]) =>
@@ -406,6 +408,23 @@ const relationshipEntriesFromField = (value: unknown, type: string) =>
 const previousCharacterRelationshipList = (value: unknown) =>
   relationshipEntriesFromField(value, "previous_character");
 
+const dedupeRelationships = (relationships: JsonObject[]) => {
+  const seen = new Set<string>();
+
+  return relationships.filter((relationship) => {
+    const type = stringValue(relationship.type) ?? "";
+    const target = stringValue(relationship.target) ?? stringValue(relationship.name) ?? "";
+    const key = `${type.toLowerCase()}::${target.toLowerCase()}`;
+
+    if (!type || !target || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
 export const mapNotionPage = (page: NotionPageInput) => {
   const properties = page.properties;
   const firstName = stringValue(findValue(properties, fieldAliases.firstName));
@@ -415,7 +434,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const previousCharacterLinks = listValue(
     findValue(properties, fieldAliases.legacyCharacterLinks)
   );
-  const relationships = [
+  const relationships = dedupeRelationships([
     ...relationshipListValue(findValue(properties, fieldAliases.relationships)),
     ...previousCharacterRelationshipList(findValue(properties, fieldAliases.legacyCharacterLinks)),
     ...relationshipEntriesFromField(
@@ -446,8 +465,10 @@ export const mapNotionPage = (page: NotionPageInput) => {
       findValue(properties, fieldAliases.informativeAuntRelationships),
       "aunt_reference"
     )
-  ];
-  const photoReferences = listValue(findValue(properties, fieldAliases.photoReferences));
+  ]);
+  const photoReferences = uniqueStrings(
+    listValue(findValue(properties, fieldAliases.photoReferences))
+  );
   const lifeStatus = mapLifeStatus(findValue(properties, fieldAliases.lifeStatus));
   const deathOrDepartureDate = dateValue(findValue(properties, fieldAliases.deathOrDepartureDate));
   const explicitTags = listValue(findValue(properties, fieldAliases.tags));
@@ -498,7 +519,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
       raw: findValue(properties, fieldAliases.previousCharacters) ?? null,
       v6: previousCharacterLinks
     },
-    tags: explicitTags.length > 0 ? explicitTags : groupTags,
+    tags: uniqueStrings(explicitTags.length > 0 ? explicitTags : groupTags),
     relationships,
     photoReferences,
     dataSource: "notion",

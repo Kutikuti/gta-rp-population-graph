@@ -2,6 +2,7 @@ import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError } from "zod";
 
 import { InvalidCharacterPhotoError } from "../services/character-photos.js";
+import { ApiError } from "./api-error.js";
 
 export const notFoundHandler: RequestHandler = (request, response) => {
   response.status(404).json({
@@ -42,6 +43,17 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, _ne
       error: {
         code: "INVALID_CHARACTER_PHOTO",
         message: error.message
+      }
+    });
+    return;
+  }
+
+  if (error instanceof ApiError) {
+    response.status(error.status).json({
+      error: {
+        code: error.code,
+        message: error.message,
+        details: error.details
       }
     });
     return;

@@ -1032,6 +1032,61 @@ Premiere passe realisee :
   branchement applicatif et limiter le couplage avec la route OAuth.
 - Tests ajoutes sur le calcul d'expiration des sessions et validations relancees
   sur les routes d'authentification.
+- Gestion des erreurs HTTP metier unifiee autour d'une erreur applicative
+  structuree, avec simplification des routes d'administration et reduction des
+  reponses 404/409 dupliquees.
+- Extraction de la logique Notion hors du service admin principal dans un
+  module dedie, avec branchement du service admin sur la connexion Sequelize
+  partagee du projet au lieu de recreer sa propre instance.
+- Decoupage du service `change-requests` entre schemas/validations, logique de
+  snapshot personnage et orchestration metier, afin de limiter le melange entre
+  validation HTTP, diff metier, persistance et application des relations.
+- Debut de simplification du back-office frontend avec extraction de sous-vues
+  et helpers dedies pour `NotionImportsView`, afin de limiter la densite du
+  composant principal sans changer le rendu ni les interactions existantes.
+- `ModerationView` a recu la meme passe de decoupage que la vue d'import
+  Notion, avec extraction des helpers de comparaison et des sous-composants
+  liste/detail afin d'alleger le composant principal tout en conservant le
+  workflow existant d'approbation, refus et edition directe moderateur.
+- `AdminView` a ete simplifie a son tour avec extraction des constantes et
+  messages partages, puis decoupage des panneaux utilisateurs, tags et journal
+  pour reduire la densite du composant principal sans changer les actions
+  d'administration deja exposees.
+- Le backend administration a recu une passe de mutualisation supplementaire :
+  extraction des types/serializers admin partages et du logging des actions
+  sensibles dans un module dedie, rebranche sur `admin.ts` et
+  `admin-notion-imports.ts` pour supprimer la duplication et alleger le service
+  principal.
+- `change-requests.ts` a recu une nouvelle extraction dediee aux resumes et au
+  rechargement des demandes, avec centralisation du type `ChangeRequestSummary`,
+  des includes de lecture et de la serialisation vers un module partage afin de
+  reduire la densite du service principal et clarifier son role
+  d'orchestration metier.
+- Une passe de robustesse supplementaire a aussi ete engagee sur le pipeline
+  Notion : le scraper fusionne maintenant mieux les proprietes texte repetees,
+  hydrate les blocs/mentions manquants de maniere iterative lors des sync batch,
+  et le mapping dedoublonne plus tot tags, relations et references photo pour
+  limiter les artefacts importes dans les rapports et applications admin.
+- La derniere poche dense de `change-requests.ts` a ete encore reduite avec
+  extraction des mutations d'approbation et d'edition directe vers un module
+  dedie, pour mieux separer validation, orchestration de service et application
+  effective des changements sur les fiches.
+
+Points de refactor identifies pour la suite de l'etape :
+
+- Cote frontend, les vues back-office les plus lourdes ont recu une premiere
+  passe de decoupage (`NotionImportsView`, `ModerationView`, `AdminView`).
+  Le risque principal se deplace maintenant vers la consolidation des
+  utilitaires partages et vers les gros fichiers Notion restants.
+- Le pipeline Notion est devenu plus robuste, mais ses fichiers principaux
+  restent volumineux : `notion-scraper.ts`, `notion-import.ts` et
+  `admin-notion-imports.ts` meritent maintenant une passe de decoupage par
+  responsabilites pour reduire le cout de maintenance et fiabiliser les
+  futures evolutions.
+- La prochaine passe recommandee est de commencer par `notion-import.ts`,
+  ensuite `notion-scraper.ts`, puis `admin-notion-imports.ts`, afin de
+  conserver des diffs relisibles et de limiter le risque sur le workflow
+  d'import/apply.
 
 Point de controle :
 
