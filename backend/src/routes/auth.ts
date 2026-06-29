@@ -172,6 +172,14 @@ export const createAuthRouter = ({
         return;
       }
 
+      if (result.status === "different_identity_already_linked") {
+        response.redirect(
+          302,
+          redirectToClient({ auth_error: "different_identity_already_linked" })
+        );
+        return;
+      }
+
       request.session.userId = result.user.id;
       response.redirect(
         302,
@@ -192,6 +200,11 @@ export const createAuthRouter = ({
       await destroySession(request);
       response.clearCookie(env.SESSION_COOKIE_NAME);
       response.redirect(302, redirectToClient({ auth_error: "banned" }));
+      return;
+    }
+
+    if (result.status === "email_in_use") {
+      response.redirect(302, redirectToClient({ auth_error: "identity_email_in_use" }));
       return;
     }
 

@@ -45,6 +45,10 @@ class FixtureAuthService implements AuthService {
   }
 
   async authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult> {
+    if (identity.email === "existing-account@example.test") {
+      return { status: "email_in_use" };
+    }
+
     const user = {
       ...baseUser,
       email: identity.email,
@@ -55,7 +59,7 @@ class FixtureAuthService implements AuthService {
       linkedIdentities: [
         {
           id: `identity-${identity.provider}-viewer`,
-          provider: identity.provider,
+          provider: identity.provider as "google" | "discord" | "twitch",
           connectedAt: "2026-06-28T00:00:00.000Z",
           lastUsedAt: "2026-06-28T00:00:00.000Z",
           canUnlink: false
@@ -86,7 +90,7 @@ class FixtureAuthService implements AuthService {
         linkedIdentities: [
           {
             id: `identity-${identity.provider}-viewer`,
-            provider: identity.provider,
+            provider: identity.provider as "google" | "discord" | "twitch",
             connectedAt: "2026-06-28T00:00:00.000Z",
             lastUsedAt: "2026-06-28T00:00:00.000Z",
             canUnlink: false
@@ -101,12 +105,19 @@ class FixtureAuthService implements AuthService {
       };
     }
 
+    if (identity.providerUserId === `${identity.provider}-different-linked-id`) {
+      return { status: "different_identity_already_linked" as const };
+    }
+
     const user = {
       ...baseUser,
       linkedIdentities: [
         {
           id: `identity-${identity.provider === "google" ? "discord" : identity.provider}-viewer`,
-          provider: identity.provider === "google" ? "discord" : identity.provider,
+          provider:
+            identity.provider === "google"
+              ? ("discord" as const)
+              : (identity.provider as "google" | "discord" | "twitch"),
           connectedAt: "2026-06-28T00:00:00.000Z",
           lastUsedAt: null,
           canUnlink: true
@@ -164,8 +175,15 @@ class FixtureGoogleOauthClient implements GoogleOauthClient {
             ? "google-in-use-id"
             : code === "already-linked"
               ? "google-already-linked-id"
+              : code === "different-linked"
+                ? "google-different-linked-id"
               : "google-ok-id",
-      email: code === "banned" ? "banned@example.test" : "viewer@example.test",
+      email:
+        code === "banned"
+          ? "banned@example.test"
+          : code === "existing-account"
+            ? "existing-account@example.test"
+            : "viewer@example.test",
       displayName: code === "banned" ? "Banned User" : "Viewer Example",
       avatarUrl: "https://example.test/avatar.png"
     };
@@ -189,6 +207,8 @@ class FixtureDiscordOauthClient implements DiscordOauthClient {
           ? "discord-in-use-id"
           : code === "already-linked"
             ? "discord-already-linked-id"
+            : code === "different-linked"
+              ? "discord-different-linked-id"
             : "discord-ok-id",
       email: "viewer@example.test",
       displayName: "Viewer Example",
@@ -214,6 +234,8 @@ class FixtureTwitchOauthClient implements TwitchOauthClient {
           ? "twitch-in-use-id"
           : code === "already-linked"
             ? "twitch-already-linked-id"
+            : code === "different-linked"
+              ? "twitch-different-linked-id"
             : "twitch-ok-id",
       email: "viewer@example.test",
       displayName: "Viewer Example",
@@ -396,6 +418,30 @@ describe("auth API", () => {
     expect(sessionResponse.body).toEqual({ authenticated: false });
   });
 
+  it("refuses implicit account merge when the provider email already belongs to another account", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startResponse = await agent.get("/api/auth/google");
+    const state = oauthStateFromLocation(startResponse.headers.location);
+
+    const callbackResponse = await agent
+      .get("/api/auth/google/callback")
+      .query({ code: "existing-account", state });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe(
+      "http://localhost:5173/?auth_error=identity_email_in_use"
+    );
+
+    const sessionResponse = await agent.get("/api/auth/session");
+
+    expect(sessionResponse.body).toEqual({ authenticated: false });
+  });
+
   it("logs out and destroys the server session", async () => {
     const app = createApp({
       authService: new FixtureAuthService(),
@@ -537,6 +583,30 @@ describe("auth API", () => {
     expect(callbackResponse.status).toBe(302);
     expect(callbackResponse.headers.location).toBe(
       "http://localhost:5173/?auth_error=identity_in_use"
+    );
+  });
+
+  it("rejects linking a different Google account when another Google identity is already linked on the profile", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startLogin = await agent.get("/api/auth/google");
+    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
+
+    const startLinkResponse = await agent.get("/api/auth/google/link");
+    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+
+    const callbackResponse = await agent
+      .get("/api/auth/google/callback")
+      .query({ code: "different-linked", state: linkState });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe(
+      "http://localhost:5173/?auth_error=different_identity_already_linked"
     );
   });
 

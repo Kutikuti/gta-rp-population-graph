@@ -41,6 +41,9 @@ export type AuthResult =
   | {
       status: "banned";
       user: AuthenticatedUser;
+    }
+  | {
+      status: "email_in_use";
     };
 
 export type LinkIdentityResult =
@@ -54,6 +57,9 @@ export type LinkIdentityResult =
     }
   | {
       status: "linked_to_other_user";
+    }
+  | {
+      status: "different_identity_already_linked";
     };
 
 export interface AuthService {
@@ -167,10 +173,16 @@ export class SequelizeAuthService implements AuthService {
         : null;
 
       if (!user) {
-        user = await models.User.findOne({
+        const existingUserWithEmail = await models.User.findOne({
           where: { email: identity.email },
+          attributes: ["id"],
           transaction
         });
+
+        if (existingUserWithEmail) {
+          userId = existingUserWithEmail.id;
+          return;
+        }
       }
 
       if (!user) {
@@ -224,7 +236,9 @@ export class SequelizeAuthService implements AuthService {
     const authenticatedUser = await this.getSessionUser(userId);
 
     if (!authenticatedUser) {
-      throw new Error(`User ${userId} could not be reloaded after authentication.`);
+      return {
+        status: "email_in_use"
+      };
     }
 
     return authenticatedUser.isBanned
@@ -257,6 +271,12 @@ export class SequelizeAuthService implements AuthService {
       );
 
       if (alreadyLinkedToCurrentUser) {
+        if (alreadyLinkedToCurrentUser.providerUserId !== identity.providerUserId) {
+          return {
+            status: "different_identity_already_linked" as const
+          };
+        }
+
         return {
           status: "already_linked" as const,
           userId: user.id
@@ -312,7 +332,10 @@ export class SequelizeAuthService implements AuthService {
       return null;
     }
 
-    if (outcome.status === "linked_to_other_user") {
+    if (
+      outcome.status === "linked_to_other_user" ||
+      outcome.status === "different_identity_already_linked"
+    ) {
       return outcome;
     }
 

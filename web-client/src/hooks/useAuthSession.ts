@@ -17,6 +17,10 @@ export type AuthFeedback = {
 const authErrorMessages: Record<string, string> = {
   access_denied: "Connexion annulée.",
   banned: "Ton compte a été banni.",
+  different_identity_already_linked:
+    "Un autre compte de ce fournisseur est déjà lié à ton profil.",
+  identity_email_in_use:
+    "Un compte existe déjà avec cette adresse email. Connecte-toi d'abord avec ton fournisseur déjà lié pour rattacher ce nouveau compte depuis le profil.",
   identity_in_use: "Ce compte est déjà lié à un autre utilisateur.",
   identity_link_failed: "Le rattachement du compte n'a pas pu aboutir.",
   invalid_state: "La vérification de connexion a expiré. Réessaie.",

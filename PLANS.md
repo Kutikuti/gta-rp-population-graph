@@ -1215,12 +1215,15 @@ Avancement actuel :
 - Restent a valider manuellement : dissociation d'un compte lie, blocage de la
   dissociation du dernier moyen de connexion, creation initiale d'un compte via
   Discord et creation initiale d'un compte via Twitch.
-- Lors d'une connexion initiale par Discord ou Twitch, si l'identite fournisseur
-  n'est plus rattachee mais que l'email fournisseur correspond deja a un
-  utilisateur existant, le backend reutilise ce compte et rattache de nouveau
-  l'identite au lieu de tenter de creer un doublon. Le rattachement depuis un
-  autre compte reste bloque si cet email appartient deja a un utilisateur
-  different.
+- Lors d'une connexion initiale via un fournisseur dont l'email correspond deja
+  a un utilisateur existant sans identite liee correspondante, le backend
+  refuse desormais toute fusion implicite et renvoie une erreur dediee afin que
+  l'utilisateur se reconnecte d'abord avec un fournisseur deja rattache avant
+  de lier le nouveau compte depuis son profil.
+- Le rattachement d'un fournisseur verifie maintenant strictement qu'un compte
+  deja lie du meme type pointe bien vers la meme identite distante ; si un
+  autre compte Google, Discord ou Twitch est deja lie au profil, le backend
+  bloque l'operation avec un retour d'erreur dedie.
 - L'etat live Twitch et les ecrans de rattachement plus complets restent a
   implementer.
 - L'entree de connexion permet maintenant de choisir entre Google, Discord et

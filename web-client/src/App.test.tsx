@@ -871,6 +871,26 @@ describe("App", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Ton compte a été banni.");
   });
 
+  it("shows a dedicated auth error when a provider email matches an existing account", async () => {
+    window.history.replaceState({}, "", "/?auth_error=identity_email_in_use");
+
+    render(<App />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Un compte existe déjà avec cette adresse email."
+    );
+  });
+
+  it("shows a dedicated auth error when another account from the same provider is already linked", async () => {
+    window.history.replaceState({}, "", "/?auth_error=different_identity_already_linked");
+
+    render(<App />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Un autre compte de ce fournisseur est déjà lié à ton profil."
+    );
+  });
+
   it("lets a connected user propose a new character after an empty search", async () => {
     vi.mocked(fetch).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : input.toString();
