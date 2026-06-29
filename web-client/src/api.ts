@@ -13,6 +13,7 @@ export type PublicStreamer = {
   publicName: string;
   primaryPlatform: string | null;
   socialLinks: SocialLinks | null;
+  twitchLiveStatus: "live" | "offline" | "unknown";
   verificationStatus: VerificationStatus;
 };
 

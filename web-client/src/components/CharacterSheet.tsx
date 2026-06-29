@@ -157,7 +157,13 @@ export function CharacterSheet({
           {links.length ? (
             links.map(([platform, url]) => (
               <a href={url} key={platform} target="_blank" rel="noreferrer">
-                {platform}
+                <span>{platform}</span>
+                {platform === "twitch" && character.streamer?.twitchLiveStatus === "live" ? (
+                  <span className="stream-live-indicator" title="En direct">
+                    <span className="stream-live-dot" aria-hidden="true" />
+                    <span className="sr-only">En direct</span>
+                  </span>
+                ) : null}
               </a>
             ))
           ) : (

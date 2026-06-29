@@ -168,6 +168,37 @@
   text-decoration: none;
 }
 
+.link-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .link-list a:hover {
   border-color: #76c8ff;
+}
+
+.stream-live-indicator {
+  display: inline-flex;
+  align-items: center;
+}
+
+.stream-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ff4d5f;
+  box-shadow: 0 0 10px rgba(255, 77, 95, 0.55);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

@@ -18,6 +18,7 @@ import {
   Tag
 } from "../db/models/index.js";
 import { relationshipGraphVisible } from "./character-relationships.js";
+import { type TwitchLiveStatus, TwitchLiveStatusService } from "./twitch-live.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -57,6 +58,7 @@ export type PublicStreamer = {
   publicName: string;
   primaryPlatform: string | null;
   socialLinks: SocialLinks | null;
+  twitchLiveStatus: TwitchLiveStatus;
   verificationStatus: VerificationStatus;
 };
 
@@ -202,7 +204,10 @@ const fullName = (character: Pick<Character, "firstName" | "lastName">) =>
 
 const isoDate = (value: Date) => value.toISOString();
 
-const serializeStreamer = (streamer: Streamer | null | undefined): PublicStreamer | null => {
+const serializeStreamer = (
+  streamer: Streamer | null | undefined,
+  twitchLiveStatus: TwitchLiveStatus = "unknown"
+): PublicStreamer | null => {
   if (!streamer) {
     return null;
   }
@@ -212,6 +217,7 @@ const serializeStreamer = (streamer: Streamer | null | undefined): PublicStreame
     publicName: streamer.publicName,
     primaryPlatform: streamer.primaryPlatform,
     socialLinks: streamer.socialLinks,
+    twitchLiveStatus,
     verificationStatus: streamer.verificationStatus
   };
 };
@@ -224,7 +230,10 @@ const serializeTag = (tag: Tag): PublicTag => ({
   description: tag.description
 });
 
-const serializeCharacterSummary = (character: Character): PublicCharacterSummary => ({
+const serializeCharacterSummary = (
+  character: Character,
+  twitchLiveStatus: TwitchLiveStatus = "unknown"
+): PublicCharacterSummary => ({
   id: character.id,
   publicSlug: character.publicSlug,
   firstName: character.firstName,
@@ -243,7 +252,7 @@ const serializeCharacterSummary = (character: Character): PublicCharacterSummary
   district: character.district,
   verificationStatus: character.verificationStatus,
   dataSource: character.dataSource,
-  streamer: serializeStreamer(character.streamer),
+  streamer: serializeStreamer(character.streamer, twitchLiveStatus),
   tags: character.tags?.map(serializeTag) ?? [],
   updatedAt: isoDate(character.updatedAt)
 });
@@ -276,8 +285,11 @@ const serializeRelationship = (
   };
 };
 
-const serializeCharacterDetail = (character: Character): PublicCharacterDetail => ({
-  ...serializeCharacterSummary(character),
+const serializeCharacterDetail = (
+  character: Character,
+  twitchLiveStatus: TwitchLiveStatus = "unknown"
+): PublicCharacterDetail => ({
+  ...serializeCharacterSummary(character, twitchLiveStatus),
   birthDate: character.birthDate,
   deathOrDepartureDate: character.deathOrDepartureDate,
   photoUrl: character.photoUrl,
@@ -358,6 +370,10 @@ const characterWhere = (
 };
 
 export class SequelizePublicDataService implements PublicDataService {
+  constructor(
+    private readonly twitchLiveStatusService: TwitchLiveStatusService = new TwitchLiveStatusService()
+  ) {}
+
   async listCharacters(filters: CharacterListFilters): Promise<PublicCharacterList> {
     const result = await models.Character.findAndCountAll({
       where: characterWhere(filters),
@@ -372,7 +388,7 @@ export class SequelizePublicDataService implements PublicDataService {
     });
 
     return {
-      items: result.rows.map(serializeCharacterSummary),
+      items: result.rows.map((character) => serializeCharacterSummary(character)),
       total: result.count,
       limit: filters.limit,
       offset: filters.offset
@@ -431,7 +447,15 @@ export class SequelizePublicDataService implements PublicDataService {
       ]
     });
 
-    return character ? serializeCharacterDetail(character) : null;
+    if (!character) {
+      return null;
+    }
+
+    const twitchLiveStatus = await this.twitchLiveStatusService.getStatusForSocialLinks(
+      character.streamer?.socialLinks
+    );
+
+    return serializeCharacterDetail(character, twitchLiveStatus);
   }
 
   async listTags(): Promise<PublicTag[]> {
@@ -444,7 +468,9 @@ export class SequelizePublicDataService implements PublicDataService {
       order: [["publicName", "ASC"]]
     });
 
-    return streamers.map(serializeStreamer).filter((streamer) => streamer !== null);
+    return streamers
+      .map((streamer) => serializeStreamer(streamer))
+      .filter((streamer) => streamer !== null);
   }
 
   async getGraph(): Promise<PublicGraph> {

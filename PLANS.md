@@ -1224,8 +1224,14 @@ Avancement actuel :
   deja lie du meme type pointe bien vers la meme identite distante ; si un
   autre compte Google, Discord ou Twitch est deja lie au profil, le backend
   bloque l'operation avec un retour d'erreur dedie.
-- L'etat live Twitch et les ecrans de rattachement plus complets restent a
-  implementer.
+- L'etat live Twitch est maintenant expose cote backend avec un cache memoire
+  court et une degradation silencieuse en cas d'erreur Twitch ou d'absence de
+  configuration.
+- La fiche personnage affiche maintenant l'etat live Twitch uniquement sur le
+  lien Twitch public, via un indicateur discret lorsqu'un stream est en cours.
+- Aucun indicateur live n'est affiche lorsque la chaine Twitch est hors ligne
+  ou lorsque l'etat est inconnu.
+- Les ecrans de rattachement plus complets restent a implementer.
 - L'entree de connexion permet maintenant de choisir entre Google, Discord et
   Twitch.
 - A terme, les fournisseurs Google, Discord et Twitch devront etre identifies
@@ -1236,6 +1242,9 @@ Avancement actuel :
   `web-client npx tsc -p tsconfig.app.json --noEmit`; le test
   `web-client npm test -- App.test.tsx` reste bloque par l'ecriture Vite dans
   `node_modules/.vite-temp` sur cet environnement en lecture seule.
+- Les validations ciblees ajoutees pour le status live Twitch sont
+  `backend npm test -- --run src/test/twitch-live.test.ts src/test/public-routes.test.ts`
+  et `web-client npm test -- --run src/App.test.tsx src/api.test.ts`.
 
 - Generaliser le modele `UserIdentity` pour rattacher plusieurs fournisseurs a
   un meme compte utilisateur : Google, Discord et Twitch.
@@ -1251,13 +1260,10 @@ Avancement actuel :
   tests pour chaque fournisseur, avec une documentation de deploiement dediee.
 - Maintenir les controles existants de role, bannissement et session serveur
   quel que soit le fournisseur utilise pour se connecter.
-- Ajouter l'etat live Twitch dans cette etape, en s'appuyant sur la
-  configuration Twitch serveur deja necessaire au SSO.
-- Exposer l'etat live Twitch par le backend avec cache court et degradation
-  silencieuse si Twitch est indisponible.
-- Afficher l'etat live uniquement dans le bouton/lien Twitch de la fiche
-  personnage, avec un rond rouge lorsque le stream est en cours. Aucun indicateur
-  n'est affiche si la chaine est hors ligne ou si l'etat est inconnu.
+- Finaliser la validation manuelle du status live Twitch avec un compte reel en
+  direct puis hors ligne pour verifier le comportement attendu en production.
+- Ajouter a terme les icones officielles Google, Discord et Twitch dans les
+  actions de connexion et de rattachement.
 
 Point de controle :
 

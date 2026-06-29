@@ -63,6 +63,7 @@ const camille = {
     publicName: "NovaRP",
     primaryPlatform: "twitch",
     socialLinks: { twitch: "https://twitch.tv/example-novarp" },
+    twitchLiveStatus: "live",
     verificationStatus: "community"
   },
   tags: [tag],
@@ -273,6 +274,8 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
     });
+
+    expect(screen.getByTitle("En direct")).toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText("Nom, téléphone, matricule..."), "ines");
 

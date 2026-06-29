@@ -50,6 +50,7 @@ const streamers: PublicStreamer[] = [
     publicName: "NovaRP",
     primaryPlatform: "twitch",
     socialLinks: { twitch: "https://twitch.tv/example-novarp" },
+    twitchLiveStatus: "unknown",
     verificationStatus: "community"
   },
   {
@@ -57,6 +58,7 @@ const streamers: PublicStreamer[] = [
     publicName: "AxleLive",
     primaryPlatform: "twitch",
     socialLinks: { twitch: "https://twitch.tv/example-axlelive" },
+    twitchLiveStatus: "unknown",
     verificationStatus: "community"
   }
 ];
@@ -85,6 +87,7 @@ const camille: PublicCharacterSummary = {
     publicName: "NovaRP",
     primaryPlatform: "twitch",
     socialLinks: { twitch: "https://twitch.tv/example-novarp" },
+    twitchLiveStatus: "live",
     verificationStatus: "community"
   },
   tags,
@@ -106,6 +109,7 @@ const malik: PublicCharacterSummary = {
     publicName: "AxleLive",
     primaryPlatform: "twitch",
     socialLinks: { twitch: "https://twitch.tv/example-axlelive" },
+    twitchLiveStatus: "unknown",
     verificationStatus: "community"
   }
 };
