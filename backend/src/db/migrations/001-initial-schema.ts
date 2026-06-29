@@ -95,11 +95,6 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       "users",
       {
         id: uuidPrimaryKey(DataTypes, literal),
-        google_id: {
-          type: DataTypes.STRING(128),
-          allowNull: true,
-          unique: true
-        },
         email: {
           type: DataTypes.STRING(320),
           allowNull: false,
@@ -863,6 +858,10 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       name: "user_identities_user_id_idx",
       transaction
     });
+    await queryInterface.addIndex("user_sessions", ["expires_at"], {
+      name: "user_sessions_expires_at",
+      transaction
+    });
     await queryInterface.addIndex("notion_import_batches", ["status"], {
       name: "notion_import_batches_status_idx",
       transaction
@@ -918,6 +917,7 @@ export const down = async ({ context }: MigrationParams<MigrationContext>) => {
     await queryInterface.dropTable("streamers", { transaction });
     await queryInterface.dropTable("bans", { transaction });
     await queryInterface.dropTable("user_identities", { transaction });
+    await queryInterface.dropTable("user_sessions", { transaction });
     await queryInterface.dropTable("users", { transaction });
     await queryInterface.dropTable("roles", { transaction });
 

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { env } from "../config/env.js";
+import type { ExternalIdentity } from "./auth.js";
 
 export class GoogleOauthDisabledError extends Error {}
 
@@ -8,16 +9,9 @@ export class GoogleOauthStateError extends Error {}
 
 export class GoogleOauthExchangeError extends Error {}
 
-export type GoogleProfile = {
-  googleId: string;
-  email: string;
-  displayName: string;
-  avatarUrl: string | null;
-};
-
 export interface GoogleOauthClient {
   buildAuthorizationUrl(state: string): string;
-  exchangeCodeForProfile(code: string): Promise<GoogleProfile>;
+  exchangeCodeForProfile(code: string): Promise<ExternalIdentity>;
 }
 
 const ensureGoogleOauthEnabled = () => {
@@ -50,7 +44,7 @@ export class GoogleOidcClient implements GoogleOauthClient {
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   }
 
-  async exchangeCodeForProfile(code: string): Promise<GoogleProfile> {
+  async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
     const { clientId, clientSecret, callbackUrl } = ensureGoogleOauthEnabled();
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -100,7 +94,8 @@ export class GoogleOidcClient implements GoogleOauthClient {
     }
 
     return {
-      googleId: profileBody.sub,
+      provider: "google",
+      providerUserId: profileBody.sub,
       email: profileBody.email,
       displayName: profileBody.name,
       avatarUrl: profileBody.picture ?? null

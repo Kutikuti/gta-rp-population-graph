@@ -85,7 +85,6 @@ try {
       [
         {
           id: ids.users.viewer,
-          googleId: "seed-viewer-google-id",
           email: "viewer.seed@example.test",
           displayName: "Spectateur Seed",
           displayNameChosenAt: now,
@@ -95,7 +94,6 @@ try {
         },
         {
           id: ids.users.moderator,
-          googleId: "seed-moderator-google-id",
           email: "moderator.seed@example.test",
           displayName: "Moderateur Seed",
           displayNameChosenAt: now,

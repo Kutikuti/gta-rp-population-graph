@@ -6,10 +6,9 @@ import type {
   AuthenticatedUser,
   AuthResult,
   AuthService,
-  ExternalIdentity,
-  GoogleIdentity
+  ExternalIdentity
 } from "../services/auth.js";
-import type { GoogleOauthClient, GoogleProfile } from "../services/google-oauth.js";
+import type { GoogleOauthClient } from "../services/google-oauth.js";
 
 const usersByCode = {
   user: {
@@ -73,21 +72,7 @@ class FixtureAuthService implements AuthService {
     return { status: "authenticated", user };
   }
 
-  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
-    return this.authenticateIdentity({
-      provider: "google",
-      providerUserId: identity.googleId,
-      email: identity.email,
-      displayName: identity.displayName,
-      avatarUrl: identity.avatarUrl
-    });
-  }
-
   async linkIdentity() {
-    return null;
-  }
-
-  async linkGoogleIdentity() {
     return null;
   }
 
@@ -118,9 +103,10 @@ class FixtureGoogleOauthClient implements GoogleOauthClient {
     return `https://accounts.example.test/oauth?state=${encodeURIComponent(state)}`;
   }
 
-  async exchangeCodeForProfile(code: string): Promise<GoogleProfile> {
+  async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
     return {
-      googleId: code,
+      provider: "google",
+      providerUserId: code,
       email: `${code}@example.test`,
       displayName: code,
       avatarUrl: null

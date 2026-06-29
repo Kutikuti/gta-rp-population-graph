@@ -50,7 +50,6 @@ export class Role extends Model<InferAttributes<Role>, InferCreationAttributes<R
 
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<string>;
-  declare googleId: string | null;
   declare email: string;
   declare displayName: string;
   declare displayNameChosenAt: Date | null;
@@ -321,11 +320,6 @@ export const initModels = (sequelize: Sequelize) => {
   User.init(
     {
       id: uuidPrimaryKey,
-      googleId: {
-        type: DataTypes.STRING(128),
-        allowNull: true,
-        unique: true
-      },
       email: {
         type: DataTypes.STRING(320),
         allowNull: false,

@@ -25,13 +25,6 @@ export type AuthenticatedUser = {
   }>;
 };
 
-export type GoogleIdentity = {
-  googleId: string;
-  email: string;
-  displayName: string;
-  avatarUrl: string | null;
-};
-
 export type ExternalIdentity = {
   provider: AuthProvider;
   providerUserId: string;
@@ -66,9 +59,7 @@ export type LinkIdentityResult =
 export interface AuthService {
   getSessionUser(userId: string): Promise<AuthenticatedUser | null>;
   authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult>;
-  authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult>;
   linkIdentity(userId: string, identity: ExternalIdentity): Promise<LinkIdentityResult | null>;
-  linkGoogleIdentity(userId: string, identity: GoogleIdentity): Promise<LinkIdentityResult | null>;
   updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null>;
   unlinkIdentity(
     userId: string,
@@ -123,14 +114,6 @@ const serializeAuthenticatedUser = (user: {
 
 const createDefaultDisplayName = () => `Utilisateur ${randomUUID().slice(0, 8)}`;
 
-export const googleIdentityToExternalIdentity = (identity: GoogleIdentity): ExternalIdentity => ({
-  provider: "google",
-  providerUserId: identity.googleId,
-  email: identity.email,
-  displayName: identity.displayName,
-  avatarUrl: identity.avatarUrl
-});
-
 export class SequelizeAuthService implements AuthService {
   async getSessionUser(userId: string): Promise<AuthenticatedUser | null> {
     const user = await models.User.findByPk(userId, {
@@ -181,17 +164,18 @@ export class SequelizeAuthService implements AuthService {
 
       let user = existingIdentity
         ? await models.User.findByPk(existingIdentity.userId, { transaction })
-        : identity.provider === "google"
-          ? await models.User.findOne({
-              where: { googleId: identity.providerUserId },
-              transaction
-            })
-          : null;
+        : null;
+
+      if (!user) {
+        user = await models.User.findOne({
+          where: { email: identity.email },
+          transaction
+        });
+      }
 
       if (!user) {
         user = await models.User.create(
           {
-            googleId: identity.provider === "google" ? identity.providerUserId : null,
             email: identity.email,
             displayName: createDefaultDisplayName(),
             displayNameChosenAt: null,
@@ -203,17 +187,12 @@ export class SequelizeAuthService implements AuthService {
         );
       } else {
         const updates: Partial<{
-          googleId: string;
           email: string;
           avatarUrl: string | null;
           lastLoginAt: Date;
         }> = {
           lastLoginAt: now
         };
-
-        if (identity.provider === "google" && user.googleId !== identity.providerUserId) {
-          updates.googleId = identity.providerUserId;
-        }
 
         if (user.email !== identity.email) {
           updates.email = identity.email;
@@ -251,10 +230,6 @@ export class SequelizeAuthService implements AuthService {
     return authenticatedUser.isBanned
       ? { status: "banned", user: authenticatedUser }
       : { status: "authenticated", user: authenticatedUser };
-  }
-
-  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
-    return this.authenticateIdentity(googleIdentityToExternalIdentity(identity));
   }
 
   async linkIdentity(
@@ -302,6 +277,18 @@ export class SequelizeAuthService implements AuthService {
         };
       }
 
+      const userWithProviderEmail = await models.User.findOne({
+        where: { email: identity.email },
+        attributes: ["id"],
+        transaction
+      });
+
+      if (userWithProviderEmail && userWithProviderEmail.id !== user.id) {
+        return {
+          status: "linked_to_other_user" as const
+        };
+      }
+
       await models.UserIdentity.create(
         {
           userId: user.id,
@@ -314,10 +301,6 @@ export class SequelizeAuthService implements AuthService {
         },
         { transaction }
       );
-
-      if (identity.provider === "google" && user.googleId !== identity.providerUserId) {
-        await user.update({ googleId: identity.providerUserId }, { transaction });
-      }
 
       return {
         status: "linked" as const,
@@ -343,13 +326,6 @@ export class SequelizeAuthService implements AuthService {
       status: outcome.status,
       user: authenticatedUser
     };
-  }
-
-  async linkGoogleIdentity(
-    userId: string,
-    identity: GoogleIdentity
-  ): Promise<LinkIdentityResult | null> {
-    return this.linkIdentity(userId, googleIdentityToExternalIdentity(identity));
   }
 
   async updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null> {
@@ -406,10 +382,6 @@ export class SequelizeAuthService implements AuthService {
           },
           transaction
         });
-
-        if (provider === "google" && user.googleId === identity.providerUserId) {
-          await user.update({ googleId: null }, { transaction });
-        }
 
         return String(user.id);
       }

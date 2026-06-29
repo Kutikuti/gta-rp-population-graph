@@ -3,11 +3,7 @@ import { Router } from "express";
 
 import { env } from "../config/env.js";
 import { destroySession, regenerateSession, requireAuthenticatedUser } from "../middleware/auth.js";
-import {
-  type AuthService,
-  type ExternalIdentity,
-  googleIdentityToExternalIdentity
-} from "../services/auth.js";
+import type { AuthService, ExternalIdentity } from "../services/auth.js";
 import {
   type DiscordOauthClient,
   DiscordOauthDisabledError,
@@ -95,11 +91,6 @@ export const createAuthRouter = ({
   twitchOauthClient
 }: AuthRouterDependencies) => {
   const router = Router();
-  const googleExternalOauthClient: OauthClient = {
-    buildAuthorizationUrl: (state) => googleOauthClient.buildAuthorizationUrl(state),
-    exchangeCodeForProfile: async (code) =>
-      googleIdentityToExternalIdentity(await googleOauthClient.exchangeCodeForProfile(code))
-  };
 
   const startOauthLogin = async (
     request: express.Request,
@@ -215,7 +206,7 @@ export const createAuthRouter = ({
 
   router.get("/google", async (request, response, next) => {
     try {
-      await startOauthLogin(request, response, googleExternalOauthClient);
+      await startOauthLogin(request, response, googleOauthClient);
     } catch (error) {
       const errorCode = oauthErrorCode(error);
 
@@ -230,7 +221,7 @@ export const createAuthRouter = ({
 
   router.get("/google/link", requireAuthenticatedUser, async (request, response, next) => {
     try {
-      startOauthLink(request, response, googleExternalOauthClient, "link_google");
+      startOauthLink(request, response, googleOauthClient, "link_google");
     } catch (error) {
       const errorCode = oauthErrorCode(error);
 
@@ -245,7 +236,7 @@ export const createAuthRouter = ({
 
   router.get("/google/callback", async (request, response, next) => {
     try {
-      await handleOauthCallback(request, response, googleExternalOauthClient, "link_google");
+      await handleOauthCallback(request, response, googleOauthClient, "link_google");
     } catch (error) {
       const errorCode = oauthErrorCode(error);
 

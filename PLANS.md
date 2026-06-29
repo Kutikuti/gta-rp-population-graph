@@ -1152,8 +1152,13 @@ Avancement actuel :
 
 - Le socle persistant `UserIdentity` est introduit pour preparer le
   rattachement de plusieurs fournisseurs a un meme compte utilisateur.
-- La connexion Google continue de fonctionner, mais s'appuie desormais sur ce
-  socle et retro-alimente l'identite liee correspondante.
+- La connexion Google continue de fonctionner et s'appuie desormais uniquement
+  sur ce socle, au meme titre que Discord et Twitch.
+- Le champ historique `users.google_id` est retire du schema cible : les
+  identifiants fournisseurs sont stockes exclusivement dans `user_identities`
+  sur une base neuve.
+- Les migrations de developpement sont consolidees en une migration initiale
+  unique pour repartir sur une base propre.
 - Le profil utilisateur expose maintenant les comptes lies connus, avec Google,
   Discord et Twitch comme fournisseurs raccordables.
 - Le profil propose maintenant un point d'entree reel `Lier Google` lorsque le
@@ -1210,6 +1215,12 @@ Avancement actuel :
 - Restent a valider manuellement : dissociation d'un compte lie, blocage de la
   dissociation du dernier moyen de connexion, creation initiale d'un compte via
   Discord et creation initiale d'un compte via Twitch.
+- Lors d'une connexion initiale par Discord ou Twitch, si l'identite fournisseur
+  n'est plus rattachee mais que l'email fournisseur correspond deja a un
+  utilisateur existant, le backend reutilise ce compte et rattache de nouveau
+  l'identite au lieu de tenter de creer un doublon. Le rattachement depuis un
+  autre compte reste bloque si cet email appartient deja a un utilisateur
+  different.
 - L'etat live Twitch et les ecrans de rattachement plus complets restent a
   implementer.
 - L'entree de connexion permet maintenant de choisir entre Google, Discord et

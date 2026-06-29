@@ -7,11 +7,10 @@ import type {
   AuthResult,
   AuthService,
   ExternalIdentity,
-  GoogleIdentity,
   LinkIdentityResult
 } from "../services/auth.js";
 import type { DiscordOauthClient } from "../services/discord-oauth.js";
-import type { GoogleOauthClient, GoogleProfile } from "../services/google-oauth.js";
+import type { GoogleOauthClient } from "../services/google-oauth.js";
 import type { TwitchOauthClient } from "../services/twitch-oauth.js";
 
 const baseUser: AuthenticatedUser = {
@@ -67,16 +66,6 @@ class FixtureAuthService implements AuthService {
     this.currentUser = user;
 
     return user.isBanned ? { status: "banned", user } : { status: "authenticated", user };
-  }
-
-  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
-    return this.authenticateIdentity({
-      provider: "google",
-      providerUserId: identity.googleId,
-      email: identity.email,
-      displayName: identity.displayName,
-      avatarUrl: identity.avatarUrl
-    });
   }
 
   async linkIdentity(
@@ -139,19 +128,6 @@ class FixtureAuthService implements AuthService {
     };
   }
 
-  async linkGoogleIdentity(
-    userId: string,
-    identity: GoogleIdentity
-  ): Promise<LinkIdentityResult | null> {
-    return this.linkIdentity(userId, {
-      provider: "google",
-      providerUserId: identity.googleId,
-      email: identity.email,
-      displayName: identity.displayName,
-      avatarUrl: identity.avatarUrl
-    });
-  }
-
   async updateDisplayName(userId: string, displayName: string) {
     if (userId !== baseUser.id) {
       return null;
@@ -174,13 +150,14 @@ class FixtureGoogleOauthClient implements GoogleOauthClient {
     return `https://accounts.example.test/oauth?state=${encodeURIComponent(state)}`;
   }
 
-  async exchangeCodeForProfile(code: string): Promise<GoogleProfile> {
+  async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
     if (code === "broken") {
       throw new Error("exchange failed");
     }
 
     return {
-      googleId:
+      provider: "google",
+      providerUserId:
         code === "banned"
           ? "google-banned-id"
           : code === "in-use"
