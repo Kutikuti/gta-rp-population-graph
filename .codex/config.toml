@@ -16,7 +16,7 @@
 
 # Primary model used by Codex. Recommended example for most users: "gpt-5.5".
 
-model = "gpt-5.5"
+model = "gpt-5.4"
 
 # Communication style for supported models. Allowed values: none | friendly | pragmatic
 
@@ -172,7 +172,7 @@ allow_login_shell = true
 
 # - danger-full-access (no sandbox; extremely risky)
 
-sandbox_mode = "read-only"
+sandbox_mode = "workspace-write"
 
 # Named permissions profile to apply by default. Built-ins:
 
@@ -360,7 +360,7 @@ writable_roots = []
 
 # Allow outbound network access inside the sandbox. Default: false
 
-network_access = false
+network_access = true
 
 # Exclude $TMPDIR from writable roots. Default: false
 
