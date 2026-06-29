@@ -1,6 +1,9 @@
 export const roleNames = ["user", "moderator", "administrator"] as const;
 export type RoleName = (typeof roleNames)[number];
 
+export const authProviders = ["google", "discord", "twitch"] as const;
+export type AuthProvider = (typeof authProviders)[number];
+
 export const lifeStatuses = ["alive", "deceased", "left", "unknown"] as const;
 export type LifeStatus = (typeof lifeStatuses)[number];
 

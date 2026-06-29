@@ -6,7 +6,8 @@ import type {
   AuthenticatedUser,
   AuthResult,
   AuthService,
-  GoogleIdentity
+  GoogleIdentity,
+  LinkIdentityResult
 } from "../services/auth.js";
 import type { GoogleOauthClient, GoogleProfile } from "../services/google-oauth.js";
 
@@ -20,7 +21,16 @@ const baseUser: AuthenticatedUser = {
     id: "00000000-0000-4000-8000-000000000001",
     name: "user"
   },
-  isBanned: false
+  isBanned: false,
+  linkedIdentities: [
+    {
+      id: "identity-google-viewer",
+      provider: "google",
+      connectedAt: "2026-06-28T00:00:00.000Z",
+      lastUsedAt: "2026-06-28T00:00:00.000Z",
+      canUnlink: false
+    }
+  ]
 };
 
 class FixtureAuthService implements AuthService {
@@ -43,6 +53,60 @@ class FixtureAuthService implements AuthService {
     return user.isBanned ? { status: "banned", user } : { status: "authenticated", user };
   }
 
+  async linkGoogleIdentity(
+    userId: string,
+    identity: GoogleIdentity
+  ): Promise<LinkIdentityResult | null> {
+    if (userId !== baseUser.id) {
+      return null;
+    }
+
+    if (identity.googleId === "google-in-use-id") {
+      return { status: "linked_to_other_user" as const };
+    }
+
+    if (identity.googleId === "google-already-linked-id") {
+      return {
+        status: "already_linked" as const,
+        user: {
+          ...baseUser,
+          linkedIdentities: [
+            {
+              id: "identity-google-viewer",
+              provider: "google" as const,
+              connectedAt: "2026-06-28T00:00:00.000Z",
+              lastUsedAt: "2026-06-28T00:00:00.000Z",
+              canUnlink: false
+            }
+          ]
+        }
+      };
+    }
+
+    return {
+      status: "linked" as const,
+      user: {
+        ...baseUser,
+        linkedIdentities: [
+          {
+            id: "identity-discord-viewer",
+            provider: "discord" as const,
+            connectedAt: "2026-06-28T00:00:00.000Z",
+            lastUsedAt: null,
+            canUnlink: true
+          },
+          {
+            id: "identity-google-viewer",
+            provider: "google" as const,
+            connectedAt: "2026-06-29T00:00:00.000Z",
+            lastUsedAt: "2026-06-29T00:00:00.000Z",
+            canUnlink: true
+          }
+        ]
+      }
+    };
+  }
+
   async updateDisplayName(userId: string, displayName: string) {
     if (userId !== baseUser.id) {
       return null;
@@ -53,6 +117,10 @@ class FixtureAuthService implements AuthService {
       displayName,
       mustChooseDisplayName: false
     };
+  }
+
+  async unlinkIdentity() {
+    return "last_identity" as const;
   }
 }
 
@@ -67,7 +135,14 @@ class FixtureGoogleOauthClient implements GoogleOauthClient {
     }
 
     return {
-      googleId: code === "banned" ? "google-banned-id" : "google-ok-id",
+      googleId:
+        code === "banned"
+          ? "google-banned-id"
+          : code === "in-use"
+            ? "google-in-use-id"
+            : code === "already-linked"
+              ? "google-already-linked-id"
+              : "google-ok-id",
       email: code === "banned" ? "banned@example.test" : "viewer@example.test",
       displayName: code === "banned" ? "Banned User" : "Viewer Example",
       avatarUrl: "https://example.test/avatar.png"
@@ -128,7 +203,8 @@ describe("auth API", () => {
       user: {
         id: baseUser.id,
         email: "viewer@example.test",
-        role: { name: "user" }
+        role: { name: "user" },
+        linkedIdentities: [{ provider: "google" }]
       }
     });
   });
@@ -192,5 +268,86 @@ describe("auth API", () => {
     const sessionResponse = await agent.get("/api/auth/session");
 
     expect(sessionResponse.body).toEqual({ authenticated: false });
+  });
+
+  it("starts Google linking for an authenticated user and confirms the linked identity", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startLogin = await agent.get("/api/auth/google");
+    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
+
+    const startLinkResponse = await agent.get("/api/auth/google/link");
+    expect(startLinkResponse.status).toBe(302);
+
+    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const callbackResponse = await agent
+      .get("/api/auth/google/callback")
+      .query({ code: "ok", state: linkState });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=identity_linked");
+
+    const sessionResponse = await agent.get("/api/auth/session");
+
+    expect(sessionResponse.body).toMatchObject({
+      authenticated: true,
+      user: {
+        linkedIdentities: [{ provider: "discord" }, { provider: "google" }]
+      }
+    });
+  });
+
+  it("redirects with a dedicated error when the Google identity is already linked elsewhere", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startLogin = await agent.get("/api/auth/google");
+    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
+
+    const startLinkResponse = await agent.get("/api/auth/google/link");
+    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+
+    const callbackResponse = await agent
+      .get("/api/auth/google/callback")
+      .query({ code: "in-use", state: linkState });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe(
+      "http://localhost:5173/?auth_error=identity_in_use"
+    );
+  });
+
+  it("rejects a Google link callback when the authenticated session no longer matches", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startLogin = await agent.get("/api/auth/google");
+    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
+
+    const startLinkResponse = await agent.get("/api/auth/google/link");
+    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    await agent.post("/api/auth/logout");
+
+    const callbackResponse = await agent
+      .get("/api/auth/google/callback")
+      .query({ code: "ok", state: linkState });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe(
+      "http://localhost:5173/?auth_error=invalid_state"
+    );
   });
 });

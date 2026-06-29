@@ -1131,6 +1131,10 @@ Point de controle :
 
 ### Etape 11 - Preparation deploiement
 
+Statut : reportee apres l'etape 12 pour eviter de figer trop tot la
+documentation et la configuration de production alors que les besoins SSO et
+plateforme ne sont pas encore stabilises.
+
 - Documenter la configuration de production : variables, PostgreSQL, Nginx,
   TLS, processus Node.js et build frontend.
 - Prevoir logs, sauvegardes base de donnees, firewall, fail2ban ou equivalent.
@@ -1144,6 +1148,38 @@ Point de controle :
 - Le serveur est durci avant trafic public.
 
 ### Etape 12 - SSO multiples et integrations plateformes
+
+Statut : en cours.
+
+Avancement actuel :
+
+- Le socle persistant `UserIdentity` est introduit pour preparer le
+  rattachement de plusieurs fournisseurs a un meme compte utilisateur.
+- La connexion Google continue de fonctionner, mais s'appuie desormais sur ce
+  socle et retro-alimente l'identite liee correspondante.
+- Le profil utilisateur expose maintenant les comptes lies connus, avec Google
+  affiche comme fournisseur connecte et Discord/Twitch gardes en emplacements
+  futurs.
+- Le profil propose maintenant un point d'entree reel `Lier Google` lorsque le
+  compte Google n'est pas encore rattache.
+- Le callback OAuth Google gere desormais deux intentions distinctes :
+  connexion classique et rattachement d'identite Google a un compte deja
+  authentifie.
+- Le rattachement Google gere explicitement le cas de collision lorsqu'un
+  compte Google est deja lie a un autre utilisateur, avec retour d'erreur
+  dedie cote frontend.
+- Une premiere dissociation de compte lie est disponible cote profil, avec
+  protection explicite contre la suppression du dernier moyen de connexion.
+- La logique Google de rattachement sert maintenant de base reutilisable avant
+  l'ajout de Discord puis Twitch.
+- Les validations actuellement confirmees dans cet environnement sont :
+  `backend npm run check`, `backend tsc --noEmit`, `web-client npm test` et
+  `web-client npm run build`.
+- Les validations `backend npm test` et `backend npm run build` restent a
+  relancer dans un environnement autorisant l'ecriture disque, car le present
+  environnement est en lecture seule pour `node_modules/.vite-temp` et `dist/`.
+- Les fournisseurs Discord et Twitch, ainsi que leurs ecrans de rattachement
+  complets, restent a implementer.
 
 - Generaliser le modele `UserIdentity` pour rattacher plusieurs fournisseurs a
   un meme compte utilisateur : Google, Discord et Twitch.

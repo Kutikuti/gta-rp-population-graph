@@ -2,7 +2,7 @@ import type express from "express";
 import { Router } from "express";
 
 import { env } from "../config/env.js";
-import { destroySession, regenerateSession } from "../middleware/auth.js";
+import { destroySession, regenerateSession, requireAuthenticatedUser } from "../middleware/auth.js";
 import type { AuthService } from "../services/auth.js";
 import {
   createOauthState,
@@ -37,6 +37,12 @@ const redirectToClient = (searchParams: Record<string, string>) => {
   return url.toString();
 };
 
+const clearOauthSessionState = (request: express.Request) => {
+  request.session.oauthState = undefined;
+  request.session.oauthIntent = undefined;
+  request.session.oauthLinkUserId = undefined;
+};
+
 export const createAuthRouter = ({ authService, googleOauthClient }: AuthRouterDependencies) => {
   const router = Router();
 
@@ -49,6 +55,29 @@ export const createAuthRouter = ({ authService, googleOauthClient }: AuthRouterD
       const state = createOauthState();
       await regenerateSession(request);
       request.session.oauthState = state;
+      request.session.oauthIntent = "login";
+      request.session.oauthLinkUserId = undefined;
+      response.redirect(302, googleOauthClient.buildAuthorizationUrl(state));
+    } catch (error) {
+      if (error instanceof GoogleOauthDisabledError) {
+        response.redirect(302, redirectToClient({ auth_error: "oauth_disabled" }));
+        return;
+      }
+
+      next(error);
+    }
+  });
+
+  router.get("/google/link", requireAuthenticatedUser, async (request, response, next) => {
+    try {
+      if (!request.currentUser) {
+        throw new Error("Authenticated route reached without current user.");
+      }
+
+      const state = createOauthState();
+      request.session.oauthState = state;
+      request.session.oauthIntent = "link_google";
+      request.session.oauthLinkUserId = request.currentUser.id;
       response.redirect(302, googleOauthClient.buildAuthorizationUrl(state));
     } catch (error) {
       if (error instanceof GoogleOauthDisabledError) {
@@ -77,9 +106,45 @@ export const createAuthRouter = ({ authService, googleOauthClient }: AuthRouterD
         throw new GoogleOauthStateError("Google callback state did not match the session.");
       }
 
-      request.session.oauthState = undefined;
+      const oauthIntent = request.session.oauthIntent ?? "login";
+      const oauthLinkUserId = request.session.oauthLinkUserId;
+      clearOauthSessionState(request);
 
       const profile = await googleOauthClient.exchangeCodeForProfile(code);
+
+      if (oauthIntent === "link_google") {
+        if (
+          !oauthLinkUserId ||
+          !request.session.userId ||
+          request.session.userId !== oauthLinkUserId
+        ) {
+          throw new GoogleOauthStateError(
+            "Google link callback state did not match the active session."
+          );
+        }
+
+        const result = await authService.linkGoogleIdentity(oauthLinkUserId, profile);
+
+        if (!result) {
+          response.redirect(302, redirectToClient({ auth_error: "identity_link_failed" }));
+          return;
+        }
+
+        if (result.status === "linked_to_other_user") {
+          response.redirect(302, redirectToClient({ auth_error: "identity_in_use" }));
+          return;
+        }
+
+        request.session.userId = result.user.id;
+        response.redirect(
+          302,
+          redirectToClient({
+            auth: result.status === "linked" ? "identity_linked" : "identity_already_linked"
+          })
+        );
+        return;
+      }
+
       const result = await authService.authenticateGoogleIdentity(profile);
 
       if (result.status === "banned") {

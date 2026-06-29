@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { Op } from "sequelize";
 
-import type { RoleName } from "../db/enums.js";
-import { models } from "../db/index.js";
+import type { AuthProvider, RoleName } from "../db/enums.js";
+import { models, sequelize } from "../db/index.js";
 
 export type AuthenticatedUser = {
   id: string;
@@ -16,6 +16,13 @@ export type AuthenticatedUser = {
     name: RoleName;
   };
   isBanned: boolean;
+  linkedIdentities: Array<{
+    id: string;
+    provider: AuthProvider;
+    connectedAt: string;
+    lastUsedAt: string | null;
+    canUnlink: boolean;
+  }>;
 };
 
 export type GoogleIdentity = {
@@ -35,10 +42,28 @@ export type AuthResult =
       user: AuthenticatedUser;
     };
 
+export type LinkIdentityResult =
+  | {
+      status: "linked";
+      user: AuthenticatedUser;
+    }
+  | {
+      status: "already_linked";
+      user: AuthenticatedUser;
+    }
+  | {
+      status: "linked_to_other_user";
+    };
+
 export interface AuthService {
   getSessionUser(userId: string): Promise<AuthenticatedUser | null>;
   authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult>;
+  linkGoogleIdentity(userId: string, identity: GoogleIdentity): Promise<LinkIdentityResult | null>;
   updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null>;
+  unlinkIdentity(
+    userId: string,
+    provider: AuthProvider
+  ): Promise<AuthenticatedUser | "last_identity" | null>;
 }
 
 const activeBanWhere = {
@@ -54,6 +79,12 @@ const serializeAuthenticatedUser = (user: {
   avatarUrl: string | null;
   role?: { id: string; name: RoleName } | null;
   bans?: Array<{ id: string }>;
+  identities?: Array<{
+    id: string;
+    provider: AuthProvider;
+    createdAt: Date;
+    lastUsedAt: Date | null;
+  }>;
 }): AuthenticatedUser => {
   if (!user.role) {
     throw new Error(`User ${user.id} is missing its role.`);
@@ -69,7 +100,14 @@ const serializeAuthenticatedUser = (user: {
       id: user.role.id,
       name: user.role.name
     },
-    isBanned: Boolean(user.bans?.length)
+    isBanned: Boolean(user.bans?.length),
+    linkedIdentities: (user.identities ?? []).map((identity) => ({
+      id: identity.id,
+      provider: identity.provider,
+      connectedAt: identity.createdAt.toISOString(),
+      lastUsedAt: identity.lastUsedAt ? identity.lastUsedAt.toISOString() : null,
+      canUnlink: (user.identities?.length ?? 0) > 1
+    }))
   };
 };
 
@@ -85,6 +123,11 @@ export class SequelizeAuthService implements AuthService {
           attributes: ["id"],
           required: false,
           where: activeBanWhere
+        },
+        {
+          association: "identities",
+          attributes: ["id", "provider", "createdAt", "lastUsedAt"],
+          required: false
         }
       ]
     });
@@ -107,46 +150,175 @@ export class SequelizeAuthService implements AuthService {
     }
 
     const now = new Date();
-    const [user] = await models.User.findOrCreate({
-      where: { googleId: identity.googleId },
-      defaults: {
-        googleId: identity.googleId,
-        email: identity.email,
-        displayName: createDefaultDisplayName(),
-        displayNameChosenAt: null,
-        avatarUrl: identity.avatarUrl,
-        roleId: defaultRole.id,
-        lastLoginAt: now
+    let userId = "";
+
+    await sequelize.transaction(async (transaction) => {
+      const existingIdentity = await models.UserIdentity.findOne({
+        where: {
+          provider: "google",
+          providerUserId: identity.googleId
+        },
+        transaction
+      });
+
+      let user = existingIdentity
+        ? await models.User.findByPk(existingIdentity.userId, { transaction })
+        : await models.User.findOne({
+            where: { googleId: identity.googleId },
+            transaction
+          });
+
+      if (!user) {
+        user = await models.User.create(
+          {
+            googleId: identity.googleId,
+            email: identity.email,
+            displayName: createDefaultDisplayName(),
+            displayNameChosenAt: null,
+            avatarUrl: identity.avatarUrl,
+            roleId: defaultRole.id,
+            lastLoginAt: now
+          },
+          { transaction }
+        );
+      } else {
+        const updates: Partial<{
+          googleId: string;
+          email: string;
+          avatarUrl: string | null;
+          lastLoginAt: Date;
+        }> = {
+          lastLoginAt: now
+        };
+
+        if (user.googleId !== identity.googleId) {
+          updates.googleId = identity.googleId;
+        }
+
+        if (user.email !== identity.email) {
+          updates.email = identity.email;
+        }
+
+        if (user.avatarUrl !== identity.avatarUrl) {
+          updates.avatarUrl = identity.avatarUrl;
+        }
+
+        await user.update(updates, { transaction });
       }
+
+      await models.UserIdentity.upsert(
+        {
+          userId: user.id,
+          provider: "google",
+          providerUserId: identity.googleId,
+          providerEmail: identity.email,
+          providerDisplayName: identity.displayName,
+          providerAvatarUrl: identity.avatarUrl,
+          lastUsedAt: now
+        },
+        { transaction }
+      );
+
+      userId = user.id;
     });
 
-    const updates: Partial<{
-      email: string;
-      avatarUrl: string | null;
-      lastLoginAt: Date;
-    }> = {
-      lastLoginAt: now
-    };
-
-    if (user.email !== identity.email) {
-      updates.email = identity.email;
-    }
-
-    if (user.avatarUrl !== identity.avatarUrl) {
-      updates.avatarUrl = identity.avatarUrl;
-    }
-
-    await user.update(updates);
-
-    const authenticatedUser = await this.getSessionUser(user.id);
+    const authenticatedUser = await this.getSessionUser(userId);
 
     if (!authenticatedUser) {
-      throw new Error(`User ${user.id} could not be reloaded after authentication.`);
+      throw new Error(`User ${userId} could not be reloaded after authentication.`);
     }
 
     return authenticatedUser.isBanned
       ? { status: "banned", user: authenticatedUser }
       : { status: "authenticated", user: authenticatedUser };
+  }
+
+  async linkGoogleIdentity(
+    userId: string,
+    identity: GoogleIdentity
+  ): Promise<LinkIdentityResult | null> {
+    const outcome = await sequelize.transaction(async (transaction) => {
+      const user = await models.User.findByPk(userId, {
+        include: [
+          {
+            association: "identities",
+            attributes: ["id", "provider", "providerUserId"],
+            required: false
+          }
+        ],
+        transaction
+      });
+
+      if (!user) {
+        return null;
+      }
+
+      const alreadyLinkedToCurrentUser = (user.identities ?? []).find(
+        (entry) => entry.provider === "google"
+      );
+
+      if (alreadyLinkedToCurrentUser) {
+        return {
+          status: "already_linked" as const,
+          userId: user.id
+        };
+      }
+
+      const existingIdentity = await models.UserIdentity.findOne({
+        where: {
+          provider: "google",
+          providerUserId: identity.googleId
+        },
+        transaction
+      });
+
+      if (existingIdentity) {
+        return {
+          status: "linked_to_other_user" as const
+        };
+      }
+
+      await models.UserIdentity.create(
+        {
+          userId: user.id,
+          provider: "google",
+          providerUserId: identity.googleId,
+          providerEmail: identity.email,
+          providerDisplayName: identity.displayName,
+          providerAvatarUrl: identity.avatarUrl,
+          lastUsedAt: new Date()
+        },
+        { transaction }
+      );
+
+      if (user.googleId !== identity.googleId) {
+        await user.update({ googleId: identity.googleId }, { transaction });
+      }
+
+      return {
+        status: "linked" as const,
+        userId: user.id
+      };
+    });
+
+    if (!outcome) {
+      return null;
+    }
+
+    if (outcome.status === "linked_to_other_user") {
+      return outcome;
+    }
+
+    const authenticatedUser = await this.getSessionUser(String(outcome.userId));
+
+    if (!authenticatedUser) {
+      return null;
+    }
+
+    return {
+      status: outcome.status,
+      user: authenticatedUser
+    };
   }
 
   async updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null> {
@@ -162,5 +334,60 @@ export class SequelizeAuthService implements AuthService {
     });
 
     return this.getSessionUser(user.id);
+  }
+
+  async unlinkIdentity(
+    userId: string,
+    provider: AuthProvider
+  ): Promise<AuthenticatedUser | "last_identity" | null> {
+    const result: string | "last_identity" | null = await sequelize.transaction(
+      async (transaction) => {
+        const user = await models.User.findByPk(userId, {
+          include: [
+            {
+              association: "identities",
+              attributes: ["id", "provider", "providerUserId"],
+              required: false
+            }
+          ],
+          transaction
+        });
+
+        if (!user) {
+          return null;
+        }
+
+        const identities = user.identities ?? [];
+        const identity = identities.find((entry) => entry.provider === provider);
+
+        if (!identity) {
+          return null;
+        }
+
+        if (identities.length <= 1) {
+          return "last_identity" as const;
+        }
+
+        await models.UserIdentity.destroy({
+          where: {
+            id: identity.id,
+            userId: user.id
+          },
+          transaction
+        });
+
+        if (provider === "google" && user.googleId === identity.providerUserId) {
+          await user.update({ googleId: null }, { transaction });
+        }
+
+        return String(user.id);
+      }
+    );
+
+    if (result === null || result === "last_identity") {
+      return result;
+    }
+
+    return this.getSessionUser(result);
   }
 }

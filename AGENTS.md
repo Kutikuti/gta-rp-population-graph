@@ -260,6 +260,21 @@ Le deploiement n'est pas encore implemente. Le plan cible :
 # Avant chaque modification
 
 - Lire `AGENTS.md`, `PLANS.md` et le fichier concerne.
+- Pour toute vraie tache de developpement, initialiser Serena au debut de la
+  session si cela n'a pas encore ete fait via `initial_instructions`.
+- Pour l'exploration du code TypeScript backend/frontend, privilegier Serena
+  avant les lectures shell brutes : activer le projet si necessaire, puis
+  utiliser en priorite les outils semantiques et les memoires pertinentes.
+- Reserver `rg`, `sed` et les lectures shell directes surtout aux fichiers non
+  code, a la documentation, a la configuration, aux logs, a `git status`, a la
+  recherche large, ou lorsque Serena n'a pas l'outil adapte.
+- Pour les modifications fines dans un gros fichier, utiliser Serena si l'outil
+  disponible aide reellement ; sinon utiliser `apply_patch`.
+- Si Serena n'est pas utilisee pour une tache de code, l'indiquer explicitement
+  dans un update avec la raison.
+- Dans les updates de travail, indiquer clairement le statut d'usage de Serena,
+  par exemple `Usage Serena : oui, pour reperer les symboles et limiter les
+  lectures completes` ou `Usage Serena : non, car tache purement doc/config`.
 - Verifier l'etat Git pour ne pas ecraser des changements utilisateur.
 - Comprendre si la modification touche le produit, les donnees, la securite ou
   seulement la presentation.

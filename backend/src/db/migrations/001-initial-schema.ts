@@ -1,6 +1,7 @@
 import type { Transaction } from "sequelize";
 import type { MigrationParams } from "umzug";
 import {
+  authProviders,
   changeRequestStatuses,
   changeRequestTypes,
   dataSources,
@@ -96,7 +97,7 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
         id: uuidPrimaryKey(DataTypes, literal),
         google_id: {
           type: DataTypes.STRING(128),
-          allowNull: false,
+          allowNull: true,
           unique: true
         },
         email: {
@@ -124,6 +125,46 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           onDelete: "RESTRICT"
         },
         last_login_at: {
+          type: DataTypes.DATE,
+          allowNull: true
+        },
+        ...timestampColumns(DataTypes, literal)
+      },
+      { transaction }
+    );
+
+    await queryInterface.createTable(
+      "user_identities",
+      {
+        id: uuidPrimaryKey(DataTypes, literal),
+        user_id: {
+          type: DataTypes.UUID,
+          allowNull: false,
+          references: { model: "users", key: "id" },
+          onUpdate: "CASCADE",
+          onDelete: "CASCADE"
+        },
+        provider: {
+          type: enumColumn(DataTypes),
+          allowNull: false
+        },
+        provider_user_id: {
+          type: DataTypes.STRING(191),
+          allowNull: false
+        },
+        provider_email: {
+          type: DataTypes.STRING(320),
+          allowNull: true
+        },
+        provider_display_name: {
+          type: DataTypes.STRING(160),
+          allowNull: true
+        },
+        provider_avatar_url: {
+          type: DataTypes.TEXT,
+          allowNull: true
+        },
+        last_used_at: {
           type: DataTypes.DATE,
           allowNull: true
         },
@@ -668,6 +709,7 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
     );
 
     await addEnumCheck(queryInterface, "roles", "name", roleNames, transaction);
+    await addEnumCheck(queryInterface, "user_identities", "provider", authProviders, transaction);
     await addEnumCheck(
       queryInterface,
       "notion_import_batches",
@@ -807,6 +849,20 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       name: "admin_actions_action_idx",
       transaction
     });
+    await queryInterface.addIndex("user_identities", ["provider", "provider_user_id"], {
+      name: "user_identities_provider_provider_user_id_uidx",
+      unique: true,
+      transaction
+    });
+    await queryInterface.addIndex("user_identities", ["user_id", "provider"], {
+      name: "user_identities_user_id_provider_uidx",
+      unique: true,
+      transaction
+    });
+    await queryInterface.addIndex("user_identities", ["user_id"], {
+      name: "user_identities_user_id_idx",
+      transaction
+    });
     await queryInterface.addIndex("notion_import_batches", ["status"], {
       name: "notion_import_batches_status_idx",
       transaction
@@ -861,6 +917,7 @@ export const down = async ({ context }: MigrationParams<MigrationContext>) => {
     await queryInterface.dropTable("characters", { transaction });
     await queryInterface.dropTable("streamers", { transaction });
     await queryInterface.dropTable("bans", { transaction });
+    await queryInterface.dropTable("user_identities", { transaction });
     await queryInterface.dropTable("users", { transaction });
     await queryInterface.dropTable("roles", { transaction });
 

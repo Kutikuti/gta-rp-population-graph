@@ -788,6 +788,18 @@
   overflow-wrap: anywhere;
 }
 
+.profile-linked-identity-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-linked-identity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
 @media (max-width: 860px) {
   .topbar-actions,
   .full-page-header,

@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { type AuthSession, getAuthSession, logout, updateProfileDisplayName } from "../api";
+import {
+  ApiRequestError,
+  type AuthSession,
+  getAuthSession,
+  logout,
+  unlinkProfileIdentity,
+  updateProfileDisplayName
+} from "../api";
 
 export type AuthFeedback = {
   tone: "success" | "error";
@@ -10,6 +17,8 @@ export type AuthFeedback = {
 const authErrorMessages: Record<string, string> = {
   access_denied: "Connexion Google annulée.",
   banned: "Ton compte a été banni.",
+  identity_in_use: "Ce compte Google est déjà lié à un autre utilisateur.",
+  identity_link_failed: "Le rattachement du compte Google n'a pas pu aboutir.",
   invalid_state: "La vérification de connexion a expiré. Réessaie.",
   oauth_disabled: "La connexion Google n'est pas disponible.",
   oauth_exchange_failed: "La connexion Google n'a pas pu aboutir."
@@ -92,6 +101,25 @@ export function useAuthSession(onError: (message: string) => void) {
       return;
     }
 
+    if (authRedirectResult === "identity_linked" || authRedirectResult === "identity_already_linked") {
+      setAuthFeedback({
+        tone: "success",
+        message:
+          authRedirectResult === "identity_linked"
+            ? "Compte Google lié."
+            : "Ce compte Google est déjà lié à ton profil."
+      });
+      setAuthRedirectResult(null);
+      void getAuthSession()
+        .then((session) => {
+          setAuthSession(session);
+        })
+        .catch(() => {
+          setAuthSession({ authenticated: false });
+        });
+      return;
+    }
+
     setAuthFeedback({
       tone: "error",
       message: authErrorMessages[authRedirectResult] ?? "La connexion Google n'a pas pu aboutir."
@@ -121,10 +149,32 @@ export function useAuthSession(onError: (message: string) => void) {
     }
   };
 
+  const handleIdentityUnlink = async (provider: "google" | "discord" | "twitch") => {
+    try {
+      const { user } = await unlinkProfileIdentity(provider);
+      setAuthSession({ authenticated: true, user });
+      setAuthFeedback({ tone: "success", message: "Compte lié dissocié." });
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError && error.code === "LAST_IDENTITY"
+          ? error.message
+          : error instanceof ApiRequestError && error.code === "IDENTITY_NOT_FOUND"
+            ? "Ce compte lié n'est plus disponible."
+            : error instanceof Error &&
+                error.message === "Impossible de dissocier le dernier moyen de connexion."
+              ? error.message
+              : "Le compte lié n'a pas pu être dissocié.";
+      onError(message);
+      return false;
+    }
+  };
+
   return {
     authFeedback,
     authSession,
     handleDisplayNameUpdate,
+    handleIdentityUnlink,
     handleLogout,
     isAuthLoading
   };

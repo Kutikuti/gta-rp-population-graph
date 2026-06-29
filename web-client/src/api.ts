@@ -148,6 +148,13 @@ export type AuthenticatedUser = {
     name: RoleName;
   };
   isBanned: boolean;
+  linkedIdentities: Array<{
+    id: string;
+    provider: "google" | "discord" | "twitch";
+    connectedAt: string;
+    lastUsedAt: string | null;
+    canUnlink: boolean;
+  }>;
 };
 
 export type AuthSession =
@@ -505,9 +512,18 @@ export const listHistory = (characterId?: string) => {
 export const getAuthSession = () => fetchJson<AuthSession>("/api/auth/session");
 
 export const getGoogleAuthUrl = () => buildApiUrl("/api/auth/google");
+export const getGoogleLinkUrl = () => buildApiUrl("/api/auth/google/link");
 
 export const updateProfileDisplayName = (displayName: string) =>
   sendJson<{ user: AuthenticatedUser }>("/api/profile/display-name", "PATCH", { displayName });
+
+export const unlinkProfileIdentity = (provider: "google" | "discord" | "twitch") =>
+  fetchJson<{ user: AuthenticatedUser }>(
+    `/api/profile/identities/${encodeURIComponent(provider)}`,
+    {
+      method: "DELETE"
+    }
+  );
 
 export const getAdminDashboard = () => fetchJson<AdminDashboard>("/api/admin/dashboard");
 

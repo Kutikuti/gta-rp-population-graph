@@ -341,7 +341,16 @@ describe("App", () => {
               id: "00000000-0000-4000-8000-000000000001",
               name: "user"
             },
-            isBanned: false
+            isBanned: false,
+            linkedIdentities: [
+              {
+                id: "identity-google-viewer",
+                provider: "google",
+                connectedAt: "2026-06-28T00:00:00.000Z",
+                lastUsedAt: "2026-06-28T00:00:00.000Z",
+                canUnlink: false
+              }
+            ]
           }
         });
       }
@@ -363,6 +372,10 @@ describe("App", () => {
           { id: camille.id, fullName: camille.fullName },
           { id: ines.id, fullName: ines.fullName }
         ]);
+      }
+
+      if (url.includes("/api/contributions/change-requests")) {
+        return jsonResponse([]);
       }
 
       if (url.includes("/api/streamers")) {
@@ -387,6 +400,16 @@ describe("App", () => {
     expect(await screen.findByText("Viewer Example")).toBeInTheDocument();
     expect(screen.getByText("Utilisateur")).toBeInTheDocument();
     expect(await screen.findByText("Connexion établie.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Viewer Example/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Nom public et contributions" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Google connecté" })).toBeDisabled();
+    expect(screen.getByText(/Lié le/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Dissocier" })).toBeDisabled();
+    expect(screen.getByText("Dernier moyen de connexion conservé.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Déconnexion" }));
 
@@ -413,7 +436,8 @@ describe("App", () => {
               id: "00000000-0000-4000-8000-000000000003",
               name: "administrator"
             },
-            isBanned: false
+            isBanned: false,
+            linkedIdentities: []
           }
         });
       }
@@ -475,6 +499,71 @@ describe("App", () => {
     expect(screen.getByText("Famille Morel")).toBeInTheDocument();
   });
 
+  it("shows a Google linking entry point when the profile has no linked Google identity yet", async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000913",
+            email: "admin@example.test",
+            displayName: "Admin Example",
+            mustChooseDisplayName: false,
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000003",
+              name: "administrator"
+            },
+            isBanned: false,
+            linkedIdentities: []
+          }
+        });
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/contributions/change-requests")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([camille.streamer]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: /Admin Example/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Nom public et contributions" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lier Google" })).toHaveAttribute(
+      "href",
+      "http://localhost:4000/api/auth/google/link"
+    );
+  });
+
   it("opens the Notion imports preview for administrators", async () => {
     vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
       const url = input instanceof Request ? input.url : input.toString();
@@ -492,7 +581,8 @@ describe("App", () => {
               id: "00000000-0000-4000-8000-000000000003",
               name: "administrator"
             },
-            isBanned: false
+            isBanned: false,
+            linkedIdentities: []
           }
         });
       }
@@ -666,7 +756,8 @@ describe("App", () => {
               id: "00000000-0000-4000-8000-000000000003",
               name: "administrator"
             },
-            isBanned: false
+            isBanned: false,
+            linkedIdentities: []
           }
         });
       }
@@ -766,7 +857,8 @@ describe("App", () => {
               id: "00000000-0000-4000-8000-000000000001",
               name: "user"
             },
-            isBanned: false
+            isBanned: false,
+            linkedIdentities: []
           }
         });
       }

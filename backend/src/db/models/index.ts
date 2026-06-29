@@ -10,6 +10,8 @@ import {
 } from "sequelize";
 
 import {
+  type AuthProvider,
+  authProviders,
   type ChangeRequestStatus,
   type ChangeRequestType,
   changeRequestStatuses,
@@ -48,7 +50,7 @@ export class Role extends Model<InferAttributes<Role>, InferCreationAttributes<R
 
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<string>;
-  declare googleId: string;
+  declare googleId: string | null;
   declare email: string;
   declare displayName: string;
   declare displayNameChosenAt: Date | null;
@@ -60,6 +62,25 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
 
   declare role?: NonAttribute<Role>;
   declare bans?: NonAttribute<Ban[]>;
+  declare identities?: NonAttribute<UserIdentity[]>;
+}
+
+export class UserIdentity extends Model<
+  InferAttributes<UserIdentity>,
+  InferCreationAttributes<UserIdentity>
+> {
+  declare id: CreationOptional<string>;
+  declare userId: ForeignKey<User["id"]>;
+  declare provider: AuthProvider;
+  declare providerUserId: string;
+  declare providerEmail: string | null;
+  declare providerDisplayName: string | null;
+  declare providerAvatarUrl: string | null;
+  declare lastUsedAt: Date | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  declare user?: NonAttribute<User>;
 }
 
 export class Ban extends Model<InferAttributes<Ban>, InferCreationAttributes<Ban>> {
@@ -302,7 +323,7 @@ export const initModels = (sequelize: Sequelize) => {
       id: uuidPrimaryKey,
       googleId: {
         type: DataTypes.STRING(128),
-        allowNull: false,
+        allowNull: true,
         unique: true
       },
       email: {
@@ -326,6 +347,39 @@ export const initModels = (sequelize: Sequelize) => {
       updatedAt: DataTypes.DATE
     },
     { sequelize, tableName: "users" }
+  );
+
+  UserIdentity.init(
+    {
+      id: uuidPrimaryKey,
+      userId: {
+        type: DataTypes.UUID,
+        allowNull: false
+      },
+      provider: {
+        type: DataTypes.ENUM(...authProviders),
+        allowNull: false
+      },
+      providerUserId: {
+        type: DataTypes.STRING(191),
+        allowNull: false
+      },
+      providerEmail: DataTypes.STRING(320),
+      providerDisplayName: DataTypes.STRING(160),
+      providerAvatarUrl: DataTypes.TEXT,
+      lastUsedAt: DataTypes.DATE,
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
+    },
+    {
+      sequelize,
+      tableName: "user_identities",
+      indexes: [
+        { unique: true, fields: ["provider", "provider_user_id"] },
+        { unique: true, fields: ["user_id", "provider"] },
+        { fields: ["user_id"] }
+      ]
+    }
   );
 
   Ban.init(
@@ -746,6 +800,8 @@ export const initModels = (sequelize: Sequelize) => {
 
   Role.hasMany(User, { foreignKey: "roleId", as: "users" });
   User.belongsTo(Role, { foreignKey: "roleId", as: "role" });
+  User.hasMany(UserIdentity, { foreignKey: "userId", as: "identities" });
+  UserIdentity.belongsTo(User, { foreignKey: "userId", as: "user" });
 
   User.hasMany(Ban, { foreignKey: "userId", as: "bans" });
   Ban.belongsTo(User, { foreignKey: "userId", as: "user" });
@@ -824,6 +880,7 @@ export const initModels = (sequelize: Sequelize) => {
   return {
     Role,
     User,
+    UserIdentity,
     Ban,
     AdminAction,
     NotionImportBatch,

@@ -26,6 +26,7 @@ import {
 
 export type { AdminNotionImportBatch, AdminNotionImportDetail } from "./admin-notion-imports.js";
 export type AdminNotionImportEntry = AdminNotionImportDetail["entries"][number];
+export type { AdminNotionImportPhotoResult } from "./admin-notion-imports-shared.js";
 export type {
   AdminActionEntry,
   AdminDashboard,

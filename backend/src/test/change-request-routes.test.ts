@@ -34,7 +34,8 @@ const usersByCode = {
       id: "00000000-0000-4000-8000-000000000001",
       name: "user"
     },
-    isBanned: false
+    isBanned: false,
+    linkedIdentities: []
   },
   moderator: {
     id: ids.moderator,
@@ -46,7 +47,8 @@ const usersByCode = {
       id: "00000000-0000-4000-8000-000000000002",
       name: "moderator"
     },
-    isBanned: false
+    isBanned: false,
+    linkedIdentities: []
   }
 } satisfies Record<string, AuthenticatedUser>;
 
@@ -115,6 +117,10 @@ class FixtureAuthService implements AuthService {
     return { status: "authenticated", user };
   }
 
+  async linkGoogleIdentity() {
+    return null;
+  }
+
   async updateDisplayName(userId: string, displayName: string) {
     const user = this.usersById.get(userId);
 
@@ -130,6 +136,10 @@ class FixtureAuthService implements AuthService {
     this.usersById.set(userId, updatedUser);
 
     return updatedUser;
+  }
+
+  async unlinkIdentity() {
+    return "last_identity" as const;
   }
 }
 

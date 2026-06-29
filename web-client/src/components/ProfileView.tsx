@@ -6,7 +6,7 @@ import type {
   CharacterSnapshot,
   PublicCharacterReference
 } from "../api";
-import { listCharacterDirectory, listMyChangeRequests } from "../api";
+import { getGoogleLinkUrl, listCharacterDirectory, listMyChangeRequests } from "../api";
 import { characterSnapshotFieldLabels } from "../constants";
 import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
 import { formatDate } from "../utils/format";
@@ -15,6 +15,7 @@ import { EmptyBlock, LoadingBlock } from "./StateBlock";
 type ProfileViewProps = {
   session: AuthSession | null;
   onDisplayNameUpdate: (displayName: string) => Promise<boolean>;
+  onIdentityUnlink: (provider: "google" | "discord" | "twitch") => Promise<boolean>;
   onError: (message: string) => void;
 };
 
@@ -29,6 +30,14 @@ const requestTypeLabels = {
   create: "Création"
 } as const;
 
+const providerLabels = {
+  google: "Google",
+  discord: "Discord",
+  twitch: "Twitch"
+} as const;
+
+const googleLinkUrl = getGoogleLinkUrl();
+
 const visibleSnapshotEntries = (snapshot: CharacterSnapshot) =>
   (
     Object.entries(snapshot) as Array<
@@ -38,7 +47,12 @@ const visibleSnapshotEntries = (snapshot: CharacterSnapshot) =>
     .filter(([, value]) => value !== null && value !== "" && value !== undefined)
     .filter(([field, value]) => field !== "isRpDeath" || value === true);
 
-export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileViewProps) {
+export function ProfileView({
+  session,
+  onDisplayNameUpdate,
+  onIdentityUnlink,
+  onError
+}: ProfileViewProps) {
   const [displayName, setDisplayName] = useState(
     session?.authenticated ? session.user.displayName : ""
   );
@@ -47,6 +61,7 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
   const [characterOptions, setCharacterOptions] = useState<PublicCharacterReference[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
 
   useEffect(() => {
     if (session?.authenticated) {
@@ -124,8 +139,17 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
     }
   };
 
+  const handleIdentityUnlinkClick = async (provider: "google" | "discord" | "twitch") => {
+    setUnlinkingProvider(provider);
+    await onIdentityUnlink(provider);
+    setUnlinkingProvider(null);
+  };
+
   const characterNames = new Map(
     characterOptions.map((character) => [character.id, character.fullName] as const)
+  );
+  const linkedProviders = new Set(
+    session.user.linkedIdentities.map((identity) => identity.provider)
   );
 
   return (
@@ -171,16 +195,59 @@ export function ProfileView({ session, onDisplayNameUpdate, onError }: ProfileVi
           <div className="profile-sso-panel">
             <h3>Comptes liés</h3>
             <div className="profile-sso-actions">
-              <button type="button" className="ghost-button" disabled>
-                Google connecté
-              </button>
-              <button type="button" className="ghost-button" disabled>
-                Discord à venir
-              </button>
-              <button type="button" className="ghost-button" disabled>
-                Twitch à venir
-              </button>
+              {(Object.keys(providerLabels) as Array<keyof typeof providerLabels>).map(
+                (provider) =>
+                  linkedProviders.has(provider) ? (
+                    <button key={provider} type="button" className="ghost-button" disabled>
+                      {providerLabels[provider]} connecté
+                    </button>
+                  ) : provider === "google" ? (
+                    <a key={provider} href={googleLinkUrl} className="ghost-button auth-link">
+                      Lier Google
+                    </a>
+                  ) : (
+                    <button key={provider} type="button" className="ghost-button" disabled>
+                      {providerLabels[provider]} à venir
+                    </button>
+                  )
+              )}
             </div>
+            {session.user.linkedIdentities.length > 0 ? (
+              <div className="profile-request-details">
+                {session.user.linkedIdentities.map((identity) => (
+                  <div key={identity.id} className="profile-request-change">
+                    <span>{providerLabels[identity.provider]}</span>
+                    <div className="profile-linked-identity-copy">
+                      <strong>
+                        Lié le {formatDate(identity.connectedAt)}
+                        {identity.lastUsedAt
+                          ? `, utilisé le ${formatDate(identity.lastUsedAt)}`
+                          : ""}
+                      </strong>
+                      <div className="profile-linked-identity-actions">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={!identity.canUnlink || unlinkingProvider === identity.provider}
+                          onClick={() => {
+                            void handleIdentityUnlinkClick(identity.provider);
+                          }}
+                        >
+                          {unlinkingProvider === identity.provider
+                            ? "Dissociation..."
+                            : "Dissocier"}
+                        </button>
+                        {!identity.canUnlink ? (
+                          <small className="muted-text">Dernier moyen de connexion conservé.</small>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted-text">Aucun autre compte lié pour le moment.</p>
+            )}
           </div>
 
           <div className="profile-sso-panel">

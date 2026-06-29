@@ -35,6 +35,7 @@ describe("database models", () => {
       "Streamer",
       "Tag",
       "User",
+      "UserIdentity",
       "UserSession"
     ]);
   });
@@ -80,6 +81,10 @@ describe("database models", () => {
     expect(Object.keys(models.ChangeHistory.associations)).toEqual(
       expect.arrayContaining(["character", "changeRequest", "moderator"])
     );
+    expect(Object.keys(models.User.associations)).toEqual(
+      expect.arrayContaining(["role", "bans", "identities"])
+    );
+    expect(Object.keys(models.UserIdentity.associations)).toEqual(expect.arrayContaining(["user"]));
     expect(Object.keys(models.NotionImportBatch.associations)).toEqual(
       expect.arrayContaining(["entries", "validatedBy"])
     );

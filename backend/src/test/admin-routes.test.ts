@@ -8,6 +8,7 @@ import type {
   AdminNotionImportBatch,
   AdminNotionImportDetail,
   AdminNotionImportEntry,
+  AdminNotionImportPhotoResult,
   AdminService,
   AdminTag,
   AdminUser,
@@ -33,7 +34,8 @@ const authUsers = {
       id: "00000000-0000-4000-8000-000000000001",
       name: "user"
     },
-    isBanned: false
+    isBanned: false,
+    linkedIdentities: []
   },
   administrator: {
     id: "00000000-0000-4000-8000-000000000913",
@@ -45,7 +47,8 @@ const authUsers = {
       id: "00000000-0000-4000-8000-000000000003",
       name: "administrator"
     },
-    isBanned: false
+    isBanned: false,
+    linkedIdentities: []
   }
 } satisfies Record<string, AuthenticatedUser>;
 
@@ -120,6 +123,10 @@ class FixtureAuthService implements AuthService {
     return { status: "authenticated", user };
   }
 
+  async linkGoogleIdentity() {
+    return null;
+  }
+
   async updateDisplayName(userId: string, displayName: string) {
     const user = this.usersById.get(userId);
 
@@ -128,6 +135,10 @@ class FixtureAuthService implements AuthService {
     }
 
     return { ...user, displayName, mustChooseDisplayName: false };
+  }
+
+  async unlinkIdentity() {
+    return "last_identity" as const;
   }
 }
 
@@ -190,7 +201,7 @@ class FixtureAdminService implements AdminService {
     actorUserId: string;
     batchId: string;
     pageId: string;
-  }) {
+  }): Promise<AdminNotionImportPhotoResult> {
     const baseEntry = notionImportDetail.entries[0];
 
     if (!baseEntry) {
@@ -363,7 +374,7 @@ describe("admin routes", () => {
 
   it("returns 400 when notion photo import fails with a request-style validation error", async () => {
     class InvalidPhotoAdminService extends FixtureAdminService {
-      override async importNotionImportEntryPhoto() {
+      override async importNotionImportEntryPhoto(): Promise<AdminNotionImportPhotoResult> {
         return {
           status: "invalid" as const,
           code: "NOTION_IMPORT_ENTRY_INVALID_PHOTO",
@@ -385,7 +396,7 @@ describe("admin routes", () => {
 
   it("returns 404 when notion photo import targets a missing applied character", async () => {
     class MissingCharacterAdminService extends FixtureAdminService {
-      override async importNotionImportEntryPhoto() {
+      override async importNotionImportEntryPhoto(): Promise<AdminNotionImportPhotoResult> {
         return {
           status: "invalid" as const,
           code: "NOTION_IMPORT_ENTRY_CHARACTER_NOT_FOUND",

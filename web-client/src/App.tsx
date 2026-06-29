@@ -40,8 +40,14 @@ function App() {
   }, []);
 
   const { graph, isBootLoading, refreshPublicGraphData, tags } = usePublicGraphData(handleError);
-  const { authFeedback, authSession, handleDisplayNameUpdate, handleLogout, isAuthLoading } =
-    useAuthSession(handleError);
+  const {
+    authFeedback,
+    authSession,
+    handleDisplayNameUpdate,
+    handleIdentityUnlink,
+    handleLogout,
+    isAuthLoading
+  } = useAuthSession(handleError);
   const { isSearchActive, matchingIds, searchResultSummary, searchTotal } = useSearchMatches(
     filters,
     handleError
@@ -270,6 +276,7 @@ function App() {
           <ProfileView
             session={authSession}
             onDisplayNameUpdate={handleDisplayNameUpdate}
+            onIdentityUnlink={handleIdentityUnlink}
             onError={handleError}
           />
         ) : null}
