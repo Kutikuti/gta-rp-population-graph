@@ -112,6 +112,36 @@ describe("notion import mapping", () => {
     expect(result.report.photoReferences).toEqual(["https://example.com/ada.webp"]);
   });
 
+  it("falls back to the Twitch handle as streamer name when Notion has no explicit streamer field", () => {
+    const result = mapNotionPage({
+      pageId: "page-owl",
+      properties: {
+        Prenom: "Heitor Leite",
+        Nom: "JR",
+        Twitch: "https://www.twitch.tv/owlfr_"
+      }
+    });
+
+    expect(result.mapped.streamerPublicName).toBe("owlfr_");
+    expect(result.mapped.socialLinks).toEqual({
+      twitch: "https://www.twitch.tv/owlfr_"
+    });
+  });
+
+  it("keeps the explicit streamer field when Notion provides one", () => {
+    const result = mapNotionPage({
+      pageId: "page-explicit-streamer",
+      properties: {
+        Prenom: "Ada",
+        Nom: "Lovelace",
+        Streamer: "AdaLive",
+        Twitch: "https://www.twitch.tv/different_handle"
+      }
+    });
+
+    expect(result.mapped.streamerPublicName).toBe("AdaLive");
+  });
+
   it("deduplicates repeated tags, relationships and photo references during mapping", () => {
     const result = mapNotionPage({
       pageId: "page-dedupe",

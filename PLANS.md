@@ -916,6 +916,9 @@ Plan propose :
     champ ;
   - mapper separement les streamers, liens publics, champs police,
     anciens personnages, tags et relations RP autorisees ;
+  - lorsque le champ Notion `Streamer` est vide mais qu'un lien Twitch public
+    existe, reutiliser par defaut le handle Twitch comme nom public streamer
+    candidat afin d'eviter de perdre la majorite des rattachements medias ;
   - traiter explicitement le champ Notion `V6` comme un candidat pour les
     anciens personnages et, plus tard, comme source potentielle d'une relation
     dediee `ancien personnage` non affichee dans le graphe public ;

@@ -8,6 +8,33 @@ import type { NotionPageInput } from "./notion-import-schema.js";
 
 const stringList = z.union([z.string(), z.array(z.string())]).optional();
 
+const twitchHandleFromUrl = (value: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+
+    if (!/(^|\.)twitch\.tv$/i.test(url.hostname)) {
+      return null;
+    }
+
+    const [firstSegment] = url.pathname
+      .split("/")
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+
+    if (!firstSegment || firstSegment.startsWith("@")) {
+      return firstSegment ? firstSegment.slice(1) : null;
+    }
+
+    return firstSegment;
+  } catch {
+    return null;
+  }
+};
+
 export type MappedNotionCharacter = {
   firstName: string | null;
   lastName: string | null;
@@ -454,6 +481,10 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const cleanSocialLinks = Object.fromEntries(
     Object.entries(socialLinks).filter(([, value]) => value)
   ) as JsonObject;
+  const explicitStreamerPublicName = stringValue(
+    findValue(properties, fieldAliases.streamerPublicName)
+  );
+  const fallbackTwitchHandle = twitchHandleFromUrl(socialLinks.twitch);
 
   const mapped: MappedNotionCharacter = {
     firstName,
@@ -463,7 +494,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
     deathOrDepartureDate:
       lifeStatus === "deceased" || lifeStatus === "left" ? deathOrDepartureDate : null,
     phoneNumber: stringValue(findValue(properties, fieldAliases.phoneNumber)),
-    streamerPublicName: stringValue(findValue(properties, fieldAliases.streamerPublicName)),
+    streamerPublicName: explicitStreamerPublicName ?? fallbackTwitchHandle,
     socialLinks: cleanSocialLinks,
     businessName,
     groupName,
