@@ -1149,7 +1149,7 @@ Point de controle :
 
 ### Etape 12 - SSO multiples et integrations plateformes
 
-Statut : en cours.
+Statut : terminee.
 
 Avancement actuel :
 
@@ -1207,14 +1207,9 @@ Avancement actuel :
   `backend npm run check`, `backend npx tsc -p tsconfig.json --noEmit`,
   `web-client npm run check` et
   `web-client npx tsc -p tsconfig.app.json --noEmit`.
-- La suite backend complete `backend npm test` et `web-client npm test --
-  App.test.tsx` restent a relancer dans un environnement autorisant l'ecriture
-  disque, car Vite doit ecrire dans `node_modules/.vite-temp` et l'escalade a
-  ete refusee dans cet environnement.
-- `backend npm run build` reste aussi a relancer dans un environnement
-  autorisant l'ecriture disque, car TypeScript doit ecrire dans `backend/dist`.
-- Les checks et tests ont ete relances hors de cet environnement et passent
-  selon validation utilisateur.
+- Les builds, checks et tests cibles ont depuis ete rejoues et corriges au fil
+  des integrations SSO, du status live Twitch, des icones de fournisseurs et
+  des derniers ajustements frontend.
 - Restent a valider manuellement : dissociation d'un compte lie, blocage de la
   dissociation du dernier moyen de connexion, creation initiale d'un compte via
   Discord et creation initiale d'un compte via Twitch.
@@ -1234,20 +1229,23 @@ Avancement actuel :
   lien Twitch public, via un indicateur discret lorsqu'un stream est en cours.
 - Aucun indicateur live n'est affiche lorsque la chaine Twitch est hors ligne
   ou lorsque l'etat est inconnu.
+- Lorsque la fiche personnage ne reference pas de `streamer` lie mais possede
+  un lien Twitch direct dans ses reseaux publics, le status live Twitch est
+  maintenant calcule a partir de ce lien et l'indicateur rouge s'affiche bien
+  sur la fiche publique.
 - Les ecrans de rattachement plus complets restent a implementer.
 - L'entree de connexion permet maintenant de choisir entre Google, Discord et
   Twitch.
-- Les actions de connexion et de rattachement utilisent maintenant des icones
-  simples dediees par fournisseur, sans texte visible associe, tout en
-  conservant un libelle accessible pour les lecteurs d'ecran.
-- Les validations frontend confirmees apres cette evolution sont
-  `web-client npm run check` et
-  `web-client npx tsc -p tsconfig.app.json --noEmit`; le test
-  `web-client npm test -- App.test.tsx` reste bloque par l'ecriture Vite dans
-  `node_modules/.vite-temp` sur cet environnement en lecture seule.
+- L'entree de connexion du header utilise des icones simples dediees par
+  fournisseur, avec libelle accessible conserve pour les lecteurs d'ecran.
+- Dans le profil, les actions SSO restent explicites avec texte visible
+  `Lier ...`, `Dissocier ...` ou fournisseur requis selon le cas.
 - Les validations ciblees ajoutees pour le status live Twitch sont
   `backend npm test -- --run src/test/twitch-live.test.ts src/test/public-routes.test.ts`
   et `web-client npm test -- --run src/App.test.tsx src/api.test.ts`.
+- L'import Notion prepare aussi mieux les medias : lorsqu'aucun champ
+  `Streamer` n'est renseigne mais qu'un lien Twitch public existe, le handle
+  Twitch est reutilise par defaut comme nom public streamer candidat.
 
 - Generaliser le modele `UserIdentity` pour rattacher plusieurs fournisseurs a
   un meme compte utilisateur : Google, Discord et Twitch.
@@ -1284,8 +1282,8 @@ Point de controle :
 - Le frontend demarre avec Vite, React et TypeScript.
 - Le developpement utilise Node.js `24.16.0` ou plus recent, en restant sur la
   branche LTS plutot que sur la branche Current.
-- L'etat live Twitch et l'extraction admin restent des evolutions futures. Les
-  evolutions SSO et live Twitch sont regroupees dans l'etape 12 pour eviter une
-  integration API Twitch partielle et redondante.
+- L'etat live Twitch est bien inclus dans cette etape 12 aux cotes des
+  integrations SSO, afin de reutiliser la configuration serveur Twitch et
+  d'eviter une integration API partielle et redondante.
 - Le VPS Hetzner pourra heberger le backend, le frontend, PostgreSQL et Nginx,
   sous reserve de verification de charge au moment du deploiement.
