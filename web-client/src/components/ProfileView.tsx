@@ -16,12 +16,13 @@ import {
 import { characterSnapshotFieldLabels } from "../constants";
 import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
 import { formatDate } from "../utils/format";
+import { type AuthProvider, AuthProviderIcon, authProviderLabels } from "./AuthProviderIcon";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
 
 type ProfileViewProps = {
   session: AuthSession | null;
   onDisplayNameUpdate: (displayName: string) => Promise<boolean>;
-  onIdentityUnlink: (provider: "google" | "discord" | "twitch") => Promise<boolean>;
+  onIdentityUnlink: (provider: AuthProvider) => Promise<boolean>;
   onError: (message: string) => void;
 };
 
@@ -34,12 +35,6 @@ const statusLabels = {
 const requestTypeLabels = {
   update: "Modification",
   create: "Création"
-} as const;
-
-const providerLabels = {
-  google: "Google",
-  discord: "Discord",
-  twitch: "Twitch"
 } as const;
 
 const providerLinkUrls = {
@@ -149,7 +144,7 @@ export function ProfileView({
     }
   };
 
-  const handleIdentityUnlinkClick = async (provider: "google" | "discord" | "twitch") => {
+  const handleIdentityUnlinkClick = async (provider: AuthProvider) => {
     setUnlinkingProvider(provider);
     await onIdentityUnlink(provider);
     setUnlinkingProvider(null);
@@ -205,53 +200,64 @@ export function ProfileView({
           <div className="profile-sso-panel">
             <h3>Comptes liés</h3>
             <div className="profile-sso-actions">
-              {(Object.keys(providerLabels) as Array<keyof typeof providerLabels>).map(
-                (provider) => {
-                  const identity = identitiesByProvider.get(provider);
+              {(Object.keys(authProviderLabels) as AuthProvider[]).map((provider) => {
+                const identity = identitiesByProvider.get(provider);
 
-                  if (identity) {
-                    const isUnlinking = unlinkingProvider === provider;
-                    const canUnlink = identity.canUnlink && !isUnlinking;
+                if (identity) {
+                  const isUnlinking = unlinkingProvider === provider;
+                  const canUnlink = identity.canUnlink && !isUnlinking;
+                  const actionLabel = isUnlinking
+                    ? `Dissociation ${authProviderLabels[provider]}...`
+                    : identity.canUnlink
+                      ? `Dissocier ${authProviderLabels[provider]}`
+                      : `${authProviderLabels[provider]} requis`;
 
-                    return (
-                      <button
-                        key={provider}
-                        type="button"
-                        className={`ghost-button ${identity.canUnlink ? "danger-action" : ""}`}
-                        disabled={!canUnlink}
-                        title={
-                          identity.canUnlink
-                            ? `Dissocier ${providerLabels[provider]}`
-                            : "Impossible de dissocier le dernier moyen de connexion."
-                        }
-                        onClick={() => {
-                          void handleIdentityUnlinkClick(provider);
-                        }}
-                      >
-                        {isUnlinking
-                          ? `Dissociation ${providerLabels[provider]}...`
-                          : identity.canUnlink
-                            ? `Dissocier ${providerLabels[provider]}`
-                            : `${providerLabels[provider]} requis`}
-                      </button>
-                    );
-                  }
-
-                  return provider in providerLinkUrls ? (
-                    <a
+                  return (
+                    <button
                       key={provider}
-                      href={providerLinkUrls[provider as keyof typeof providerLinkUrls]}
-                      className="ghost-button auth-link"
+                      type="button"
+                      className={`ghost-button ${identity.canUnlink ? "danger-action" : ""}`}
+                      disabled={!canUnlink}
+                      aria-label={actionLabel}
+                      title={
+                        identity.canUnlink
+                          ? `Dissocier ${authProviderLabels[provider]}`
+                          : "Impossible de dissocier le dernier moyen de connexion."
+                      }
+                      onClick={() => {
+                        void handleIdentityUnlinkClick(provider);
+                      }}
                     >
-                      Lier {providerLabels[provider]}
-                    </a>
-                  ) : (
-                    <button key={provider} type="button" className="ghost-button" disabled>
-                      {providerLabels[provider]} à venir
+                      <AuthProviderIcon provider={provider} className="auth-provider-mark" />
+                      <span>{actionLabel}</span>
                     </button>
                   );
                 }
-              )}
+
+                return provider in providerLinkUrls ? (
+                  <a
+                    key={provider}
+                    href={providerLinkUrls[provider as keyof typeof providerLinkUrls]}
+                    className="ghost-button auth-link profile-provider-link"
+                    aria-label={`Lier ${authProviderLabels[provider]}`}
+                    title={`Lier ${authProviderLabels[provider]}`}
+                  >
+                    <AuthProviderIcon provider={provider} className="auth-provider-mark" />
+                    <span>Lier {authProviderLabels[provider]}</span>
+                  </a>
+                ) : (
+                  <button
+                    key={provider}
+                    type="button"
+                    className="ghost-button"
+                    disabled
+                    aria-label={`${authProviderLabels[provider]} à venir`}
+                  >
+                    <AuthProviderIcon provider={provider} className="auth-provider-mark" />
+                    <span>{authProviderLabels[provider]} à venir</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

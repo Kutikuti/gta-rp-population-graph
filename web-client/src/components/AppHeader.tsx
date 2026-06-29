@@ -88,9 +88,9 @@ export function AppHeader({
             isLoading={isAuthLoading}
             session={authSession}
             loginOptions={[
-              { label: "Google", href: getGoogleAuthUrl() },
-              { label: "Discord", href: getDiscordAuthUrl() },
-              { label: "Twitch", href: getTwitchAuthUrl() }
+              { provider: "google", label: "Google", href: getGoogleAuthUrl() },
+              { provider: "discord", label: "Discord", href: getDiscordAuthUrl() },
+              { provider: "twitch", label: "Twitch", href: getTwitchAuthUrl() }
             ]}
             onLogout={onLogout}
             onProfile={onProfile}

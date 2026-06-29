@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { AuthSession } from "../api";
+import { AuthProviderIcon } from "./AuthProviderIcon";
 
 type AuthControlsProps = {
   activeView: "explore" | "contribution" | "moderation" | "administration" | "imports" | "profile";
   isLoading: boolean;
   session: AuthSession | null;
   loginOptions: Array<{
+    provider: "google" | "discord" | "twitch";
     label: string;
     href: string;
   }>;
@@ -109,10 +111,8 @@ export function AuthControls({
             <div className="auth-provider-list">
               {loginOptions.map((option) => (
                 <a key={option.label} href={option.href} className="auth-provider-link auth-link">
-                  <span className="auth-provider-mark" aria-hidden="true">
-                    {option.label.slice(0, 1)}
-                  </span>
-                  <span>Continuer avec {option.label}</span>
+                  <AuthProviderIcon provider={option.provider} className="auth-provider-mark" />
+                  <span className="sr-only">Continuer avec {option.label}</span>
                 </a>
               ))}
             </div>

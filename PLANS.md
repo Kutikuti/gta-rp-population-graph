@@ -1234,9 +1234,9 @@ Avancement actuel :
 - Les ecrans de rattachement plus complets restent a implementer.
 - L'entree de connexion permet maintenant de choisir entre Google, Discord et
   Twitch.
-- A terme, les fournisseurs Google, Discord et Twitch devront etre identifies
-  par leurs icones officielles dans les boutons de connexion et de rattachement,
-  avec un libelle accessible conserve pour les lecteurs d'ecran.
+- Les actions de connexion et de rattachement utilisent maintenant des icones
+  simples dediees par fournisseur, sans texte visible associe, tout en
+  conservant un libelle accessible pour les lecteurs d'ecran.
 - Les validations frontend confirmees apres cette evolution sont
   `web-client npm run check` et
   `web-client npx tsc -p tsconfig.app.json --noEmit`; le test
@@ -1262,8 +1262,6 @@ Avancement actuel :
   quel que soit le fournisseur utilise pour se connecter.
 - Finaliser la validation manuelle du status live Twitch avec un compte reel en
   direct puis hors ligne pour verifier le comportement attendu en production.
-- Ajouter a terme les icones officielles Google, Discord et Twitch dans les
-  actions de connexion et de rattachement.
 
 Point de controle :
 
