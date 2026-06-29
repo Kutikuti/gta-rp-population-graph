@@ -231,7 +231,7 @@ export function ContributionView({
       </div>
 
       {!session?.authenticated ? (
-        <EmptyBlock label="Connexion Google requise pour proposer une modification." />
+        <EmptyBlock label="Connexion requise pour proposer une modification." />
       ) : !snapshot || (!character && !creationContext) ? (
         <EmptyBlock label="Sélectionnez un personnage ou relancez une recherche avant de contribuer." />
       ) : (

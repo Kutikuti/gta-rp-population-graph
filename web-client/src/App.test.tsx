@@ -247,7 +247,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "GTA-RP Population Graph" })).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Connexion Google" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Connexion" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Fiche personnage")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Ouvrir la recherche" }));
@@ -313,13 +313,30 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
   });
 
-  it("starts Google login from the header button", async () => {
+  it("offers Google and Discord login from the header", async () => {
+    const user = userEvent.setup();
+
     render(<App />);
 
-    expect(await screen.findByRole("link", { name: "Connexion Google" })).toHaveAttribute(
+    await user.click(await screen.findByRole("button", { name: "Connexion" }));
+
+    expect(screen.getByRole("dialog", { name: "Choisir une connexion" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continuer avec Google" })).toHaveAttribute(
       "href",
       "http://localhost:4000/api/auth/google"
     );
+    expect(screen.getByRole("link", { name: "Continuer avec Discord" })).toHaveAttribute(
+      "href",
+      "http://localhost:4000/api/auth/discord"
+    );
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Choisir une connexion" })
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("shows the connected user and logs out cleanly", async () => {
@@ -406,15 +423,17 @@ describe("App", () => {
     expect(
       await screen.findByRole("heading", { name: "Nom public et contributions" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Google connecté" })).toBeDisabled();
-    expect(screen.getByText(/Lié le/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dissocier" })).toBeDisabled();
-    expect(screen.getByText("Dernier moyen de connexion conservé.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Google requis" })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Lier Discord" })).toHaveAttribute(
+      "href",
+      "http://localhost:4000/api/auth/discord/link"
+    );
+    expect(screen.queryByText(/Lié le/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Déconnexion" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: "Connexion Google" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Connexion" })).toBeInTheDocument();
     });
     expect(await screen.findByText("Déconnexion effectuée.")).toBeInTheDocument();
   });

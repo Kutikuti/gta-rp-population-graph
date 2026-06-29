@@ -1,4 +1,4 @@
-import { type AuthSession, getGoogleAuthUrl } from "../api";
+import { type AuthSession, getDiscordAuthUrl, getGoogleAuthUrl } from "../api";
 import { AuthControls } from "./AuthControls";
 
 type AppHeaderProps = {
@@ -87,7 +87,10 @@ export function AppHeader({
             activeView={activeView}
             isLoading={isAuthLoading}
             session={authSession}
-            loginHref={getGoogleAuthUrl()}
+            loginOptions={[
+              { label: "Google", href: getGoogleAuthUrl() },
+              { label: "Discord", href: getDiscordAuthUrl() }
+            ]}
             onLogout={onLogout}
             onProfile={onProfile}
           />

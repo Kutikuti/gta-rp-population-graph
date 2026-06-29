@@ -1,10 +1,15 @@
+import { useEffect, useRef, useState } from "react";
+
 import type { AuthSession } from "../api";
 
 type AuthControlsProps = {
   activeView: "explore" | "contribution" | "moderation" | "administration" | "imports" | "profile";
   isLoading: boolean;
   session: AuthSession | null;
-  loginHref: string;
+  loginOptions: Array<{
+    label: string;
+    href: string;
+  }>;
   onLogout: () => void;
   onProfile: () => void;
 };
@@ -27,10 +32,43 @@ export function AuthControls({
   activeView,
   isLoading,
   session,
-  loginHref,
+  loginOptions,
   onLogout,
   onProfile
 }: AuthControlsProps) {
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const loginPanelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isLoginOpen) {
+      return undefined;
+    }
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (
+        event.target instanceof Node &&
+        loginPanelRef.current &&
+        !loginPanelRef.current.contains(event.target)
+      ) {
+        setIsLoginOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsLoginOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isLoginOpen]);
+
   if (isLoading) {
     return (
       <div className="auth-controls">
@@ -41,10 +79,45 @@ export function AuthControls({
 
   if (!session?.authenticated) {
     return (
-      <div className="auth-controls">
-        <a href={loginHref} className="ghost-button auth-button auth-link">
-          Connexion Google
-        </a>
+      <div className="auth-controls auth-login-menu" ref={loginPanelRef}>
+        <button
+          type="button"
+          className={`ghost-button auth-button ${isLoginOpen ? "is-active" : ""}`}
+          aria-expanded={isLoginOpen}
+          aria-haspopup="dialog"
+          onClick={() => {
+            setIsLoginOpen((current) => !current);
+          }}
+        >
+          Connexion
+        </button>
+        {isLoginOpen ? (
+          <div className="auth-login-popover" role="dialog" aria-label="Choisir une connexion">
+            <div className="auth-login-popover-header">
+              <strong>Connexion</strong>
+              <button
+                type="button"
+                className="auth-login-close"
+                aria-label="Fermer la connexion"
+                onClick={() => {
+                  setIsLoginOpen(false);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="auth-provider-list">
+              {loginOptions.map((option) => (
+                <a key={option.label} href={option.href} className="auth-provider-link auth-link">
+                  <span className="auth-provider-mark" aria-hidden="true">
+                    {option.label.slice(0, 1)}
+                  </span>
+                  <span>Continuer avec {option.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }

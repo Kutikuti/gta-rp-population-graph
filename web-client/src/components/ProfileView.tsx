@@ -156,8 +156,8 @@ export function ProfileView({
   const characterNames = new Map(
     characterOptions.map((character) => [character.id, character.fullName] as const)
   );
-  const linkedProviders = new Set(
-    session.user.linkedIdentities.map((identity) => identity.provider)
+  const identitiesByProvider = new Map(
+    session.user.linkedIdentities.map((identity) => [identity.provider, identity] as const)
   );
 
   return (
@@ -204,12 +204,38 @@ export function ProfileView({
             <h3>Comptes liés</h3>
             <div className="profile-sso-actions">
               {(Object.keys(providerLabels) as Array<keyof typeof providerLabels>).map(
-                (provider) =>
-                  linkedProviders.has(provider) ? (
-                    <button key={provider} type="button" className="ghost-button" disabled>
-                      {providerLabels[provider]} connecté
-                    </button>
-                  ) : provider in providerLinkUrls ? (
+                (provider) => {
+                  const identity = identitiesByProvider.get(provider);
+
+                  if (identity) {
+                    const isUnlinking = unlinkingProvider === provider;
+                    const canUnlink = identity.canUnlink && !isUnlinking;
+
+                    return (
+                      <button
+                        key={provider}
+                        type="button"
+                        className={`ghost-button ${identity.canUnlink ? "danger-action" : ""}`}
+                        disabled={!canUnlink}
+                        title={
+                          identity.canUnlink
+                            ? `Dissocier ${providerLabels[provider]}`
+                            : "Impossible de dissocier le dernier moyen de connexion."
+                        }
+                        onClick={() => {
+                          void handleIdentityUnlinkClick(provider);
+                        }}
+                      >
+                        {isUnlinking
+                          ? `Dissociation ${providerLabels[provider]}...`
+                          : identity.canUnlink
+                            ? `Dissocier ${providerLabels[provider]}`
+                            : `${providerLabels[provider]} requis`}
+                      </button>
+                    );
+                  }
+
+                  return provider in providerLinkUrls ? (
                     <a
                       key={provider}
                       href={providerLinkUrls[provider as keyof typeof providerLinkUrls]}
@@ -221,45 +247,10 @@ export function ProfileView({
                     <button key={provider} type="button" className="ghost-button" disabled>
                       {providerLabels[provider]} à venir
                     </button>
-                  )
+                  );
+                }
               )}
             </div>
-            {session.user.linkedIdentities.length > 0 ? (
-              <div className="profile-request-details">
-                {session.user.linkedIdentities.map((identity) => (
-                  <div key={identity.id} className="profile-request-change">
-                    <span>{providerLabels[identity.provider]}</span>
-                    <div className="profile-linked-identity-copy">
-                      <strong>
-                        Lié le {formatDate(identity.connectedAt)}
-                        {identity.lastUsedAt
-                          ? `, utilisé le ${formatDate(identity.lastUsedAt)}`
-                          : ""}
-                      </strong>
-                      <div className="profile-linked-identity-actions">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          disabled={!identity.canUnlink || unlinkingProvider === identity.provider}
-                          onClick={() => {
-                            void handleIdentityUnlinkClick(identity.provider);
-                          }}
-                        >
-                          {unlinkingProvider === identity.provider
-                            ? "Dissociation..."
-                            : "Dissocier"}
-                        </button>
-                        {!identity.canUnlink ? (
-                          <small className="muted-text">Dernier moyen de connexion conservé.</small>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted-text">Aucun autre compte lié pour le moment.</p>
-            )}
           </div>
 
           <div className="profile-sso-panel">

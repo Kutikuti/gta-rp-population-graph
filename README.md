@@ -293,14 +293,16 @@ backend avec session serveur et cookie `HttpOnly`.
 
 Flux local actuel :
 
-- Le frontend affiche un lien `Connexion Google` dans l'en-tete.
-- Le clic ouvre `/api/auth/google` sur le backend.
+- Le frontend affiche un bouton `Connexion` dans l'en-tete, qui ouvre une
+  popup de choix Google ou Discord.
+- Le clic sur Google ouvre `/api/auth/google` sur le backend.
 - Google renvoie ensuite vers `/api/auth/google/callback`.
+- Le clic sur Discord ouvre `/api/auth/discord` sur le backend.
+- Discord renvoie ensuite vers `/api/auth/discord/callback`.
 - La premiere integration Discord a ete validee en local : le rattachement
   depuis le profil fonctionne avec une application Discord configuree.
 - Depuis le profil, un compte connecte peut rattacher Google ou Discord via
   `/api/auth/google/link` et `/api/auth/discord/link`.
-- Discord renvoie vers `/api/auth/discord/callback`.
 - Le frontend relit la session via `/api/auth/session` et affiche le compte
   connecte dans l'en-tete.
 - Hors environnement de test, la session serveur est maintenant stockee en
@@ -330,7 +332,8 @@ Points utiles en local :
 
 Verification rapide :
 
-- Se connecter avec le bouton `Connexion Google`.
+- Se connecter avec Google, puis tester une connexion initiale Discord dans un
+  navigateur ou profil separe.
 - Ouvrir le profil et verifier que `Lier Discord` rattache bien le compte
   Discord configure.
 - Verifier que le nom, le role et l'avatar s'affichent.

@@ -37,7 +37,7 @@ Inclus :
   existante, avec upload securise et recadrage rond pour le graphe.
 - Tags et relations typees.
 - Import initial depuis Notion communautaire.
-- Connexion Google OAuth.
+- Connexion Google OAuth et Discord OAuth.
 - Page profil utilisateur avec nom d'affichage public modifiable, historique de
   contributions et emplacement prevu pour les futurs rattachements SSO.
 - Demandes de modification moderees pour les utilisateurs simples.
@@ -78,7 +78,7 @@ Hors MVP :
 
 ### Utilisateur connecte
 
-1. Se connecte avec Google.
+1. Se connecte avec Google ou Discord.
 2. Choisit ou confirme un nom d'affichage public si necessaire.
 3. Ouvre une fiche personnage.
 4. Propose une correction ou un ajout.
@@ -1179,6 +1179,13 @@ Avancement actuel :
   Discord configuree : le rattachement depuis le profil fonctionne.
 - Le profil propose maintenant `Lier Discord` lorsque ce fournisseur n'est pas
   encore rattache.
+- L'entree de connexion frontend utilise maintenant un bouton `Connexion` qui
+  ouvre une popup Google/Discord, afin de permettre une inscription ou connexion
+  initiale avec le fournisseur choisi sans encombrer la topbar.
+- La page profil affiche les comptes SSO comme une grille d'actions uniquement :
+  `Lier`, `Dissocier` ou fournisseur requis si c'est le dernier moyen de
+  connexion. Les dates de rattachement ou derniere utilisation ne sont pas
+  affichees dans ce profil utilisateur.
 - Les variables d'environnement Discord sont ajoutees avec validation
   tout-ou-rien : `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` et
   `DISCORD_CALLBACK_URL`.
@@ -1192,9 +1199,16 @@ Avancement actuel :
   ete refusee dans cet environnement.
 - Le fournisseur Twitch, l'etat live Twitch et les ecrans de rattachement plus
   complets restent a implementer.
-- Une fois les fournisseurs principaux operationnels, l'entree de connexion
-  devra permettre de choisir le fournisseur souhaite au lieu de proposer
-  uniquement `Connexion Google`.
+- L'entree de connexion permet maintenant de choisir entre Google et Discord.
+  Twitch sera ajoute au meme choix lorsque son flux OAuth sera disponible.
+- A terme, les fournisseurs Google, Discord et Twitch devront etre identifies
+  par leurs icones officielles dans les boutons de connexion et de rattachement,
+  avec un libelle accessible conserve pour les lecteurs d'ecran.
+- Les validations frontend confirmees apres cette evolution sont
+  `web-client npm run check` et
+  `web-client npx tsc -p tsconfig.app.json --noEmit`; le test
+  `web-client npm test -- App.test.tsx` reste bloque par l'ecriture Vite dans
+  `node_modules/.vite-temp` sur cet environnement en lecture seule.
 
 - Generaliser le modele `UserIdentity` pour rattacher plusieurs fournisseurs a
   un meme compte utilisateur : Google, Discord et Twitch.
