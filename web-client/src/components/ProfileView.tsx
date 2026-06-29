@@ -9,6 +9,7 @@ import type {
 import {
   getDiscordLinkUrl,
   getGoogleLinkUrl,
+  getTwitchLinkUrl,
   listCharacterDirectory,
   listMyChangeRequests
 } from "../api";
@@ -43,7 +44,8 @@ const providerLabels = {
 
 const providerLinkUrls = {
   google: getGoogleLinkUrl(),
-  discord: getDiscordLinkUrl()
+  discord: getDiscordLinkUrl(),
+  twitch: getTwitchLinkUrl()
 } as const;
 
 const visibleSnapshotEntries = (snapshot: CharacterSnapshot) =>

@@ -313,7 +313,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
   });
 
-  it("offers Google and Discord login from the header", async () => {
+  it("offers Google, Discord and Twitch login from the header", async () => {
     const user = userEvent.setup();
 
     render(<App />);
@@ -328,6 +328,10 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Continuer avec Discord" })).toHaveAttribute(
       "href",
       "http://localhost:4000/api/auth/discord"
+    );
+    expect(screen.getByRole("link", { name: "Continuer avec Twitch" })).toHaveAttribute(
+      "href",
+      "http://localhost:4000/api/auth/twitch"
     );
 
     await user.keyboard("{Escape}");
@@ -584,6 +588,10 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Lier Discord" })).toHaveAttribute(
       "href",
       "http://localhost:4000/api/auth/discord/link"
+    );
+    expect(screen.getByRole("link", { name: "Lier Twitch" })).toHaveAttribute(
+      "href",
+      "http://localhost:4000/api/auth/twitch/link"
     );
   });
 

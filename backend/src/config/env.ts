@@ -46,6 +46,9 @@ const envSchema = z
     DISCORD_CLIENT_ID: z.string().optional(),
     DISCORD_CLIENT_SECRET: z.string().optional(),
     DISCORD_CALLBACK_URL: z.url().optional(),
+    TWITCH_CLIENT_ID: z.string().optional(),
+    TWITCH_CLIENT_SECRET: z.string().optional(),
+    TWITCH_CALLBACK_URL: z.url().optional(),
     RATE_LIMIT_WINDOW_MS: numberFromString(900000),
     RATE_LIMIT_MAX_REQUESTS: numberFromString(100),
     CHANGE_REQUEST_RATE_LIMIT_MAX: numberFromString(10),
@@ -63,6 +66,10 @@ const envSchema = z
       {
         name: "DISCORD",
         values: [value.DISCORD_CLIENT_ID, value.DISCORD_CLIENT_SECRET, value.DISCORD_CALLBACK_URL]
+      },
+      {
+        name: "TWITCH",
+        values: [value.TWITCH_CLIENT_ID, value.TWITCH_CLIENT_SECRET, value.TWITCH_CALLBACK_URL]
       }
     ];
 

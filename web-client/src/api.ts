@@ -515,6 +515,8 @@ export const getGoogleAuthUrl = () => buildApiUrl("/api/auth/google");
 export const getGoogleLinkUrl = () => buildApiUrl("/api/auth/google/link");
 export const getDiscordAuthUrl = () => buildApiUrl("/api/auth/discord");
 export const getDiscordLinkUrl = () => buildApiUrl("/api/auth/discord/link");
+export const getTwitchAuthUrl = () => buildApiUrl("/api/auth/twitch");
+export const getTwitchLinkUrl = () => buildApiUrl("/api/auth/twitch/link");
 
 export const updateProfileDisplayName = (displayName: string) =>
   sendJson<{ user: AuthenticatedUser }>("/api/profile/display-name", "PATCH", { displayName });

@@ -37,7 +37,7 @@ Inclus :
   existante, avec upload securise et recadrage rond pour le graphe.
 - Tags et relations typees.
 - Import initial depuis Notion communautaire.
-- Connexion Google OAuth et Discord OAuth.
+- Connexion Google OAuth, Discord OAuth et Twitch OAuth.
 - Page profil utilisateur avec nom d'affichage public modifiable, historique de
   contributions et emplacement prevu pour les futurs rattachements SSO.
 - Demandes de modification moderees pour les utilisateurs simples.
@@ -59,12 +59,9 @@ Hors MVP :
 - Upload de photo lors de la creation initiale d'une fiche par utilisateur
   simple. La photo doit etre proposee apres existence de la fiche, via
   modification moderee, afin de limiter le spam.
-- Connexion et rattachement multi-SSO au-dela de Google : Discord et Twitch
-  sont prevus plus tard comme fournisseurs supplementaires rattachables depuis
-  la page profil.
 - Etat live Twitch dans les fiches personnage. Cette integration sera traitee
-  avec le futur SSO Twitch afin de mutualiser la configuration Twitch, les
-  secrets serveur et la gestion des limites d'API.
+  apres le SSO Twitch afin de reutiliser la configuration Twitch serveur, les
+  secrets et la gestion des limites d'API.
 
 ## Parcours utilisateur
 
@@ -78,7 +75,7 @@ Hors MVP :
 
 ### Utilisateur connecte
 
-1. Se connecte avec Google ou Discord.
+1. Se connecte avec Google, Discord ou Twitch.
 2. Choisit ou confirme un nom d'affichage public si necessaire.
 3. Ouvre une fiche personnage.
 4. Propose une correction ou un ajout.
@@ -253,7 +250,7 @@ de vue du personnage courant : `Parent`, `Enfant`, `Fratrie`, `Couple`.
 ### UserIdentity
 
 - Utilisateur rattache.
-- Fournisseur : Google au MVP, Discord et Twitch plus tard.
+- Fournisseur : Google, Discord ou Twitch.
 - Identifiant fournisseur.
 - Email ou nom renvoye par le fournisseur, conserve pour l'authentification mais
   non affiche publiquement.
@@ -1157,9 +1154,8 @@ Avancement actuel :
   rattachement de plusieurs fournisseurs a un meme compte utilisateur.
 - La connexion Google continue de fonctionner, mais s'appuie desormais sur ce
   socle et retro-alimente l'identite liee correspondante.
-- Le profil utilisateur expose maintenant les comptes lies connus, avec Google
-  et Discord comme fournisseurs raccordables, et Twitch garde en emplacement
-  futur.
+- Le profil utilisateur expose maintenant les comptes lies connus, avec Google,
+  Discord et Twitch comme fournisseurs raccordables.
 - Le profil propose maintenant un point d'entree reel `Lier Google` lorsque le
   compte Google n'est pas encore rattache.
 - Le callback OAuth Google gere desormais deux intentions distinctes :
@@ -1180,8 +1176,8 @@ Avancement actuel :
 - Le profil propose maintenant `Lier Discord` lorsque ce fournisseur n'est pas
   encore rattache.
 - L'entree de connexion frontend utilise maintenant un bouton `Connexion` qui
-  ouvre une popup Google/Discord, afin de permettre une inscription ou connexion
-  initiale avec le fournisseur choisi sans encombrer la topbar.
+  ouvre une popup Google/Discord/Twitch, afin de permettre une inscription ou
+  connexion initiale avec le fournisseur choisi sans encombrer la topbar.
 - La page profil affiche les comptes SSO comme une grille d'actions uniquement :
   `Lier`, `Dissocier` ou fournisseur requis si c'est le dernier moyen de
   connexion. Les dates de rattachement ou derniere utilisation ne sont pas
@@ -1189,18 +1185,35 @@ Avancement actuel :
 - Les variables d'environnement Discord sont ajoutees avec validation
   tout-ou-rien : `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` et
   `DISCORD_CALLBACK_URL`.
+- La connexion et le rattachement Twitch sont ajoutes cote backend via OAuth2
+  `user:read:email`, avec routes de login, callback et rattachement sur le
+  meme socle `UserIdentity`.
+- Le rattachement Twitch depuis le profil a ete valide en local, ainsi que la
+  connexion de base via un compte Twitch deja rattache.
+- Le profil propose maintenant `Lier Twitch` lorsque ce fournisseur n'est pas
+  encore rattache.
+- Les variables d'environnement Twitch sont ajoutees avec validation
+  tout-ou-rien : `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` et
+  `TWITCH_CALLBACK_URL`.
 - Les validations actuellement confirmees dans cet environnement sont :
-  `backend npm run check`, tests backend cibles auth/profil/autorisation/
-  contribution/admin, `backend npm run build`, `web-client npm run check` et
+  `backend npm run check`, `backend npx tsc -p tsconfig.json --noEmit`,
+  `web-client npm run check` et
   `web-client npx tsc -p tsconfig.app.json --noEmit`.
 - La suite backend complete `backend npm test` et `web-client npm test --
   App.test.tsx` restent a relancer dans un environnement autorisant l'ecriture
   disque, car Vite doit ecrire dans `node_modules/.vite-temp` et l'escalade a
   ete refusee dans cet environnement.
-- Le fournisseur Twitch, l'etat live Twitch et les ecrans de rattachement plus
-  complets restent a implementer.
-- L'entree de connexion permet maintenant de choisir entre Google et Discord.
-  Twitch sera ajoute au meme choix lorsque son flux OAuth sera disponible.
+- `backend npm run build` reste aussi a relancer dans un environnement
+  autorisant l'ecriture disque, car TypeScript doit ecrire dans `backend/dist`.
+- Les checks et tests ont ete relances hors de cet environnement et passent
+  selon validation utilisateur.
+- Restent a valider manuellement : dissociation d'un compte lie, blocage de la
+  dissociation du dernier moyen de connexion, creation initiale d'un compte via
+  Discord et creation initiale d'un compte via Twitch.
+- L'etat live Twitch et les ecrans de rattachement plus complets restent a
+  implementer.
+- L'entree de connexion permet maintenant de choisir entre Google, Discord et
+  Twitch.
 - A terme, les fournisseurs Google, Discord et Twitch devront etre identifies
   par leurs icones officielles dans les boutons de connexion et de rattachement,
   avec un libelle accessible conserve pour les lecteurs d'ecran.
@@ -1216,8 +1229,7 @@ Avancement actuel :
   son profil, sans exposer publiquement les noms, prenoms, emails ou handles
   renvoyes par ces fournisseurs.
 - Permettre l'inscription/connexion initiale avec le fournisseur choisi par
-  l'utilisateur, au minimum Google ou Discord, puis Twitch lorsque ce flux sera
-  disponible.
+  l'utilisateur : Google, Discord ou Twitch.
 - Gerer les collisions de compte avec prudence : refus ou validation explicite
   lorsqu'une identite fournisseur est deja rattachee ailleurs, sans fusion
   automatique risquee.
@@ -1247,13 +1259,12 @@ Point de controle :
 
 - La page Notion communautaire est la source initiale, mais son accessibilite et
   sa structure devront etre confirmees par tests de parsing.
-- Google OAuth reste disponible, mais le produit doit evoluer vers un choix de
-  fournisseur de connexion des que les integrations principales sont stables.
+- Google OAuth reste disponible aux cotes de Discord OAuth et Twitch OAuth.
 - Le frontend demarre avec Vite, React et TypeScript.
 - Le developpement utilise Node.js `24.16.0` ou plus recent, en restant sur la
   branche LTS plutot que sur la branche Current.
-- Discord, Twitch, l'etat live Twitch et extraction admin sont des evolutions
-  futures. Les evolutions SSO et live Twitch sont regroupees dans l'etape 12
-  pour eviter une integration API Twitch partielle et redondante.
+- L'etat live Twitch et l'extraction admin restent des evolutions futures. Les
+  evolutions SSO et live Twitch sont regroupees dans l'etape 12 pour eviter une
+  integration API Twitch partielle et redondante.
 - Le VPS Hetzner pourra heberger le backend, le frontend, PostgreSQL et Nginx,
   sous reserve de verification de charge au moment du deploiement.

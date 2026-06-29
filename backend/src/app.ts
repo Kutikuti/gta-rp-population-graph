@@ -24,12 +24,14 @@ import { characterPhotoPublicDir } from "./services/character-photos.js";
 import { type DiscordOauthClient, DiscordOidcClient } from "./services/discord-oauth.js";
 import { type GoogleOauthClient, GoogleOidcClient } from "./services/google-oauth.js";
 import type { PublicDataService } from "./services/public-data.js";
+import { type TwitchOauthClient, TwitchOidcClient } from "./services/twitch-oauth.js";
 
 export type AppDependencies = {
   publicDataService?: PublicDataService;
   authService?: AuthService;
   googleOauthClient?: GoogleOauthClient;
   discordOauthClient?: DiscordOauthClient;
+  twitchOauthClient?: TwitchOauthClient;
   changeRequestService?: ChangeRequestService;
   adminService?: AdminService;
 };
@@ -38,6 +40,7 @@ export const createApp = (dependencies: AppDependencies = {}) => {
   const authService = dependencies.authService ?? new SequelizeAuthService();
   const googleOauthClient = dependencies.googleOauthClient ?? new GoogleOidcClient();
   const discordOauthClient = dependencies.discordOauthClient ?? new DiscordOidcClient();
+  const twitchOauthClient = dependencies.twitchOauthClient ?? new TwitchOidcClient();
   const changeRequestService =
     dependencies.changeRequestService ?? new SequelizeChangeRequestService();
   const adminService = dependencies.adminService ?? new SequelizeAdminService();
@@ -81,7 +84,8 @@ export const createApp = (dependencies: AppDependencies = {}) => {
     createAuthRouter({
       authService,
       googleOauthClient,
-      discordOauthClient
+      discordOauthClient,
+      twitchOauthClient
     })
   );
   app.use("/api/contributions", createContributionsRouter(changeRequestService));

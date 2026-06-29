@@ -20,11 +20,17 @@ import {
   GoogleOauthExchangeError,
   GoogleOauthStateError
 } from "../services/google-oauth.js";
+import {
+  type TwitchOauthClient,
+  TwitchOauthDisabledError,
+  TwitchOauthExchangeError
+} from "../services/twitch-oauth.js";
 
 export type AuthRouterDependencies = {
   authService: AuthService;
   googleOauthClient: GoogleOauthClient;
   discordOauthClient: DiscordOauthClient;
+  twitchOauthClient: TwitchOauthClient;
 };
 
 const sessionPayload = (request: express.Request) =>
@@ -59,7 +65,11 @@ type OauthClient = {
 };
 
 const oauthErrorCode = (error: unknown) => {
-  if (error instanceof GoogleOauthDisabledError || error instanceof DiscordOauthDisabledError) {
+  if (
+    error instanceof GoogleOauthDisabledError ||
+    error instanceof DiscordOauthDisabledError ||
+    error instanceof TwitchOauthDisabledError
+  ) {
     return "oauth_disabled";
   }
 
@@ -67,7 +77,11 @@ const oauthErrorCode = (error: unknown) => {
     return "invalid_state";
   }
 
-  if (error instanceof GoogleOauthExchangeError || error instanceof DiscordOauthExchangeError) {
+  if (
+    error instanceof GoogleOauthExchangeError ||
+    error instanceof DiscordOauthExchangeError ||
+    error instanceof TwitchOauthExchangeError
+  ) {
     return "oauth_exchange_failed";
   }
 
@@ -77,7 +91,8 @@ const oauthErrorCode = (error: unknown) => {
 export const createAuthRouter = ({
   authService,
   googleOauthClient,
-  discordOauthClient
+  discordOauthClient,
+  twitchOauthClient
 }: AuthRouterDependencies) => {
   const router = Router();
   const googleExternalOauthClient: OauthClient = {
@@ -103,7 +118,7 @@ export const createAuthRouter = ({
     request: express.Request,
     response: express.Response,
     client: OauthClient,
-    intent: "link_google" | "link_discord"
+    intent: "link_google" | "link_discord" | "link_twitch"
   ) => {
     if (!request.currentUser) {
       throw new Error("Authenticated route reached without current user.");
@@ -120,7 +135,7 @@ export const createAuthRouter = ({
     request: express.Request,
     response: express.Response,
     client: OauthClient,
-    linkIntent: "link_google" | "link_discord"
+    linkIntent: "link_google" | "link_discord" | "link_twitch"
   ) => {
     const { code, state, error } = request.query;
 
@@ -276,6 +291,51 @@ export const createAuthRouter = ({
   router.get("/discord/callback", async (request, response, next) => {
     try {
       await handleOauthCallback(request, response, discordOauthClient, "link_discord");
+    } catch (error) {
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
+        return;
+      }
+
+      next(error);
+    }
+  });
+
+  router.get("/twitch", async (request, response, next) => {
+    try {
+      await startOauthLogin(request, response, twitchOauthClient);
+    } catch (error) {
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
+        return;
+      }
+
+      next(error);
+    }
+  });
+
+  router.get("/twitch/link", requireAuthenticatedUser, async (request, response, next) => {
+    try {
+      startOauthLink(request, response, twitchOauthClient, "link_twitch");
+    } catch (error) {
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
+        return;
+      }
+
+      next(error);
+    }
+  });
+
+  router.get("/twitch/callback", async (request, response, next) => {
+    try {
+      await handleOauthCallback(request, response, twitchOauthClient, "link_twitch");
     } catch (error) {
       const errorCode = oauthErrorCode(error);
 

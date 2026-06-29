@@ -20,7 +20,7 @@ personnages, leurs informations publiques, leurs streamers et leurs liens RP.
 - Frontend : Vite, React, TypeScript.
 - Graphe : Cytoscape.js.
 - Qualite code : Biome pour lint et formatage, TypeScript pour le type-check.
-- Authentification : Google OAuth et Discord OAuth.
+- Authentification : Google OAuth, Discord OAuth et Twitch OAuth.
 - Production cible : VPS Ubuntu avec Nginx.
 
 ## Direction produit
@@ -43,8 +43,9 @@ La securite du serveur est la priorite numero 1 du developpement.
 ## Etat actuel
 
 Le socle backend/frontend, la base PostgreSQL, les routes publiques de
-consultation, Google OAuth, Discord OAuth, la contribution moderee, la
-moderation, le profil utilisateur et les photos securisees sont en place.
+consultation, Google OAuth, Discord OAuth, Twitch OAuth, la contribution
+moderee, la moderation, le profil utilisateur et les photos securisees sont en
+place.
 
 La fiche publique et les formulaires de modification supportent maintenant :
 
@@ -288,21 +289,25 @@ npm run build
 
 ## Authentification locale
 
-Le socle d'authentification MVP utilise Google OAuth et Discord OAuth cote
-backend avec session serveur et cookie `HttpOnly`.
+Le socle d'authentification MVP utilise Google OAuth, Discord OAuth et Twitch
+OAuth cote backend avec session serveur et cookie `HttpOnly`.
 
 Flux local actuel :
 
 - Le frontend affiche un bouton `Connexion` dans l'en-tete, qui ouvre une
-  popup de choix Google ou Discord.
+  popup de choix Google, Discord ou Twitch.
 - Le clic sur Google ouvre `/api/auth/google` sur le backend.
 - Google renvoie ensuite vers `/api/auth/google/callback`.
 - Le clic sur Discord ouvre `/api/auth/discord` sur le backend.
 - Discord renvoie ensuite vers `/api/auth/discord/callback`.
-- La premiere integration Discord a ete validee en local : le rattachement
-  depuis le profil fonctionne avec une application Discord configuree.
-- Depuis le profil, un compte connecte peut rattacher Google ou Discord via
-  `/api/auth/google/link` et `/api/auth/discord/link`.
+- Le clic sur Twitch ouvre `/api/auth/twitch` sur le backend.
+- Twitch renvoie ensuite vers `/api/auth/twitch/callback`.
+- Les integrations Discord et Twitch ont ete validees en local sur des comptes
+  existants : rattachement depuis le profil et connexion via un compte Twitch
+  deja lie fonctionnent.
+- Depuis le profil, un compte connecte peut rattacher Google, Discord ou Twitch
+  via `/api/auth/google/link`, `/api/auth/discord/link` et
+  `/api/auth/twitch/link`.
 - Le frontend relit la session via `/api/auth/session` et affiche le compte
   connecte dans l'en-tete.
 - Hors environnement de test, la session serveur est maintenant stockee en
@@ -322,20 +327,31 @@ Points utiles en local :
   `DISCORD_CALLBACK_URL=http://localhost:4000/api/auth/discord/callback` en
   local.
 - L'application Discord doit autoriser cette URL dans ses redirects OAuth2.
-- En production, ajouter aussi les URLs de callback publiques dans Google et
-  Discord, par exemple
-  `https://ton-domaine.fr/api/auth/google/callback` et
-  `https://ton-domaine.fr/api/auth/discord/callback`.
+- Pour Twitch, configurer ensemble `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`
+  et `TWITCH_CALLBACK_URL`, avec
+  `TWITCH_CALLBACK_URL=http://localhost:4000/api/auth/twitch/callback` en
+  local.
+- L'application Twitch doit autoriser cette URL dans ses redirects OAuth.
+- En production, ajouter aussi les URLs de callback publiques dans Google,
+  Discord et Twitch, par exemple
+  `https://ton-domaine.fr/api/auth/google/callback`,
+  `https://ton-domaine.fr/api/auth/discord/callback` et
+  `https://ton-domaine.fr/api/auth/twitch/callback`.
 - En production, `SESSION_COOKIE_SECURE=true` est requis. En developpement
   local, le backend neutralise ce flag hors production pour permettre les
   tests HTTP locaux.
 
 Verification rapide :
 
-- Se connecter avec Google, puis tester une connexion initiale Discord dans un
-  navigateur ou profil separe.
-- Ouvrir le profil et verifier que `Lier Discord` rattache bien le compte
-  Discord configure.
+- Se connecter avec Google, puis tester une connexion initiale Discord ou
+  Twitch dans un navigateur ou profil separe.
+- Ouvrir le profil et verifier que `Lier Discord` et `Lier Twitch` rattachent
+  bien les comptes configures.
+- Verifier la dissociation d'un compte lie quand au moins deux moyens de
+  connexion existent, puis verifier que le dernier moyen de connexion reste
+  bloque.
+- Tester la creation d'un nouveau compte utilisateur depuis Discord puis depuis
+  Twitch, dans un navigateur ou profil separe.
 - Verifier que le nom, le role et l'avatar s'affichent.
 - Recharger la page pour confirmer que la session persiste.
 - Utiliser `Deconnexion` pour verifier la destruction de session.

@@ -1,4 +1,4 @@
-import { type AuthSession, getDiscordAuthUrl, getGoogleAuthUrl } from "../api";
+import { type AuthSession, getDiscordAuthUrl, getGoogleAuthUrl, getTwitchAuthUrl } from "../api";
 import { AuthControls } from "./AuthControls";
 
 type AppHeaderProps = {
@@ -89,7 +89,8 @@ export function AppHeader({
             session={authSession}
             loginOptions={[
               { label: "Google", href: getGoogleAuthUrl() },
-              { label: "Discord", href: getDiscordAuthUrl() }
+              { label: "Discord", href: getDiscordAuthUrl() },
+              { label: "Twitch", href: getTwitchAuthUrl() }
             ]}
             onLogout={onLogout}
             onProfile={onProfile}

@@ -12,6 +12,7 @@ import type {
 } from "../services/auth.js";
 import type { DiscordOauthClient } from "../services/discord-oauth.js";
 import type { GoogleOauthClient, GoogleProfile } from "../services/google-oauth.js";
+import type { TwitchOauthClient } from "../services/twitch-oauth.js";
 
 const baseUser: AuthenticatedUser = {
   id: "00000000-0000-4000-8000-000000000901",
@@ -219,6 +220,31 @@ class FixtureDiscordOauthClient implements DiscordOauthClient {
   }
 }
 
+class FixtureTwitchOauthClient implements TwitchOauthClient {
+  buildAuthorizationUrl(state: string) {
+    return `https://twitch.example.test/oauth?state=${encodeURIComponent(state)}`;
+  }
+
+  async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
+    if (code === "broken") {
+      throw new Error("exchange failed");
+    }
+
+    return {
+      provider: "twitch",
+      providerUserId:
+        code === "in-use"
+          ? "twitch-in-use-id"
+          : code === "already-linked"
+            ? "twitch-already-linked-id"
+            : "twitch-ok-id",
+      email: "viewer@example.test",
+      displayName: "Viewer Example",
+      avatarUrl: "https://example.test/twitch-avatar.png"
+    };
+  }
+}
+
 const oauthStateFromLocation = (location: string | undefined) => {
   const state = location ? new URL(location).searchParams.get("state") : null;
 
@@ -311,6 +337,43 @@ describe("auth API", () => {
         email: "viewer@example.test",
         role: { name: "user" },
         linkedIdentities: [{ provider: "discord" }]
+      }
+    });
+  });
+
+  it("starts Twitch OAuth and exposes the session after callback", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient(),
+      twitchOauthClient: new FixtureTwitchOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startResponse = await agent.get("/api/auth/twitch");
+
+    expect(startResponse.status).toBe(302);
+    const location = startResponse.headers.location;
+    expect(location).toContain("https://twitch.example.test/oauth");
+
+    const state = oauthStateFromLocation(location);
+
+    const callbackResponse = await agent
+      .get("/api/auth/twitch/callback")
+      .query({ code: "ok", state });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=success");
+
+    const sessionResponse = await agent.get("/api/auth/session");
+
+    expect(sessionResponse.status).toBe(200);
+    expect(sessionResponse.body).toMatchObject({
+      authenticated: true,
+      user: {
+        id: baseUser.id,
+        email: "viewer@example.test",
+        role: { name: "user" },
+        linkedIdentities: [{ provider: "twitch" }]
       }
     });
   });
@@ -438,6 +501,40 @@ describe("auth API", () => {
       authenticated: true,
       user: {
         linkedIdentities: [{ provider: "discord" }, { provider: "google" }]
+      }
+    });
+  });
+
+  it("starts Twitch linking for an authenticated user and confirms the linked identity", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient(),
+      twitchOauthClient: new FixtureTwitchOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startLogin = await agent.get("/api/auth/google");
+    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
+
+    const startLinkResponse = await agent.get("/api/auth/twitch/link");
+    expect(startLinkResponse.status).toBe(302);
+    expect(startLinkResponse.headers.location).toContain("https://twitch.example.test/oauth");
+
+    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const callbackResponse = await agent
+      .get("/api/auth/twitch/callback")
+      .query({ code: "ok", state: linkState });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=identity_linked");
+
+    const sessionResponse = await agent.get("/api/auth/session");
+
+    expect(sessionResponse.body).toMatchObject({
+      authenticated: true,
+      user: {
+        linkedIdentities: [{ provider: "twitch" }, { provider: "google" }]
       }
     });
   });

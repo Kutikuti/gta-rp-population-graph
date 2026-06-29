@@ -54,6 +54,9 @@ Variables critiques :
 - `DISCORD_CLIENT_ID`
 - `DISCORD_CLIENT_SECRET`
 - `DISCORD_CALLBACK_URL`
+- `TWITCH_CLIENT_ID`
+- `TWITCH_CLIENT_SECRET`
+- `TWITCH_CALLBACK_URL`
 - `RATE_LIMIT_WINDOW_MS`
 - `RATE_LIMIT_MAX_REQUESTS`
 - `CHANGE_REQUEST_RATE_LIMIT_MAX`
@@ -69,12 +72,14 @@ premier deploiement public :
 
 - Google : `https://<domaine-public>/api/auth/google/callback`
 - Discord : `https://<domaine-public>/api/auth/discord/callback`
+- Twitch : `https://<domaine-public>/api/auth/twitch/callback`
 
-Les valeurs `GOOGLE_CALLBACK_URL` et `DISCORD_CALLBACK_URL` doivent correspondre
-exactement aux URLs declarees chez les fournisseurs OAuth, schema `https`
-inclus. Si plusieurs domaines pointent vers le meme serveur, declarer chaque
-domaine utilise pour la connexion dans les consoles Google et Discord ou choisir
-un domaine canonique unique pour l'authentification.
+Les valeurs `GOOGLE_CALLBACK_URL`, `DISCORD_CALLBACK_URL` et
+`TWITCH_CALLBACK_URL` doivent correspondre exactement aux URLs declarees chez
+les fournisseurs OAuth, schema `https` inclus. Si plusieurs domaines pointent
+vers le meme serveur, declarer chaque domaine utilise pour la connexion dans les
+consoles Google, Discord et Twitch ou choisir un domaine canonique unique pour
+l'authentification.
 
 Le backend utilise desormais un store de session persistant en PostgreSQL pour
 eviter la perte des sessions lors des redemarrages applicatifs. Les sessions
@@ -223,8 +228,9 @@ Rollback applicatif minimal :
 - [ ] `SESSION_COOKIE_SECURE=true` en production.
 - [ ] Callback Google de production declare dans la console Google OAuth.
 - [ ] Callback Discord de production declare dans le portail Discord Developer.
-- [ ] `GOOGLE_CALLBACK_URL` et `DISCORD_CALLBACK_URL` pointent vers les URLs
-      publiques HTTPS declarees.
+- [ ] Callback Twitch de production declare dans la console Twitch Developer.
+- [ ] `GOOGLE_CALLBACK_URL`, `DISCORD_CALLBACK_URL` et `TWITCH_CALLBACK_URL`
+      pointent vers les URLs publiques HTTPS declarees.
 - [ ] Base PostgreSQL creee ou `npm run db:ensure` execute avec succes.
 - [ ] Backup initial configure.
 - [ ] `npm run db:migrate` execute.
