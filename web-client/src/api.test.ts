@@ -28,6 +28,7 @@ const character: PublicCharacterDetail = {
   deathOrDepartureDate: null,
   businessRank: null,
   socialLinks: null,
+  twitchLiveStatus: "unknown",
   isRpDeath: false,
   previousCharacters: null,
   sourceNote: null,
