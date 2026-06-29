@@ -177,7 +177,7 @@ class FixtureGoogleOauthClient implements GoogleOauthClient {
               ? "google-already-linked-id"
               : code === "different-linked"
                 ? "google-different-linked-id"
-              : "google-ok-id",
+                : "google-ok-id",
       email:
         code === "banned"
           ? "banned@example.test"
@@ -209,7 +209,7 @@ class FixtureDiscordOauthClient implements DiscordOauthClient {
             ? "discord-already-linked-id"
             : code === "different-linked"
               ? "discord-different-linked-id"
-            : "discord-ok-id",
+              : "discord-ok-id",
       email: "viewer@example.test",
       displayName: "Viewer Example",
       avatarUrl: "https://example.test/discord-avatar.png"
@@ -236,7 +236,7 @@ class FixtureTwitchOauthClient implements TwitchOauthClient {
             ? "twitch-already-linked-id"
             : code === "different-linked"
               ? "twitch-different-linked-id"
-            : "twitch-ok-id",
+              : "twitch-ok-id",
       email: "viewer@example.test",
       displayName: "Viewer Example",
       avatarUrl: "https://example.test/twitch-avatar.png"

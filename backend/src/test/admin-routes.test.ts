@@ -19,7 +19,8 @@ import type {
   AuthenticatedUser,
   AuthResult,
   AuthService,
-  ExternalIdentity
+  ExternalIdentity,
+  LinkIdentityResult
 } from "../services/auth.js";
 import type { GoogleOauthClient } from "../services/google-oauth.js";
 
@@ -123,7 +124,7 @@ class FixtureAuthService implements AuthService {
     return { status: "authenticated", user };
   }
 
-  async linkIdentity() {
+  async linkIdentity(): Promise<LinkIdentityResult | null> {
     return null;
   }
 

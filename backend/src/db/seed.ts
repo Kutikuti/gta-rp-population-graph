@@ -111,14 +111,18 @@ try {
           id: ids.streamers.nova,
           publicName: "NovaRP",
           primaryPlatform: "twitch",
-          socialLinks: { twitch: "https://twitch.tv/example-novarp" },
+          socialLinks: {
+            twitch: "https://twitch.tv/example-novarp"
+          },
           verificationStatus: "community"
         },
         {
           id: ids.streamers.axle,
           publicName: "AxleLive",
           primaryPlatform: "twitch",
-          socialLinks: { twitch: "https://twitch.tv/example-axlelive" },
+          socialLinks: {
+            twitch: "https://twitch.tv/example-axlelive"
+          },
           verificationStatus: "community"
         },
         {
