@@ -121,6 +121,7 @@ const camilleDetail: PublicCharacterDetail = {
   photoUrl: null,
   businessRank: "Responsable planning",
   socialLinks: null,
+  twitchLiveStatus: "live",
   isRpDeath: false,
   previousCharacters: { v5: "Nom inconnu" },
   sourceNote: "Donnee fictive de developpement.",

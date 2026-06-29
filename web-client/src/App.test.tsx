@@ -90,6 +90,7 @@ const camilleDetail = {
   photoUrl: null,
   businessRank: "Responsable planning",
   socialLinks: null,
+  twitchLiveStatus: "live",
   isRpDeath: false,
   previousCharacters: { v5: "Nom inconnu" },
   sourceNote: "Donnee fictive.",
@@ -283,6 +284,94 @@ describe("App", () => {
       expect(screen.getByText(`Correspondances ${ines.id}`)).toBeInTheDocument();
       expect(screen.getByText("1 personnage mis en évidence.")).toBeInTheDocument();
     });
+  });
+
+  it("shows the live Twitch indicator when the displayed Twitch link belongs directly to the character", async () => {
+    const user = userEvent.setup();
+    const directTwitchDetail = {
+      ...camilleDetail,
+      streamer: null,
+      socialLinks: { twitch: "https://twitch.tv/owlfr_" },
+      twitchLiveStatus: "live"
+    };
+
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({ authenticated: false });
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([
+          { id: camille.id, publicSlug: camille.publicSlug, fullName: camille.fullName }
+        ]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({
+          nodes: [
+            {
+              data: {
+                id: camille.id,
+                type: "character",
+                label: camille.fullName,
+                characterId: camille.id,
+                fullName: camille.fullName,
+                lifeStatus: camille.lifeStatus,
+                verificationStatus: camille.verificationStatus,
+                photoUrl: camille.photoUrl,
+                streamerName: null,
+                tagIds: camille.tags.map((item) => item.id)
+              }
+            }
+          ],
+          edges: []
+        });
+      }
+
+      if (
+        url.includes(`/api/characters/${camille.id}`) ||
+        url.includes(`/api/characters/${camille.publicSlug}`)
+      ) {
+        return jsonResponse(directTwitchDetail);
+      }
+
+      if (url.includes("/api/history")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [camille.id], total: 1 });
+      }
+
+      if (url.includes("/api/characters?")) {
+        return jsonResponse({
+          items: [camille],
+          total: 1,
+          limit: 100,
+          offset: 0
+        });
+      }
+
+      return errorResponse(404);
+    });
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Ouvrir la recherche" }));
+    await user.click(screen.getByRole("button", { name: "Nœud Camille Morel" }));
+
+    expect(await screen.findByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
+    expect(screen.getByTitle("En direct")).toBeInTheDocument();
   });
 
   it("shows an API error instead of an endless graph loader", async () => {

@@ -73,6 +73,7 @@ export type PublicCharacterDetail = PublicCharacterSummary & {
   deathOrDepartureDate: string | null;
   businessRank: string | null;
   socialLinks: SocialLinks | null;
+  twitchLiveStatus: "live" | "offline" | "unknown";
   isRpDeath: boolean;
   previousCharacters: Record<string, string> | null;
   sourceNote: string | null;

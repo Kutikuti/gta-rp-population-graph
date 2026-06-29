@@ -119,6 +119,7 @@ export type PublicCharacterDetail = PublicCharacterSummary & {
   photoUrl: string | null;
   businessRank: string | null;
   socialLinks: SocialLinks | null;
+  twitchLiveStatus: TwitchLiveStatus;
   isRpDeath: boolean;
   previousCharacters: JsonObject | null;
   sourceNote: string | null;
@@ -295,6 +296,7 @@ const serializeCharacterDetail = (
   photoUrl: character.photoUrl,
   businessRank: character.businessRank,
   socialLinks: character.socialLinks,
+  twitchLiveStatus,
   isRpDeath: character.isRpDeath,
   previousCharacters: character.previousCharacters,
   sourceNote: character.sourceNote,
@@ -452,7 +454,7 @@ export class SequelizePublicDataService implements PublicDataService {
     }
 
     const twitchLiveStatus = await this.twitchLiveStatusService.getStatusForSocialLinks(
-      character.streamer?.socialLinks
+      character.socialLinks ?? character.streamer?.socialLinks
     );
 
     return serializeCharacterDetail(character, twitchLiveStatus);
