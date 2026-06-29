@@ -8,7 +8,7 @@ declare module "express-session" {
   interface SessionData {
     userId?: string;
     oauthState?: string;
-    oauthIntent?: "login" | "link_google";
+    oauthIntent?: "login" | "link_google" | "link_discord";
     oauthLinkUserId?: string;
   }
 }

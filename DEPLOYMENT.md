@@ -51,6 +51,9 @@ Variables critiques :
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `GOOGLE_CALLBACK_URL`
+- `DISCORD_CLIENT_ID`
+- `DISCORD_CLIENT_SECRET`
+- `DISCORD_CALLBACK_URL`
 - `RATE_LIMIT_WINDOW_MS`
 - `RATE_LIMIT_MAX_REQUESTS`
 - `CHANGE_REQUEST_RATE_LIMIT_MAX`
@@ -60,6 +63,18 @@ Variables critiques :
 - `PHOTO_DRAFT_MAX_AGE_HOURS`
 
 `SESSION_SECRET` doit etre long, aleatoire et different de la valeur d'exemple.
+
+Les applications OAuth doivent autoriser les callbacks de production avant le
+premier deploiement public :
+
+- Google : `https://<domaine-public>/api/auth/google/callback`
+- Discord : `https://<domaine-public>/api/auth/discord/callback`
+
+Les valeurs `GOOGLE_CALLBACK_URL` et `DISCORD_CALLBACK_URL` doivent correspondre
+exactement aux URLs declarees chez les fournisseurs OAuth, schema `https`
+inclus. Si plusieurs domaines pointent vers le meme serveur, declarer chaque
+domaine utilise pour la connexion dans les consoles Google et Discord ou choisir
+un domaine canonique unique pour l'authentification.
 
 Le backend utilise desormais un store de session persistant en PostgreSQL pour
 eviter la perte des sessions lors des redemarrages applicatifs. Les sessions
@@ -206,6 +221,10 @@ Rollback applicatif minimal :
 - [ ] Variables de production creees hors Git.
 - [ ] `SESSION_SECRET` remplace par une valeur forte.
 - [ ] `SESSION_COOKIE_SECURE=true` en production.
+- [ ] Callback Google de production declare dans la console Google OAuth.
+- [ ] Callback Discord de production declare dans le portail Discord Developer.
+- [ ] `GOOGLE_CALLBACK_URL` et `DISCORD_CALLBACK_URL` pointent vers les URLs
+      publiques HTTPS declarees.
 - [ ] Base PostgreSQL creee ou `npm run db:ensure` execute avec succes.
 - [ ] Backup initial configure.
 - [ ] `npm run db:migrate` execute.

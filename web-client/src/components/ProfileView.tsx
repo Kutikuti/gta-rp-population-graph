@@ -6,7 +6,12 @@ import type {
   CharacterSnapshot,
   PublicCharacterReference
 } from "../api";
-import { getGoogleLinkUrl, listCharacterDirectory, listMyChangeRequests } from "../api";
+import {
+  getDiscordLinkUrl,
+  getGoogleLinkUrl,
+  listCharacterDirectory,
+  listMyChangeRequests
+} from "../api";
 import { characterSnapshotFieldLabels } from "../constants";
 import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
 import { formatDate } from "../utils/format";
@@ -36,7 +41,10 @@ const providerLabels = {
   twitch: "Twitch"
 } as const;
 
-const googleLinkUrl = getGoogleLinkUrl();
+const providerLinkUrls = {
+  google: getGoogleLinkUrl(),
+  discord: getDiscordLinkUrl()
+} as const;
 
 const visibleSnapshotEntries = (snapshot: CharacterSnapshot) =>
   (
@@ -201,9 +209,13 @@ export function ProfileView({
                     <button key={provider} type="button" className="ghost-button" disabled>
                       {providerLabels[provider]} connecté
                     </button>
-                  ) : provider === "google" ? (
-                    <a key={provider} href={googleLinkUrl} className="ghost-button auth-link">
-                      Lier Google
+                  ) : provider in providerLinkUrls ? (
+                    <a
+                      key={provider}
+                      href={providerLinkUrls[provider as keyof typeof providerLinkUrls]}
+                      className="ghost-button auth-link"
+                    >
+                      Lier {providerLabels[provider]}
                     </a>
                   ) : (
                     <button key={provider} type="button" className="ghost-button" disabled>

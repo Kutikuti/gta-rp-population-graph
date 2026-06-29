@@ -15,13 +15,13 @@ export type AuthFeedback = {
 };
 
 const authErrorMessages: Record<string, string> = {
-  access_denied: "Connexion Google annulée.",
+  access_denied: "Connexion annulée.",
   banned: "Ton compte a été banni.",
-  identity_in_use: "Ce compte Google est déjà lié à un autre utilisateur.",
-  identity_link_failed: "Le rattachement du compte Google n'a pas pu aboutir.",
+  identity_in_use: "Ce compte est déjà lié à un autre utilisateur.",
+  identity_link_failed: "Le rattachement du compte n'a pas pu aboutir.",
   invalid_state: "La vérification de connexion a expiré. Réessaie.",
-  oauth_disabled: "La connexion Google n'est pas disponible.",
-  oauth_exchange_failed: "La connexion Google n'a pas pu aboutir."
+  oauth_disabled: "Cette connexion n'est pas disponible.",
+  oauth_exchange_failed: "La connexion n'a pas pu aboutir."
 };
 
 const readAuthRedirectResult = () => {
@@ -101,13 +101,16 @@ export function useAuthSession(onError: (message: string) => void) {
       return;
     }
 
-    if (authRedirectResult === "identity_linked" || authRedirectResult === "identity_already_linked") {
+    if (
+      authRedirectResult === "identity_linked" ||
+      authRedirectResult === "identity_already_linked"
+    ) {
       setAuthFeedback({
         tone: "success",
         message:
           authRedirectResult === "identity_linked"
-            ? "Compte Google lié."
-            : "Ce compte Google est déjà lié à ton profil."
+            ? "Compte lié."
+            : "Ce compte est déjà lié à ton profil."
       });
       setAuthRedirectResult(null);
       void getAuthSession()
@@ -122,7 +125,7 @@ export function useAuthSession(onError: (message: string) => void) {
 
     setAuthFeedback({
       tone: "error",
-      message: authErrorMessages[authRedirectResult] ?? "La connexion Google n'a pas pu aboutir."
+      message: authErrorMessages[authRedirectResult] ?? "La connexion n'a pas pu aboutir."
     });
     setAuthRedirectResult(null);
   }, [authRedirectResult, authSession, isAuthLoading]);

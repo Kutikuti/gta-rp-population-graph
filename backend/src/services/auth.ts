@@ -32,6 +32,14 @@ export type GoogleIdentity = {
   avatarUrl: string | null;
 };
 
+export type ExternalIdentity = {
+  provider: AuthProvider;
+  providerUserId: string;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+};
+
 export type AuthResult =
   | {
       status: "authenticated";
@@ -57,7 +65,9 @@ export type LinkIdentityResult =
 
 export interface AuthService {
   getSessionUser(userId: string): Promise<AuthenticatedUser | null>;
+  authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult>;
   authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult>;
+  linkIdentity(userId: string, identity: ExternalIdentity): Promise<LinkIdentityResult | null>;
   linkGoogleIdentity(userId: string, identity: GoogleIdentity): Promise<LinkIdentityResult | null>;
   updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null>;
   unlinkIdentity(
@@ -113,6 +123,14 @@ const serializeAuthenticatedUser = (user: {
 
 const createDefaultDisplayName = () => `Utilisateur ${randomUUID().slice(0, 8)}`;
 
+export const googleIdentityToExternalIdentity = (identity: GoogleIdentity): ExternalIdentity => ({
+  provider: "google",
+  providerUserId: identity.googleId,
+  email: identity.email,
+  displayName: identity.displayName,
+  avatarUrl: identity.avatarUrl
+});
+
 export class SequelizeAuthService implements AuthService {
   async getSessionUser(userId: string): Promise<AuthenticatedUser | null> {
     const user = await models.User.findByPk(userId, {
@@ -139,7 +157,7 @@ export class SequelizeAuthService implements AuthService {
     return serializeAuthenticatedUser(user);
   }
 
-  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
+  async authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult> {
     const defaultRole = await models.Role.findOne({
       where: { name: "user" },
       attributes: ["id", "name"]
@@ -155,23 +173,25 @@ export class SequelizeAuthService implements AuthService {
     await sequelize.transaction(async (transaction) => {
       const existingIdentity = await models.UserIdentity.findOne({
         where: {
-          provider: "google",
-          providerUserId: identity.googleId
+          provider: identity.provider,
+          providerUserId: identity.providerUserId
         },
         transaction
       });
 
       let user = existingIdentity
         ? await models.User.findByPk(existingIdentity.userId, { transaction })
-        : await models.User.findOne({
-            where: { googleId: identity.googleId },
-            transaction
-          });
+        : identity.provider === "google"
+          ? await models.User.findOne({
+              where: { googleId: identity.providerUserId },
+              transaction
+            })
+          : null;
 
       if (!user) {
         user = await models.User.create(
           {
-            googleId: identity.googleId,
+            googleId: identity.provider === "google" ? identity.providerUserId : null,
             email: identity.email,
             displayName: createDefaultDisplayName(),
             displayNameChosenAt: null,
@@ -191,8 +211,8 @@ export class SequelizeAuthService implements AuthService {
           lastLoginAt: now
         };
 
-        if (user.googleId !== identity.googleId) {
-          updates.googleId = identity.googleId;
+        if (identity.provider === "google" && user.googleId !== identity.providerUserId) {
+          updates.googleId = identity.providerUserId;
         }
 
         if (user.email !== identity.email) {
@@ -209,8 +229,8 @@ export class SequelizeAuthService implements AuthService {
       await models.UserIdentity.upsert(
         {
           userId: user.id,
-          provider: "google",
-          providerUserId: identity.googleId,
+          provider: identity.provider,
+          providerUserId: identity.providerUserId,
           providerEmail: identity.email,
           providerDisplayName: identity.displayName,
           providerAvatarUrl: identity.avatarUrl,
@@ -233,9 +253,13 @@ export class SequelizeAuthService implements AuthService {
       : { status: "authenticated", user: authenticatedUser };
   }
 
-  async linkGoogleIdentity(
+  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
+    return this.authenticateIdentity(googleIdentityToExternalIdentity(identity));
+  }
+
+  async linkIdentity(
     userId: string,
-    identity: GoogleIdentity
+    identity: ExternalIdentity
   ): Promise<LinkIdentityResult | null> {
     const outcome = await sequelize.transaction(async (transaction) => {
       const user = await models.User.findByPk(userId, {
@@ -254,7 +278,7 @@ export class SequelizeAuthService implements AuthService {
       }
 
       const alreadyLinkedToCurrentUser = (user.identities ?? []).find(
-        (entry) => entry.provider === "google"
+        (entry) => entry.provider === identity.provider
       );
 
       if (alreadyLinkedToCurrentUser) {
@@ -266,8 +290,8 @@ export class SequelizeAuthService implements AuthService {
 
       const existingIdentity = await models.UserIdentity.findOne({
         where: {
-          provider: "google",
-          providerUserId: identity.googleId
+          provider: identity.provider,
+          providerUserId: identity.providerUserId
         },
         transaction
       });
@@ -281,8 +305,8 @@ export class SequelizeAuthService implements AuthService {
       await models.UserIdentity.create(
         {
           userId: user.id,
-          provider: "google",
-          providerUserId: identity.googleId,
+          provider: identity.provider,
+          providerUserId: identity.providerUserId,
           providerEmail: identity.email,
           providerDisplayName: identity.displayName,
           providerAvatarUrl: identity.avatarUrl,
@@ -291,8 +315,8 @@ export class SequelizeAuthService implements AuthService {
         { transaction }
       );
 
-      if (user.googleId !== identity.googleId) {
-        await user.update({ googleId: identity.googleId }, { transaction });
+      if (identity.provider === "google" && user.googleId !== identity.providerUserId) {
+        await user.update({ googleId: identity.providerUserId }, { transaction });
       }
 
       return {
@@ -319,6 +343,13 @@ export class SequelizeAuthService implements AuthService {
       status: outcome.status,
       user: authenticatedUser
     };
+  }
+
+  async linkGoogleIdentity(
+    userId: string,
+    identity: GoogleIdentity
+  ): Promise<LinkIdentityResult | null> {
+    return this.linkIdentity(userId, googleIdentityToExternalIdentity(identity));
   }
 
   async updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null> {

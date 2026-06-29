@@ -20,7 +20,7 @@ personnages, leurs informations publiques, leurs streamers et leurs liens RP.
 - Frontend : Vite, React, TypeScript.
 - Graphe : Cytoscape.js.
 - Qualite code : Biome pour lint et formatage, TypeScript pour le type-check.
-- Authentification : Google OAuth.
+- Authentification : Google OAuth et Discord OAuth.
 - Production cible : VPS Ubuntu avec Nginx.
 
 ## Direction produit
@@ -43,8 +43,8 @@ La securite du serveur est la priorite numero 1 du developpement.
 ## Etat actuel
 
 Le socle backend/frontend, la base PostgreSQL, les routes publiques de
-consultation, Google OAuth, la contribution moderee, la moderation, le profil
-utilisateur et les photos securisees sont en place.
+consultation, Google OAuth, Discord OAuth, la contribution moderee, la
+moderation, le profil utilisateur et les photos securisees sont en place.
 
 La fiche publique et les formulaires de modification supportent maintenant :
 
@@ -288,14 +288,19 @@ npm run build
 
 ## Authentification locale
 
-Le socle d'authentification MVP utilise Google OAuth cote backend avec session
-serveur et cookie `HttpOnly`.
+Le socle d'authentification MVP utilise Google OAuth et Discord OAuth cote
+backend avec session serveur et cookie `HttpOnly`.
 
 Flux local actuel :
 
 - Le frontend affiche un lien `Connexion Google` dans l'en-tete.
 - Le clic ouvre `/api/auth/google` sur le backend.
 - Google renvoie ensuite vers `/api/auth/google/callback`.
+- La premiere integration Discord a ete validee en local : le rattachement
+  depuis le profil fonctionne avec une application Discord configuree.
+- Depuis le profil, un compte connecte peut rattacher Google ou Discord via
+  `/api/auth/google/link` et `/api/auth/discord/link`.
+- Discord renvoie vers `/api/auth/discord/callback`.
 - Le frontend relit la session via `/api/auth/session` et affiche le compte
   connecte dans l'en-tete.
 - Hors environnement de test, la session serveur est maintenant stockee en
@@ -309,6 +314,16 @@ Points utiles en local :
 - Le frontend doit tourner sur `http://localhost:5173`.
 - `GOOGLE_CALLBACK_URL` doit pointer vers
   `http://localhost:4000/api/auth/google/callback`.
+- L'application Google OAuth doit autoriser cette URL de callback.
+- Pour Discord, configurer ensemble `DISCORD_CLIENT_ID`,
+  `DISCORD_CLIENT_SECRET` et `DISCORD_CALLBACK_URL`, avec
+  `DISCORD_CALLBACK_URL=http://localhost:4000/api/auth/discord/callback` en
+  local.
+- L'application Discord doit autoriser cette URL dans ses redirects OAuth2.
+- En production, ajouter aussi les URLs de callback publiques dans Google et
+  Discord, par exemple
+  `https://ton-domaine.fr/api/auth/google/callback` et
+  `https://ton-domaine.fr/api/auth/discord/callback`.
 - En production, `SESSION_COOKIE_SECURE=true` est requis. En developpement
   local, le backend neutralise ce flag hors production pour permettre les
   tests HTTP locaux.
@@ -316,6 +331,8 @@ Points utiles en local :
 Verification rapide :
 
 - Se connecter avec le bouton `Connexion Google`.
+- Ouvrir le profil et verifier que `Lier Discord` rattache bien le compte
+  Discord configure.
 - Verifier que le nom, le role et l'avatar s'affichent.
 - Recharger la page pour confirmer que la session persiste.
 - Utiliser `Deconnexion` pour verifier la destruction de session.

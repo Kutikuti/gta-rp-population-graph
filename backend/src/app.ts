@@ -21,6 +21,7 @@ import {
   SequelizeChangeRequestService
 } from "./services/change-requests.js";
 import { characterPhotoPublicDir } from "./services/character-photos.js";
+import { type DiscordOauthClient, DiscordOidcClient } from "./services/discord-oauth.js";
 import { type GoogleOauthClient, GoogleOidcClient } from "./services/google-oauth.js";
 import type { PublicDataService } from "./services/public-data.js";
 
@@ -28,6 +29,7 @@ export type AppDependencies = {
   publicDataService?: PublicDataService;
   authService?: AuthService;
   googleOauthClient?: GoogleOauthClient;
+  discordOauthClient?: DiscordOauthClient;
   changeRequestService?: ChangeRequestService;
   adminService?: AdminService;
 };
@@ -35,6 +37,7 @@ export type AppDependencies = {
 export const createApp = (dependencies: AppDependencies = {}) => {
   const authService = dependencies.authService ?? new SequelizeAuthService();
   const googleOauthClient = dependencies.googleOauthClient ?? new GoogleOidcClient();
+  const discordOauthClient = dependencies.discordOauthClient ?? new DiscordOidcClient();
   const changeRequestService =
     dependencies.changeRequestService ?? new SequelizeChangeRequestService();
   const adminService = dependencies.adminService ?? new SequelizeAdminService();
@@ -77,7 +80,8 @@ export const createApp = (dependencies: AppDependencies = {}) => {
     "/api/auth",
     createAuthRouter({
       authService,
-      googleOauthClient
+      googleOauthClient,
+      discordOauthClient
     })
   );
   app.use("/api/contributions", createContributionsRouter(changeRequestService));

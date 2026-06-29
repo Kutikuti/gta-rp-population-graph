@@ -562,6 +562,10 @@ describe("App", () => {
       "href",
       "http://localhost:4000/api/auth/google/link"
     );
+    expect(screen.getByRole("link", { name: "Lier Discord" })).toHaveAttribute(
+      "href",
+      "http://localhost:4000/api/auth/discord/link"
+    );
   });
 
   it("opens the Notion imports preview for administrators", async () => {

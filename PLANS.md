@@ -1158,8 +1158,8 @@ Avancement actuel :
 - La connexion Google continue de fonctionner, mais s'appuie desormais sur ce
   socle et retro-alimente l'identite liee correspondante.
 - Le profil utilisateur expose maintenant les comptes lies connus, avec Google
-  affiche comme fournisseur connecte et Discord/Twitch gardes en emplacements
-  futurs.
+  et Discord comme fournisseurs raccordables, et Twitch garde en emplacement
+  futur.
 - Le profil propose maintenant un point d'entree reel `Lier Google` lorsque le
   compte Google n'est pas encore rattache.
 - Le callback OAuth Google gere desormais deux intentions distinctes :
@@ -1172,20 +1172,38 @@ Avancement actuel :
   protection explicite contre la suppression du dernier moyen de connexion.
 - La logique Google de rattachement sert maintenant de base reutilisable avant
   l'ajout de Discord puis Twitch.
+- La connexion et le rattachement Discord sont ajoutes cote backend via OAuth2
+  `identify email`, avec gestion de callback, collision d'identite deja liee et
+  reutilisation du socle `UserIdentity`.
+- La premiere integration Discord a ete validee en local avec une application
+  Discord configuree : le rattachement depuis le profil fonctionne.
+- Le profil propose maintenant `Lier Discord` lorsque ce fournisseur n'est pas
+  encore rattache.
+- Les variables d'environnement Discord sont ajoutees avec validation
+  tout-ou-rien : `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` et
+  `DISCORD_CALLBACK_URL`.
 - Les validations actuellement confirmees dans cet environnement sont :
-  `backend npm run check`, `backend tsc --noEmit`, `web-client npm test` et
-  `web-client npm run build`.
-- Les validations `backend npm test` et `backend npm run build` restent a
-  relancer dans un environnement autorisant l'ecriture disque, car le present
-  environnement est en lecture seule pour `node_modules/.vite-temp` et `dist/`.
-- Les fournisseurs Discord et Twitch, ainsi que leurs ecrans de rattachement
-  complets, restent a implementer.
+  `backend npm run check`, tests backend cibles auth/profil/autorisation/
+  contribution/admin, `backend npm run build`, `web-client npm run check` et
+  `web-client npx tsc -p tsconfig.app.json --noEmit`.
+- La suite backend complete `backend npm test` et `web-client npm test --
+  App.test.tsx` restent a relancer dans un environnement autorisant l'ecriture
+  disque, car Vite doit ecrire dans `node_modules/.vite-temp` et l'escalade a
+  ete refusee dans cet environnement.
+- Le fournisseur Twitch, l'etat live Twitch et les ecrans de rattachement plus
+  complets restent a implementer.
+- Une fois les fournisseurs principaux operationnels, l'entree de connexion
+  devra permettre de choisir le fournisseur souhaite au lieu de proposer
+  uniquement `Connexion Google`.
 
 - Generaliser le modele `UserIdentity` pour rattacher plusieurs fournisseurs a
   un meme compte utilisateur : Google, Discord et Twitch.
 - Permettre a un utilisateur de connecter ou de dissocier un fournisseur depuis
   son profil, sans exposer publiquement les noms, prenoms, emails ou handles
   renvoyes par ces fournisseurs.
+- Permettre l'inscription/connexion initiale avec le fournisseur choisi par
+  l'utilisateur, au minimum Google ou Discord, puis Twitch lorsque ce flux sera
+  disponible.
 - Gerer les collisions de compte avec prudence : refus ou validation explicite
   lorsqu'une identite fournisseur est deja rattachee ailleurs, sans fusion
   automatique risquee.
@@ -1215,7 +1233,8 @@ Point de controle :
 
 - La page Notion communautaire est la source initiale, mais son accessibilite et
   sa structure devront etre confirmees par tests de parsing.
-- Google OAuth suffit pour le MVP.
+- Google OAuth reste disponible, mais le produit doit evoluer vers un choix de
+  fournisseur de connexion des que les integrations principales sont stables.
 - Le frontend demarre avec Vite, React et TypeScript.
 - Le developpement utilise Node.js `24.16.0` ou plus recent, en restant sur la
   branche LTS plutot que sur la branche Current.

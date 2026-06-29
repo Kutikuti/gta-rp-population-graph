@@ -513,6 +513,8 @@ export const getAuthSession = () => fetchJson<AuthSession>("/api/auth/session");
 
 export const getGoogleAuthUrl = () => buildApiUrl("/api/auth/google");
 export const getGoogleLinkUrl = () => buildApiUrl("/api/auth/google/link");
+export const getDiscordAuthUrl = () => buildApiUrl("/api/auth/discord");
+export const getDiscordLinkUrl = () => buildApiUrl("/api/auth/discord/link");
 
 export const updateProfileDisplayName = (displayName: string) =>
   sendJson<{ user: AuthenticatedUser }>("/api/profile/display-name", "PATCH", { displayName });

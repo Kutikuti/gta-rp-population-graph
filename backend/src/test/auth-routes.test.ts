@@ -6,9 +6,11 @@ import type {
   AuthenticatedUser,
   AuthResult,
   AuthService,
+  ExternalIdentity,
   GoogleIdentity,
   LinkIdentityResult
 } from "../services/auth.js";
+import type { DiscordOauthClient } from "../services/discord-oauth.js";
 import type { GoogleOauthClient, GoogleProfile } from "../services/google-oauth.js";
 
 const baseUser: AuthenticatedUser = {
@@ -34,77 +36,119 @@ const baseUser: AuthenticatedUser = {
 };
 
 class FixtureAuthService implements AuthService {
+  private currentUser: AuthenticatedUser = baseUser;
+
   constructor(private readonly bannedGoogleIds = new Set<string>()) {}
 
   async getSessionUser(userId: string) {
-    return userId === baseUser.id ? baseUser : null;
+    return userId === this.currentUser.id ? this.currentUser : null;
   }
 
-  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
+  async authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult> {
     const user = {
       ...baseUser,
       email: identity.email,
       displayName: identity.displayName,
       mustChooseDisplayName: false,
       avatarUrl: identity.avatarUrl,
-      isBanned: this.bannedGoogleIds.has(identity.googleId)
+      isBanned: identity.provider === "google" && this.bannedGoogleIds.has(identity.providerUserId),
+      linkedIdentities: [
+        {
+          id: `identity-${identity.provider}-viewer`,
+          provider: identity.provider,
+          connectedAt: "2026-06-28T00:00:00.000Z",
+          lastUsedAt: "2026-06-28T00:00:00.000Z",
+          canUnlink: false
+        }
+      ]
     };
 
+    this.currentUser = user;
+
     return user.isBanned ? { status: "banned", user } : { status: "authenticated", user };
+  }
+
+  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
+    return this.authenticateIdentity({
+      provider: "google",
+      providerUserId: identity.googleId,
+      email: identity.email,
+      displayName: identity.displayName,
+      avatarUrl: identity.avatarUrl
+    });
+  }
+
+  async linkIdentity(
+    userId: string,
+    identity: ExternalIdentity
+  ): Promise<LinkIdentityResult | null> {
+    if (userId !== baseUser.id) {
+      return null;
+    }
+
+    if (identity.providerUserId === `${identity.provider}-in-use-id`) {
+      return { status: "linked_to_other_user" as const };
+    }
+
+    if (identity.providerUserId === `${identity.provider}-already-linked-id`) {
+      const user = {
+        ...baseUser,
+        linkedIdentities: [
+          {
+            id: `identity-${identity.provider}-viewer`,
+            provider: identity.provider,
+            connectedAt: "2026-06-28T00:00:00.000Z",
+            lastUsedAt: "2026-06-28T00:00:00.000Z",
+            canUnlink: false
+          }
+        ]
+      };
+      this.currentUser = user;
+
+      return {
+        status: "already_linked" as const,
+        user
+      };
+    }
+
+    const user = {
+      ...baseUser,
+      linkedIdentities: [
+        {
+          id: `identity-${identity.provider === "google" ? "discord" : identity.provider}-viewer`,
+          provider: identity.provider === "google" ? "discord" : identity.provider,
+          connectedAt: "2026-06-28T00:00:00.000Z",
+          lastUsedAt: null,
+          canUnlink: true
+        },
+        {
+          id: "identity-google-viewer",
+          provider: "google" as const,
+          connectedAt: "2026-06-29T00:00:00.000Z",
+          lastUsedAt: "2026-06-29T00:00:00.000Z",
+          canUnlink: true
+        }
+      ]
+    };
+    this.currentUser = user;
+
+    return {
+      status: "linked" as const,
+      user
+    };
   }
 
   async linkGoogleIdentity(
     userId: string,
     identity: GoogleIdentity
   ): Promise<LinkIdentityResult | null> {
-    if (userId !== baseUser.id) {
-      return null;
-    }
-
-    if (identity.googleId === "google-in-use-id") {
-      return { status: "linked_to_other_user" as const };
-    }
-
-    if (identity.googleId === "google-already-linked-id") {
-      return {
-        status: "already_linked" as const,
-        user: {
-          ...baseUser,
-          linkedIdentities: [
-            {
-              id: "identity-google-viewer",
-              provider: "google" as const,
-              connectedAt: "2026-06-28T00:00:00.000Z",
-              lastUsedAt: "2026-06-28T00:00:00.000Z",
-              canUnlink: false
-            }
-          ]
-        }
-      };
-    }
-
-    return {
-      status: "linked" as const,
-      user: {
-        ...baseUser,
-        linkedIdentities: [
-          {
-            id: "identity-discord-viewer",
-            provider: "discord" as const,
-            connectedAt: "2026-06-28T00:00:00.000Z",
-            lastUsedAt: null,
-            canUnlink: true
-          },
-          {
-            id: "identity-google-viewer",
-            provider: "google" as const,
-            connectedAt: "2026-06-29T00:00:00.000Z",
-            lastUsedAt: "2026-06-29T00:00:00.000Z",
-            canUnlink: true
-          }
-        ]
-      }
-    };
+    return this.linkIdentity(userId, {
+      provider: "google",
+      providerUserId: identity.googleId,
+      email: identity.email,
+      displayName: identity.displayName,
+      avatarUrl: identity.avatarUrl
+    });
   }
 
   async updateDisplayName(userId: string, displayName: string) {
@@ -146,6 +190,31 @@ class FixtureGoogleOauthClient implements GoogleOauthClient {
       email: code === "banned" ? "banned@example.test" : "viewer@example.test",
       displayName: code === "banned" ? "Banned User" : "Viewer Example",
       avatarUrl: "https://example.test/avatar.png"
+    };
+  }
+}
+
+class FixtureDiscordOauthClient implements DiscordOauthClient {
+  buildAuthorizationUrl(state: string) {
+    return `https://discord.example.test/oauth?state=${encodeURIComponent(state)}`;
+  }
+
+  async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
+    if (code === "broken") {
+      throw new Error("exchange failed");
+    }
+
+    return {
+      provider: "discord",
+      providerUserId:
+        code === "in-use"
+          ? "discord-in-use-id"
+          : code === "already-linked"
+            ? "discord-already-linked-id"
+            : "discord-ok-id",
+      email: "viewer@example.test",
+      displayName: "Viewer Example",
+      avatarUrl: "https://example.test/discord-avatar.png"
     };
   }
 }
@@ -205,6 +274,43 @@ describe("auth API", () => {
         email: "viewer@example.test",
         role: { name: "user" },
         linkedIdentities: [{ provider: "google" }]
+      }
+    });
+  });
+
+  it("starts Discord OAuth and exposes the session after callback", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient(),
+      discordOauthClient: new FixtureDiscordOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startResponse = await agent.get("/api/auth/discord");
+
+    expect(startResponse.status).toBe(302);
+    const location = startResponse.headers.location;
+    expect(location).toContain("https://discord.example.test/oauth");
+
+    const state = oauthStateFromLocation(location);
+
+    const callbackResponse = await agent
+      .get("/api/auth/discord/callback")
+      .query({ code: "ok", state });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=success");
+
+    const sessionResponse = await agent.get("/api/auth/session");
+
+    expect(sessionResponse.status).toBe(200);
+    expect(sessionResponse.body).toMatchObject({
+      authenticated: true,
+      user: {
+        id: baseUser.id,
+        email: "viewer@example.test",
+        role: { name: "user" },
+        linkedIdentities: [{ provider: "discord" }]
       }
     });
   });
@@ -287,6 +393,40 @@ describe("auth API", () => {
     const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
     const callbackResponse = await agent
       .get("/api/auth/google/callback")
+      .query({ code: "ok", state: linkState });
+
+    expect(callbackResponse.status).toBe(302);
+    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=identity_linked");
+
+    const sessionResponse = await agent.get("/api/auth/session");
+
+    expect(sessionResponse.body).toMatchObject({
+      authenticated: true,
+      user: {
+        linkedIdentities: [{ provider: "discord" }, { provider: "google" }]
+      }
+    });
+  });
+
+  it("starts Discord linking for an authenticated user and confirms the linked identity", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient(),
+      discordOauthClient: new FixtureDiscordOauthClient()
+    });
+    const agent = request.agent(app);
+
+    const startLogin = await agent.get("/api/auth/google");
+    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
+
+    const startLinkResponse = await agent.get("/api/auth/discord/link");
+    expect(startLinkResponse.status).toBe(302);
+    expect(startLinkResponse.headers.location).toContain("https://discord.example.test/oauth");
+
+    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const callbackResponse = await agent
+      .get("/api/auth/discord/callback")
       .query({ code: "ok", state: linkState });
 
     expect(callbackResponse.status).toBe(302);

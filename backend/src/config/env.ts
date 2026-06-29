@@ -43,6 +43,9 @@ const envSchema = z
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     GOOGLE_CALLBACK_URL: z.url().optional(),
+    DISCORD_CLIENT_ID: z.string().optional(),
+    DISCORD_CLIENT_SECRET: z.string().optional(),
+    DISCORD_CALLBACK_URL: z.url().optional(),
     RATE_LIMIT_WINDOW_MS: numberFromString(900000),
     RATE_LIMIT_MAX_REQUESTS: numberFromString(100),
     CHANGE_REQUEST_RATE_LIMIT_MAX: numberFromString(10),
@@ -52,21 +55,28 @@ const envSchema = z
     PHOTO_DRAFT_MAX_AGE_HOURS: numberFromString(24)
   })
   .superRefine((value, context) => {
-    const googleValues = [
-      value.GOOGLE_CLIENT_ID,
-      value.GOOGLE_CLIENT_SECRET,
-      value.GOOGLE_CALLBACK_URL
+    const oauthProviders = [
+      {
+        name: "GOOGLE",
+        values: [value.GOOGLE_CLIENT_ID, value.GOOGLE_CLIENT_SECRET, value.GOOGLE_CALLBACK_URL]
+      },
+      {
+        name: "DISCORD",
+        values: [value.DISCORD_CLIENT_ID, value.DISCORD_CLIENT_SECRET, value.DISCORD_CALLBACK_URL]
+      }
     ];
-    const hasAnyGoogleOauthConfig = googleValues.some(Boolean);
-    const hasAllGoogleOauthConfig = googleValues.every(Boolean);
 
-    if (hasAnyGoogleOauthConfig && !hasAllGoogleOauthConfig) {
-      context.addIssue({
-        code: "custom",
-        path: ["GOOGLE_CLIENT_ID"],
-        message:
-          "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_CALLBACK_URL must all be set together."
-      });
+    for (const provider of oauthProviders) {
+      const hasAnyOauthConfig = provider.values.some(Boolean);
+      const hasAllOauthConfig = provider.values.every(Boolean);
+
+      if (hasAnyOauthConfig && !hasAllOauthConfig) {
+        context.addIssue({
+          code: "custom",
+          path: [`${provider.name}_CLIENT_ID`],
+          message: `${provider.name}_CLIENT_ID, ${provider.name}_CLIENT_SECRET and ${provider.name}_CALLBACK_URL must all be set together.`
+        });
+      }
     }
 
     if (value.NODE_ENV === "production") {

@@ -6,6 +6,7 @@ import type {
   AuthenticatedUser,
   AuthResult,
   AuthService,
+  ExternalIdentity,
   GoogleIdentity
 } from "../services/auth.js";
 import type { GoogleOauthClient, GoogleProfile } from "../services/google-oauth.js";
@@ -61,15 +62,29 @@ class FixtureAuthService implements AuthService {
     return this.usersById.get(userId) ?? null;
   }
 
-  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
-    const roleKey = identity.googleId as keyof typeof usersByCode;
+  async authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult> {
+    const roleKey = identity.providerUserId as keyof typeof usersByCode;
     const user = usersByCode[roleKey];
 
     if (!user) {
-      throw new Error(`Unknown fixture Google identity ${identity.googleId}.`);
+      throw new Error(`Unknown fixture identity ${identity.providerUserId}.`);
     }
 
     return { status: "authenticated", user };
+  }
+
+  async authenticateGoogleIdentity(identity: GoogleIdentity): Promise<AuthResult> {
+    return this.authenticateIdentity({
+      provider: "google",
+      providerUserId: identity.googleId,
+      email: identity.email,
+      displayName: identity.displayName,
+      avatarUrl: identity.avatarUrl
+    });
+  }
+
+  async linkIdentity() {
+    return null;
   }
 
   async linkGoogleIdentity() {

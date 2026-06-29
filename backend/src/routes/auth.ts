@@ -3,7 +3,16 @@ import { Router } from "express";
 
 import { env } from "../config/env.js";
 import { destroySession, regenerateSession, requireAuthenticatedUser } from "../middleware/auth.js";
-import type { AuthService } from "../services/auth.js";
+import {
+  type AuthService,
+  type ExternalIdentity,
+  googleIdentityToExternalIdentity
+} from "../services/auth.js";
+import {
+  type DiscordOauthClient,
+  DiscordOauthDisabledError,
+  DiscordOauthExchangeError
+} from "../services/discord-oauth.js";
 import {
   createOauthState,
   type GoogleOauthClient,
@@ -15,6 +24,7 @@ import {
 export type AuthRouterDependencies = {
   authService: AuthService;
   googleOauthClient: GoogleOauthClient;
+  discordOauthClient: DiscordOauthClient;
 };
 
 const sessionPayload = (request: express.Request) =>
@@ -43,8 +53,146 @@ const clearOauthSessionState = (request: express.Request) => {
   request.session.oauthLinkUserId = undefined;
 };
 
-export const createAuthRouter = ({ authService, googleOauthClient }: AuthRouterDependencies) => {
+type OauthClient = {
+  buildAuthorizationUrl(state: string): string;
+  exchangeCodeForProfile(code: string): Promise<ExternalIdentity>;
+};
+
+const oauthErrorCode = (error: unknown) => {
+  if (error instanceof GoogleOauthDisabledError || error instanceof DiscordOauthDisabledError) {
+    return "oauth_disabled";
+  }
+
+  if (error instanceof GoogleOauthStateError) {
+    return "invalid_state";
+  }
+
+  if (error instanceof GoogleOauthExchangeError || error instanceof DiscordOauthExchangeError) {
+    return "oauth_exchange_failed";
+  }
+
+  return null;
+};
+
+export const createAuthRouter = ({
+  authService,
+  googleOauthClient,
+  discordOauthClient
+}: AuthRouterDependencies) => {
   const router = Router();
+  const googleExternalOauthClient: OauthClient = {
+    buildAuthorizationUrl: (state) => googleOauthClient.buildAuthorizationUrl(state),
+    exchangeCodeForProfile: async (code) =>
+      googleIdentityToExternalIdentity(await googleOauthClient.exchangeCodeForProfile(code))
+  };
+
+  const startOauthLogin = async (
+    request: express.Request,
+    response: express.Response,
+    client: OauthClient
+  ) => {
+    const state = createOauthState();
+    await regenerateSession(request);
+    request.session.oauthState = state;
+    request.session.oauthIntent = "login";
+    request.session.oauthLinkUserId = undefined;
+    response.redirect(302, client.buildAuthorizationUrl(state));
+  };
+
+  const startOauthLink = (
+    request: express.Request,
+    response: express.Response,
+    client: OauthClient,
+    intent: "link_google" | "link_discord"
+  ) => {
+    if (!request.currentUser) {
+      throw new Error("Authenticated route reached without current user.");
+    }
+
+    const state = createOauthState();
+    request.session.oauthState = state;
+    request.session.oauthIntent = intent;
+    request.session.oauthLinkUserId = request.currentUser.id;
+    response.redirect(302, client.buildAuthorizationUrl(state));
+  };
+
+  const handleOauthCallback = async (
+    request: express.Request,
+    response: express.Response,
+    client: OauthClient,
+    linkIntent: "link_google" | "link_discord"
+  ) => {
+    const { code, state, error } = request.query;
+
+    if (typeof error === "string") {
+      response.redirect(302, redirectToClient({ auth_error: error }));
+      return;
+    }
+
+    if (typeof code !== "string" || typeof state !== "string") {
+      throw new GoogleOauthStateError("OAuth callback is missing code or state.");
+    }
+
+    if (!request.session.oauthState || request.session.oauthState !== state) {
+      throw new GoogleOauthStateError("OAuth callback state did not match the session.");
+    }
+
+    const oauthIntent = request.session.oauthIntent ?? "login";
+    const oauthLinkUserId = request.session.oauthLinkUserId;
+    clearOauthSessionState(request);
+
+    const profile = await client.exchangeCodeForProfile(code);
+
+    if (oauthIntent === linkIntent) {
+      if (
+        !oauthLinkUserId ||
+        !request.session.userId ||
+        request.session.userId !== oauthLinkUserId
+      ) {
+        throw new GoogleOauthStateError(
+          "OAuth link callback state did not match the active session."
+        );
+      }
+
+      const result = await authService.linkIdentity(oauthLinkUserId, profile);
+
+      if (!result) {
+        response.redirect(302, redirectToClient({ auth_error: "identity_link_failed" }));
+        return;
+      }
+
+      if (result.status === "linked_to_other_user") {
+        response.redirect(302, redirectToClient({ auth_error: "identity_in_use" }));
+        return;
+      }
+
+      request.session.userId = result.user.id;
+      response.redirect(
+        302,
+        redirectToClient({
+          auth: result.status === "linked" ? "identity_linked" : "identity_already_linked"
+        })
+      );
+      return;
+    }
+
+    if (oauthIntent !== "login") {
+      throw new GoogleOauthStateError("OAuth callback intent did not match the callback provider.");
+    }
+
+    const result = await authService.authenticateIdentity(profile);
+
+    if (result.status === "banned") {
+      await destroySession(request);
+      response.clearCookie(env.SESSION_COOKIE_NAME);
+      response.redirect(302, redirectToClient({ auth_error: "banned" }));
+      return;
+    }
+
+    await regenerateSession(request);
+    request.session.userId = result.user.id;
+    response.redirect(302, redirectToClient({ auth: "success" }));
+  };
 
   router.get("/session", (request, response) => {
     response.json(sessionPayload(request));
@@ -52,15 +200,12 @@ export const createAuthRouter = ({ authService, googleOauthClient }: AuthRouterD
 
   router.get("/google", async (request, response, next) => {
     try {
-      const state = createOauthState();
-      await regenerateSession(request);
-      request.session.oauthState = state;
-      request.session.oauthIntent = "login";
-      request.session.oauthLinkUserId = undefined;
-      response.redirect(302, googleOauthClient.buildAuthorizationUrl(state));
+      await startOauthLogin(request, response, googleExternalOauthClient);
     } catch (error) {
-      if (error instanceof GoogleOauthDisabledError) {
-        response.redirect(302, redirectToClient({ auth_error: "oauth_disabled" }));
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
         return;
       }
 
@@ -70,18 +215,12 @@ export const createAuthRouter = ({ authService, googleOauthClient }: AuthRouterD
 
   router.get("/google/link", requireAuthenticatedUser, async (request, response, next) => {
     try {
-      if (!request.currentUser) {
-        throw new Error("Authenticated route reached without current user.");
-      }
-
-      const state = createOauthState();
-      request.session.oauthState = state;
-      request.session.oauthIntent = "link_google";
-      request.session.oauthLinkUserId = request.currentUser.id;
-      response.redirect(302, googleOauthClient.buildAuthorizationUrl(state));
+      startOauthLink(request, response, googleExternalOauthClient, "link_google");
     } catch (error) {
-      if (error instanceof GoogleOauthDisabledError) {
-        response.redirect(302, redirectToClient({ auth_error: "oauth_disabled" }));
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
         return;
       }
 
@@ -91,89 +230,57 @@ export const createAuthRouter = ({ authService, googleOauthClient }: AuthRouterD
 
   router.get("/google/callback", async (request, response, next) => {
     try {
-      const { code, state, error } = request.query;
-
-      if (typeof error === "string") {
-        response.redirect(302, redirectToClient({ auth_error: error }));
-        return;
-      }
-
-      if (typeof code !== "string" || typeof state !== "string") {
-        throw new GoogleOauthStateError("Google callback is missing code or state.");
-      }
-
-      if (!request.session.oauthState || request.session.oauthState !== state) {
-        throw new GoogleOauthStateError("Google callback state did not match the session.");
-      }
-
-      const oauthIntent = request.session.oauthIntent ?? "login";
-      const oauthLinkUserId = request.session.oauthLinkUserId;
-      clearOauthSessionState(request);
-
-      const profile = await googleOauthClient.exchangeCodeForProfile(code);
-
-      if (oauthIntent === "link_google") {
-        if (
-          !oauthLinkUserId ||
-          !request.session.userId ||
-          request.session.userId !== oauthLinkUserId
-        ) {
-          throw new GoogleOauthStateError(
-            "Google link callback state did not match the active session."
-          );
-        }
-
-        const result = await authService.linkGoogleIdentity(oauthLinkUserId, profile);
-
-        if (!result) {
-          response.redirect(302, redirectToClient({ auth_error: "identity_link_failed" }));
-          return;
-        }
-
-        if (result.status === "linked_to_other_user") {
-          response.redirect(302, redirectToClient({ auth_error: "identity_in_use" }));
-          return;
-        }
-
-        request.session.userId = result.user.id;
-        response.redirect(
-          302,
-          redirectToClient({
-            auth: result.status === "linked" ? "identity_linked" : "identity_already_linked"
-          })
-        );
-        return;
-      }
-
-      const result = await authService.authenticateGoogleIdentity(profile);
-
-      if (result.status === "banned") {
-        await destroySession(request);
-        response.clearCookie(env.SESSION_COOKIE_NAME);
-        response.redirect(302, redirectToClient({ auth_error: "banned" }));
-        return;
-      }
-
-      await regenerateSession(request);
-      request.session.userId = result.user.id;
-      response.redirect(302, redirectToClient({ auth: "success" }));
+      await handleOauthCallback(request, response, googleExternalOauthClient, "link_google");
     } catch (error) {
-      if (
-        error instanceof GoogleOauthDisabledError ||
-        error instanceof GoogleOauthExchangeError ||
-        error instanceof GoogleOauthStateError
-      ) {
-        response.redirect(
-          302,
-          redirectToClient({
-            auth_error:
-              error instanceof GoogleOauthDisabledError
-                ? "oauth_disabled"
-                : error instanceof GoogleOauthStateError
-                  ? "invalid_state"
-                  : "oauth_exchange_failed"
-          })
-        );
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
+        return;
+      }
+
+      next(error);
+    }
+  });
+
+  router.get("/discord", async (request, response, next) => {
+    try {
+      await startOauthLogin(request, response, discordOauthClient);
+    } catch (error) {
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
+        return;
+      }
+
+      next(error);
+    }
+  });
+
+  router.get("/discord/link", requireAuthenticatedUser, async (request, response, next) => {
+    try {
+      startOauthLink(request, response, discordOauthClient, "link_discord");
+    } catch (error) {
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
+        return;
+      }
+
+      next(error);
+    }
+  });
+
+  router.get("/discord/callback", async (request, response, next) => {
+    try {
+      await handleOauthCallback(request, response, discordOauthClient, "link_discord");
+    } catch (error) {
+      const errorCode = oauthErrorCode(error);
+
+      if (errorCode) {
+        response.redirect(302, redirectToClient({ auth_error: errorCode }));
         return;
       }
 
