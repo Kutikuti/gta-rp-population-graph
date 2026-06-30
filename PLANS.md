@@ -1131,15 +1131,24 @@ Point de controle :
 
 ### Etape 11 - Preparation deploiement
 
-Statut : reportee apres l'etape 12 pour eviter de figer trop tot la
-documentation et la configuration de production alors que les besoins SSO et
-plateforme ne sont pas encore stabilises.
+Statut : a reprendre maintenant que l'etape 12 est terminee.
 
-- Documenter la configuration de production : variables, PostgreSQL, Nginx,
-  TLS, processus Node.js et build frontend.
+L'etape 12 a stabilise les besoins SSO, les sessions persistantes, le status
+live Twitch et la migration initiale unique. La preparation deploiement peut
+donc repartir sur une base plus fiable.
+
+- Documenter la configuration de production : variables, PostgreSQL via Docker,
+  Caddy, TLS, processus Node.js et build frontend.
 - Prevoir logs, sauvegardes base de donnees, firewall, fail2ban ou equivalent.
 - Verifier la capacite du VPS Hetzner avant ouverture publique.
 - Preparer une procedure de restauration de base et de rollback applicatif.
+- Mettre a jour le runbook `DEPLOYMENT.md` avec la migration initiale unique,
+  les callbacks OAuth Google/Discord/Twitch, le store de session PostgreSQL et
+  le script global `run-all-checks.sh`.
+- Le deploiement cible utilise le sous-domaine `gta-rp.f1prediction.fr`, servi
+  par Caddy, afin de ne pas perturber le site existant sur `f1prediction.fr`.
+- Valider une sequence de deploiement a blanc : installation, checks, build,
+  creation base, migration, lancement backend, build frontend et smoke tests.
 
 Point de controle :
 
@@ -1285,5 +1294,6 @@ Point de controle :
 - L'etat live Twitch est bien inclus dans cette etape 12 aux cotes des
   integrations SSO, afin de reutiliser la configuration serveur Twitch et
   d'eviter une integration API partielle et redondante.
-- Le VPS Hetzner pourra heberger le backend, le frontend, PostgreSQL et Nginx,
-  sous reserve de verification de charge au moment du deploiement.
+- Le VPS Hetzner heberge deja Caddy et un PostgreSQL accessible localement via
+  Docker. Le deploiement GTA-RP doit reutiliser cette approche sans perturber
+  le site existant `f1prediction.fr`.

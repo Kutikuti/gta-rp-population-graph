@@ -16,12 +16,12 @@ interactive.
 
 ## Prerequis serveur
 
-A confirmer et completer a l'etape 10 :
+A confirmer et completer pendant l'etape 11 :
 
 - VPS Ubuntu a jour.
 - Node.js `24.16.0` ou plus recent.
-- PostgreSQL accessible depuis le backend.
-- Nginx pour le reverse proxy, TLS et les domaines.
+- PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
+- Caddy pour le reverse proxy, TLS automatique et les domaines.
 - Process manager pour l'API Node.js : PM2 ou service systemd.
 - Firewall actif, ports publics limites a SSH, HTTP et HTTPS.
 - Strategie de backup PostgreSQL testee.
@@ -70,9 +70,9 @@ Variables critiques :
 Les applications OAuth doivent autoriser les callbacks de production avant le
 premier deploiement public :
 
-- Google : `https://<domaine-public>/api/auth/google/callback`
-- Discord : `https://<domaine-public>/api/auth/discord/callback`
-- Twitch : `https://<domaine-public>/api/auth/twitch/callback`
+- Google : `https://gta-rp.f1prediction.fr/api/auth/google/callback`
+- Discord : `https://gta-rp.f1prediction.fr/api/auth/discord/callback`
+- Twitch : `https://gta-rp.f1prediction.fr/api/auth/twitch/callback`
 
 Les valeurs `GOOGLE_CALLBACK_URL`, `DISCORD_CALLBACK_URL` et
 `TWITCH_CALLBACK_URL` doivent correspondre exactement aux URLs declarees chez
@@ -80,6 +80,11 @@ les fournisseurs OAuth, schema `https` inclus. Si plusieurs domaines pointent
 vers le meme serveur, declarer chaque domaine utilise pour la connexion dans les
 consoles Google, Discord et Twitch ou choisir un domaine canonique unique pour
 l'authentification.
+
+Le domaine canonique retenu pour le deploiement initial est
+`gta-rp.f1prediction.fr`. Le domaine racine `f1prediction.fr` et son chemin
+`/api/*` sont deja utilises par un autre site et ne doivent pas etre modifies
+pour ce deploiement.
 
 Le backend utilise desormais un store de session persistant en PostgreSQL pour
 eviter la perte des sessions lors des redemarrages applicatifs. Les sessions
@@ -89,9 +94,43 @@ toutes les `SESSION_CLEANUP_INTERVAL_MINUTES`.
 
 Par defaut, les photos sont stockees sous `backend/storage/uploads`, ignore par
 Git. En production, conserver ce dossier hors du repertoire servi directement
-par Nginx : l'API expose uniquement les fichiers valides sous
+par Caddy : l'API expose uniquement les fichiers valides sous
 `/uploads/characters`. Les brouillons temporaires restent internes sous
 `tmp/`.
+
+## Reverse proxy Caddy
+
+Le VPS actuel utilise Caddy, pas Nginx. Le site existant reste servi sur
+`f1prediction.fr` et `www.f1prediction.fr`. Le nouveau site doit etre ajoute
+dans un bloc Caddy separe pour `gta-rp.f1prediction.fr`, afin de ne pas toucher
+a la disponibilite du site existant.
+
+Exemple cible :
+
+```caddyfile
+gta-rp.f1prediction.fr {
+    handle_path /api/* {
+        reverse_proxy 127.0.0.1:4000
+    }
+
+    root * /var/www/gta-rp-population-graph/web-client/dist
+    try_files {path} /index.html
+    file_server
+}
+```
+
+Avant toute modification de `/etc/caddy/Caddyfile`, creer une sauvegarde datee,
+valider la configuration puis recharger Caddy :
+
+```bash
+sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.backup-$(date +%Y%m%d-%H%M%S)
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+Caddy emettra le certificat TLS automatiquement quand le DNS
+`gta-rp.f1prediction.fr` pointera bien vers le VPS et que les ports 80/443
+seront joignables publiquement.
 
 Les photos issues des imports Notion ne doivent pas etre servies directement
 depuis une URL distante. L'administration telecharge la photo au moment de
@@ -111,15 +150,20 @@ Le script se connecte a `DB_MAINTENANCE_NAME`, par defaut `postgres`, avec les
 identifiants `DB_USER` et `DB_PASSWORD`. Il valide le nom de base avant de
 construire la commande `CREATE DATABASE`.
 
-Deux modes sont possibles :
+Sur le VPS actuel, PostgreSQL est expose localement via Docker sur
+`127.0.0.1:5432`. Le backend GTA-RP doit utiliser cette exposition locale avec
+un nom de base et un utilisateur dedies, differents de ceux du site existant.
+
+Deux modes restent possibles selon les droits PostgreSQL disponibles :
 
 - En developpement ou sur un VPS simple, `DB_USER` peut avoir temporairement le
   droit `CREATEDB`, puis ce privilege doit etre retire si possible.
 - En production durcie, creer la base avec un compte administrateur PostgreSQL
   separe, puis utiliser pour l'application un compte limite a la base cible.
 
-Si le fournisseur PostgreSQL manage ne permet pas `CREATE DATABASE`, creer la
-base via son interface d'administration puis lancer directement les migrations.
+Si l'utilisateur applicatif ne permet pas `CREATE DATABASE`, creer la base et
+l'utilisateur avec un compte administrateur PostgreSQL, puis lancer directement
+les migrations avec le compte limite.
 
 ## Migrations
 
@@ -135,9 +179,9 @@ npm run db:migrate:pending
 
 Le dernier `pending` doit retourner une liste vide.
 
-La migration `002-session-store.ts` cree la table `user_sessions` necessaire au
-store de session persistant. Tant qu'elle n'est pas appliquee, l'API ne doit
-pas etre redemarree en production ou en environnement partage.
+La migration initiale unique cree aussi la table `user_sessions` necessaire au
+store de session persistant. Tant que cette migration n'est pas appliquee,
+l'API ne doit pas etre demarree en production ou en environnement partage.
 
 La migration des slugs publics de personnages backfill automatiquement la
 colonne `public_slug` a partir du nom et prenom existants, au format lisible
@@ -150,6 +194,14 @@ Ne pas lancer `npm run db:seed` en production. Les seeds sont uniquement faits
 pour le developpement local.
 
 ## Checks avant redemarrage
+
+Le script racine lance la sequence complete backend puis frontend :
+
+```bash
+./run-all-checks.sh
+```
+
+La sequence detaillee reste utile si un sous-ensemble doit etre relance :
 
 ```bash
 cd backend
@@ -231,7 +283,10 @@ Rollback applicatif minimal :
 - [ ] Callback Twitch de production declare dans la console Twitch Developer.
 - [ ] `GOOGLE_CALLBACK_URL`, `DISCORD_CALLBACK_URL` et `TWITCH_CALLBACK_URL`
       pointent vers les URLs publiques HTTPS declarees.
-- [ ] Base PostgreSQL creee ou `npm run db:ensure` execute avec succes.
+- [ ] Enregistrement DNS `A gta-rp.f1prediction.fr -> 65.109.171.143`
+      propage.
+- [ ] Base PostgreSQL dediee creee dans le PostgreSQL Docker/local du VPS ou
+      `npm run db:ensure` execute avec succes.
 - [ ] Backup initial configure.
 - [ ] `npm run db:migrate` execute.
 - [ ] `npm run db:migrate:pending` retourne `[]`.
@@ -239,24 +294,27 @@ Rollback applicatif minimal :
 - [ ] Job PM2 `gta-rp-photo-cleanup` configure.
 - [ ] Backend build OK.
 - [ ] Frontend build OK.
-- [ ] Nginx configure avec TLS.
+- [ ] Bloc Caddy `gta-rp.f1prediction.fr` ajoute sans modifier le bloc du site
+      existant.
+- [ ] `sudo caddy validate --config /etc/caddy/Caddyfile` OK.
+- [ ] `sudo systemctl reload caddy` execute.
 - [ ] Process manager configure.
 - [ ] Firewall verifie.
 
 ## Points a completer plus tard
 
 - Commandes exactes PM2 ou systemd.
-- Configuration Nginx multi-domaines.
-- Procedure TLS Certbot.
+- Configuration Caddy multi-domaines.
+- Verification du TLS automatique Caddy apres propagation DNS.
 - Backup automatise et test de restauration.
 - Logs applicatifs et rotation.
 - Monitoring minimal et alertes.
 
 ## Promotion du premier administrateur
 
-Une fois le premier compte Google connecte avec succes, il existe en base avec
-le role par defaut `user`. La promotion initiale peut se faire directement en
-SQL via le role logique, sans hardcoder un UUID.
+Une fois le premier compte cree via Google, Discord ou Twitch, il existe en
+base avec le role par defaut `user`. La promotion initiale peut se faire
+directement en SQL via le role logique, sans hardcoder un UUID.
 
 Verifier d'abord le compte cible :
 

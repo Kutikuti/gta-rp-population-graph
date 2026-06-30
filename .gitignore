@@ -6,5 +6,6 @@ coverage/
 backend/.env
 web-client/.env
 backend/storage/
+.secrets/
 
-.devcontainer/.cache/
+.devcontainer/.cache/update-check/

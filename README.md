@@ -21,7 +21,8 @@ personnages, leurs informations publiques, leurs streamers et leurs liens RP.
 - Graphe : Cytoscape.js.
 - Qualite code : Biome pour lint et formatage, TypeScript pour le type-check.
 - Authentification : Google OAuth, Discord OAuth et Twitch OAuth.
-- Production cible : VPS Ubuntu avec Nginx.
+- Production cible : VPS Ubuntu avec Caddy, sur le sous-domaine
+  `gta-rp.f1prediction.fr`.
 
 ## Direction produit
 
@@ -332,11 +333,11 @@ Points utiles en local :
   `TWITCH_CALLBACK_URL=http://localhost:4000/api/auth/twitch/callback` en
   local.
 - L'application Twitch doit autoriser cette URL dans ses redirects OAuth.
-- En production, ajouter aussi les URLs de callback publiques dans Google,
-  Discord et Twitch, par exemple
-  `https://ton-domaine.fr/api/auth/google/callback`,
-  `https://ton-domaine.fr/api/auth/discord/callback` et
-  `https://ton-domaine.fr/api/auth/twitch/callback`.
+- En production sur le VPS actuel, ajouter aussi les URLs de callback publiques
+  dans Google, Discord et Twitch :
+  `https://gta-rp.f1prediction.fr/api/auth/google/callback`,
+  `https://gta-rp.f1prediction.fr/api/auth/discord/callback` et
+  `https://gta-rp.f1prediction.fr/api/auth/twitch/callback`.
 - En production, `SESSION_COOKIE_SECURE=true` est requis. En developpement
   local, le backend neutralise ce flag hors production pour permettre les
   tests HTTP locaux.

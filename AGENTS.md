@@ -159,8 +159,8 @@ Le deploiement n'est pas encore implemente. Le plan cible :
 
 - API Node.js geree par un process manager type PM2 ou service systemd.
 - PostgreSQL sur le VPS ou service manage compatible.
-- Frontend servi en statique derriere Nginx.
-- Nginx responsable du reverse proxy, TLS et multi-domaines.
+- Frontend servi en statique derriere Caddy sur le VPS cible actuel.
+- Caddy responsable du reverse proxy, TLS automatique et multi-domaines.
 - Variables d'environnement separees pour developpement, staging eventuel et
   production.
 
