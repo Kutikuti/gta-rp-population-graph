@@ -1131,29 +1131,73 @@ Point de controle :
 
 ### Etape 11 - Preparation deploiement
 
-Statut : a reprendre maintenant que l'etape 12 est terminee.
+Statut : en cours.
 
 L'etape 12 a stabilise les besoins SSO, les sessions persistantes, le status
 live Twitch et la migration initiale unique. La preparation deploiement peut
 donc repartir sur une base plus fiable.
 
-- Documenter la configuration de production : variables, PostgreSQL via Docker,
-  Caddy, TLS, processus Node.js et build frontend.
-- Prevoir logs, sauvegardes base de donnees, firewall, fail2ban ou equivalent.
-- Verifier la capacite du VPS Hetzner avant ouverture publique.
-- Preparer une procedure de restauration de base et de rollback applicatif.
-- Mettre a jour le runbook `DEPLOYMENT.md` avec la migration initiale unique,
-  les callbacks OAuth Google/Discord/Twitch, le store de session PostgreSQL et
-  le script global `run-all-checks.sh`.
+Etat actuel :
+
 - Le deploiement cible utilise le sous-domaine `gta-rp.f1prediction.fr`, servi
   par Caddy, afin de ne pas perturber le site existant sur `f1prediction.fr`.
 - La premiere configuration VPS est en place : backend `systemd`, Caddy sur le
   sous-domaine, PostgreSQL Docker/local dedie et timer systemd de nettoyage des
   brouillons photo.
+- Le backend tourne avec un Node.js isole du site existant, afin de ne pas
+  perturber l'environnement deja en production sur le VPS.
+- La base PostgreSQL dediee est creee dans le conteneur Docker existant, sans
+  exposer directement PostgreSQL au public.
+- Les variables de production backend sont centralisees dans le `.env` serveur
+  et les callbacks OAuth Google, Discord et Twitch pointent vers le sous-domaine
+  de production.
 - Le backend active `trust proxy` en production pour que les cookies de session
   `Secure` fonctionnent correctement derriere Caddy pendant les flux OAuth.
-- Valider une sequence de deploiement a blanc : installation, checks, build,
-  creation base, migration, lancement backend, build frontend et smoke tests.
+- Caddy route deja `/api/*` et `/uploads/*` vers le backend, puis sert le build
+  statique du frontend pour le reste des routes.
+- Le workflow OAuth a ete valide en production apres correction des cookies
+  `Secure` derriere proxy.
+- L'import Notion, l'application d'une fiche et l'import d'une photo Notion ont
+  ete valides sur le VPS.
+- Les roles de base existent en production et le premier administrateur reel a
+  ete promu manuellement.
+- Plusieurs corrections de production ont ete deployees et validees : roles
+  manquants, routing des uploads, regex de profil cote navigateur, validation
+  des anciens personnages importes dans les modifications directes.
+- Le runbook `DEPLOYMENT.md` documente deja une partie de la configuration
+  Caddy, des callbacks OAuth et du fonctionnement PostgreSQL Docker.
+
+Reste a faire pour cloturer :
+
+- Completer `DEPLOYMENT.md` avec une procedure reproductible de mise a jour :
+  synchronisation du code, installation si besoin, checks, build backend,
+  restart `systemd`, build frontend et smoke tests.
+- Documenter clairement les emplacements de production : `.env` backend, logs
+  applicatifs, build frontend, uploads publics, stockage interne des brouillons
+  photo et commandes utiles `systemctl` / `journalctl`.
+- Formaliser une procedure de rollback applicatif : revenir au build precedent,
+  redemarrer le backend et verifier les endpoints critiques.
+- Mettre en place et documenter les sauvegardes PostgreSQL avec `pg_dump`,
+  incluant retention minimale, emplacement, permissions et commande de
+  restauration testable.
+- Decider et documenter la strategie de sauvegarde des uploads photos, car les
+  images validees font maintenant partie des donnees utiles du site.
+- Verifier et documenter le durcissement VPS : firewall ouvert seulement sur
+  SSH/HTTP/HTTPS, PostgreSQL non expose, permissions des secrets, fail2ban ou
+  equivalent, et absence de secrets dans Git.
+- Verifier que le site existant `f1prediction.fr` reste disponible apres les
+  changements Caddy et que les deux sites cohabitent sans conflit de ports,
+  certificats ou routes.
+- Valider une sequence de deploiement a blanc complete : installation, checks,
+  build, migration si necessaire, lancement backend, build frontend, puis tests
+  rapides depuis le domaine public.
+- Executer et consigner les smoke tests de production avant ouverture plus
+  large : consultation publique, login Google/Discord/Twitch, profil,
+  modification directe admin, import Notion, application fiche, import photo,
+  moderation et administration.
+- Mettre a jour le runbook avec la migration initiale unique, le store de
+  session PostgreSQL, les callbacks OAuth Google/Discord/Twitch et le script
+  global `run-all-checks.sh` si celui-ci reste la commande de validation cible.
 
 Point de controle :
 
@@ -1287,6 +1331,56 @@ Point de controle :
 - Les secrets Discord et Twitch ne sont jamais envoyes au frontend.
 - L'etat live Twitch ne degrade pas l'affichage des fiches en cas d'erreur ou
   de limite API.
+
+### Etape 13 - Ameliorations fonctionnelles et ergonomie avancee
+
+Statut : a planifier.
+
+Cette etape sert de backlog structure pour les ameliorations non bloquantes a
+traiter apres la stabilisation du deploiement, des imports et des premiers
+usages reels. Les elements ci-dessous ne sont pas encore priorises entre eux.
+
+Fiche personnage :
+
+- Remettre en ordre les champs de la fiche pour ameliorer la lecture et la
+  comparaison rapide.
+- Ajouter une zone SAMD dediee dans la fiche personnage.
+- Ajouter la region police nord/sud dans la zone police de la fiche personnage.
+- Clarifier les zones metier, police, groupe, medias et relations afin que les
+  informations importees et les informations editees restent faciles a relire.
+
+Graphe :
+
+- Enregistrer un affichage de graphe par defaut regroupe par groupe.
+- Ajouter un parametrage local de l'affichage : afficher ou masquer les morts,
+  choisir les types de relations visibles et conserver ces preferences cote
+  navigateur.
+
+Donnees a completer :
+
+- Ajouter une fenetre ou une page listant les fiches a completer.
+- Permettre aux administrateurs et moderateurs d'identifier rapidement les
+  champs manquants, importes ou encore a verifier.
+
+Streamers :
+
+- Refonte du module streamer pour mieux gerer les plateformes, les liens
+  publics, le live Twitch, les fiches liees et les cas ou aucun streamer n'est
+  explicitement renseigne.
+
+Relations :
+
+- Refonte du module relations pour distinguer clairement relations visibles
+  dans le graphe, relations visibles uniquement dans la fiche, anciennes
+  identites/personnages et relations importees ambigues.
+- Preparer une interface de gestion plus lisible pour les relations multiples.
+
+Point de controle :
+
+- Les ameliorations sont priorisees avant implementation.
+- Les nouveaux champs restent compatibles avec le workflow d'import, de
+  contribution et de moderation.
+- Les preferences locales d'affichage ne modifient pas les donnees serveur.
 
 ## Hypotheses
 
