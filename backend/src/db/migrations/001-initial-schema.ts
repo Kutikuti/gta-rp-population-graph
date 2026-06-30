@@ -898,6 +898,14 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
       where: literal("source_character_id <> target_character_id"),
       transaction
     });
+
+    await queryInterface.bulkInsert(
+      "roles",
+      roleNames.map((name) => ({
+        name
+      })),
+      { transaction }
+    );
   });
 };
 

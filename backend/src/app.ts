@@ -46,6 +46,10 @@ export const createApp = (dependencies: AppDependencies = {}) => {
   const adminService = dependencies.adminService ?? new SequelizeAdminService();
   const app = express();
 
+  if (env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   app.disable("x-powered-by");
   app.use(helmet());
   app.use(

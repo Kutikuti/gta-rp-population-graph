@@ -92,6 +92,11 @@ sont stockees dans la table `user_sessions`, avec une expiration serveur
 pilotee par `SESSION_TTL_HOURS` et un nettoyage periodique des lignes expirees
 toutes les `SESSION_CLEANUP_INTERVAL_MINUTES`.
 
+En production derriere Caddy, l'API Express active `trust proxy` afin que les
+cookies de session `Secure` soient bien emis pendant les flux OAuth. Si ce
+reglage est retire, les callbacks OAuth echouent avec une erreur de verification
+de connexion expiree car le cookie contenant l'etat OAuth n'est pas conserve.
+
 Par defaut, les photos sont stockees sous `backend/storage/uploads`, ignore par
 Git. En production, conserver ce dossier hors du repertoire servi directement
 par Caddy : l'API expose uniquement les fichiers valides sous
@@ -109,13 +114,17 @@ Exemple cible :
 
 ```caddyfile
 gta-rp.f1prediction.fr {
-    handle_path /api/* {
-        reverse_proxy 127.0.0.1:4000
-    }
+    route {
+        handle /api/* {
+            reverse_proxy 127.0.0.1:4000
+        }
 
-    root * /var/www/gta-rp-population-graph/web-client/dist
-    try_files {path} /index.html
-    file_server
+        handle {
+            root * /var/www/gta-rp-population-graph/current/web-client/dist
+            try_files {path} /index.html
+            file_server
+        }
+    }
 }
 ```
 
@@ -229,20 +238,36 @@ format attendu `userId.photoId.webp` et dont l'age depasse
 recursivement le stockage et ne touche jamais au dossier public
 `characters/`.
 
-Avec PM2, configurer un process cron separe de l'API :
+Sur le VPS actuel, configurer un service et un timer systemd separes de l'API :
 
-```js
-{
-  name: "gta-rp-photo-cleanup",
-  cwd: "/var/www/gta-rp-population-graph/backend",
-  script: "npm",
-  args: "run photo:cleanup",
-  cron_restart: "0 * * * *",
-  autorestart: false
-}
+```ini
+# /etc/systemd/system/gta-rp-photo-cleanup.service
+[Unit]
+Description=GTA RP photo draft cleanup
+
+[Service]
+Type=oneshot
+User=codex-deploy
+Group=codex-deploy
+WorkingDirectory=/var/www/gta-rp-population-graph/current/backend
+Environment=PATH=/opt/node-gta-rp/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/node-gta-rp/bin/npm run photo:cleanup
 ```
 
-Ce process se lance toutes les heures, execute le nettoyage, logue le nombre de
+```ini
+# /etc/systemd/system/gta-rp-photo-cleanup.timer
+[Unit]
+Description=Run GTA RP photo draft cleanup hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Le timer se lance toutes les heures, execute le nettoyage, logue le nombre de
 fichiers scannes/supprimes/ignores, puis s'arrete. L'API Express reste separee :
 un echec du job ne doit pas rendre le site indisponible.
 

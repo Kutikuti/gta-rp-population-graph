@@ -1147,6 +1147,11 @@ donc repartir sur une base plus fiable.
   le script global `run-all-checks.sh`.
 - Le deploiement cible utilise le sous-domaine `gta-rp.f1prediction.fr`, servi
   par Caddy, afin de ne pas perturber le site existant sur `f1prediction.fr`.
+- La premiere configuration VPS est en place : backend `systemd`, Caddy sur le
+  sous-domaine, PostgreSQL Docker/local dedie et timer systemd de nettoyage des
+  brouillons photo.
+- Le backend active `trust proxy` en production pour que les cookies de session
+  `Secure` fonctionnent correctement derriere Caddy pendant les flux OAuth.
 - Valider une sequence de deploiement a blanc : installation, checks, build,
   creation base, migration, lancement backend, build frontend et smoke tests.
 
