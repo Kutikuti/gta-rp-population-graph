@@ -786,8 +786,8 @@ Bilan final :
 - Les creations de fiche ne peuvent toujours pas porter de photo, afin de
   limiter le spam de stockage.
 - Le nettoyage des photos temporaires orphelines est gere par un job dedie
-  `npm run photo:cleanup`, prevu pour etre lance periodiquement par PM2 avec
-  `cron_restart`.
+  `npm run photo:cleanup`, prevu pour etre lance periodiquement sur le VPS via
+  un service et un timer `systemd` dedies.
 - Des tests backend couvrent maintenant les principaux refus d'upload photo :
   SVG, signature invalide, MIME incoherent, image illisible et payload trop
   volumineux. Un test frontend verrouille aussi le comportement du graphe :
@@ -1198,6 +1198,15 @@ Reste a faire pour cloturer :
 - Mettre a jour le runbook avec la migration initiale unique, le store de
   session PostgreSQL, les callbacks OAuth Google/Discord/Twitch et le script
   global `run-all-checks.sh` si celui-ci reste la commande de validation cible.
+- Verifier que le service et le timer `systemd` de nettoyage des brouillons
+  photo sont bien en place sur le VPS, actifs et documentes dans le runbook.
+- Ajouter en fin d'etape un premier dashboard de suivi de l'etat du serveur,
+  avec au minimum la sante applicative, les utilisateurs quotidiens, les
+  visites, l'etat du stockage et quelques indicateurs de suivi base de donnees
+  comme l'evolution du nombre de fiches, tags, relations et demandes.
+- Garder comme piste d'implementation un outillage open source et auto-heberge
+  de type Zabbix, ou eventuellement un duo Prometheus + Grafana selon le niveau
+  de finesse souhaite pour les metriques systeme, applicatives et metier.
 
 Point de controle :
 
@@ -1344,6 +1353,9 @@ Fiche personnage :
 
 - Remettre en ordre les champs de la fiche pour ameliorer la lecture et la
   comparaison rapide.
+- Permettre de rattacher plusieurs numeros de telephone a une meme personne,
+  avec un affichage et une edition qui restent lisibles dans la fiche et le
+  workflow de moderation.
 - Ajouter une zone SAMD dediee dans la fiche personnage.
 - Ajouter la region police nord/sud dans la zone police de la fiche personnage.
 - Clarifier les zones metier, police, groupe, medias et relations afin que les
@@ -1361,6 +1373,12 @@ Donnees a completer :
 - Ajouter une fenetre ou une page listant les fiches a completer.
 - Permettre aux administrateurs et moderateurs d'identifier rapidement les
   champs manquants, importes ou encore a verifier.
+
+Pages publiques :
+
+- Ajouter une page d'information / contact / soutien, sobre et coherente avec
+  la navigation du site, incluant un point de contact et un lien Buy Me a
+  Coffee.
 
 Streamers :
 

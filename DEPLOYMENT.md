@@ -320,7 +320,8 @@ Rollback applicatif minimal :
 - [ ] `npm run db:migrate` execute.
 - [ ] `npm run db:migrate:pending` retourne `[]`.
 - [ ] Dossier `PHOTO_STORAGE_DIR` cree ou creatable par l'utilisateur backend.
-- [ ] Job PM2 `gta-rp-photo-cleanup` configure.
+- [ ] Service `gta-rp-photo-cleanup.service` configure.
+- [ ] Timer `gta-rp-photo-cleanup.timer` configure et actif.
 - [ ] Backend build OK.
 - [ ] Frontend build OK.
 - [ ] Bloc Caddy `gta-rp.f1prediction.fr` ajoute sans modifier le bloc du site
@@ -338,6 +339,11 @@ Rollback applicatif minimal :
 - Backup automatise et test de restauration.
 - Logs applicatifs et rotation.
 - Monitoring minimal et alertes.
+- Dashboard minimal incluant sante applicative, trafic, stockage et evolution
+  des donnees.
+- Piste outillage pour le dashboard et la supervision : priorite a une solution
+  open source, gratuite et auto-hebergee de type Zabbix, avec comparaison
+  possible contre Prometheus + Grafana au moment de l'implementation.
 
 ## Promotion du premier administrateur
 
