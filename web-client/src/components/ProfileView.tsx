@@ -43,6 +43,8 @@ const providerLinkUrls = {
   twitch: getTwitchLinkUrl()
 } as const;
 
+const displayNamePattern = /^[\p{L}\p{N}][\p{L}\p{N} _.'-]*$/u;
+
 const visibleSnapshotEntries = (snapshot: CharacterSnapshot) =>
   (
     Object.entries(snapshot) as Array<
@@ -135,12 +137,25 @@ export function ProfileView({
 
   const submitDisplayName = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const trimmedDisplayName = displayName.trim();
+
+    if (
+      trimmedDisplayName.length < 3 ||
+      trimmedDisplayName.length > 40 ||
+      !displayNamePattern.test(trimmedDisplayName)
+    ) {
+      onError(
+        "Le nom public doit contenir 3 a 40 caracteres et commencer par une lettre ou un chiffre."
+      );
+      return;
+    }
+
     setIsSaving(true);
-    const isSaved = await onDisplayNameUpdate(displayName);
+    const isSaved = await onDisplayNameUpdate(trimmedDisplayName);
     setIsSaving(false);
 
     if (isSaved) {
-      setDisplayName(displayName.trim());
+      setDisplayName(trimmedDisplayName);
     }
   };
 
@@ -182,7 +197,6 @@ export function ProfileView({
                   value={displayName}
                   minLength={3}
                   maxLength={40}
-                  pattern="[\p{L}\p{N}][\p{L}\p{N} _.'-]*"
                   onChange={(event) => {
                     setDisplayName(event.target.value);
                   }}
