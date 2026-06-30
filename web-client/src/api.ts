@@ -176,6 +176,8 @@ export type CharacterFilters = {
   verificationStatus: "" | VerificationStatus;
 };
 
+export type JsonObject = Record<string, unknown>;
+
 export type CharacterSnapshot = {
   firstName: string;
   lastName: string;
@@ -201,7 +203,7 @@ export type CharacterSnapshot = {
   }>;
   policeRank: string | null;
   policeBadgeNumber: string | null;
-  previousCharacters: Record<string, string> | null;
+  previousCharacters: JsonObject | null;
   verificationStatus: VerificationStatus;
   sourceNote: string | null;
 };

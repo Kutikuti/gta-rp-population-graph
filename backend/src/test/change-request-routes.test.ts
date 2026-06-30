@@ -448,7 +448,13 @@ describe("change request routes", () => {
     await loginAs(agent, "moderator");
 
     const response = await agent.patch(`/api/moderation/characters/${ids.character}`).send({
-      snapshot
+      snapshot: {
+        ...snapshot,
+        previousCharacters: {
+          raw: "Otávio Lua Magalhães (03)",
+          v6: []
+        }
+      }
     });
 
     expect(response.status).toBe(200);

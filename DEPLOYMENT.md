@@ -119,6 +119,10 @@ gta-rp.f1prediction.fr {
             reverse_proxy 127.0.0.1:4000
         }
 
+        handle /uploads/* {
+            reverse_proxy 127.0.0.1:4000
+        }
+
         handle {
             root * /var/www/gta-rp-population-graph/current/web-client/dist
             try_files {path} /index.html

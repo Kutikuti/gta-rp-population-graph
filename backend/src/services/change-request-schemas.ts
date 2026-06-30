@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { editableRelationshipTypes, lifeStatuses, verificationStatuses } from "../db/enums.js";
-import type { SocialLinks } from "../db/models/index.js";
+import type { JsonObject, SocialLinks } from "../db/models/index.js";
 
 const emptyToNull = (value: string | null | undefined) => {
   if (typeof value !== "string") {
@@ -52,10 +52,10 @@ const socialLinksSchema = z
   });
 
 const previousCharactersSchema = z
-  .record(z.string().trim().min(1).max(40), z.string().trim().min(1).max(160))
+  .record(z.string().trim().min(1).max(40), z.unknown())
   .nullable()
   .optional()
-  .transform((value) => value ?? null);
+  .transform((value): JsonObject | null => value ?? null);
 
 const relationshipDraftSchema = z
   .object({
