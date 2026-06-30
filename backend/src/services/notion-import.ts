@@ -189,12 +189,11 @@ export class SequelizeNotionImportService {
     const plan = buildNotionImportPlan(parsed, previousEntries, now);
 
     return sequelize.transaction(async (transaction) => {
-      const hasFailedEntries = plan.entries.some((entry) => entry.status === "failed");
       const batch = await models.NotionImportBatch.create(
         {
           sourceName: plan.sourceName,
           sourceSnapshot: plan.sourceSnapshot,
-          status: hasFailedEntries ? "failed" : "reported",
+          status: "reported",
           report: plan.report,
           validatedByUserId: null,
           validatedAt: null
