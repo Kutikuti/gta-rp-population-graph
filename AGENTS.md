@@ -18,7 +18,8 @@ et la prevention des intrusions.
 - ORM Sequelize.
 - Base de donnees PostgreSQL.
 - API REST en JSON.
-- Authentification cible : Google OAuth pour les utilisateurs connectes.
+- Authentification en place : Google OAuth, Discord OAuth et Twitch OAuth pour
+  les utilisateurs connectes.
 - Les routes publiques doivent rester accessibles anonymement en lecture.
 - Les routes de contribution, moderation et administration doivent etre
   protegees par authentification et roles.
@@ -78,8 +79,7 @@ Principes :
 - Ne pas exposer publiquement les noms et prenoms fournis par les fournisseurs
   OAuth. Les utilisateurs doivent pouvoir choisir un nom d'affichage public
   distinct de leur identite SSO.
-- Les futures pistes Discord, Twitch et extraction admin ne doivent pas bloquer
-  le MVP.
+- Les extractions admin futures ne doivent pas bloquer le MVP.
 - Les relations documentees concernent uniquement les personnages et le RP, pas
   les relations reelles entre streamers.
 - Le champ Notion `V6`, lorsqu'il est present, doit etre considere comme une
@@ -127,7 +127,7 @@ Principes :
 - Les modifications effectuees par un moderateur ou un administrateur sont
   appliquees directement cote serveur et doivent toujours creer un historique.
 - Page profil utilisateur permettant de modifier son nom d'affichage public,
-  consulter ses contributions et preparer le rattachement futur d'autres SSO.
+  consulter ses contributions et gerer ses rattachements SSO.
 - Validation ou refus par moderateur.
 - Roles utilisateur, moderateur, administrateur et utilisateur banni.
 - Page globale d'historique.
@@ -143,8 +143,7 @@ Principes :
 
 # Commandes utiles
 
-Les commandes seront precisees lorsque l'architecture sera creee. A terme,
-prevoir au minimum :
+Les commandes de base existent deja :
 
 - Installation backend : `cd backend && npm install`
 - Installation frontend : `cd web-client && npm install`
@@ -155,14 +154,18 @@ prevoir au minimum :
 
 # Deploiement
 
-Le deploiement n'est pas encore implemente. Le plan cible :
+Le deploiement initial sur VPS est deja amorce sur
+`gta-rp.f1prediction.fr` avec :
 
-- API Node.js geree par un process manager type PM2 ou service systemd.
-- PostgreSQL sur le VPS ou service manage compatible.
-- Frontend servi en statique derriere Caddy sur le VPS cible actuel.
-- Caddy responsable du reverse proxy, TLS automatique et multi-domaines.
-- Variables d'environnement separees pour developpement, staging eventuel et
-  production.
+- API Node.js geree par un service `systemd`.
+- PostgreSQL local via Docker, non expose publiquement.
+- Frontend servi en statique derriere Caddy.
+- Caddy responsable du reverse proxy, du TLS automatique et de la coexistence
+  avec le site historique.
+- Variables d'environnement separees hors Git.
+
+Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
+`DEPLOYMENT.md`.
 
 # Style
 

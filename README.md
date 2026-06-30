@@ -65,6 +65,11 @@ Le workflow d'import Notion est egalement operationnel cote administration :
 - liste des fiches importees triable de maniere stable par nom, avec recherche
   et suivi `a faire` / `appliquee`.
 
+La production de travail s'appuie maintenant sur le sous-domaine
+`gta-rp.f1prediction.fr`, avec backend `systemd`, frontend statique derriere
+Caddy, base PostgreSQL locale via Docker, sauvegardes automatisees et
+durcissement minimal du VPS (`ufw`, `fail2ban`, nettoyage photo, backups).
+
 ## Lancement local
 
 Version Node.js attendue : `24.16.0` ou plus recente. Les fichiers `.nvmrc` et
@@ -87,6 +92,12 @@ npm run dev
 ```
 
 Checks utiles :
+
+```bash
+./run-all-checks.sh
+```
+
+ou detail par application :
 
 ```bash
 cd backend
@@ -127,6 +138,12 @@ npm run db:migrate:executed
 ```
 
 ## Commandes disponibles
+
+### Racine du projet
+
+| Commande | Usage |
+| --- | --- |
+| `./run-all-checks.sh` | Lance les builds, checks et tests backend puis frontend avec une seule commande. |
 
 ### Backend
 

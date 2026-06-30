@@ -1144,6 +1144,11 @@ Etat actuel :
 - La premiere configuration VPS est en place : backend `systemd`, Caddy sur le
   sous-domaine, PostgreSQL Docker/local dedie et timer systemd de nettoyage des
   brouillons photo.
+- Le durcissement minimal progresse aussi sur le VPS : `ufw` est actif et
+  `fail2ban` protege maintenant au moins `sshd` avec un jail dedie.
+- Les premieres sauvegardes automatisees sont maintenant posees sur le VPS via
+  `systemd` : un backup PostgreSQL nightly et un backup hebdomadaire des
+  uploads valides, avec rotation locale courte et premier run verifie.
 - Le backend tourne avec un Node.js isole du site existant, afin de ne pas
   perturber l'environnement deja en production sur le VPS.
 - La base PostgreSQL dediee est creee dans le conteneur Docker existant, sans
@@ -1166,44 +1171,25 @@ Etat actuel :
   des anciens personnages importes dans les modifications directes.
 - Le runbook `DEPLOYMENT.md` documente deja une partie de la configuration
   Caddy, des callbacks OAuth et du fonctionnement PostgreSQL Docker.
+- Une maintenance systeme documentee a aussi ete menee sur le VPS :
+  `full-upgrade`, reboot sur noyau `6.8.0-124-generic`, verification
+  post-reboot de `caddy`, du backend et des endpoints publics.
+- L'hygiene stockage est maintenant mieux cadree : nettoyage `journald`,
+  nettoyage cache APT et commandes de diagnostic ajoutees au runbook.
 
 Reste a faire pour cloturer :
 
-- Completer `DEPLOYMENT.md` avec une procedure reproductible de mise a jour :
-  synchronisation du code, installation si besoin, checks, build backend,
-  restart `systemd`, build frontend et smoke tests.
-- Documenter clairement les emplacements de production : `.env` backend, logs
-  applicatifs, build frontend, uploads publics, stockage interne des brouillons
-  photo et commandes utiles `systemctl` / `journalctl`.
-- Formaliser une procedure de rollback applicatif : revenir au build precedent,
-  redemarrer le backend et verifier les endpoints critiques.
-- Mettre en place et documenter les sauvegardes PostgreSQL avec `pg_dump`,
-  incluant retention minimale, emplacement, permissions et commande de
-  restauration testable.
-- Decider et documenter la strategie de sauvegarde des uploads photos, car les
-  images validees font maintenant partie des donnees utiles du site.
-- Verifier et documenter le durcissement VPS : firewall ouvert seulement sur
-  SSH/HTTP/HTTPS, PostgreSQL non expose, permissions des secrets, fail2ban ou
-  equivalent, et absence de secrets dans Git.
-- Verifier que le site existant `f1prediction.fr` reste disponible apres les
-  changements Caddy et que les deux sites cohabitent sans conflit de ports,
-  certificats ou routes.
-- Valider une sequence de deploiement a blanc complete : installation, checks,
-  build, migration si necessaire, lancement backend, build frontend, puis tests
-  rapides depuis le domaine public.
-- Executer et consigner les smoke tests de production avant ouverture plus
-  large : consultation publique, login Google/Discord/Twitch, profil,
-  modification directe admin, import Notion, application fiche, import photo,
-  moderation et administration.
-- Mettre a jour le runbook avec la migration initiale unique, le store de
-  session PostgreSQL, les callbacks OAuth Google/Discord/Twitch et le script
-  global `run-all-checks.sh` si celui-ci reste la commande de validation cible.
-- Verifier que le service et le timer `systemd` de nettoyage des brouillons
-  photo sont bien en place sur le VPS, actifs et documentes dans le runbook.
-- Ajouter en fin d'etape un premier dashboard de suivi de l'etat du serveur,
-  avec au minimum la sante applicative, les utilisateurs quotidiens, les
-  visites, l'etat du stockage et quelques indicateurs de suivi base de donnees
-  comme l'evolution du nombre de fiches, tags, relations et demandes.
+- Executer et consigner une passe metier finale de smoke tests de production
+  avant ouverture plus large : consultation publique, login
+  Google/Discord/Twitch, profil, modification directe admin, import Notion,
+  application fiche, import photo, moderation et administration.
+- Formaliser la prochaine brique ops hors simple runbook :
+  dashboard/monitoring minimal avec sante applicative, trafic, stockage et
+  evolution des donnees.
+- Ajouter une vraie cible de sauvegarde distante pour ne plus dependre
+  uniquement des backups locaux au VPS.
+- Fixer une politique durable de rotation/persistences des logs systeme
+  (`journald`) pour eviter une nouvelle derive stockage.
 - Garder comme piste d'implementation un outillage open source et auto-heberge
   de type Zabbix, ou eventuellement un duo Prometheus + Grafana selon le niveau
   de finesse souhaite pour les metriques systeme, applicatives et metier.
@@ -1216,7 +1202,7 @@ Point de controle :
 
 ### Etape 12 - SSO multiples et integrations plateformes
 
-Statut : terminee.
+Statut : terminee le 2026-06-30.
 
 Avancement actuel :
 
@@ -1241,8 +1227,8 @@ Avancement actuel :
   dedie cote frontend.
 - Une premiere dissociation de compte lie est disponible cote profil, avec
   protection explicite contre la suppression du dernier moyen de connexion.
-- La logique Google de rattachement sert maintenant de base reutilisable avant
-  l'ajout de Discord puis Twitch.
+- La logique de rattachement Google a servi de base reutilisable pour les
+  integrations Discord puis Twitch.
 - La connexion et le rattachement Discord sont ajoutes cote backend via OAuth2
   `identify email`, avec gestion de callback, collision d'identite deja liee et
   reutilisation du socle `UserIdentity`.
@@ -1270,16 +1256,9 @@ Avancement actuel :
 - Les variables d'environnement Twitch sont ajoutees avec validation
   tout-ou-rien : `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` et
   `TWITCH_CALLBACK_URL`.
-- Les validations actuellement confirmees dans cet environnement sont :
-  `backend npm run check`, `backend npx tsc -p tsconfig.json --noEmit`,
-  `web-client npm run check` et
-  `web-client npx tsc -p tsconfig.app.json --noEmit`.
-- Les builds, checks et tests cibles ont depuis ete rejoues et corriges au fil
-  des integrations SSO, du status live Twitch, des icones de fournisseurs et
-  des derniers ajustements frontend.
-- Restent a valider manuellement : dissociation d'un compte lie, blocage de la
-  dissociation du dernier moyen de connexion, creation initiale d'un compte via
-  Discord et creation initiale d'un compte via Twitch.
+- Les builds, checks et tests cibles ont ete rejoues et corriges au fil des
+  integrations SSO, du status live Twitch, des icones de fournisseurs et des
+  derniers ajustements frontend.
 - Lors d'une connexion initiale via un fournisseur dont l'email correspond deja
   a un utilisateur existant sans identite liee correspondante, le backend
   refuse desormais toute fusion implicite et renvoie une erreur dediee afin que
@@ -1300,7 +1279,6 @@ Avancement actuel :
   un lien Twitch direct dans ses reseaux publics, le status live Twitch est
   maintenant calcule a partir de ce lien et l'indicateur rouge s'affiche bien
   sur la fiche publique.
-- Les ecrans de rattachement plus complets restent a implementer.
 - L'entree de connexion permet maintenant de choisir entre Google, Discord et
   Twitch.
 - L'entree de connexion du header utilise des icones simples dediees par
@@ -1313,23 +1291,6 @@ Avancement actuel :
 - L'import Notion prepare aussi mieux les medias : lorsqu'aucun champ
   `Streamer` n'est renseigne mais qu'un lien Twitch public existe, le handle
   Twitch est reutilise par defaut comme nom public streamer candidat.
-
-- Generaliser le modele `UserIdentity` pour rattacher plusieurs fournisseurs a
-  un meme compte utilisateur : Google, Discord et Twitch.
-- Permettre a un utilisateur de connecter ou de dissocier un fournisseur depuis
-  son profil, sans exposer publiquement les noms, prenoms, emails ou handles
-  renvoyes par ces fournisseurs.
-- Permettre l'inscription/connexion initiale avec le fournisseur choisi par
-  l'utilisateur : Google, Discord ou Twitch.
-- Gerer les collisions de compte avec prudence : refus ou validation explicite
-  lorsqu'une identite fournisseur est deja rattachee ailleurs, sans fusion
-  automatique risquee.
-- Ajouter les variables d'environnement, secrets serveur, callbacks OAuth et
-  tests pour chaque fournisseur, avec une documentation de deploiement dediee.
-- Maintenir les controles existants de role, bannissement et session serveur
-  quel que soit le fournisseur utilise pour se connecter.
-- Finaliser la validation manuelle du status live Twitch avec un compte reel en
-  direct puis hors ligne pour verifier le comportement attendu en production.
 
 Point de controle :
 
