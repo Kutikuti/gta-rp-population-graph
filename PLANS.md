@@ -1131,7 +1131,7 @@ Point de controle :
 
 ### Etape 11 - Preparation deploiement
 
-Statut : en cours.
+Statut : terminee le 2026-07-01.
 
 L'etape 12 a stabilise les besoins SSO, les sessions persistantes, le status
 live Twitch et la migration initiale unique. La preparation deploiement peut
@@ -1218,7 +1218,7 @@ Etat actuel :
   les volumes de stockage et sauvegardes, les dates lisibles de backups/imports
   et des libelles francais sur les statuts Notion et demandes de modification.
 
-Reste a faire pour cloturer :
+Sujets ops a poursuivre apres cloture :
 
 - Ajouter plus tard une vraie cible de sauvegarde distante pour ne plus
   dependre uniquement des backups locaux au VPS. Cette cible est reportee tant
@@ -1337,11 +1337,64 @@ Point de controle :
 
 ### Etape 13 - Ameliorations fonctionnelles et ergonomie avancee
 
-Statut : a planifier.
+Statut : commencee le 2026-07-01.
 
 Cette etape sert de backlog structure pour les ameliorations non bloquantes a
 traiter apres la stabilisation du deploiement, des imports et des premiers
 usages reels. Les elements ci-dessous ne sont pas encore priorises entre eux.
+
+Plan d'implementation propose :
+
+1. Reprise de la fiche personnage et du formulaire d'edition
+   - remettre en ordre les champs pour ameliorer la lecture ;
+   - clarifier les blocs metier, police, groupe, medias et relations ;
+   - ajouter la zone SAMD ;
+   - ajouter la region police nord/sud ;
+   - preparer le support de plusieurs numeros de telephone par personnage,
+     sans casser moderation, import et affichage public.
+2. Ameliorations graphe et preferences locales
+   - enregistrer une vue par defaut regroupee par groupe ;
+   - ajouter des preferences locales d'affichage ;
+   - permettre d'afficher ou masquer les morts ;
+   - permettre de choisir les types de relations visibles.
+3. Aide a la completion et qualite des donnees
+   - ajouter une vue ou fenetre listant les fiches a completer ;
+   - mettre en avant les champs manquants, importes ou a verifier ;
+   - rendre cette vue exploitable par moderation et administration.
+4. Pages publiques annexes
+   - ajouter une page information / contact / soutien ;
+   - rester sobre et coherente avec la navigation existante ;
+   - integrer le point de contact et le lien Buy Me a Coffee.
+5. Reprise du module streamer
+   - clarifier la distinction streamer / reseaux publics / plateformes ;
+   - mieux gerer le live Twitch, les fiches liees et l'absence de streamer
+     explicite ;
+   - eviter les zones grises entre donnees importees, editees et calculees.
+6. Reprise du module relations
+   - distinguer clairement relations visibles dans le graphe et relations
+     visibles uniquement dans la fiche ;
+   - mieux gerer anciennes identites/personnages et relations importees
+     ambigues ;
+   - preparer une interface de gestion plus lisible pour les relations
+     multiples.
+
+Ordre de travail recommande :
+
+- Lot A : fiche personnage + formulaire d'edition
+- Lot B : relations + plusieurs numeros de telephone
+- Lot C : completude des donnees
+- Lot D : graphe et preferences locales
+- Lot E : module streamer
+- Lot F : page publique information / contact / soutien
+
+Contraintes de mise en oeuvre :
+
+- conserver la compatibilite avec l'import Notion, la moderation et
+  l'historique ;
+- privilegier des changements incrementaux, avec migrations et adaptation
+  frontend par sous-lot ;
+- ne pas empiler toute la logique dans un seul fichier : decouper les nouveaux
+  blocs UI et services des que la zone commence a grossir.
 
 Fiche personnage :
 
