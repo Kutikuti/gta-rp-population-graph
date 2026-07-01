@@ -1,0 +1,9 @@
+[Unit]
+Description=GTA RP monitoring textfile metrics
+
+[Service]
+Type=oneshot
+User=codex-deploy
+Group=codex-deploy
+WorkingDirectory=/var/www/gta-rp-population-graph/current
+ExecStart=/var/www/gta-rp-population-graph/current/scripts/write-monitoring-textfile-metrics.sh

@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - 127.0.0.1:9090
+
+  - job_name: node
+    static_configs:
+      - targets:
+          - 127.0.0.1:9100
+
+  - job_name: gta-rp-backend
+    metrics_path: /api/internal/metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/metrics_token
+    static_configs:
+      - targets:
+          - 127.0.0.1:4000
+
+  - job_name: blackbox-http
+    metrics_path: /probe
+    params:
+      module:
+        - http_2xx
+    static_configs:
+      - targets:
+          - https://gta-rp.f1prediction.fr/
+          - https://gta-rp.f1prediction.fr/api/health
+          - https://gta-rp.f1prediction.fr/api/auth/session
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+
+  - job_name: blackbox-redirects
+    metrics_path: /probe
+    params:
+      module:
+        - http_3xx
+    static_configs:
+      - targets:
+          - https://gta-rp.f1prediction.fr/api/auth/google
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115

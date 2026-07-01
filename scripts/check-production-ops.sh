@@ -10,6 +10,7 @@ SSH_PORT="${SSH_PORT:-22}"
 SSH_USER="${SSH_USER:-codex-deploy}"
 SSH_KEY="${SSH_KEY:-${REPO_ROOT}/.secrets/codex_gta_rp_deploy}"
 REMOTE_BACKUP_ROOT="${REMOTE_BACKUP_ROOT:-/var/www/gta-rp-population-graph/shared/backups}"
+MONITORING_SHARED_DIR="${MONITORING_SHARED_DIR:-/var/www/gta-rp-population-graph/shared/monitoring}"
 PUBLIC_ONLY=false
 SSH_ONLY=false
 FAILED=0
@@ -34,6 +35,7 @@ Environment overrides:
   SSH_USER              default: codex-deploy
   SSH_KEY               default: .secrets/codex_gta_rp_deploy
   REMOTE_BACKUP_ROOT    default: /var/www/gta-rp-population-graph/shared/backups
+  MONITORING_SHARED_DIR default: /var/www/gta-rp-population-graph/shared/monitoring
 USAGE
 }
 
@@ -100,6 +102,8 @@ check_public() {
     bash -c "curl -fsS '${BASE_URL}/api/characters?limit=1' | grep -q '\"items\"'"
   run_check "Google OAuth starts with redirect" \
     bash -c "curl -fsSI '${BASE_URL}/api/auth/google' | grep -q '^HTTP/2 302\\|^HTTP/1.1 302'"
+  run_check "supervision is not public without admin session" \
+    bash -c "curl -fsSI '${BASE_URL}/supervision/' | grep -q '^HTTP/2 302\\|^HTTP/1.1 302\\|^HTTP/2 401\\|^HTTP/1.1 401\\|^HTTP/2 403\\|^HTTP/1.1 403'"
 }
 
 ssh_cmd() {
@@ -120,7 +124,7 @@ check_ssh() {
   fi
 
   run_check "backend, Caddy and timers are active" \
-    ssh_cmd "systemctl is-active gta-rp-backend.service caddy gta-rp-photo-cleanup.timer gta-rp-postgres-backup.timer gta-rp-uploads-backup.timer >/dev/null"
+    ssh_cmd "systemctl is-active gta-rp-backend.service caddy gta-rp-photo-cleanup.timer gta-rp-postgres-backup.timer gta-rp-uploads-backup.timer gta-rp-monitoring-textfile.timer >/dev/null"
 
   run_check "latest PostgreSQL backup exists" \
     ssh_cmd "find '${REMOTE_BACKUP_ROOT}/postgres/daily' -maxdepth 1 -type f -name '*.dump' -size +0c | grep -q ."
@@ -139,6 +143,15 @@ check_ssh() {
 
   run_check "journald retention is configured" \
     ssh_cmd "systemd-analyze cat-config systemd/journald.conf | grep -q '^SystemMaxUse=500M' && systemd-analyze cat-config systemd/journald.conf | grep -q '^MaxRetentionSec=30day'"
+
+  run_check "monitoring stack is healthy locally" \
+    ssh_cmd "sudo docker ps --format '{{.Names}}' | grep -E 'monitoring[-_](prometheus|grafana|blackbox-exporter|node-exporter)[-_]1' | wc -l | grep -q '^4$' && curl -fsS http://127.0.0.1:9090/-/healthy >/dev/null"
+
+  run_check "monitoring ports are bound locally only" \
+    ssh_cmd "ss -lnt | grep -q '127.0.0.1:3001' && ss -lnt | grep -q '127.0.0.1:9090' && ss -lnt | grep -q '127.0.0.1:9100' && ss -lnt | grep -q '127.0.0.1:9115'"
+
+  run_check "monitoring textfile metrics exist" \
+    ssh_cmd "test -s '${MONITORING_SHARED_DIR}/node-exporter-textfile/gta_rp_ops.prom'"
 }
 
 if [[ "${SSH_ONLY}" != true ]]; then

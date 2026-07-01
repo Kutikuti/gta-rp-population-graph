@@ -1,0 +1,53 @@
+{
+  "uid": "gta-rp-business-data",
+  "title": "GTA RP - Donnees metier",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "tags": ["gta-rp", "data"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Personnages publies",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "gta_rp_characters_published", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Streamers",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "gta_rp_streamers_total", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Tags",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "gta_rp_tags_total", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Relations",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "gta_rp_character_relationships_total", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Demandes de modification",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [{ "expr": "gta_rp_change_requests_total", "refId": "A" }]
+    },
+    {
+      "type": "bargauge",
+      "title": "Dernier import Notion par statut",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [{ "expr": "gta_rp_notion_import_latest_entries_total", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Age dernier import Notion",
+      "gridPos": { "x": 0, "y": 12, "w": 6, "h": 4 },
+      "targets": [{ "expr": "time() - gta_rp_notion_import_latest_batch_created_timestamp_seconds", "refId": "A" }]
+    }
+  ]
+}

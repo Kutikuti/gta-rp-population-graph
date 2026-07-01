@@ -49,6 +49,19 @@ const usersByCode = {
     },
     isBanned: false,
     linkedIdentities: []
+  },
+  banned: {
+    id: "00000000-0000-4000-8000-000000000914",
+    email: "banned@example.test",
+    displayName: "Banned Example",
+    mustChooseDisplayName: false,
+    avatarUrl: null,
+    role: {
+      id: "00000000-0000-4000-8000-000000000003",
+      name: "administrator"
+    },
+    isBanned: true,
+    linkedIdentities: []
   }
 } satisfies Record<string, AuthenticatedUser>;
 
@@ -226,5 +239,62 @@ describe("authorization routes", () => {
       area: "administration",
       user: { role: { name: "administrator" } }
     });
+  });
+
+  it("redirects anonymous users away from supervision", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+
+    const response = await request(app).get("/api/supervision/authorize");
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe("/?login=required&redirect=/supervision/");
+  });
+
+  it("rejects a simple user from supervision", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    await loginAs(agent, "user");
+
+    const response = await agent.get("/api/supervision/authorize");
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe("FORBIDDEN");
+  });
+
+  it("allows an administrator into supervision", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    await loginAs(agent, "administrator");
+
+    const response = await agent.get("/api/supervision/authorize");
+
+    expect(response.status).toBe(204);
+    expect(response.headers["x-webauth-user"]).toBe("Administrator Example");
+  });
+
+  it("rejects a banned user from supervision", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    await loginAs(agent, "banned");
+
+    const response = await agent.get("/api/supervision/authorize");
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe("/?login=required&redirect=/supervision/");
   });
 });

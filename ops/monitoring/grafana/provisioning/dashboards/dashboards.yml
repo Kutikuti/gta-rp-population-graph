@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: GTA RP
+    orgId: 1
+    folder: GTA RP
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

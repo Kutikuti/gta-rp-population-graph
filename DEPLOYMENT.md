@@ -64,8 +64,11 @@ Variables critiques :
 - `PHOTO_UPLOAD_RATE_LIMIT_MAX`
 - `PHOTO_STORAGE_DIR`
 - `PHOTO_DRAFT_MAX_AGE_HOURS`
+- `METRICS_TOKEN`
 
 `SESSION_SECRET` doit etre long, aleatoire et different de la valeur d'exemple.
+`METRICS_TOKEN` doit aussi etre long, aleatoire, hors Git et identique entre le
+`.env` backend et le fichier lu par Prometheus.
 
 Les applications OAuth doivent autoriser les callbacks de production avant le
 premier deploiement public :
@@ -305,6 +308,15 @@ gta-rp.f1prediction.fr {
             reverse_proxy 127.0.0.1:4000
         }
 
+        handle /supervision/* {
+            forward_auth 127.0.0.1:4000 {
+                uri /api/supervision/authorize
+                copy_headers X-WEBAUTH-USER
+            }
+
+            reverse_proxy 127.0.0.1:3001
+        }
+
         handle {
             root * /var/www/gta-rp-population-graph/current/web-client/dist
             try_files {path} /index.html
@@ -331,6 +343,150 @@ Les photos issues des imports Notion ne doivent pas etre servies directement
 depuis une URL distante. L'administration telecharge la photo au moment de
 l'action `Importer la photo`, puis le backend la valide, la reencode et la
 stocke localement comme n'importe quelle photo approuvee.
+
+## Supervision Prometheus + Grafana
+
+La supervision pre-utilisateurs retenue est auto-hebergee sur le meme VPS :
+
+- Prometheus collecte les metriques.
+- Grafana affiche les dashboards.
+- `node_exporter` expose les metriques systeme VPS et les metriques textfile.
+- `blackbox_exporter` sonde le site public en HTTP/TLS.
+- Le backend expose `GET /api/internal/metrics`, en format Prometheus, protege
+  par `METRICS_TOKEN`.
+- Grafana est accessible uniquement via
+  `https://gta-rp.f1prediction.fr/supervision/`.
+- L'endpoint `GET /api/supervision/authorize`, utilise par Caddy
+  `forward_auth`, est volontairement exclu du rate limit API global. Grafana
+  declenche beaucoup de requetes rapprochées pour charger dashboards, panneaux
+  et assets ; sans cette exemption, l'admin atteint vite la limite
+  `Too many requests`.
+- Prometheus, Grafana, node_exporter et blackbox_exporter restent bindes sur
+  `127.0.0.1` et ne doivent pas etre exposes publiquement.
+- Les conteneurs monitoring utilisent `network_mode: host` sur ce VPS afin de
+  scraper le backend local et les exporters sans ouvrir de ports publics.
+
+Fichiers versionnes :
+
+- stack Compose : `ops/monitoring/docker-compose.yml`
+- Prometheus : `ops/monitoring/prometheus/prometheus.yml`
+- blackbox : `ops/monitoring/blackbox/blackbox.yml`
+- provisioning Grafana : `ops/monitoring/grafana/provisioning/`
+- dashboards Grafana : `ops/monitoring/grafana/dashboards/`
+- metriques textfile : `scripts/write-monitoring-textfile-metrics.sh`
+- timer textfile :
+  `ops/systemd/gta-rp-monitoring-textfile.service`
+  et `ops/systemd/gta-rp-monitoring-textfile.timer`
+
+Creation des dossiers partages sur le VPS :
+
+```bash
+sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/prometheus
+sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/grafana
+sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/node-exporter-textfile
+sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/secrets
+sudo chown codex-deploy:codex-deploy /var/www/gta-rp-population-graph/shared/monitoring
+sudo chown 65534:65534 /var/www/gta-rp-population-graph/shared/monitoring/prometheus
+sudo chown 472:472 /var/www/gta-rp-population-graph/shared/monitoring/grafana
+sudo chown codex-deploy:codex-deploy /var/www/gta-rp-population-graph/shared/monitoring/node-exporter-textfile
+sudo chown codex-deploy:codex-deploy /var/www/gta-rp-population-graph/shared/monitoring/secrets
+```
+
+Generer les secrets hors Git :
+
+```bash
+openssl rand -base64 48
+openssl rand -base64 48
+```
+
+Utiliser la premiere valeur comme `METRICS_TOKEN` dans :
+
+- `/var/www/gta-rp-population-graph/current/backend/.env`
+- `/var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token`
+
+Le fichier Prometheus doit contenir uniquement le token brut, sans prefixe
+`Bearer` :
+
+```bash
+printf '%s' '<METRICS_TOKEN>' > /var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
+sudo chown 65534:65534 /var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
+sudo chmod 400 /var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
+```
+
+Utiliser la deuxieme valeur comme mot de passe admin local Grafana, dans un
+fichier d'environnement non versionne :
+
+```bash
+cat >/var/www/gta-rp-population-graph/shared/monitoring/.env <<'EOF'
+GRAFANA_ADMIN_USER=local-admin
+GRAFANA_ADMIN_PASSWORD=<GRAFANA_ADMIN_PASSWORD>
+MONITORING_SHARED_DIR=/var/www/gta-rp-population-graph/shared/monitoring
+METRICS_TOKEN_FILE=/var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
+EOF
+chmod 600 /var/www/gta-rp-population-graph/shared/monitoring/.env
+```
+
+Lancer la stack :
+
+```bash
+cd /var/www/gta-rp-population-graph/current/ops/monitoring
+sudo docker compose --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env config
+sudo docker compose --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env up -d
+sudo docker compose --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env ps
+```
+
+Le plugin `docker compose` v2 est installe sur le VPS depuis le `2026-07-01`.
+L'ancien binaire `docker-compose` v1 reste disponible temporairement en fallback.
+Si ce fallback est necessaire, le fichier `shared/monitoring/.env` peut etre
+lie dans le dossier Compose pour que `docker-compose` le charge automatiquement :
+
+```bash
+cd /var/www/gta-rp-population-graph/current/ops/monitoring
+ln -sfn /var/www/gta-rp-population-graph/shared/monitoring/.env .env
+sudo docker-compose config
+sudo docker-compose up -d
+sudo docker-compose ps
+```
+
+Installer le timer des metriques textfile :
+
+```bash
+cd /var/www/gta-rp-population-graph/current
+sudo install -Dm755 scripts/write-monitoring-textfile-metrics.sh /var/www/gta-rp-population-graph/current/scripts/write-monitoring-textfile-metrics.sh
+sudo install -Dm644 ops/systemd/gta-rp-monitoring-textfile.service /etc/systemd/system/gta-rp-monitoring-textfile.service
+sudo install -Dm644 ops/systemd/gta-rp-monitoring-textfile.timer /etc/systemd/system/gta-rp-monitoring-textfile.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now gta-rp-monitoring-textfile.timer
+sudo systemctl start gta-rp-monitoring-textfile.service
+```
+
+Modifier Caddy en ajoutant le `handle /supervision/*` du bloc exemple ci-dessus
+avant le `handle` statique frontend, puis valider et recharger :
+
+```bash
+sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.backup-$(date +%Y%m%d-%H%M%S)
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+Verifications :
+
+```bash
+curl -fsS http://127.0.0.1:9090/-/healthy
+curl -I https://gta-rp.f1prediction.fr/supervision/
+ss -lnt | grep -E '127\.0\.0\.1:(3001|9090|9100|9115)'
+scripts/check-production-ops.sh
+```
+
+Dans Grafana, verifier les dashboards provisionnes :
+
+- `GTA RP - Vue d'ensemble`
+- `GTA RP - VPS`
+- `GTA RP - Application`
+- `GTA RP - Donnees metier`
+
+Prometheus doit afficher les targets `prometheus`, `node`, `gta-rp-backend`,
+`blackbox-http` et `blackbox-redirects` en etat `UP`.
 
 ## Creation de la base
 
@@ -519,6 +675,44 @@ Si un test echoue :
 2. consulter `journalctl` sur le backend et, si besoin, sur Caddy ;
 3. verifier si une migration ou une synchronisation incomplete a eu lieu ;
 4. decider rapidement entre correction a chaud et rollback.
+
+### Passe automatisee du 2026-07-01
+
+Smoke tests automatisables executes depuis l'environnement de travail :
+
+- `scripts/check-production-ops.sh` complet : OK.
+- Page publique `https://gta-rp.f1prediction.fr/` : `HTTP 200`.
+- Fiche publique partageable `/?character=heitor-leite-jr` : `HTTP 200`.
+- API fiche `GET /api/characters/heitor-leite-jr` : OK.
+- API graphe `GET /api/graph` : OK.
+- API historique `GET /api/history?limit=1` : OK.
+- Photo publique validee `/uploads/characters/...webp` : `HTTP 200`,
+  `content-type: image/webp`.
+- Demarrage OAuth Google, Discord et Twitch : `HTTP 302` vers les fournisseurs
+  attendus, avec cookie de session `Secure`.
+- Routes protegees en anonyme : profil, contribution, moderation, admin et
+  imports Notion repondent `401 AUTHENTICATION_REQUIRED`.
+- Logs backend sur la fenetre de test : aucune erreur recente.
+
+### Passe metier interactive du 2026-07-01
+
+Smoke tests metier executes manuellement avec session reelle :
+
+- Connexion Google : OK.
+- Connexion Discord : OK.
+- Connexion Twitch : OK.
+- Profil connecte : OK.
+- Administration :
+  - creation de tag : OK ;
+  - suppression de tag : OK ;
+  - historique admin : OK.
+- Notion :
+  - import : OK ;
+  - application de fiche : OK ;
+  - import photo : OK.
+- Modification de fiche :
+  - import photo manuel : OK ;
+  - modification : OK.
 
 ## Nettoyage des photos temporaires
 
@@ -845,18 +1039,20 @@ uploads hebdomadaire deja presentes sur le VPS.
 - [x] Process manager configure.
 - [x] Firewall verifie.
 - [x] Retention durable `journald` configuree.
+- [x] `METRICS_TOKEN` fort genere hors Git.
+- [x] Stack Prometheus + Grafana lancee sur le VPS.
+- [x] Timer `gta-rp-monitoring-textfile.timer` configure et actif.
+- [x] Route Caddy `/supervision/*` ajoutee avec `forward_auth`.
+- [ ] Grafana accessible avec une session administrateur du site.
+- [x] Prometheus targets `UP`.
+- [x] Ports monitoring bindes localement uniquement.
 
 ## Points a completer plus tard
 
 - Configuration Caddy multi-domaines.
 - Cible de sauvegarde distante hors VPS, afin de ne pas dependre uniquement du
   stockage local.
-- Monitoring minimal et alertes.
-- Dashboard minimal incluant sante applicative, trafic, stockage et evolution
-  des donnees.
-- Piste outillage pour le dashboard et la supervision : priorite a une solution
-  open source, gratuite et auto-hebergee de type Zabbix, avec comparaison
-  possible contre Prometheus + Grafana au moment de l'implementation.
+- Alerting externe email ou Discord sur les signaux critiques.
 
 ## Durcissement SSH minimal
 

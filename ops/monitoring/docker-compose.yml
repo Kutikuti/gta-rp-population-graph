@@ -1,0 +1,65 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=1GB
+      - --web.listen-address=127.0.0.1:9090
+      - --web.enable-lifecycle
+    network_mode: host
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${MONITORING_SHARED_DIR:-/var/www/gta-rp-population-graph/shared/monitoring}/prometheus:/prometheus
+      - ${METRICS_TOKEN_FILE:-/var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token}:/etc/prometheus/secrets/metrics_token:ro
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    network_mode: host
+    environment:
+      GF_SERVER_DOMAIN: gta-rp.f1prediction.fr
+      GF_SERVER_ROOT_URL: https://gta-rp.f1prediction.fr/supervision/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SERVER_HTTP_ADDR: 127.0.0.1
+      GF_SERVER_HTTP_PORT: "3001"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_PROXY_ENABLED: "true"
+      GF_AUTH_PROXY_HEADER_NAME: X-WEBAUTH-USER
+      GF_AUTH_PROXY_HEADER_PROPERTY: username
+      GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-local-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+    volumes:
+      - ${MONITORING_SHARED_DIR:-/var/www/gta-rp-population-graph/shared/monitoring}/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+      - --web.listen-address=127.0.0.1:9115
+    network_mode: host
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/textfile_collector
+      - --web.listen-address=127.0.0.1:9100
+    pid: host
+    network_mode: host
+    volumes:
+      - /:/host:ro,rslave
+      - ${MONITORING_SHARED_DIR:-/var/www/gta-rp-population-graph/shared/monitoring}/node-exporter-textfile:/textfile_collector:ro

@@ -1185,25 +1185,44 @@ Etat actuel :
 - Un script de monitoring minimal read-only est ajoute :
   `scripts/check-production-ops.sh`. Il rejoue les controles publics et serveur
   essentiels en attendant un dashboard plus complet.
+- Une passe de smoke tests automatisables a ete consignee le 2026-07-01 :
+  page publique, URL partageable de fiche, API fiche, graphe, historique,
+  photo publique, redirects OAuth Google/Discord/Twitch, routes protegees en
+  anonyme et absence d'erreur backend recente.
+- Une passe metier interactive a ete validee le 2026-07-01 : connexions
+  Google/Discord/Twitch, profil connecte, administration des tags et historique,
+  import Notion, application de fiche, import photo Notion, import photo manuel
+  et modification de fiche.
+- La decision supervision pre-utilisateurs est prise : Prometheus + Grafana,
+  node_exporter, blackbox_exporter, metriques backend custom et acces Grafana
+  protege par les sessions administrateur du site via Caddy `forward_auth`.
+- Une premiere implementation de supervision est versionnee :
+  - endpoint admin `GET /api/supervision/authorize` pour Caddy/Grafana ;
+  - endpoint Prometheus `GET /api/internal/metrics` protege par
+    `METRICS_TOKEN` ;
+  - metriques HTTP backend, metriques Node/process et compteurs metier ;
+  - stack Docker Compose sous `ops/monitoring/` ;
+  - dashboards Grafana `Vue d'ensemble`, `VPS`, `Application` et
+    `Donnees metier` ;
+  - script textfile node_exporter pour age/taille des backups et volumetrie
+    uploads ;
+  - services/timers systemd pour rafraichir les metriques textfile.
+- Cette supervision est deployee sur le VPS : stack Docker Compose active,
+  Grafana sain en local, Prometheus sain en local, targets `UP`, ports
+  monitoring bindes sur `127.0.0.1` uniquement et route Caddy `/supervision/*`
+  ajoutee avec `forward_auth`.
 
 Reste a faire pour cloturer :
 
-- Executer et consigner une passe metier finale, interactive, de smoke tests de
-  production avant ouverture plus large : consultation publique, login
-  Google/Discord/Twitch, profil, modification directe admin, import Notion,
-  application fiche, import photo, moderation et administration.
-- Formaliser plus tard la prochaine brique ops hors script manuel : dashboard
-  de supervision avec sante applicative, trafic, stockage et evolution des
-  donnees.
+- Valider en navigateur, avec une session administrateur reelle, que
+  `https://gta-rp.f1prediction.fr/supervision/` ouvre bien Grafana et que les
+  dashboards provisionnes sont visibles.
 - Ajouter plus tard une vraie cible de sauvegarde distante pour ne plus
   dependre uniquement des backups locaux au VPS. Cette cible est reportee tant
   qu'aucun stockage externe n'est disponible.
 - Utiliser en attendant le script local `scripts/fetch-latest-backups.sh` pour
   recuperer manuellement la derniere sauvegarde PostgreSQL et/ou uploads depuis
   le VPS vers une machine de travail.
-- Garder comme piste d'implementation un outillage open source et auto-heberge
-  de type Zabbix, ou eventuellement un duo Prometheus + Grafana selon le niveau
-  de finesse souhaite pour les metriques systeme, applicatives et metier.
 
 Point de controle :
 

@@ -1,0 +1,53 @@
+{
+  "uid": "gta-rp-overview",
+  "title": "GTA RP - Vue d'ensemble",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["gta-rp", "overview"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Cibles Prometheus UP",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "sum(up)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "API publique disponible",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "probe_success{instance=\"https://gta-rp.f1prediction.fr/api/health\"}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Erreurs HTTP API",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "expr": "sum by (status) (rate(gta_rp_http_requests_total{status=~\"5..|4..\"}[5m]))", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latence API p95",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, route) (rate(gta_rp_http_request_duration_seconds_bucket[5m])))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Espace disque libre /",
+      "gridPos": { "x": 0, "y": 12, "w": 6, "h": 4 },
+      "targets": [{ "expr": "node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"}", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Age backup PostgreSQL",
+      "gridPos": { "x": 6, "y": 12, "w": 6, "h": 4 },
+      "targets": [{ "expr": "time() - gta_rp_backup_postgres_latest_timestamp_seconds", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Age backup uploads",
+      "gridPos": { "x": 12, "y": 12, "w": 6, "h": 4 },
+      "targets": [{ "expr": "time() - gta_rp_backup_uploads_latest_timestamp_seconds", "refId": "A" }]
+    }
+  ]
+}

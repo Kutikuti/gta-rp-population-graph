@@ -55,7 +55,8 @@ const envSchema = z
     PHOTO_UPLOAD_MAX_BYTES: numberFromString(2097152),
     PHOTO_UPLOAD_RATE_LIMIT_MAX: numberFromString(6),
     PHOTO_STORAGE_DIR: z.string().min(1).default("storage/uploads"),
-    PHOTO_DRAFT_MAX_AGE_HOURS: numberFromString(24)
+    PHOTO_DRAFT_MAX_AGE_HOURS: numberFromString(24),
+    METRICS_TOKEN: z.string().min(32).optional()
   })
   .superRefine((value, context) => {
     const oauthProviders = [

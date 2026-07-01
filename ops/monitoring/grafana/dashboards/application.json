@@ -1,0 +1,41 @@
+{
+  "uid": "gta-rp-application",
+  "title": "GTA RP - Application",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["gta-rp", "application"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Trafic API par route",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "expr": "sum by (route) (rate(gta_rp_http_requests_total[5m]))", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Codes HTTP",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "expr": "sum by (status) (rate(gta_rp_http_requests_total[5m]))", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latence p95 par route",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, route) (rate(gta_rp_http_request_duration_seconds_bucket[5m])))", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Process Node heap",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [{ "expr": "nodejs_heap_size_used_bytes", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "OAuth Google start",
+      "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
+      "targets": [{ "expr": "probe_success{instance=\"https://gta-rp.f1prediction.fr/api/auth/google\"}", "refId": "A" }]
+    }
+  ]
+}
