@@ -2,40 +2,69 @@
   "uid": "gta-rp-application",
   "title": "GTA RP - Application",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "tags": ["gta-rp", "application"],
   "timezone": "browser",
   "panels": [
     {
+      "type": "stat",
+      "title": "Visiteurs uniques depuis redemarrage API",
+      "description": "Estimation basee sur IP + navigateur haches en memoire, remise a zero au redemarrage backend.",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_site_visitors_unique_total", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Visiteurs uniques aujourd'hui",
+      "description": "Estimation UTC, basee sur les appels API reussis vus par le backend.",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_site_visitors_unique_today", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Debut journee visiteurs",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_site_visitors_current_day_start_timestamp_seconds", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "OAuth Google disponible",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bool" }, "overrides": [] },
+      "targets": [{ "expr": "probe_success{instance=\"https://gta-rp.f1prediction.fr/api/auth/google\"}", "refId": "A" }]
+    },
+    {
       "type": "timeseries",
       "title": "Trafic API par route",
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
-      "targets": [{ "expr": "sum by (route) (rate(gta_rp_http_requests_total[5m]))", "refId": "A" }]
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (route) (rate(gta_rp_http_requests_total[5m]))", "legendFormat": "{{route}}", "refId": "A" }]
     },
     {
       "type": "timeseries",
       "title": "Codes HTTP",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
-      "targets": [{ "expr": "sum by (status) (rate(gta_rp_http_requests_total[5m]))", "refId": "A" }]
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (status) (rate(gta_rp_http_requests_total[5m]))", "legendFormat": "HTTP {{status}}", "refId": "A" }]
     },
     {
       "type": "timeseries",
-      "title": "Latence p95 par route",
-      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
-      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, route) (rate(gta_rp_http_request_duration_seconds_bucket[5m])))", "refId": "A" }]
+      "title": "Latence API p95 par route",
+      "description": "Temps sous lequel 95 % des requetes de la route se terminent. Utile pour reperer les endpoints qui ralentissent.",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, route) (rate(gta_rp_http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{route}}", "refId": "A" }]
     },
     {
       "type": "timeseries",
-      "title": "Process Node heap",
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
-      "targets": [{ "expr": "nodejs_heap_size_used_bytes", "refId": "A" }]
-    },
-    {
-      "type": "stat",
-      "title": "OAuth Google start",
-      "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
-      "targets": [{ "expr": "probe_success{instance=\"https://gta-rp.f1prediction.fr/api/auth/google\"}", "refId": "A" }]
+      "title": "Memoire Node utilisee",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "nodejs_heap_size_used_bytes", "legendFormat": "heap utilise", "refId": "A" }]
     }
   ]
 }

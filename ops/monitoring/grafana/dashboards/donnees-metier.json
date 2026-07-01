@@ -2,7 +2,7 @@
   "uid": "gta-rp-business-data",
   "title": "GTA RP - Donnees metier",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "1m",
   "tags": ["gta-rp", "data"],
   "timezone": "browser",
@@ -11,43 +11,69 @@
       "type": "stat",
       "title": "Personnages publies",
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "targets": [{ "expr": "gta_rp_characters_published", "refId": "A" }]
     },
     {
       "type": "stat",
       "title": "Streamers",
       "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "targets": [{ "expr": "gta_rp_streamers_total", "refId": "A" }]
     },
     {
       "type": "stat",
       "title": "Tags",
       "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "targets": [{ "expr": "gta_rp_tags_total", "refId": "A" }]
     },
     {
       "type": "stat",
       "title": "Relations",
       "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "targets": [{ "expr": "gta_rp_character_relationships_total", "refId": "A" }]
     },
     {
-      "type": "timeseries",
-      "title": "Demandes de modification",
-      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
-      "targets": [{ "expr": "gta_rp_change_requests_total", "refId": "A" }]
+      "type": "stat",
+      "title": "Dernier import Notion",
+      "gridPos": { "x": 0, "y": 4, "w": 8, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_notion_import_latest_batch_created_timestamp_seconds", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Age dernier import",
+      "gridPos": { "x": 8, "y": 4, "w": 8, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "expr": "time() - gta_rp_notion_import_latest_batch_created_timestamp_seconds", "refId": "A" }]
     },
     {
       "type": "bargauge",
       "title": "Dernier import Notion par statut",
-      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
-      "targets": [{ "expr": "gta_rp_notion_import_latest_entries_total", "refId": "A" }]
+      "gridPos": { "x": 16, "y": 4, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "label_replace(gta_rp_notion_import_latest_entries_total{status=\"new\"}, \"libelle\", \"Nouvelles\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"updated\"}, \"libelle\", \"Mises a jour\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"unchanged\"}, \"libelle\", \"Inchangees\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"missing\"}, \"libelle\", \"Absentes\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"failed\"}, \"libelle\", \"En erreur\", \"status\", \".*\")",
+          "legendFormat": "{{libelle}}",
+          "refId": "A"
+        }
+      ]
     },
     {
-      "type": "stat",
-      "title": "Age dernier import Notion",
-      "gridPos": { "x": 0, "y": 12, "w": 6, "h": 4 },
-      "targets": [{ "expr": "time() - gta_rp_notion_import_latest_batch_created_timestamp_seconds", "refId": "A" }]
+      "type": "bargauge",
+      "title": "Demandes de modification",
+      "gridPos": { "x": 0, "y": 8, "w": 16, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "label_replace(gta_rp_change_requests_total{status=\"pending\",type=\"update\"}, \"libelle\", \"Modifications en attente\", \"status\", \".*\") or label_replace(gta_rp_change_requests_total{status=\"approved\",type=\"update\"}, \"libelle\", \"Modifications acceptees\", \"status\", \".*\") or label_replace(gta_rp_change_requests_total{status=\"rejected\",type=\"update\"}, \"libelle\", \"Modifications refusees\", \"status\", \".*\") or label_replace(gta_rp_change_requests_total{status=\"pending\",type=\"create\"}, \"libelle\", \"Creations en attente\", \"status\", \".*\") or label_replace(gta_rp_change_requests_total{status=\"approved\",type=\"create\"}, \"libelle\", \"Creations acceptees\", \"status\", \".*\") or label_replace(gta_rp_change_requests_total{status=\"rejected\",type=\"create\"}, \"libelle\", \"Creations refusees\", \"status\", \".*\")",
+          "legendFormat": "{{libelle}}",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }

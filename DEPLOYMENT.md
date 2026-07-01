@@ -361,6 +361,11 @@ La supervision pre-utilisateurs retenue est auto-hebergee sur le meme VPS :
   declenche beaucoup de requetes rapprochées pour charger dashboards, panneaux
   et assets ; sans cette exemption, l'admin atteint vite la limite
   `Too many requests`.
+- Les metriques visiteurs sont des estimations operationnelles, pas un outil
+  d'analytics nominatif : le backend compte en memoire des empreintes
+  IP+navigateur hachees, sans exposer ni stocker les IP ou user-agents en base.
+  Le total repart a zero au redemarrage de l'API ; le compteur journalier suit
+  la journee UTC courante.
 - Prometheus, Grafana, node_exporter et blackbox_exporter restent bindes sur
   `127.0.0.1` et ne doivent pas etre exposes publiquement.
 - Les conteneurs monitoring utilisent `network_mode: host` sur ce VPS afin de
@@ -1043,7 +1048,7 @@ uploads hebdomadaire deja presentes sur le VPS.
 - [x] Stack Prometheus + Grafana lancee sur le VPS.
 - [x] Timer `gta-rp-monitoring-textfile.timer` configure et actif.
 - [x] Route Caddy `/supervision/*` ajoutee avec `forward_auth`.
-- [ ] Grafana accessible avec une session administrateur du site.
+- [x] Grafana accessible avec une session administrateur du site.
 - [x] Prometheus targets `UP`.
 - [x] Ports monitoring bindes localement uniquement.
 

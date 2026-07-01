@@ -2,52 +2,76 @@
   "uid": "gta-rp-overview",
   "title": "GTA RP - Vue d'ensemble",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "tags": ["gta-rp", "overview"],
   "timezone": "browser",
   "panels": [
     {
       "type": "stat",
-      "title": "Cibles Prometheus UP",
+      "title": "Sondes Prometheus OK",
+      "description": "Nombre de cibles de supervision actuellement joignables : API, VPS, Prometheus et sondes HTTP publiques.",
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "targets": [{ "expr": "sum(up)", "refId": "A" }]
     },
     {
       "type": "stat",
       "title": "API publique disponible",
       "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bool" }, "overrides": [] },
       "targets": [{ "expr": "probe_success{instance=\"https://gta-rp.f1prediction.fr/api/health\"}", "refId": "A" }]
     },
     {
-      "type": "timeseries",
-      "title": "Erreurs HTTP API",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
-      "targets": [{ "expr": "sum by (status) (rate(gta_rp_http_requests_total{status=~\"5..|4..\"}[5m]))", "refId": "A" }]
+      "type": "stat",
+      "title": "Erreurs serveur API 24h",
+      "description": "Nombre de reponses HTTP 5xx sur les dernieres 24 heures. Zero est l'etat normal.",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "expr": "sum(increase(gta_rp_http_requests_total{status=~\"5..\"}[24h])) or vector(0)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Visiteurs aujourd'hui",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_site_visitors_unique_today", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Dernier backup PostgreSQL",
+      "gridPos": { "x": 0, "y": 4, "w": 8, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_backup_postgres_latest_timestamp_seconds", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Dernier backup uploads",
+      "gridPos": { "x": 8, "y": 4, "w": 8, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_backup_uploads_latest_timestamp_seconds", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Sauvegardes sur disque",
+      "gridPos": { "x": 16, "y": 4, "w": 8, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_backup_all_total_size_bytes", "refId": "A" }]
     },
     {
       "type": "timeseries",
       "title": "Latence API p95",
-      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
-      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, route) (rate(gta_rp_http_request_duration_seconds_bucket[5m])))", "refId": "A" }]
+      "description": "Temps sous lequel 95 % des requetes API se terminent. Une hausse durable indique un ralentissement ressenti par les utilisateurs.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le) (rate(gta_rp_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95 global", "refId": "A" }]
     },
     {
-      "type": "stat",
-      "title": "Espace disque libre /",
-      "gridPos": { "x": 0, "y": 12, "w": 6, "h": 4 },
-      "targets": [{ "expr": "node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"}", "refId": "A" }]
-    },
-    {
-      "type": "stat",
-      "title": "Age backup PostgreSQL",
-      "gridPos": { "x": 6, "y": 12, "w": 6, "h": 4 },
-      "targets": [{ "expr": "time() - gta_rp_backup_postgres_latest_timestamp_seconds", "refId": "A" }]
-    },
-    {
-      "type": "stat",
-      "title": "Age backup uploads",
-      "gridPos": { "x": 12, "y": 12, "w": 6, "h": 4 },
-      "targets": [{ "expr": "time() - gta_rp_backup_uploads_latest_timestamp_seconds", "refId": "A" }]
+      "type": "timeseries",
+      "title": "Trafic API global",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [{ "expr": "sum(rate(gta_rp_http_requests_total[5m]))", "legendFormat": "requetes/s", "refId": "A" }]
     }
   ]
 }

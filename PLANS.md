@@ -1211,12 +1211,15 @@ Etat actuel :
   Grafana sain en local, Prometheus sain en local, targets `UP`, ports
   monitoring bindes sur `127.0.0.1` uniquement et route Caddy `/supervision/*`
   ajoutee avec `forward_auth`.
+- L'acces navigateur administrateur a ete valide le 2026-07-01. Les dashboards
+  provisionnes `GTA RP - Application`, `GTA RP - Donnees metier`,
+  `GTA RP - VPS` et `GTA RP - Vue d'ensemble` sont accessibles.
+- Une passe d'amelioration des dashboards a ajoute les visiteurs approximatifs,
+  les volumes de stockage et sauvegardes, les dates lisibles de backups/imports
+  et des libelles francais sur les statuts Notion et demandes de modification.
 
 Reste a faire pour cloturer :
 
-- Valider en navigateur, avec une session administrateur reelle, que
-  `https://gta-rp.f1prediction.fr/supervision/` ouvre bien Grafana et que les
-  dashboards provisionnes sont visibles.
 - Ajouter plus tard une vraie cible de sauvegarde distante pour ne plus
   dependre uniquement des backups locaux au VPS. Cette cible est reportee tant
   qu'aucun stockage externe n'est disponible.

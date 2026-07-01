@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import type { Request } from "express";
 import { Counter, collectDefaultMetrics, Gauge, Histogram, Registry } from "prom-client";
 
 import {
@@ -71,6 +73,71 @@ const latestNotionEntriesGauge = new Gauge({
   labelNames: ["status"] as const,
   registers: [metricsRegistry]
 });
+
+const siteVisitorsUniqueTotalGauge = new Gauge({
+  name: "gta_rp_site_visitors_unique_total",
+  help: "Nombre approximatif de visiteurs uniques vus par l'API depuis son dernier demarrage.",
+  registers: [metricsRegistry]
+});
+
+const siteVisitorsUniqueTodayGauge = new Gauge({
+  name: "gta_rp_site_visitors_unique_today",
+  help: "Nombre approximatif de visiteurs uniques vus par l'API sur la journee UTC courante.",
+  registers: [metricsRegistry]
+});
+
+const siteVisitorsCurrentDayStartGauge = new Gauge({
+  name: "gta_rp_site_visitors_current_day_start_timestamp_seconds",
+  help: "Timestamp Unix du debut de la journee UTC courante pour le compteur visiteurs.",
+  registers: [metricsRegistry]
+});
+
+const uniqueVisitorsSinceStart = new Set<string>();
+let currentVisitorDay = "";
+let uniqueVisitorsToday = new Set<string>();
+
+const utcDay = (date: Date) => date.toISOString().slice(0, 10);
+
+const currentDayStartTimestamp = (day: string) => Date.parse(`${day}T00:00:00.000Z`) / 1000;
+
+const visitorFingerprint = (scope: string, request: Request) => {
+  const forwardedFor = request.header("x-forwarded-for")?.split(",")[0]?.trim();
+  const ip = forwardedFor || request.ip || request.socket.remoteAddress || "unknown";
+  const userAgent = request.header("user-agent") || "unknown";
+
+  return createHash("sha256").update(`${scope}:${ip}:${userAgent}`).digest("hex");
+};
+
+const isVisitorCandidate = (request: Request) => {
+  if (!["GET", "HEAD"].includes(request.method)) {
+    return false;
+  }
+
+  return !(
+    request.path.startsWith("/api/internal") ||
+    request.path.startsWith("/api/supervision") ||
+    request.path.startsWith("/api/health")
+  );
+};
+
+export const recordSiteVisitor = (request: Request) => {
+  if (!isVisitorCandidate(request)) {
+    return;
+  }
+
+  const day = utcDay(new Date());
+
+  if (day !== currentVisitorDay) {
+    currentVisitorDay = day;
+    uniqueVisitorsToday = new Set<string>();
+    siteVisitorsCurrentDayStartGauge.set(currentDayStartTimestamp(day));
+  }
+
+  uniqueVisitorsSinceStart.add(visitorFingerprint("total", request));
+  uniqueVisitorsToday.add(visitorFingerprint(day, request));
+  siteVisitorsUniqueTotalGauge.set(uniqueVisitorsSinceStart.size);
+  siteVisitorsUniqueTodayGauge.set(uniqueVisitorsToday.size);
+};
 
 export type MetricsService = {
   renderMetrics(): Promise<string>;

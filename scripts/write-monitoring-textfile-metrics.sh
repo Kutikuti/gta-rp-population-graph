@@ -37,11 +37,35 @@ latest_file_metric() {
   } >>"${TMP_FILE}"
 }
 
+directory_size_metric() {
+  local metric_prefix="$1"
+  local dir="$2"
+  local total_size="0"
+  local total_files="0"
+
+  if [[ -d "${dir}" ]]; then
+    total_size="$(find "${dir}" -type f -printf '%s\n' | awk '{sum += $1} END {printf "%d", sum}')"
+    total_files="$(find "${dir}" -type f | wc -l | tr -d ' ')"
+  fi
+
+  {
+    echo "# HELP ${metric_prefix}_total_size_bytes Taille totale des fichiers."
+    echo "# TYPE ${metric_prefix}_total_size_bytes gauge"
+    echo "${metric_prefix}_total_size_bytes ${total_size}"
+    echo "# HELP ${metric_prefix}_files Nombre total de fichiers."
+    echo "# TYPE ${metric_prefix}_files gauge"
+    echo "${metric_prefix}_files ${total_files}"
+  } >>"${TMP_FILE}"
+}
+
 mkdir -p "${TEXTFILE_DIR}"
 : >"${TMP_FILE}"
 
 latest_file_metric "gta_rp_backup_postgres" "${BACKUP_ROOT}/postgres/daily" "*.dump"
 latest_file_metric "gta_rp_backup_uploads" "${BACKUP_ROOT}/uploads/weekly" "*.tar.gz"
+directory_size_metric "gta_rp_backup_postgres" "${BACKUP_ROOT}/postgres"
+directory_size_metric "gta_rp_backup_uploads" "${BACKUP_ROOT}/uploads"
+directory_size_metric "gta_rp_backup_all" "${BACKUP_ROOT}"
 
 uploads_size="0"
 uploads_count="0"

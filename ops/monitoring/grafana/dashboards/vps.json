@@ -2,34 +2,94 @@
   "uid": "gta-rp-vps",
   "title": "GTA RP - VPS",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "tags": ["gta-rp", "vps"],
   "timezone": "browser",
   "panels": [
     {
+      "type": "stat",
+      "title": "Disque total /",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"rootfs\"}", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Disque disponible /",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"}", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Disque utilise /",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "targets": [{ "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"rootfs\"})", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Sauvegardes totales",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_backup_all_total_size_bytes", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Sauvegardes PostgreSQL",
+      "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_backup_postgres_total_size_bytes", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Sauvegardes uploads",
+      "gridPos": { "x": 6, "y": 4, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_backup_uploads_total_size_bytes", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Photos validees",
+      "gridPos": { "x": 12, "y": 4, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_uploads_validated_size_bytes", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Nombre de photos",
+      "gridPos": { "x": 18, "y": 4, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "expr": "gta_rp_uploads_validated_files", "refId": "A" }]
+    },
+    {
       "type": "timeseries",
-      "title": "CPU",
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
-      "targets": [{ "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A" }]
+      "title": "CPU utilise",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "targets": [{ "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "CPU", "refId": "A" }]
     },
     {
       "type": "timeseries",
       "title": "RAM disponible",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
-      "targets": [{ "expr": "node_memory_MemAvailable_bytes", "refId": "A" }]
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "node_memory_MemAvailable_bytes", "legendFormat": "RAM disponible", "refId": "A" }]
     },
     {
       "type": "timeseries",
-      "title": "Disque / utilise",
-      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
-      "targets": [{ "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"rootfs\"})", "refId": "A" }]
+      "title": "Disque utilise",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "targets": [{ "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"rootfs\"})", "legendFormat": "/ utilise", "refId": "A" }]
     },
     {
       "type": "timeseries",
       "title": "Reseau",
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
-      "targets": [{ "expr": "sum by (device) (rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m]))", "refId": "A" }]
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (device) (rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m]))", "legendFormat": "{{device}}", "refId": "A" }]
     }
   ]
 }

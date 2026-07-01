@@ -1,6 +1,10 @@
 import type { Request, RequestHandler } from "express";
 
-import { httpRequestDurationSeconds, httpRequestsTotal } from "../services/metrics.js";
+import {
+  httpRequestDurationSeconds,
+  httpRequestsTotal,
+  recordSiteVisitor
+} from "../services/metrics.js";
 
 const normalizedRoute = (request: Request) => {
   const routePath = request.route?.path;
@@ -24,6 +28,10 @@ export const recordHttpMetrics: RequestHandler = (request, response, next) => {
 
     httpRequestsTotal.inc(labels);
     endTimer(labels);
+
+    if (response.statusCode < 400) {
+      recordSiteVisitor(request);
+    }
   });
 
   next();
