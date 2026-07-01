@@ -173,6 +173,33 @@ curl -I https://gta-rp.f1prediction.fr/
 curl -I https://f1prediction.fr/
 ```
 
+## Verification ops du 2026-07-01
+
+Passe non destructive executee depuis l'environnement de travail :
+
+- `https://gta-rp.f1prediction.fr/` repond `HTTP 200`.
+- `https://gta-rp.f1prediction.fr/api/health` repond `{"status":"ok",...}`.
+- `https://gta-rp.f1prediction.fr/api/auth/session` repond
+  `{"authenticated":false}` hors session active.
+- `https://gta-rp.f1prediction.fr/api/characters?limit=1` renvoie des donnees
+  publiques.
+- `https://gta-rp.f1prediction.fr/api/auth/google` repond `HTTP 302` vers
+  Google et pose un cookie de session `Secure`.
+- Les services/timers `gta-rp-backend.service`, `caddy`,
+  `gta-rp-photo-cleanup.timer`, `gta-rp-postgres-backup.timer` et
+  `gta-rp-uploads-backup.timer` sont actifs.
+- Les sauvegardes locales existent sur le VPS :
+  - PostgreSQL quotidien : dernier dump vu le `2026-07-01 03:15 UTC`.
+  - Uploads hebdomadaire : derniere archive vue le `2026-06-30 21:55 UTC`.
+- `ufw` est actif avec politique entrante par defaut `deny`.
+- PostgreSQL `5432/tcp` est explicitement refuse en entree publique.
+- `fail2ban` protege `sshd` et avait des bannissements actifs au moment du
+  controle.
+- Espace disque : environ `6.3G / 38G`, soit `18%`.
+
+Point a garder en tete : le port `5000` reste ouvert pour le site historique ou
+un usage existant du VPS. Ne pas le fermer sans verifier l'autre application.
+
 ## Hygiene stockage
 
 Constat releve sur le VPS le `2026-06-30` apres maintenance :
@@ -695,6 +722,51 @@ Si aucune cible distante n'est disponible au debut :
 - documenter explicitement que ce n'est pas une protection suffisante contre la
   perte du VPS
 - planifier rapidement une seconde copie hors machine
+
+## Recuperer la derniere sauvegarde en local
+
+Tant qu'aucune cible distante n'est disponible, une copie manuelle vers une
+machine locale permet au moins de sortir periodiquement les dernieres archives
+du VPS.
+
+Le depot fournit un script dedie :
+
+```bash
+scripts/fetch-latest-backups.sh
+```
+
+Par defaut, il utilise :
+
+- hote SSH : `65.109.171.143`
+- utilisateur SSH : `codex-deploy`
+- cle SSH : `.secrets/codex_gta_rp_deploy`
+- source serveur : `/var/www/gta-rp-population-graph/shared/backups`
+- destination locale : `.backups/server`
+
+La destination `.backups/` est ignoree par Git. Ne jamais commiter les archives
+recuperees : elles contiennent les donnees de production.
+
+Recuperer uniquement la base :
+
+```bash
+scripts/fetch-latest-backups.sh --postgres
+```
+
+Recuperer uniquement les uploads :
+
+```bash
+scripts/fetch-latest-backups.sh --uploads
+```
+
+Choisir une destination locale hors depot :
+
+```bash
+LOCAL_BACKUP_DIR=~/gta-rp-backups scripts/fetch-latest-backups.sh --all
+```
+
+Le script ne declenche pas de nouvelle sauvegarde sur le serveur. Il recupere
+seulement la derniere archive PostgreSQL journaliere et/ou la derniere archive
+uploads hebdomadaire deja presentes sur le VPS.
 
 ## Checklist deploiement initial
 

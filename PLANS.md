@@ -1176,18 +1176,26 @@ Etat actuel :
   post-reboot de `caddy`, du backend et des endpoints publics.
 - L'hygiene stockage est maintenant mieux cadree : nettoyage `journald`,
   nettoyage cache APT et commandes de diagnostic ajoutees au runbook.
+- Une passe de verification ops non destructive a ete consignee le 2026-07-01 :
+  endpoints publics essentiels OK, services/timers actifs, backups locaux
+  presents, `ufw` et `fail2ban` actifs, PostgreSQL non expose publiquement et
+  disque autour de 18% d'utilisation.
 
 Reste a faire pour cloturer :
 
-- Executer et consigner une passe metier finale de smoke tests de production
-  avant ouverture plus large : consultation publique, login
+- Executer et consigner une passe metier finale, interactive, de smoke tests de
+  production avant ouverture plus large : consultation publique, login
   Google/Discord/Twitch, profil, modification directe admin, import Notion,
   application fiche, import photo, moderation et administration.
 - Formaliser la prochaine brique ops hors simple runbook :
   dashboard/monitoring minimal avec sante applicative, trafic, stockage et
   evolution des donnees.
-- Ajouter une vraie cible de sauvegarde distante pour ne plus dependre
-  uniquement des backups locaux au VPS.
+- Ajouter plus tard une vraie cible de sauvegarde distante pour ne plus
+  dependre uniquement des backups locaux au VPS. Cette cible est reportee tant
+  qu'aucun stockage externe n'est disponible.
+- Utiliser en attendant le script local `scripts/fetch-latest-backups.sh` pour
+  recuperer manuellement la derniere sauvegarde PostgreSQL et/ou uploads depuis
+  le VPS vers une machine de travail.
 - Fixer une politique durable de rotation/persistences des logs systeme
   (`journald`) pour eviter une nouvelle derive stockage.
 - Garder comme piste d'implementation un outillage open source et auto-heberge
