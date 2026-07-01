@@ -55,7 +55,7 @@ const snapshotFromSearch = (context: CharacterCreationContext): CharacterSnapsho
     companyName: null,
     companyRank: null,
     companyBadgeNumber: null,
-    phoneNumber: null,
+    phoneNumbers: [],
     streamerId: null,
     streamerName: null,
     socialLinks: null,

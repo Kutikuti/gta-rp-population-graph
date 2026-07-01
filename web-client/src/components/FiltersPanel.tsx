@@ -4,6 +4,7 @@ import { isActiveFilters, lifeStatusLabels, verificationLabels } from "../consta
 type FiltersPanelProps = {
   filters: CharacterFilters;
   canSuggestCreation: boolean;
+  onClose: () => void;
   tags: PublicTag[];
   resultSummary: string | null;
   onChange: (key: keyof CharacterFilters, value: string) => void;
@@ -14,6 +15,7 @@ type FiltersPanelProps = {
 export function FiltersPanel({
   canSuggestCreation,
   filters,
+  onClose,
   tags,
   resultSummary,
   onChange,
@@ -24,14 +26,24 @@ export function FiltersPanel({
     <>
       <div className="panel-heading">
         <h2>Recherche</h2>
-        <button
-          type="button"
-          className="ghost-button"
-          onClick={onReset}
-          disabled={!isActiveFilters(filters)}
-        >
-          Réinitialiser
-        </button>
+        <div className="panel-heading-actions">
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={onReset}
+            disabled={!isActiveFilters(filters)}
+          >
+            Réinitialiser
+          </button>
+          <button
+            type="button"
+            className="panel-icon-button"
+            aria-label="Replier la recherche"
+            onClick={onClose}
+          >
+            X
+          </button>
+        </div>
       </div>
 
       <label className="field">

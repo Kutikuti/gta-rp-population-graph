@@ -32,25 +32,16 @@ export function SearchSidebar({
       aria-label="Recherche et filtres"
     >
       {isOpen ? (
-        <>
-          <button
-            type="button"
-            className="panel-icon-button panel-close-button"
-            aria-label="Replier la recherche"
-            onClick={onClose}
-          >
-            ×
-          </button>
-          <FiltersPanel
-            canSuggestCreation={canSuggestCreation}
-            filters={filters}
-            tags={tags}
-            resultSummary={resultSummary}
-            onChange={onChange}
-            onReset={onReset}
-            onSuggestCreation={onSuggestCreation}
-          />
-        </>
+        <FiltersPanel
+          canSuggestCreation={canSuggestCreation}
+          filters={filters}
+          onClose={onClose}
+          tags={tags}
+          resultSummary={resultSummary}
+          onChange={onChange}
+          onReset={onReset}
+          onSuggestCreation={onSuggestCreation}
+        />
       ) : (
         <button
           type="button"

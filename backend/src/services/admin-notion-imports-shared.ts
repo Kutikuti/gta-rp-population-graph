@@ -52,7 +52,7 @@ export type ImportEntryCandidate = {
   nickname: string | null;
   lifeStatus: LifeStatus;
   deathOrDepartureDate: string | null;
-  phoneNumber: string | null;
+  phoneNumbers: string[];
   streamerPublicName: string | null;
   socialLinks: Record<string, string> | null;
   companyName: string | null;
@@ -205,7 +205,12 @@ export const importCandidateFromEntry = (entry: NotionImportEntry): ImportEntryC
     nickname: stringValue(snapshot.nickname),
     lifeStatus,
     deathOrDepartureDate: stringValue(snapshot.deathOrDepartureDate),
-    phoneNumber: stringValue(snapshot.phoneNumber),
+    phoneNumbers:
+      Array.isArray(snapshot.phoneNumbers) && snapshot.phoneNumbers.length > 0
+        ? stringListValue(snapshot.phoneNumbers)
+        : stringValue(snapshot.phoneNumber)
+          ? [stringValue(snapshot.phoneNumber) as string]
+          : [],
     streamerPublicName: stringValue(snapshot.streamerPublicName),
     socialLinks:
       socialLinksRecord && Object.keys(socialLinksRecord).length > 0

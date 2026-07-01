@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import {
   type CharacterSnapshot,
   type LifeStatus,
@@ -77,6 +79,8 @@ export function CharacterSnapshotForm({
   onPhotoUpload,
   onSubmit
 }: CharacterSnapshotFormProps) {
+  const phoneRowIdsRef = useRef<string[]>(snapshot.phoneNumbers.map(() => crypto.randomUUID()));
+
   const updateText = (key: keyof CharacterSnapshot, value: string) => {
     onChange({
       ...snapshot,
@@ -84,10 +88,23 @@ export function CharacterSnapshotForm({
     });
   };
 
+  if (phoneRowIdsRef.current.length < snapshot.phoneNumbers.length) {
+    phoneRowIdsRef.current.push(
+      ...Array.from({ length: snapshot.phoneNumbers.length - phoneRowIdsRef.current.length }, () =>
+        crypto.randomUUID()
+      )
+    );
+  } else if (phoneRowIdsRef.current.length > snapshot.phoneNumbers.length) {
+    phoneRowIdsRef.current = phoneRowIdsRef.current.slice(0, snapshot.phoneNumbers.length);
+  }
+
   const availableCharacterOptions = characterOptions.filter(
     (character) => character.id !== currentCharacterId
   );
   const relationshipType = (value: string) => value as (typeof editableRelationTypes)[number];
+  const updatePhoneNumbers = (phoneNumbers: string[]) => {
+    onChange({ ...snapshot, phoneNumbers });
+  };
 
   return (
     <form
@@ -207,22 +224,55 @@ export function CharacterSnapshotForm({
 
       <fieldset>
         <legend>Contact</legend>
-        <div className="form-grid">
-          <label>
-            <span>Téléphone</span>
-            <input
-              type="text"
-              value={textValue(snapshot.phoneNumber)}
-              onChange={(event) => {
-                updateText("phoneNumber", event.target.value);
+        <div className="relationship-draft-list">
+          {snapshot.phoneNumbers.map((phoneNumber, index) => (
+            <div key={phoneRowIdsRef.current[index]} className="relationship-draft-row">
+              <label className="phone-row-field">
+                <input
+                  type="text"
+                  value={phoneNumber}
+                  placeholder="Numéro de téléphone"
+                  onChange={(event) => {
+                    updatePhoneNumbers(
+                      snapshot.phoneNumbers.map((current, currentIndex) =>
+                        currentIndex === index ? event.target.value : current
+                      )
+                    );
+                  }}
+                />
+              </label>
+              <div />
+              <button
+                type="button"
+                className="ghost-button compact-action"
+                onClick={() => {
+                  updatePhoneNumbers(
+                    snapshot.phoneNumbers.filter(
+                      (_phoneNumber, currentIndex) => currentIndex !== index
+                    )
+                  );
+                }}
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+          <div className="draft-list-footer">
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => {
+                updatePhoneNumbers([...snapshot.phoneNumbers, ""]);
               }}
-            />
-          </label>
+            >
+              Ajouter un numéro de téléphone
+            </button>
+          </div>
         </div>
       </fieldset>
 
-            <fieldset>
-        <legend>Parentés RP</legend>
+      <fieldset>
+        <legend>Parentés</legend>
         <div className="relationship-draft-list">
           {snapshot.relationships.map((relationship, index) => (
             <div
@@ -294,31 +344,33 @@ export function CharacterSnapshotForm({
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => {
-              const defaultCharacterId = availableCharacterOptions[0]?.id ?? "";
+          <div className="draft-list-footer">
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => {
+                const defaultCharacterId = availableCharacterOptions[0]?.id ?? "";
 
-              if (!defaultCharacterId) {
-                return;
-              }
+                if (!defaultCharacterId) {
+                  return;
+                }
 
-              onChange({
-                ...snapshot,
-                relationships: [
-                  ...snapshot.relationships,
-                  {
-                    characterId: defaultCharacterId,
-                    type: "parent"
-                  }
-                ]
-              });
-            }}
-            disabled={!availableCharacterOptions.length}
-          >
-            Ajouter un lien
-          </button>
+                onChange({
+                  ...snapshot,
+                  relationships: [
+                    ...snapshot.relationships,
+                    {
+                      characterId: defaultCharacterId,
+                      type: "parent"
+                    }
+                  ]
+                });
+              }}
+              disabled={!availableCharacterOptions.length}
+            >
+              Ajouter un lien
+            </button>
+          </div>
         </div>
       </fieldset>
 
@@ -344,8 +396,8 @@ export function CharacterSnapshotForm({
 
       <fieldset>
         <legend>Médias</legend>
-        <div className="form-grid">
-          <label>
+        <div className="form-grid media-grid">
+          <label className="media-primary-field">
             <span>Streamer existant</span>
             <select
               value={snapshot.streamerId ?? ""}
@@ -366,7 +418,7 @@ export function CharacterSnapshotForm({
               ))}
             </select>
           </label>
-          <label>
+          <label className="media-primary-field">
             <span>Nouveau streamer</span>
             <input
               type="text"
@@ -413,24 +465,24 @@ export function CharacterSnapshotForm({
 
       <fieldset>
         <legend>Note de source</legend>
-          <label>
-            <span>Vérification</span>
-            <select
-              value={snapshot.verificationStatus}
-              onChange={(event) => {
-                onChange({
-                  ...snapshot,
-                  verificationStatus: event.target.value as VerificationStatus
-                });
-              }}
-            >
-              {Object.entries(verificationLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label>
+          <span>Vérification</span>
+          <select
+            value={snapshot.verificationStatus}
+            onChange={(event) => {
+              onChange({
+                ...snapshot,
+                verificationStatus: event.target.value as VerificationStatus
+              });
+            }}
+          >
+            {Object.entries(verificationLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="wide-field">
           <span>Note de source</span>
           <textarea

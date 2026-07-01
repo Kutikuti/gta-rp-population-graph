@@ -34,7 +34,7 @@ export type PublicCharacterSummary = {
   nickname: string | null;
   photoUrl: string | null;
   lifeStatus: LifeStatus;
-  phoneNumber: string | null;
+  phoneNumbers: string[];
   companyName: string | null;
   companyBadgeNumber: string | null;
   groupName: string | null;
@@ -187,7 +187,7 @@ export type CharacterSnapshot = {
   companyName: string | null;
   companyRank: string | null;
   companyBadgeNumber: string | null;
-  phoneNumber: string | null;
+  phoneNumbers: string[];
   streamerId: string | null;
   streamerName: string | null;
   socialLinks: SocialLinks | null;
@@ -588,7 +588,7 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
   companyName: character.companyName,
   companyRank: character.companyRank,
   companyBadgeNumber: character.companyBadgeNumber,
-  phoneNumber: character.phoneNumber,
+  phoneNumbers: character.phoneNumbers,
   streamerId: character.streamer?.id ?? null,
   streamerName: null,
   socialLinks: character.socialLinks,

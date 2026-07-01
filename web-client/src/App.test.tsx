@@ -48,7 +48,7 @@ const camille = {
   nickname: "Cami",
   photoUrl: null,
   lifeStatus: "alive",
-  phoneNumber: "555-0101",
+  phoneNumbers: ["555-0101"],
   companyName: "Blue Line Logistics",
   companyBadgeNumber: "BL-17",
   groupName: "Quartier Nord",
@@ -75,7 +75,7 @@ const ines = {
   lastName: "Morel",
   fullName: "Ines Morel",
   nickname: null,
-  phoneNumber: null,
+  phoneNumbers: [],
   streamer: null,
   verificationStatus: "to_check"
 };

@@ -1,4 +1,4 @@
-import { type Includeable, Op, type WhereOptions } from "sequelize";
+import { cast, col, type Includeable, Op, type WhereOptions, where } from "sequelize";
 import type {
   DataSource,
   LifeStatus,
@@ -80,7 +80,7 @@ export type PublicCharacterSummary = {
   nickname: string | null;
   photoUrl: string | null;
   lifeStatus: LifeStatus;
-  phoneNumber: string | null;
+  phoneNumbers: string[];
   companyName: string | null;
   companyBadgeNumber: string | null;
   groupName: string | null;
@@ -241,7 +241,7 @@ const serializeCharacterSummary = (
   nickname: character.nickname,
   photoUrl: character.photoUrl,
   lifeStatus: character.lifeStatus,
-  phoneNumber: character.phoneNumber,
+  phoneNumbers: character.phoneNumbers ?? [],
   companyName: character.companyName,
   companyBadgeNumber: character.companyBadgeNumber,
   groupName: character.groupName,
@@ -334,7 +334,7 @@ const searchWhere = (q: string): WhereOptions => {
       { firstName: { [Op.iLike]: like } },
       { lastName: { [Op.iLike]: like } },
       { nickname: { [Op.iLike]: like } },
-      { phoneNumber: { [Op.iLike]: like } },
+      where(cast(col("Character.phone_numbers"), "text"), { [Op.iLike]: like }),
       { companyName: { [Op.iLike]: like } },
       { companyRank: { [Op.iLike]: like } },
       { companyBadgeNumber: { [Op.iLike]: like } },

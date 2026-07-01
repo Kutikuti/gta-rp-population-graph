@@ -15,6 +15,8 @@ const emptyToNull = (value: string | null | undefined) => {
 const nullableText = (max: number) =>
   z.string().trim().max(max).nullable().optional().transform(emptyToNull);
 
+const phoneNumberSchema = z.string().trim().min(1).max(40);
+
 const dateOnly = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -76,7 +78,7 @@ export const characterSnapshotSchema = z
     companyName: nullableText(160),
     companyRank: nullableText(120),
     companyBadgeNumber: nullableText(80),
-    phoneNumber: nullableText(40),
+    phoneNumbers: z.array(phoneNumberSchema).max(10).default([]),
     streamerId: z
       .uuid()
       .nullable()

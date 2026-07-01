@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 type CharacterPhotoUploadProps = {
   currentPhotoUrl: string | null;
@@ -44,7 +44,9 @@ export function CharacterPhotoUpload({
   mode,
   onUpload
 }: CharacterPhotoUploadProps) {
+  const fileInputId = useId();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
@@ -111,20 +113,30 @@ export function CharacterPhotoUpload({
       </div>
 
       <div className="photo-upload-controls">
-        <label>
+        <div className="photo-file-field">
           <span>Importer une photo</span>
+          <div className="photo-file-input-row">
+            <label htmlFor={fileInputId} className="ghost-button photo-file-button">
+              Choisir un fichier
+            </label>
+          </div>
+          <span className="photo-file-name">{fileName ?? "Aucun fichier choisi"}</span>
           <input
+            id={fileInputId}
+            className="sr-only"
             type="file"
             accept="image/png,image/jpeg,image/webp"
             onChange={(event) => {
               const file = event.target.files?.[0] ?? null;
 
               if (!file) {
+                setFileName(null);
                 return;
               }
 
               if (file.size > maxClientPhotoBytes) {
                 setFeedback("Image trop volumineuse. Maximum 2 Mo.");
+                setFileName(file.name);
                 return;
               }
 
@@ -132,6 +144,7 @@ export function CharacterPhotoUpload({
                 URL.revokeObjectURL(fileUrl);
               }
 
+              setFileName(file.name);
               setFileUrl(URL.createObjectURL(file));
               setFeedback(null);
               setZoom(1);
@@ -139,7 +152,7 @@ export function CharacterPhotoUpload({
               setOffsetY(0);
             }}
           />
-        </label>
+        </div>
 
         {fileUrl ? (
           <div className="photo-crop-controls">

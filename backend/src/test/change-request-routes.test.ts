@@ -63,7 +63,7 @@ const snapshot: CharacterSnapshot = {
   companyName: "Blue Line Logistics",
   companyRank: "Responsable planning",
   companyBadgeNumber: "BL-17",
-  phoneNumber: "555-0101",
+  phoneNumbers: ["555-0101"],
   streamerId: null,
   streamerName: null,
   socialLinks: null,

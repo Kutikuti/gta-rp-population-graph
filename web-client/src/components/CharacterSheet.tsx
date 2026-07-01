@@ -112,18 +112,20 @@ export function CharacterSheet({
           <dd>{lifeStatusLabels[character.lifeStatus]}</dd>
         </div>
         <div>
-          <dt>Téléphone</dt>
-          <dd>{compactValue(character.phoneNumber)}</dd>
-        </div>
-        <div>
-          <dt>Streamer</dt>
-          <dd>{compactValue(character.streamer?.publicName)}</dd>
-        </div>
-        <div>
           <dt>Naissance</dt>
           <dd>{formatDate(character.birthDate)}</dd>
         </div>
       </dl>
+
+      <section className="sheet-section">
+        <h3>Contact</h3>
+        <div className="info-list">
+          <span>
+            Téléphone :{" "}
+            {character.phoneNumbers.length ? character.phoneNumbers.join(", ") : "Non renseigné"}
+          </span>
+        </div>
+      </section>
 
       <section className="sheet-section">
         <h3>Organisation</h3>
@@ -173,7 +175,10 @@ export function CharacterSheet({
       </section>
 
       <section className="sheet-section">
-        <h3>Réseaux</h3>
+        <h3>Médias</h3>
+        <div className="info-list">
+          <span>Streamer : {compactValue(character.streamer?.publicName)}</span>
+        </div>
         <div className="link-list">
           {links.length ? (
             links.map(([platform, url]) => (

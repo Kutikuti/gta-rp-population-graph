@@ -110,7 +110,7 @@ export const characterToSnapshot = async (
     companyName: character.companyName,
     companyRank: character.companyRank,
     companyBadgeNumber: character.companyBadgeNumber,
-    phoneNumber: character.phoneNumber,
+    phoneNumbers: character.phoneNumbers ?? [],
     streamerId: character.streamerId,
     streamerName: null,
     socialLinks: character.socialLinks,
@@ -290,7 +290,7 @@ export const applySnapshot = async (
       companyName: snapshot.companyName,
       companyRank: snapshot.companyRank,
       companyBadgeNumber: snapshot.companyBadgeNumber,
-      phoneNumber: snapshot.phoneNumber,
+      phoneNumbers: snapshot.phoneNumbers,
       streamerId,
       socialLinks: snapshot.socialLinks,
       groupName: snapshot.groupName,
@@ -311,6 +311,7 @@ export const prepareSnapshotForWrite = async (
   snapshot: CharacterSnapshot
 ): Promise<CharacterSnapshot> => ({
   ...snapshot,
+  phoneNumbers: [...new Set(snapshot.phoneNumbers.map((value) => value.trim()).filter(Boolean))],
   relationships: normalizeRelationshipDrafts(snapshot.relationships),
   photoUrl: await promoteCharacterPhotoIfPending(snapshot.photoUrl)
 });

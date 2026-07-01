@@ -377,8 +377,8 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           type: DataTypes.STRING(80),
           allowNull: true
         },
-        phone_number: {
-          type: DataTypes.STRING(40),
+        phone_numbers: {
+          type: DataTypes.JSONB,
           allowNull: true
         },
         streamer_id: {
@@ -774,10 +774,6 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
     await queryInterface.addIndex("characters", ["public_slug"], {
       name: "characters_public_slug_idx",
       unique: true,
-      transaction
-    });
-    await queryInterface.addIndex("characters", ["phone_number"], {
-      name: "characters_phone_number_idx",
       transaction
     });
     await queryInterface.addIndex("characters", ["life_status"], {

@@ -24,6 +24,7 @@
 .full-page-view {
   position: fixed;
   inset: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   background:
     linear-gradient(rgba(37, 119, 191, 0.05) 1px, transparent 1px),
@@ -42,6 +43,7 @@
 .full-page-grid,
 .moderation-layout {
   width: min(1180px, 100%);
+  min-width: 0;
   margin: 0 auto;
 }
 
@@ -74,6 +76,7 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   gap: 16px;
   width: min(1180px, 100%);
+  min-width: 0;
   margin: 0 auto;
 }
 
@@ -82,6 +85,7 @@
   grid-template-columns: 260px minmax(0, 1fr) 360px;
   gap: 16px;
   width: min(1320px, 100%);
+  min-width: 0;
   margin: 0 auto;
   flex: 1;
   min-height: 0;
@@ -95,6 +99,7 @@
   border: 1px solid #123c5f;
   background: rgba(5, 16, 27, 0.94);
   padding: 16px;
+  min-width: 0;
 }
 
 .side-work-panel,
@@ -505,6 +510,19 @@
   display: grid;
 }
 
+.photo-field-wrapper {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.phone-row-field {
+  align-content: end;
+}
+
+.media-grid .media-primary-field {
+  grid-column: span 2;
+}
+
 .relationship-draft-list {
   display: grid;
   gap: 10px;
@@ -520,6 +538,11 @@
 .compact-action {
   min-height: 36px;
   white-space: nowrap;
+}
+
+.draft-list-footer {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .form-actions,
@@ -634,12 +657,46 @@
   grid-template-columns: 132px minmax(0, 1fr);
   gap: 14px;
   align-items: start;
+  width: 100%;
+  min-width: 0;
 }
 
 .photo-upload-controls {
   display: grid;
   gap: 10px;
+  width: 100%;
   min-width: 0;
+}
+
+.photo-file-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #a9c9e4;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.photo-file-input-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.photo-file-button {
+  width: auto;
+  min-width: 132px;
+  text-align: center;
+}
+
+.photo-file-name {
+  min-width: 0;
+  color: #dcefff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .photo-preview-mask {
@@ -667,14 +724,22 @@
 .photo-crop-controls {
   display: grid;
   gap: 10px;
+  width: 100%;
+  min-width: 0;
 }
 
 .photo-crop-controls label {
   display: grid;
   gap: 5px;
+  width: 100%;
+  min-width: 0;
 }
 
 .photo-crop-controls input[type="range"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
 }
 
@@ -688,7 +753,8 @@
   color: #7fd7ad;
   font-size: 0.78rem;
   font-weight: 800;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .detail-heading {

@@ -11,7 +11,7 @@ const character: PublicCharacterDetail = {
   nickname: null,
   photoUrl: null,
   lifeStatus: "alive",
-  phoneNumber: null,
+  phoneNumbers: [],
   companyName: null,
   companyBadgeNumber: null,
   groupName: null,

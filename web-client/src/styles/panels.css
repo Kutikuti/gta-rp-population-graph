@@ -103,6 +103,12 @@
   gap: 10px;
 }
 
+.panel-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .panel-heading-tight {
   margin-top: 4px;
 }

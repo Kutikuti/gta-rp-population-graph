@@ -1351,11 +1351,15 @@ Plan d'implementation propose :
 
 1. Reprise de la fiche personnage et du formulaire d'edition
    - remettre en ordre les champs pour ameliorer la lecture ;
-   - clarifier les blocs metier, police, groupe, medias et relations ;
-   - ajouter la zone SAMD ;
-   - ajouter la region police nord/sud ;
+   - garder un ordre stable et lisible du formulaire, avec verification et
+     note de source regroupees en fin de parcours ;
+   - clarifier les blocs organisation, groupe, medias et relations ;
    - preparer le support de plusieurs numeros de telephone par personnage,
      sans casser moderation, import et affichage public.
+   - avancement 2026-07-01 : support des plusieurs numeros en cours de place
+     cote schema initial + migration locale, snapshots, API publique, fiche
+     publique et formulaire d'edition ; resteront a verifier les retouches UX
+     fines du panneau et, plus tard, les imports Notion si la source evolue.
 2. Ameliorations graphe et preferences locales
    - enregistrer une vue par defaut regroupee par groupe ;
    - ajouter des preferences locales d'affichage ;
@@ -1405,12 +1409,19 @@ Fiche personnage :
 
 - Remettre en ordre les champs de la fiche pour ameliorer la lecture et la
   comparaison rapide.
+- Conserver un ordre explicite du formulaire d'edition : identite, statuts,
+  organisation, contact, photo, medias, parentes RP, puis note de source avec
+  verification.
 - Permettre de rattacher plusieurs numeros de telephone a une meme personne,
   avec un affichage et une edition qui restent lisibles dans la fiche et le
   workflow de moderation.
-- Ajouter une zone SAMD dediee dans la fiche personnage.
-- Ajouter la region police nord/sud dans la zone police de la fiche personnage.
-- Clarifier les zones metier, police, groupe, medias et relations afin que les
+- Etat 2026-07-01 : structure `phoneNumbers` en liste cote backend/frontend,
+  recherche publique compatible, fallback legacy prevu pour d'anciennes
+  snapshots importees, aucun besoin specifique detecte cote Notion a ce stade.
+- Requalifier les besoins historiquement lies a la police pour qu'ils restent
+  coherents avec le modele `entreprise / grade / matricule`, sans recreer de
+  champs morts.
+- Clarifier les zones organisation, groupe, medias et relations afin que les
   informations importees et les informations editees restent faciles a relire.
 
 Graphe :

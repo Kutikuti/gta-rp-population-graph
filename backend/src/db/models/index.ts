@@ -195,7 +195,7 @@ export class Character extends Model<
   declare companyName: string | null;
   declare companyRank: string | null;
   declare companyBadgeNumber: string | null;
-  declare phoneNumber: string | null;
+  declare phoneNumbers: string[] | null;
   declare streamerId: ForeignKey<Streamer["id"]> | null;
   declare socialLinks: SocialLinks | null;
   declare groupName: string | null;
@@ -592,7 +592,7 @@ export const initModels = (sequelize: Sequelize) => {
       companyName: DataTypes.STRING(160),
       companyRank: DataTypes.STRING(120),
       companyBadgeNumber: DataTypes.STRING(80),
-      phoneNumber: DataTypes.STRING(40),
+      phoneNumbers: DataTypes.JSONB,
       streamerId: DataTypes.UUID,
       socialLinks: DataTypes.JSONB,
       groupName: DataTypes.STRING(160),
@@ -623,7 +623,6 @@ export const initModels = (sequelize: Sequelize) => {
       indexes: [
         { fields: ["public_slug"], unique: true },
         { fields: ["first_name", "last_name"] },
-        { fields: ["phone_number"] },
         { fields: ["life_status"] },
         { fields: ["verification_status"] }
       ]

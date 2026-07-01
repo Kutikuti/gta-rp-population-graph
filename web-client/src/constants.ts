@@ -50,7 +50,7 @@ export const characterSnapshotFieldLabels: Record<keyof CharacterSnapshot, strin
   companyName: "Entreprise",
   companyRank: "Grade",
   companyBadgeNumber: "Matricule",
-  phoneNumber: "Téléphone",
+  phoneNumbers: "Téléphones",
   streamerId: "Streamer",
   streamerName: "Nouveau streamer",
   socialLinks: "Réseaux sociaux",

@@ -162,7 +162,7 @@ export class SequelizeAdminNotionImportService {
             companyName: candidate.companyName,
             companyRank: candidate.companyRank,
             companyBadgeNumber: candidate.companyBadgeNumber,
-            phoneNumber: candidate.phoneNumber,
+            phoneNumbers: candidate.phoneNumbers,
             streamerId: null,
             socialLinks: candidate.socialLinks,
             groupName: candidate.groupName,
@@ -226,9 +226,9 @@ export class SequelizeAdminNotionImportService {
       );
       setChange(
         changes,
-        "phoneNumber",
-        created ? null : character.phoneNumber,
-        candidate.phoneNumber
+        "phoneNumbers",
+        created ? [] : (character.phoneNumbers ?? []),
+        candidate.phoneNumbers
       );
       setChange(
         changes,
@@ -294,7 +294,7 @@ export class SequelizeAdminNotionImportService {
           companyName: candidate.companyName,
           companyRank: candidate.companyRank,
           companyBadgeNumber: candidate.companyBadgeNumber,
-          phoneNumber: candidate.phoneNumber,
+          phoneNumbers: candidate.phoneNumbers,
           streamerId,
           socialLinks: candidate.socialLinks,
           groupName: candidate.groupName,

@@ -96,7 +96,8 @@ Principes :
 # Fonctionnalites MVP
 
 - Consultation anonyme des personnages.
-- Recherche par nom, prenom, surnom, telephone, entreprise, grade, matricule,
+- Recherche par nom, prenom, surnom, un ou plusieurs numeros de telephone,
+  entreprise, grade, matricule,
   streamer, tag et statut vital.
 - Fiche personnage detaillee.
 - URL partageable vers une fiche precise, ouvrant la vue publique avec le
@@ -198,8 +199,9 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
   `Proposer` pour un utilisateur simple, `Modifier` pour un moderateur ou un
   administrateur dont la modification est appliquee directement.
 - Dans l'edition d'une fiche, les champs doivent etre regroupes avec clarte :
-  bloc identite, organisation, contact, photo, medias, publication et parentes
-  RP. Eviter de melanger `streamer` ou `verification` dans un bloc `Statuts`.
+  bloc identite, statuts, organisation, contact, photo, medias, parentes RP
+  et note de source. La verification reste proche de la note de source plutot
+  que melangee au bloc `Statuts`.
 - Le bloc organisation d'une fiche personnage repose sur trois champs
   facultatifs et unifies pour tous les metiers : `Entreprise`, `Grade` et
   `Matricule`, auxquels s'ajoutent `Groupe` et `Quartier`. Ne pas reintroduire
@@ -208,7 +210,11 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
   avec les types controles `parent`, `enfant`, `fratrie`, `couple`.
 - Le bloc medias doit permettre soit de rattacher un streamer existant, soit de
   proposer un nouveau streamer par son nom public, ainsi que d'editer les liens
-  publics associes.
+  publics associes. Ce bloc pourra aussi accueillir un lien Discord public pour
+  un streamer quand ce besoin sera implemente.
+- Une fiche personnage peut contenir plusieurs numeros de telephone. L'edition,
+  l'affichage public, la moderation et les differences d'historique doivent
+  rester lisibles avec cette structure.
 - La photo d'un personnage est affichee dans un masque rond, notamment dans les
   noeuds du graphe. L'interface d'upload doit permettre de recadrer une image
   carree ou quasi-carree en deplacant/zoomant l'image sous un masque rond avant

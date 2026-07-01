@@ -72,7 +72,7 @@ const camille: PublicCharacterSummary = {
   nickname: "Cami",
   photoUrl: null,
   lifeStatus: "alive",
-  phoneNumber: "555-0101",
+  phoneNumbers: ["555-0101"],
   companyName: "Blue Line Logistics",
   companyBadgeNumber: "BL-17",
   groupName: "Quartier Nord",
@@ -99,7 +99,7 @@ const malik: PublicCharacterSummary = {
   lastName: "Serrano",
   fullName: "Malik Serrano",
   nickname: "Serrano",
-  phoneNumber: "555-0102",
+  phoneNumbers: ["555-0102"],
   companyBadgeNumber: "BL-23",
   streamer: {
     id: "00000000-0000-4000-8000-000000000202",
@@ -201,11 +201,15 @@ const filterCharacters = (filters: CharacterMatchFilters) =>
       ? [
           character.fullName,
           character.nickname,
-          character.phoneNumber,
+          character.phoneNumbers,
           character.companyBadgeNumber
         ]
           .filter(Boolean)
-          .some((value) => value?.toLocaleLowerCase("fr-FR").includes(query))
+          .some((value) =>
+            Array.isArray(value)
+              ? value.some((item) => item.toLocaleLowerCase("fr-FR").includes(query))
+              : value?.toLocaleLowerCase("fr-FR").includes(query)
+          )
       : true;
     const matchesLifeStatus = filters.lifeStatus
       ? character.lifeStatus === filters.lifeStatus

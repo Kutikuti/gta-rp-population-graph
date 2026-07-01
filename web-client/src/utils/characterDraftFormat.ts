@@ -59,6 +59,10 @@ export const formatCharacterSnapshotValue = (
     return items.length ? items.join(", ") : "Aucune parenté";
   }
 
+  if (field === "phoneNumbers" && Array.isArray(value)) {
+    return value.length ? value.join(", ") : "Non renseigné";
+  }
+
   if (field === "socialLinks" && typeof value === "object") {
     const entries = Object.entries(value as Record<string, string>).filter(([, url]) =>
       Boolean(url)

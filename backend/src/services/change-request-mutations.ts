@@ -34,7 +34,7 @@ const createCharacterFromSnapshot = async (
       companyName: snapshot.companyName,
       companyRank: snapshot.companyRank,
       companyBadgeNumber: snapshot.companyBadgeNumber,
-      phoneNumber: snapshot.phoneNumber,
+      phoneNumbers: snapshot.phoneNumbers,
       streamerId: null,
       socialLinks: snapshot.socialLinks,
       groupName: snapshot.groupName,
