@@ -2,6 +2,7 @@ import type { CharacterFilters, CharacterSnapshot, LifeStatus, VerificationStatu
 
 export const initialFilters: CharacterFilters = {
   q: "",
+  company: "",
   lifeStatus: "",
   tag: "",
   streamer: "",
@@ -46,20 +47,17 @@ export const characterSnapshotFieldLabels: Record<keyof CharacterSnapshot, strin
   lifeStatus: "Statut vital",
   deathOrDepartureDate: "Date de décès ou départ",
   photoUrl: "Photo",
-  businessName: "Entreprise",
-  businessRank: "Échelon entreprise",
-  businessBadgeNumber: "Matricule entreprise",
+  companyName: "Entreprise",
+  companyRank: "Grade",
+  companyBadgeNumber: "Matricule",
   phoneNumber: "Téléphone",
   streamerId: "Streamer",
   streamerName: "Nouveau streamer",
   socialLinks: "Réseaux sociaux",
   groupName: "Groupe",
-  groupRole: "Rôle groupe",
   district: "Quartier",
   isRpDeath: "Mort RP",
   relationships: "Parentés RP",
-  policeRank: "Grade police",
-  policeBadgeNumber: "Matricule police",
   previousCharacters: "Anciens personnages",
   verificationStatus: "Vérification",
   sourceNote: "Note de source"
@@ -67,5 +65,10 @@ export const characterSnapshotFieldLabels: Record<keyof CharacterSnapshot, strin
 
 export const isActiveFilters = (filters: CharacterFilters) =>
   Boolean(
-    filters.q || filters.lifeStatus || filters.tag || filters.streamer || filters.verificationStatus
+    filters.q ||
+      filters.company ||
+      filters.lifeStatus ||
+      filters.tag ||
+      filters.streamer ||
+      filters.verificationStatus
   );

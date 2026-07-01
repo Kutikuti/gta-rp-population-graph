@@ -73,12 +73,9 @@ const camille: PublicCharacterSummary = {
   photoUrl: null,
   lifeStatus: "alive",
   phoneNumber: "555-0101",
-  businessName: "Blue Line Logistics",
-  businessBadgeNumber: "BL-17",
-  policeRank: null,
-  policeBadgeNumber: null,
+  companyName: "Blue Line Logistics",
+  companyBadgeNumber: "BL-17",
   groupName: "Quartier Nord",
-  groupRole: "Mediatrice",
   district: "Nord",
   verificationStatus: "community",
   dataSource: "seed",
@@ -103,7 +100,7 @@ const malik: PublicCharacterSummary = {
   fullName: "Malik Serrano",
   nickname: "Serrano",
   phoneNumber: "555-0102",
-  businessBadgeNumber: "BL-23",
+  companyBadgeNumber: "BL-23",
   streamer: {
     id: "00000000-0000-4000-8000-000000000202",
     publicName: "AxleLive",
@@ -119,7 +116,7 @@ const camilleDetail: PublicCharacterDetail = {
   birthDate: null,
   deathOrDepartureDate: null,
   photoUrl: null,
-  businessRank: "Responsable planning",
+  companyRank: "Responsable planning",
   socialLinks: null,
   twitchLiveStatus: "live",
   isRpDeath: false,
@@ -205,13 +202,16 @@ const filterCharacters = (filters: CharacterMatchFilters) =>
           character.fullName,
           character.nickname,
           character.phoneNumber,
-          character.businessBadgeNumber
+          character.companyBadgeNumber
         ]
           .filter(Boolean)
           .some((value) => value?.toLocaleLowerCase("fr-FR").includes(query))
       : true;
     const matchesLifeStatus = filters.lifeStatus
       ? character.lifeStatus === filters.lifeStatus
+      : true;
+    const matchesCompany = filters.company
+      ? character.companyName?.toLocaleLowerCase("fr-FR").includes(filters.company.toLowerCase())
       : true;
     const matchesTag = filters.tag
       ? character.tags.some((tag) => tag.name === filters.tag || tag.id === filters.tag)
@@ -221,7 +221,7 @@ const filterCharacters = (filters: CharacterMatchFilters) =>
         character.streamer?.id === filters.streamer
       : true;
 
-    return matchesQuery && matchesLifeStatus && matchesTag && matchesStreamer;
+    return matchesQuery && matchesLifeStatus && matchesCompany && matchesTag && matchesStreamer;
   });
 
 const createFixtureService = (): PublicDataService => ({

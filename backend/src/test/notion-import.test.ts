@@ -215,21 +215,21 @@ describe("notion import mapping", () => {
       lifeStatus: "alive",
       deathOrDepartureDate: null,
       isRpDeath: false,
-      policeRank: "Rookie",
-      policeBadgeNumber: "99",
+      companyRank: "Rookie",
+      companyBadgeNumber: "99",
       tags: []
     });
     expect(deceasedResult.mapped).toMatchObject({
       lifeStatus: "deceased",
       deathOrDepartureDate: "2026-02-12",
       isRpDeath: true,
-      policeRank: "Député 2",
-      policeBadgeNumber: "110",
+      companyRank: "Député 2",
+      companyBadgeNumber: "110",
       tags: []
     });
     expect(groupResult.mapped.tags).toEqual(["Richman Lane", "6block"]);
-    expect(groupResult.mapped.policeRank).toBeNull();
-    expect(groupResult.mapped.policeBadgeNumber).toBeNull();
+    expect(groupResult.mapped.companyRank).toBe("Etudiant,Brancardier");
+    expect(groupResult.mapped.companyBadgeNumber).toBeNull();
     expect(deceasedResult.report.recognizedFields).toEqual(
       expect.arrayContaining(["Date", "Famille", "Groupes", "Statut vital"])
     );
@@ -376,7 +376,7 @@ describe("notion import mapping", () => {
         lifeStatus: "alive",
         streamerPublicName: "AdaLive",
         socialLinks: { twitch: "https://twitch.example/adalive" },
-        businessName: "Laboratoire",
+        companyName: "Laboratoire",
         groupName: "Analystes",
         tags: ["Famille", "Tech"],
         photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"]
@@ -390,7 +390,7 @@ describe("notion import mapping", () => {
       lifeStatus: "alive",
       streamer: "AdaLive",
       twitch: "https://twitch.example/adalive",
-      business: "Laboratoire",
+      company: "Laboratoire",
       group: "Analystes",
       tags: "Famille, Tech",
       photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"],

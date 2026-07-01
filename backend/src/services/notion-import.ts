@@ -36,7 +36,7 @@ export type NotionImportPreviewItem = {
   lifeStatus: string | null;
   streamer: string | null;
   twitch: string | null;
-  business: string | null;
+  company: string | null;
   group: string | null;
   tags: string;
   photoReferences: string[];
@@ -331,7 +331,7 @@ export const previewNotionImportEntry = (
     lifeStatus: snapshotString(snapshot, "lifeStatus"),
     streamer: snapshotString(snapshot, "streamerPublicName"),
     twitch: typeof socialLinks.twitch === "string" ? socialLinks.twitch : null,
-    business: snapshotString(snapshot, "businessName"),
+    company: snapshotString(snapshot, "companyName"),
     group: snapshotString(snapshot, "groupName"),
     tags,
     photoReferences,

@@ -41,6 +41,7 @@ export type Pagination = {
 
 export type CharacterListFilters = Pagination & {
   q?: string;
+  company?: string;
   lifeStatus?: LifeStatus;
   tag?: string;
   streamer?: string;
@@ -80,12 +81,9 @@ export type PublicCharacterSummary = {
   photoUrl: string | null;
   lifeStatus: LifeStatus;
   phoneNumber: string | null;
-  businessName: string | null;
-  businessBadgeNumber: string | null;
-  policeRank: string | null;
-  policeBadgeNumber: string | null;
+  companyName: string | null;
+  companyBadgeNumber: string | null;
   groupName: string | null;
-  groupRole: string | null;
   district: string | null;
   verificationStatus: VerificationStatus;
   dataSource: DataSource;
@@ -117,7 +115,7 @@ export type PublicCharacterDetail = PublicCharacterSummary & {
   birthDate: string | null;
   deathOrDepartureDate: string | null;
   photoUrl: string | null;
-  businessRank: string | null;
+  companyRank: string | null;
   socialLinks: SocialLinks | null;
   twitchLiveStatus: TwitchLiveStatus;
   isRpDeath: boolean;
@@ -244,12 +242,9 @@ const serializeCharacterSummary = (
   photoUrl: character.photoUrl,
   lifeStatus: character.lifeStatus,
   phoneNumber: character.phoneNumber,
-  businessName: character.businessName,
-  businessBadgeNumber: character.businessBadgeNumber,
-  policeRank: character.policeRank,
-  policeBadgeNumber: character.policeBadgeNumber,
+  companyName: character.companyName,
+  companyBadgeNumber: character.companyBadgeNumber,
   groupName: character.groupName,
-  groupRole: character.groupRole,
   district: character.district,
   verificationStatus: character.verificationStatus,
   dataSource: character.dataSource,
@@ -294,7 +289,7 @@ const serializeCharacterDetail = (
   birthDate: character.birthDate,
   deathOrDepartureDate: character.deathOrDepartureDate,
   photoUrl: character.photoUrl,
-  businessRank: character.businessRank,
+  companyRank: character.companyRank,
   socialLinks: character.socialLinks,
   twitchLiveStatus,
   isRpDeath: character.isRpDeath,
@@ -340,19 +335,17 @@ const searchWhere = (q: string): WhereOptions => {
       { lastName: { [Op.iLike]: like } },
       { nickname: { [Op.iLike]: like } },
       { phoneNumber: { [Op.iLike]: like } },
-      { businessName: { [Op.iLike]: like } },
-      { businessBadgeNumber: { [Op.iLike]: like } },
+      { companyName: { [Op.iLike]: like } },
+      { companyRank: { [Op.iLike]: like } },
+      { companyBadgeNumber: { [Op.iLike]: like } },
       { groupName: { [Op.iLike]: like } },
-      { groupRole: { [Op.iLike]: like } },
-      { district: { [Op.iLike]: like } },
-      { policeRank: { [Op.iLike]: like } },
-      { policeBadgeNumber: { [Op.iLike]: like } }
+      { district: { [Op.iLike]: like } }
     ]
   };
 };
 
 const characterWhere = (
-  filters: Pick<CharacterListFilters, "lifeStatus" | "q" | "verificationStatus">
+  filters: Pick<CharacterListFilters, "company" | "lifeStatus" | "q" | "verificationStatus">
 ): WhereOptions => {
   const where: WhereOptions = {};
 
@@ -362,6 +355,10 @@ const characterWhere = (
 
   if (filters.lifeStatus) {
     Object.assign(where, { lifeStatus: filters.lifeStatus });
+  }
+
+  if (filters.company) {
+    Object.assign(where, { companyName: { [Op.iLike]: `%${filters.company}%` } });
   }
 
   if (filters.verificationStatus) {

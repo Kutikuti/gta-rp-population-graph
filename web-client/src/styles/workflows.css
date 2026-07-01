@@ -452,6 +452,18 @@
   gap: 10px;
 }
 
+.organization-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.organization-grid > label:nth-child(-n + 3) {
+  grid-column: span 2;
+}
+
+.organization-grid > label:nth-child(n + 4) {
+  grid-column: span 3;
+}
+
 .snapshot-form label,
 .moderation-actions label {
   display: grid;
@@ -804,6 +816,7 @@
   .admin-row,
   .admin-form,
   .form-grid,
+  .organization-grid,
   .photo-upload-panel,
   .diff-row,
   .profile-sso-actions,

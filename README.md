@@ -94,7 +94,7 @@ npm run dev
 Checks utiles :
 
 ```bash
-./run-all-checks.sh
+./script/run-all-checks.sh
 ```
 
 ou detail par application :
@@ -143,7 +143,7 @@ npm run db:migrate:executed
 
 | Commande | Usage |
 | --- | --- |
-| `./run-all-checks.sh` | Lance les builds, checks et tests backend puis frontend avec une seule commande. |
+| `./script/run-all-checks.sh` | Lance les builds, checks et tests backend puis frontend avec une seule commande. |
 
 ### Backend
 

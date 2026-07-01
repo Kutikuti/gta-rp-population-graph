@@ -192,18 +192,15 @@ export class Character extends Model<
   declare lifeStatus: LifeStatus;
   declare deathOrDepartureDate: string | null;
   declare photoUrl: string | null;
-  declare businessName: string | null;
-  declare businessRank: string | null;
-  declare businessBadgeNumber: string | null;
+  declare companyName: string | null;
+  declare companyRank: string | null;
+  declare companyBadgeNumber: string | null;
   declare phoneNumber: string | null;
   declare streamerId: ForeignKey<Streamer["id"]> | null;
   declare socialLinks: SocialLinks | null;
   declare groupName: string | null;
-  declare groupRole: string | null;
   declare district: string | null;
   declare isRpDeath: boolean;
-  declare policeRank: string | null;
-  declare policeBadgeNumber: string | null;
   declare previousCharacters: JsonObject | null;
   declare verificationStatus: VerificationStatus;
   declare dataSource: DataSource;
@@ -592,22 +589,19 @@ export const initModels = (sequelize: Sequelize) => {
       },
       deathOrDepartureDate: DataTypes.DATEONLY,
       photoUrl: DataTypes.TEXT,
-      businessName: DataTypes.STRING(160),
-      businessRank: DataTypes.STRING(120),
-      businessBadgeNumber: DataTypes.STRING(80),
+      companyName: DataTypes.STRING(160),
+      companyRank: DataTypes.STRING(120),
+      companyBadgeNumber: DataTypes.STRING(80),
       phoneNumber: DataTypes.STRING(40),
       streamerId: DataTypes.UUID,
       socialLinks: DataTypes.JSONB,
       groupName: DataTypes.STRING(160),
-      groupRole: DataTypes.STRING(120),
       district: DataTypes.STRING(120),
       isRpDeath: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },
-      policeRank: DataTypes.STRING(120),
-      policeBadgeNumber: DataTypes.STRING(80),
       previousCharacters: DataTypes.JSONB,
       verificationStatus: {
         type: DataTypes.ENUM(...verificationStatuses),

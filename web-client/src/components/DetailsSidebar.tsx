@@ -23,9 +23,16 @@ export function DetailsSidebar({
 }: DetailsSidebarProps) {
   return (
     <aside className="details-panel" aria-label="Fiche personnage">
-      <button type="button" className="panel-icon-button details-close-button" onClick={onClose}>
-        X
-      </button>
+      {!character || isLoading ? (
+        <button
+          type="button"
+          className="panel-icon-button details-close-button"
+          aria-label="Fermer la fiche personnage"
+          onClick={onClose}
+        >
+          X
+        </button>
+      ) : null}
       {isLoading ? <LoadingBlock label="Chargement de la fiche..." /> : null}
       {!isLoading && !character ? (
         <EmptyBlock label="Fiche indisponible." />
@@ -34,6 +41,7 @@ export function DetailsSidebar({
           canEditDirectly={canEditDirectly}
           character={character}
           history={history}
+          onClose={onClose}
           onContribute={onContribute}
           onShare={onShare}
         />

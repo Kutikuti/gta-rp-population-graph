@@ -35,12 +35,9 @@ export type PublicCharacterSummary = {
   photoUrl: string | null;
   lifeStatus: LifeStatus;
   phoneNumber: string | null;
-  businessName: string | null;
-  businessBadgeNumber: string | null;
-  policeRank: string | null;
-  policeBadgeNumber: string | null;
+  companyName: string | null;
+  companyBadgeNumber: string | null;
   groupName: string | null;
-  groupRole: string | null;
   district: string | null;
   verificationStatus: VerificationStatus;
   dataSource: string;
@@ -71,7 +68,7 @@ export type PublicRelationship = {
 export type PublicCharacterDetail = PublicCharacterSummary & {
   birthDate: string | null;
   deathOrDepartureDate: string | null;
-  businessRank: string | null;
+  companyRank: string | null;
   socialLinks: SocialLinks | null;
   twitchLiveStatus: "live" | "offline" | "unknown";
   isRpDeath: boolean;
@@ -170,6 +167,7 @@ export type AuthSession =
 
 export type CharacterFilters = {
   q: string;
+  company: string;
   lifeStatus: "" | LifeStatus;
   tag: string;
   streamer: string;
@@ -186,23 +184,20 @@ export type CharacterSnapshot = {
   lifeStatus: LifeStatus;
   deathOrDepartureDate: string | null;
   photoUrl: string | null;
-  businessName: string | null;
-  businessRank: string | null;
-  businessBadgeNumber: string | null;
+  companyName: string | null;
+  companyRank: string | null;
+  companyBadgeNumber: string | null;
   phoneNumber: string | null;
   streamerId: string | null;
   streamerName: string | null;
   socialLinks: SocialLinks | null;
   groupName: string | null;
-  groupRole: string | null;
   district: string | null;
   isRpDeath: boolean;
   relationships: Array<{
     characterId: string;
     type: "parent" | "child" | "sibling" | "couple";
   }>;
-  policeRank: string | null;
-  policeBadgeNumber: string | null;
   previousCharacters: JsonObject | null;
   verificationStatus: VerificationStatus;
   sourceNote: string | null;
@@ -300,7 +295,7 @@ export type AdminNotionImportEntry = {
   lifeStatus: string | null;
   streamer: string | null;
   twitch: string | null;
-  business: string | null;
+  company: string | null;
   group: string | null;
   tags: string;
   photoReferences: string[];
@@ -464,6 +459,7 @@ const appendParam = (params: URLSearchParams, key: string, value: string) => {
 const characterFilterParams = (filters: CharacterFilters) => {
   const params = new URLSearchParams();
   appendParam(params, "q", filters.q);
+  appendParam(params, "company", filters.company);
   appendParam(params, "tag", filters.tag);
   appendParam(params, "streamer", filters.streamer);
 
@@ -589,15 +585,14 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
   lifeStatus: character.lifeStatus,
   deathOrDepartureDate: character.deathOrDepartureDate,
   photoUrl: character.photoUrl,
-  businessName: character.businessName,
-  businessRank: character.businessRank,
-  businessBadgeNumber: character.businessBadgeNumber,
+  companyName: character.companyName,
+  companyRank: character.companyRank,
+  companyBadgeNumber: character.companyBadgeNumber,
   phoneNumber: character.phoneNumber,
   streamerId: character.streamer?.id ?? null,
   streamerName: null,
   socialLinks: character.socialLinks,
   groupName: character.groupName,
-  groupRole: character.groupRole,
   district: character.district,
   isRpDeath: character.isRpDeath,
   relationships: normalizeSnapshotRelationships(
@@ -617,8 +612,6 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
               : (relationship.type as "parent" | "child" | "sibling" | "couple")
       }))
   ),
-  policeRank: character.policeRank,
-  policeBadgeNumber: character.policeBadgeNumber,
   previousCharacters: character.previousCharacters,
   verificationStatus: character.verificationStatus,
   sourceNote: character.sourceNote

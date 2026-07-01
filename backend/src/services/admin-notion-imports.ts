@@ -159,18 +159,15 @@ export class SequelizeAdminNotionImportService {
             lifeStatus: candidate.lifeStatus,
             deathOrDepartureDate: candidate.deathOrDepartureDate,
             photoUrl: null,
-            businessName: candidate.businessName,
-            businessRank: null,
-            businessBadgeNumber: null,
+            companyName: candidate.companyName,
+            companyRank: candidate.companyRank,
+            companyBadgeNumber: candidate.companyBadgeNumber,
             phoneNumber: candidate.phoneNumber,
             streamerId: null,
             socialLinks: candidate.socialLinks,
             groupName: candidate.groupName,
-            groupRole: candidate.groupRole,
             district: candidate.district,
             isRpDeath: candidate.isRpDeath,
-            policeRank: candidate.policeRank,
-            policeBadgeNumber: candidate.policeBadgeNumber,
             previousCharacters: candidate.previousCharacters,
             verificationStatus: candidate.verificationStatus,
             sourceNote: candidate.sourceNote,
@@ -235,21 +232,25 @@ export class SequelizeAdminNotionImportService {
       );
       setChange(
         changes,
-        "businessName",
-        created ? null : character.businessName,
-        candidate.businessName
+        "companyName",
+        created ? null : character.companyName,
+        candidate.companyName
       );
-      setChange(changes, "groupName", created ? null : character.groupName, candidate.groupName);
-      setChange(changes, "groupRole", created ? null : character.groupRole, candidate.groupRole);
-      setChange(changes, "district", created ? null : character.district, candidate.district);
-      setChange(changes, "isRpDeath", created ? null : character.isRpDeath, candidate.isRpDeath);
-      setChange(changes, "policeRank", created ? null : character.policeRank, candidate.policeRank);
       setChange(
         changes,
-        "policeBadgeNumber",
-        created ? null : character.policeBadgeNumber,
-        candidate.policeBadgeNumber
+        "companyRank",
+        created ? null : character.companyRank,
+        candidate.companyRank
       );
+      setChange(
+        changes,
+        "companyBadgeNumber",
+        created ? null : character.companyBadgeNumber,
+        candidate.companyBadgeNumber
+      );
+      setChange(changes, "groupName", created ? null : character.groupName, candidate.groupName);
+      setChange(changes, "district", created ? null : character.district, candidate.district);
+      setChange(changes, "isRpDeath", created ? null : character.isRpDeath, candidate.isRpDeath);
       setChange(
         changes,
         "previousCharacters",
@@ -290,16 +291,15 @@ export class SequelizeAdminNotionImportService {
           nickname: candidate.nickname,
           lifeStatus: candidate.lifeStatus,
           deathOrDepartureDate: candidate.deathOrDepartureDate,
-          businessName: candidate.businessName,
+          companyName: candidate.companyName,
+          companyRank: candidate.companyRank,
+          companyBadgeNumber: candidate.companyBadgeNumber,
           phoneNumber: candidate.phoneNumber,
           streamerId,
           socialLinks: candidate.socialLinks,
           groupName: candidate.groupName,
-          groupRole: candidate.groupRole,
           district: candidate.district,
           isRpDeath: candidate.isRpDeath,
-          policeRank: candidate.policeRank,
-          policeBadgeNumber: candidate.policeBadgeNumber,
           previousCharacters: candidate.previousCharacters,
           verificationStatus: candidate.verificationStatus,
           sourceNote: candidate.sourceNote,

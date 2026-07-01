@@ -78,7 +78,7 @@ export function NotionImportDetailPanel({
             </div>
             <div>
               <dt>Métier</dt>
-              <dd>{selectedEntry.business ?? "-"}</dd>
+              <dd>{selectedEntry.company ?? "-"}</dd>
             </div>
             <div>
               <dt>Groupe</dt>

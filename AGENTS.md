@@ -96,8 +96,8 @@ Principes :
 # Fonctionnalites MVP
 
 - Consultation anonyme des personnages.
-- Recherche par nom, prenom, surnom, telephone, streamer, matricule, tag et
-  statut vital.
+- Recherche par nom, prenom, surnom, telephone, entreprise, grade, matricule,
+  streamer, tag et statut vital.
 - Fiche personnage detaillee.
 - URL partageable vers une fiche precise, ouvrant la vue publique avec le
   graphe centre sur le personnage et sa fiche ouverte.
@@ -108,7 +108,10 @@ Principes :
 - Relations typees strictement RP entre personnages et limitees au noyau
   familial/couple : parent, enfant, fratrie, couple.
 - Les appartenances metier, police, quartier ou groupe restent des champs de
-  fiche ou des tags, pas des relations du graphe public.
+  fiche ou des tags, pas des relations du graphe public. Les metiers et
+  fonctions doivent converger vers un bloc unifie `entreprise / grade /
+  matricule`, y compris pour la police, la medecine ou toute autre
+  organisation.
 - A moyen terme, certaines relations supplementaires pourront exister sans etre
   affichees dans le graphe public, uniquement dans la fiche personnage. Le
   modele de relations doit donc pouvoir evoluer au-dela des seules relations
@@ -197,6 +200,10 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 - Dans l'edition d'une fiche, les champs doivent etre regroupes avec clarte :
   bloc identite, organisation, contact, photo, medias, publication et parentes
   RP. Eviter de melanger `streamer` ou `verification` dans un bloc `Statuts`.
+- Le bloc organisation d'une fiche personnage repose sur trois champs
+  facultatifs et unifies pour tous les metiers : `Entreprise`, `Grade` et
+  `Matricule`, auxquels s'ajoutent `Groupe` et `Quartier`. Ne pas reintroduire
+  de champs dedies type police ou role de groupe qui feraient doublon.
 - Les parentes RP doivent etre editables depuis la fiche via un bloc dedie,
   avec les types controles `parent`, `enfant`, `fratrie`, `couple`.
 - Le bloc medias doit permettre soit de rattacher un streamer existant, soit de

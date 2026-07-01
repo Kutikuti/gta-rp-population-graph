@@ -92,7 +92,7 @@ const notionImportDetail: AdminNotionImportDetail = {
       lifeStatus: "alive",
       streamer: "AdaLive",
       twitch: "https://twitch.example/adalive",
-      business: "Laboratoire",
+      company: "Laboratoire",
       group: "Analystes",
       tags: "Tech",
       photoReferences: ["https://secure.notion-static.com/ada-avatar.webp"],

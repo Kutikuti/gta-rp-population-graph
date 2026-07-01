@@ -131,23 +131,27 @@ Informations attendues :
 - Photo optionnelle, stockee comme fichier controle par le serveur, avec
   metadonnees de cadrage ou rendu final adapte au masque rond du graphe.
 - Entreprise.
-- Echelon entreprise.
-- Matricule entreprise.
+- Grade.
+- Matricule.
 - Telephone.
 - Bloc medias distinct dans le formulaire d'edition, avec streamer existant,
   proposition de nouveau streamer si absent, photo et liens publics.
 - Streamer associe.
 - Reseaux du streamer ou du personnage : Twitch, Kick, YouTube, Instagram,
   TikTok.
-- Groupe, role et quartier.
+- Groupe et quartier.
 - Mort RP.
-- Grade police et matricule police.
 - Anciens personnages V1, V2, V3, V4 et V5.
 - Tags.
 - Relations.
 - Statut de verification.
 
 Tous les champs sauf nom et prenom peuvent etre inconnus ou a verifier.
+
+Le modele de fiche a ete simplifie pour les organisations : tous les metiers,
+y compris police, medecine et autres institutions, passent par un trio de
+champs facultatifs unifies `Entreprise / Grade / Matricule`. Les anciens
+champs dedies type police ou role de groupe ne doivent pas revenir.
 
 ### Streamer
 
@@ -1369,6 +1373,7 @@ Plan d'implementation propose :
    - clarifier la distinction streamer / reseaux publics / plateformes ;
    - mieux gerer le live Twitch, les fiches liees et l'absence de streamer
      explicite ;
+   - permettre aussi de renseigner un lien Discord public pour un streamer ;
    - eviter les zones grises entre donnees importees, editees et calculees.
 6. Reprise du module relations
    - distinguer clairement relations visibles dans le graphe et relations
@@ -1432,6 +1437,7 @@ Streamers :
 - Refonte du module streamer pour mieux gerer les plateformes, les liens
   publics, le live Twitch, les fiches liees et les cas ou aucun streamer n'est
   explicitement renseigne.
+- Ajouter la possibilite de renseigner un lien Discord public pour un streamer.
 
 Relations :
 

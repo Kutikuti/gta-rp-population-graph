@@ -46,6 +46,17 @@ export function FiltersPanel({
       </label>
 
       <label className="field">
+        <span>Entreprise</span>
+        <input
+          value={filters.company}
+          onChange={(event) => {
+            onChange("company", event.target.value);
+          }}
+          placeholder="Entreprise"
+        />
+      </label>
+
+      <label className="field">
         <span>Statut vital</span>
         <select
           value={filters.lifeStatus}

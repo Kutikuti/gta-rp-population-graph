@@ -57,7 +57,7 @@ try {
         nom: candidate.fullName,
         vie: candidate.lifeStatus,
         twitch: candidate.twitch ?? candidate.streamer,
-        metier: candidate.business,
+        metier: candidate.company,
         groupe: candidate.group,
         tags: candidate.tags,
         pageId: candidate.pageId

@@ -1,14 +1,13 @@
 import { createHash } from "node:crypto";
 import type { Request } from "express";
 import { Counter, collectDefaultMetrics, Gauge, Histogram, Registry } from "prom-client";
-
+import { Op } from "sequelize";
 import {
   changeRequestStatuses,
   changeRequestTypes,
   notionImportEntryStatuses
 } from "../db/enums.js";
 import { models } from "../db/index.js";
-import { Op } from "sequelize";
 
 export const metricsRegistry = new Registry();
 

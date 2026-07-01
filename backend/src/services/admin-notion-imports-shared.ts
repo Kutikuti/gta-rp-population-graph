@@ -55,13 +55,12 @@ export type ImportEntryCandidate = {
   phoneNumber: string | null;
   streamerPublicName: string | null;
   socialLinks: Record<string, string> | null;
-  businessName: string | null;
+  companyName: string | null;
+  companyRank: string | null;
+  companyBadgeNumber: string | null;
   groupName: string | null;
-  groupRole: string | null;
   district: string | null;
   isRpDeath: boolean;
-  policeRank: string | null;
-  policeBadgeNumber: string | null;
   previousCharacters: JsonObject | null;
   verificationStatus: VerificationStatus;
   sourceNote: string | null;
@@ -212,13 +211,12 @@ export const importCandidateFromEntry = (entry: NotionImportEntry): ImportEntryC
       socialLinksRecord && Object.keys(socialLinksRecord).length > 0
         ? (socialLinksRecord as Record<string, string>)
         : null,
-    businessName: stringValue(snapshot.businessName),
+    companyName: stringValue(snapshot.companyName),
+    companyRank: stringValue(snapshot.companyRank),
+    companyBadgeNumber: stringValue(snapshot.companyBadgeNumber),
     groupName: stringValue(snapshot.groupName),
-    groupRole: stringValue(snapshot.groupRole),
     district: stringValue(snapshot.district),
     isRpDeath: booleanValue(snapshot.isRpDeath),
-    policeRank: stringValue(snapshot.policeRank),
-    policeBadgeNumber: stringValue(snapshot.policeBadgeNumber),
     previousCharacters: jsonRecordValue(snapshot.previousCharacters),
     verificationStatus,
     sourceNote: stringValue(snapshot.sourceNote),

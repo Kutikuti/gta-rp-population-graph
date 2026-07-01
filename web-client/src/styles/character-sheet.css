@@ -3,6 +3,19 @@
   gap: 16px;
 }
 
+.sheet-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sheet-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sheet-header {
   display: flex;
   align-items: flex-start;
@@ -33,11 +46,18 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+  align-items: center;
 }
 
 .sheet-header h2 {
   margin-bottom: 5px;
   font-size: 1.18rem;
+}
+
+.sheet-alias {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sheet-header p,
@@ -46,6 +66,19 @@
 .history-row small {
   color: #83a6c4;
   font-size: 0.78rem;
+}
+
+.sheet-icon-button {
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+}
+
+.sheet-action-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 
 .verification-verified {

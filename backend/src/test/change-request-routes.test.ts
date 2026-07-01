@@ -60,20 +60,17 @@ const snapshot: CharacterSnapshot = {
   lifeStatus: "alive",
   deathOrDepartureDate: null,
   photoUrl: null,
-  businessName: "Blue Line Logistics",
-  businessRank: "Responsable planning",
-  businessBadgeNumber: "BL-17",
+  companyName: "Blue Line Logistics",
+  companyRank: "Responsable planning",
+  companyBadgeNumber: "BL-17",
   phoneNumber: "555-0101",
   streamerId: null,
   streamerName: null,
   socialLinks: null,
   groupName: "Quartier Nord",
-  groupRole: "Mediatrice",
   district: "Nord",
   isRpDeath: false,
   relationships: [],
-  policeRank: null,
-  policeBadgeNumber: null,
   previousCharacters: null,
   verificationStatus: "community",
   sourceNote: "Correction proposee."
@@ -195,6 +192,11 @@ class FixtureChangeRequestService implements ChangeRequestService {
       proposedSnapshot: input.proposedSnapshot,
       searchContext: {
         q: `${input.proposedSnapshot.firstName} ${input.proposedSnapshot.lastName}`,
+        company: "",
+        lifeStatus: "",
+        tag: "",
+        streamer: "",
+        verificationStatus: "",
         matchTotal: 0
       }
     };
@@ -350,6 +352,7 @@ describe("change request routes", () => {
         },
         searchContext: {
           q: "Nadia Soler",
+          company: "",
           lifeStatus: "",
           tag: "",
           streamer: "",
@@ -379,6 +382,11 @@ describe("change request routes", () => {
         proposedSnapshot: snapshot,
         searchContext: {
           q: "Camille Morel",
+          company: "",
+          lifeStatus: "",
+          tag: "",
+          streamer: "",
+          verificationStatus: "",
           matchTotal: 0
         }
       });

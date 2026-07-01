@@ -60,25 +60,6 @@ const fieldGroups: Array<{
       { key: "nickname", label: "Surnom" },
       { key: "birthDate", label: "Date de naissance", type: "date" }
     ]
-  },
-  {
-    title: "Organisation",
-    fields: [
-      { key: "businessName", label: "Entreprise" },
-      { key: "businessRank", label: "Échelon entreprise" },
-      { key: "businessBadgeNumber", label: "Matricule entreprise" },
-      { key: "groupName", label: "Groupe" },
-      { key: "groupRole", label: "Rôle groupe" },
-      { key: "district", label: "Quartier" }
-    ]
-  },
-  {
-    title: "Contact et police",
-    fields: [
-      { key: "phoneNumber", label: "Téléphone" },
-      { key: "policeRank", label: "Grade police" },
-      { key: "policeBadgeNumber", label: "Matricule police" }
-    ]
   }
 ];
 
@@ -119,7 +100,7 @@ export function CharacterSnapshotForm({
       {fieldGroups.map((group) => (
         <fieldset key={group.title}>
           <legend>{group.title}</legend>
-          <div className="form-grid">
+          <div className={`form-grid${group.title === "Organisation" ? " organization-grid" : ""}`}>
             {group.fields.map((field) => (
               <label key={field.key}>
                 <span>{field.label}</span>
@@ -136,22 +117,6 @@ export function CharacterSnapshotForm({
           </div>
         </fieldset>
       ))}
-
-      {canUploadPhoto ? (
-        <fieldset>
-          <legend>Photo</legend>
-          <CharacterPhotoUpload
-            currentPhotoUrl={
-              snapshot.photoUrl?.startsWith("pending-photo:")
-                ? null
-                : resolveApiAssetUrl(snapshot.photoUrl)
-            }
-            isUploading={isPhotoUploading}
-            mode={submitLabel.includes("Appliquer") ? "direct" : "request"}
-            onUpload={onPhotoUpload}
-          />
-        </fieldset>
-      ) : null}
 
       <fieldset>
         <legend>Statuts</legend>
@@ -185,99 +150,78 @@ export function CharacterSnapshotForm({
       </fieldset>
 
       <fieldset>
-        <legend>Médias</legend>
-        <div className="form-grid">
+        <legend>Organisation</legend>
+        <div className="form-grid organization-grid">
           <label>
-            <span>Streamer existant</span>
-            <select
-              value={snapshot.streamerId ?? ""}
-              onChange={(event) => {
-                const nextStreamerId = nullableValue(event.target.value);
-                onChange({
-                  ...snapshot,
-                  streamerId: nextStreamerId,
-                  streamerName: nextStreamerId ? null : snapshot.streamerName
-                });
-              }}
-            >
-              <option value="">Aucun streamer</option>
-              {streamers.map((streamer) => (
-                <option key={streamer.id} value={streamer.id}>
-                  {streamer.publicName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Nouveau streamer</span>
+            <span>Entreprise</span>
             <input
               type="text"
-              value={textValue(snapshot.streamerName)}
-              placeholder="À créer si absent"
+              value={textValue(snapshot.companyName)}
               onChange={(event) => {
-                onChange({
-                  ...snapshot,
-                  streamerId: null,
-                  streamerName: nullableValue(event.target.value)
-                });
+                updateText("companyName", event.target.value);
               }}
             />
           </label>
-          {socialPlatforms.map(([platform, label]) => (
-            <label key={platform}>
-              <span>{label}</span>
-              <input
-                type="text"
-                value={textValue(snapshot.socialLinks?.[platform] ?? null)}
-                placeholder={`Lien ${label}`}
-                onChange={(event) => {
-                  const nextValue = nullableValue(event.target.value);
-                  const nextLinks = {
-                    ...(snapshot.socialLinks ?? {})
-                  };
-
-                  if (nextValue) {
-                    nextLinks[platform] = nextValue;
-                  } else {
-                    delete nextLinks[platform];
-                  }
-
-                  onChange({
-                    ...snapshot,
-                    socialLinks: Object.keys(nextLinks).length ? nextLinks : null
-                  });
-                }}
-              />
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Publication</legend>
-        <div className="form-grid">
           <label>
-            <span>Vérification</span>
-            <select
-              value={snapshot.verificationStatus}
+            <span>Grade</span>
+            <input
+              type="text"
+              value={textValue(snapshot.companyRank)}
               onChange={(event) => {
-                onChange({
-                  ...snapshot,
-                  verificationStatus: event.target.value as VerificationStatus
-                });
+                updateText("companyRank", event.target.value);
               }}
-            >
-              {Object.entries(verificationLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            />
+          </label>
+          <label>
+            <span>Matricule</span>
+            <input
+              type="text"
+              value={textValue(snapshot.companyBadgeNumber)}
+              onChange={(event) => {
+                updateText("companyBadgeNumber", event.target.value);
+              }}
+            />
+          </label>
+          <label>
+            <span>Groupe</span>
+            <input
+              type="text"
+              value={textValue(snapshot.groupName)}
+              onChange={(event) => {
+                updateText("groupName", event.target.value);
+              }}
+            />
+          </label>
+          <label>
+            <span>Quartier</span>
+            <input
+              type="text"
+              value={textValue(snapshot.district)}
+              onChange={(event) => {
+                updateText("district", event.target.value);
+              }}
+            />
           </label>
         </div>
       </fieldset>
 
       <fieldset>
+        <legend>Contact</legend>
+        <div className="form-grid">
+          <label>
+            <span>Téléphone</span>
+            <input
+              type="text"
+              value={textValue(snapshot.phoneNumber)}
+              onChange={(event) => {
+                updateText("phoneNumber", event.target.value);
+              }}
+            />
+          </label>
+        </div>
+      </fieldset>
+
+            <fieldset>
         <legend>Parentés RP</legend>
         <div className="relationship-draft-list">
           {snapshot.relationships.map((relationship, index) => (
@@ -378,16 +322,126 @@ export function CharacterSnapshotForm({
         </div>
       </fieldset>
 
-      <label className="wide-field">
-        <span>Note de source</span>
-        <textarea
-          value={textValue(snapshot.sourceNote)}
-          onChange={(event) => {
-            onChange({ ...snapshot, sourceNote: nullableValue(event.target.value) });
-          }}
-          rows={4}
-        />
-      </label>
+      {canUploadPhoto ? (
+        <fieldset>
+          <legend>Photo</legend>
+          <div className="form-grid">
+            <div className="photo-field-wrapper">
+              <CharacterPhotoUpload
+                currentPhotoUrl={
+                  snapshot.photoUrl?.startsWith("pending-photo:")
+                    ? null
+                    : resolveApiAssetUrl(snapshot.photoUrl)
+                }
+                isUploading={isPhotoUploading}
+                mode={submitLabel.includes("Appliquer") ? "direct" : "request"}
+                onUpload={onPhotoUpload}
+              />
+            </div>
+          </div>
+        </fieldset>
+      ) : null}
+
+      <fieldset>
+        <legend>Médias</legend>
+        <div className="form-grid">
+          <label>
+            <span>Streamer existant</span>
+            <select
+              value={snapshot.streamerId ?? ""}
+              onChange={(event) => {
+                const nextStreamerId = nullableValue(event.target.value);
+                onChange({
+                  ...snapshot,
+                  streamerId: nextStreamerId,
+                  streamerName: nextStreamerId ? null : snapshot.streamerName
+                });
+              }}
+            >
+              <option value="">Aucun streamer</option>
+              {streamers.map((streamer) => (
+                <option key={streamer.id} value={streamer.id}>
+                  {streamer.publicName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Nouveau streamer</span>
+            <input
+              type="text"
+              value={textValue(snapshot.streamerName)}
+              placeholder="À créer si absent"
+              onChange={(event) => {
+                onChange({
+                  ...snapshot,
+                  streamerId: null,
+                  streamerName: nullableValue(event.target.value)
+                });
+              }}
+            />
+          </label>
+          {socialPlatforms.map(([platform, label]) => (
+            <label key={platform}>
+              <span>{label}</span>
+              <input
+                type="text"
+                value={textValue(snapshot.socialLinks?.[platform] ?? null)}
+                placeholder={`Lien ${label}`}
+                onChange={(event) => {
+                  const nextValue = nullableValue(event.target.value);
+                  const nextLinks = {
+                    ...(snapshot.socialLinks ?? {})
+                  };
+
+                  if (nextValue) {
+                    nextLinks[platform] = nextValue;
+                  } else {
+                    delete nextLinks[platform];
+                  }
+
+                  onChange({
+                    ...snapshot,
+                    socialLinks: Object.keys(nextLinks).length ? nextLinks : null
+                  });
+                }}
+              />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Note de source</legend>
+          <label>
+            <span>Vérification</span>
+            <select
+              value={snapshot.verificationStatus}
+              onChange={(event) => {
+                onChange({
+                  ...snapshot,
+                  verificationStatus: event.target.value as VerificationStatus
+                });
+              }}
+            >
+              {Object.entries(verificationLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        <label className="wide-field">
+          <span>Note de source</span>
+          <textarea
+            value={textValue(snapshot.sourceNote)}
+            onChange={(event) => {
+              onChange({ ...snapshot, sourceNote: nullableValue(event.target.value) });
+            }}
+            rows={4}
+          />
+        </label>
+      </fieldset>
 
       <div className="form-actions">
         <button type="button" className="ghost-button" onClick={onCancel}>

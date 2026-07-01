@@ -136,7 +136,7 @@ export function NotionImportsTable({
                   </span>
                 </td>
                 <td>{entry.twitch ?? entry.streamer ?? "-"}</td>
-                <td>{entry.group ?? entry.business ?? "-"}</td>
+                <td>{entry.group ?? entry.company ?? "-"}</td>
               </tr>
             ))}
           </tbody>

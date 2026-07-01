@@ -15,6 +15,7 @@ export const paginationSchema = z.object({
 
 export const charactersQuerySchema = paginationSchema.extend({
   q: z.string().trim().min(1).max(120).optional(),
+  company: z.string().trim().min(1).max(160).optional(),
   lifeStatus: z.enum(lifeStatuses).optional(),
   tag: z.string().trim().min(1).max(120).optional(),
   streamer: z.string().trim().min(1).max(160).optional(),

@@ -365,15 +365,15 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           type: DataTypes.TEXT,
           allowNull: true
         },
-        business_name: {
+        company_name: {
           type: DataTypes.STRING(160),
           allowNull: true
         },
-        business_rank: {
+        company_rank: {
           type: DataTypes.STRING(120),
           allowNull: true
         },
-        business_badge_number: {
+        company_badge_number: {
           type: DataTypes.STRING(80),
           allowNull: true
         },
@@ -396,10 +396,6 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           type: DataTypes.STRING(160),
           allowNull: true
         },
-        group_role: {
-          type: DataTypes.STRING(120),
-          allowNull: true
-        },
         district: {
           type: DataTypes.STRING(120),
           allowNull: true
@@ -408,14 +404,6 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           type: DataTypes.BOOLEAN,
           allowNull: false,
           defaultValue: false
-        },
-        police_rank: {
-          type: DataTypes.STRING(120),
-          allowNull: true
-        },
-        police_badge_number: {
-          type: DataTypes.STRING(80),
-          allowNull: true
         },
         previous_characters: {
           type: DataTypes.JSONB,

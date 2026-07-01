@@ -73,9 +73,9 @@ export const characterSnapshotSchema = z
     lifeStatus: z.enum(lifeStatuses),
     deathOrDepartureDate: dateOnly,
     photoUrl: nullableText(600),
-    businessName: nullableText(160),
-    businessRank: nullableText(120),
-    businessBadgeNumber: nullableText(80),
+    companyName: nullableText(160),
+    companyRank: nullableText(120),
+    companyBadgeNumber: nullableText(80),
     phoneNumber: nullableText(40),
     streamerId: z
       .uuid()
@@ -85,12 +85,9 @@ export const characterSnapshotSchema = z
     streamerName: nullableText(160),
     socialLinks: socialLinksSchema,
     groupName: nullableText(160),
-    groupRole: nullableText(120),
     district: nullableText(120),
     isRpDeath: z.boolean().default(false),
     relationships: z.array(relationshipDraftSchema).default([]),
-    policeRank: nullableText(120),
-    policeBadgeNumber: nullableText(80),
     previousCharacters: previousCharactersSchema,
     verificationStatus: z.enum(verificationStatuses),
     sourceNote: nullableText(1000)
@@ -105,6 +102,7 @@ export const changeRequestCreateSchema = z.object({
 export const characterCreationContextSchema = z
   .object({
     q: nullableText(200),
+    company: nullableText(160),
     lifeStatus: nullableText(40),
     tag: nullableText(120),
     streamer: nullableText(160),

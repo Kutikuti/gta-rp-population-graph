@@ -5,6 +5,7 @@ import type {
   PublicRelationship
 } from "../api";
 import { resolveApiAssetUrl } from "../api";
+import linkIconUrl from "../assets/misc/link.svg";
 import {
   characterSnapshotFieldLabels,
   lifeStatusLabels,
@@ -18,6 +19,7 @@ type CharacterSheetProps = {
   canEditDirectly: boolean;
   character: PublicCharacterDetail;
   history: PublicHistoryEntry[];
+  onClose: () => void;
   onContribute: () => void;
   onShare: () => void;
 };
@@ -51,6 +53,7 @@ export function CharacterSheet({
   canEditDirectly,
   character,
   history,
+  onClose,
   onContribute,
   onShare
 }: CharacterSheetProps) {
@@ -64,19 +67,39 @@ export function CharacterSheet({
 
   return (
     <article className="character-sheet">
+      <div className="sheet-topbar">
+        <p className="eyebrow">Fiche personnage</p>
+        <div className="sheet-topbar-actions">
+          <button
+            type="button"
+            className="panel-icon-button sheet-icon-button"
+            aria-label="Copier le lien"
+            title="Copier le lien"
+            onClick={onShare}
+          >
+            <img src={linkIconUrl} alt="" className="sheet-action-icon" />
+          </button>
+          <button
+            type="button"
+            className="panel-icon-button details-close-button"
+            aria-label="Fermer la fiche personnage"
+            onClick={onClose}
+          >
+            X
+          </button>
+        </div>
+      </div>
       <div className="sheet-header">
         <div className="sheet-identity">
           {photoUrl ? <img src={photoUrl} alt="" className="sheet-photo" /> : null}
           <div>
-            <p className="eyebrow">Fiche personnage</p>
             <h2>{character.fullName}</h2>
-            <p>{character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}</p>
+            <p className="sheet-alias">
+              {character.nickname ? `Alias ${character.nickname}` : "Aucun surnom renseigné"}
+            </p>
           </div>
         </div>
         <div className="sheet-header-actions">
-          <button type="button" className="ghost-button" onClick={onShare}>
-            Copier le lien
-          </button>
           <button type="button" className="ghost-button" onClick={onContribute}>
             {canEditDirectly ? "Modifier" : "Proposer"}
           </button>
@@ -105,13 +128,11 @@ export function CharacterSheet({
       <section className="sheet-section">
         <h3>Organisation</h3>
         <div className="info-list">
-          <span>Entreprise : {compactValue(character.businessName)}</span>
-          <span>Échelon : {compactValue(character.businessRank)}</span>
-          <span>Matricule entreprise : {compactValue(character.businessBadgeNumber)}</span>
+          <span>Entreprise : {compactValue(character.companyName)}</span>
+          <span>Grade : {compactValue(character.companyRank)}</span>
+          <span>Matricule : {compactValue(character.companyBadgeNumber)}</span>
           <span>Groupe : {compactValue(character.groupName)}</span>
-          <span>Rôle : {compactValue(character.groupRole)}</span>
           <span>Quartier : {compactValue(character.district)}</span>
-          <span>Police : {compactValue(character.policeRank ?? character.policeBadgeNumber)}</span>
         </div>
       </section>
 

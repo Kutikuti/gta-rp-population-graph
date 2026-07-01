@@ -44,13 +44,12 @@ export type MappedNotionCharacter = {
   phoneNumber: string | null;
   streamerPublicName: string | null;
   socialLinks: JsonObject;
-  businessName: string | null;
+  companyName: string | null;
+  companyRank: string | null;
+  companyBadgeNumber: string | null;
   groupName: string | null;
-  groupRole: string | null;
   district: string | null;
   isRpDeath: boolean;
-  policeRank: string | null;
-  policeBadgeNumber: string | null;
   previousCharacters: JsonObject;
   tags: string[];
   relationships: JsonObject[];
@@ -122,17 +121,16 @@ const fieldAliases = {
   ],
   phoneNumber: ["telephone", "téléphone", "phone", "phoneNumber", "phone_number"],
   streamerPublicName: ["streamer", "streameur", "streamerPublicName"],
-  businessName: ["métier/entreprise", "metier/entreprise", "entreprise", "businessName"],
+  companyName: ["métier/entreprise", "metier/entreprise", "entreprise", "businessName"],
+  companyRank: ["grade", "poste", "rang", "companyRank", "businessRank"],
+  companyBadgeNumber: ["matricule", "companyBadgeNumber", "businessBadgeNumber"],
   groupName: ["groupes", "groupe", "groupName"],
-  groupRole: ["rôle", "role", "groupRole"],
   district: ["quartier", "district"],
   twitch: ["twitch"],
   kick: ["kick"],
   youtube: ["youtube", "youTube"],
   instagram: ["instagram"],
   tiktok: ["tiktok", "tikTok"],
-  policeRank: ["grade police", "rang police", "poste", "policeRank", "police_rank"],
-  policeBadgeNumber: ["matricule police", "matricule", "policeBadgeNumber", "police_badge_number"],
   previousCharacters: [
     "anciens personnages",
     "previousCharacters",
@@ -220,19 +218,6 @@ const withoutEmptyNotionValues = (values: string[]) =>
       normalized
     );
   });
-
-const isPoliceBusiness = (value: string | null) => {
-  if (!value) {
-    return false;
-  }
-
-  const normalized = value
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-
-  return /\b(sasp|sasd|lspd|bcso|police|sheriff)\b/.test(normalized);
-};
 
 const relationshipListValue = (value: unknown): JsonObject[] => {
   if (!Array.isArray(value)) {
@@ -414,7 +399,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const properties = page.properties;
   const firstName = stringValue(findValue(properties, fieldAliases.firstName));
   const lastName = stringValue(findValue(properties, fieldAliases.lastName));
-  const businessName = stringValue(findValue(properties, fieldAliases.businessName));
+  const companyName = stringValue(findValue(properties, fieldAliases.companyName));
   const groupName = stringValue(findValue(properties, fieldAliases.groupName));
   const previousCharacterLinks = listValue(
     findValue(properties, fieldAliases.legacyCharacterLinks)
@@ -458,15 +443,23 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const deathOrDepartureDate = dateValue(findValue(properties, fieldAliases.deathOrDepartureDate));
   const explicitTags = listValue(findValue(properties, fieldAliases.tags));
   const groupTags = withoutEmptyNotionValues(listValue(groupName));
-  const explicitPoliceRank = stringValue(
-    findValue(properties, ["grade police", "rang police", "policeRank", "police_rank"])
+  const companyRank = stringValue(
+    findValue(properties, [
+      ...fieldAliases.companyRank,
+      "grade police",
+      "rang police",
+      "policeRank",
+      "police_rank"
+    ])
   );
-  const genericPost = stringValue(findValue(properties, ["poste"]));
-  const explicitPoliceBadgeNumber = stringValue(
-    findValue(properties, ["matricule police", "policeBadgeNumber", "police_badge_number"])
+  const companyBadgeNumber = stringValue(
+    findValue(properties, [
+      ...fieldAliases.companyBadgeNumber,
+      "matricule police",
+      "policeBadgeNumber",
+      "police_badge_number"
+    ])
   );
-  const genericBadgeNumber = stringValue(findValue(properties, ["matricule"]));
-  const shouldMapGenericPoliceFields = isPoliceBusiness(businessName);
   const missingFields = [firstName ? null : "firstName", lastName ? null : "lastName"].filter(
     (field): field is string => Boolean(field)
   );
@@ -496,14 +489,12 @@ export const mapNotionPage = (page: NotionPageInput) => {
     phoneNumber: stringValue(findValue(properties, fieldAliases.phoneNumber)),
     streamerPublicName: explicitStreamerPublicName ?? fallbackTwitchHandle,
     socialLinks: cleanSocialLinks,
-    businessName,
+    companyName,
+    companyRank,
+    companyBadgeNumber,
     groupName,
-    groupRole: stringValue(findValue(properties, fieldAliases.groupRole)),
     district: stringValue(findValue(properties, fieldAliases.district)),
     isRpDeath: lifeStatus === "deceased",
-    policeRank: explicitPoliceRank ?? (shouldMapGenericPoliceFields ? genericPost : null),
-    policeBadgeNumber:
-      explicitPoliceBadgeNumber ?? (shouldMapGenericPoliceFields ? genericBadgeNumber : null),
     previousCharacters: {
       raw: findValue(properties, fieldAliases.previousCharacters) ?? null,
       v6: previousCharacterLinks
