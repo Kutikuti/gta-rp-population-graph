@@ -200,6 +200,39 @@ Passe non destructive executee depuis l'environnement de travail :
 Point a garder en tete : le port `5000` reste ouvert pour le site historique ou
 un usage existant du VPS. Ne pas le fermer sans verifier l'autre application.
 
+## Check ops reproductible
+
+Le depot fournit un script de controle read-only pour rejouer les verifications
+ops essentielles sans installer encore de dashboard complet :
+
+```bash
+scripts/check-production-ops.sh
+```
+
+Ce script verifie :
+
+- page publique, healthcheck, session anonyme, endpoint personnages et demarrage
+  OAuth Google ;
+- backend, Caddy et timers `systemd` ;
+- presence de sauvegardes PostgreSQL et uploads non vides ;
+- firewall actif et PostgreSQL non expose publiquement ;
+- jail `fail2ban` SSH disponible ;
+- usage disque racine sous 80% ;
+- retention `journald` appliquee.
+
+Variantes utiles :
+
+```bash
+scripts/check-production-ops.sh --public-only
+scripts/check-production-ops.sh --ssh-only
+```
+
+Le script accepte les memes variables d'environnement SSH que le script de
+recuperation de sauvegarde : `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_KEY` et
+`REMOTE_BACKUP_ROOT`. Il ne remplace pas les futurs smoke tests metier
+interactifs, mais sert de controle ops rapide apres maintenance, deploiement ou
+incident.
+
 ## Hygiene stockage
 
 Constat releve sur le VPS le `2026-06-30` apres maintenance :
@@ -211,6 +244,16 @@ Constat releve sur le VPS le `2026-06-30` apres maintenance :
   soit un gain d'environ `1.7G`.
 - `apt-get clean` a aussi reduit le cache APT a un niveau faible.
 
+Plafonnement durable applique le `2026-07-01` :
+
+- drop-in versionne : `ops/systemd/journald-gta-rp-retention.conf`
+- fichier installe : `/etc/systemd/journald.conf.d/99-gta-rp-retention.conf`
+- `SystemMaxUse=500M`
+- `SystemKeepFree=1G`
+- `MaxRetentionSec=30day`
+- `systemd-journald` redemarre avec la configuration effective verifiee.
+- usage journal au moment du controle : environ `17.2M`.
+
 Commandes utiles de diagnostic :
 
 ```bash
@@ -218,6 +261,7 @@ df -h / /var
 sudo du -xhd1 /var | sort -h
 sudo du -xhd2 /var/log | sort -h | tail -n 40
 sudo journalctl --disk-usage
+systemd-analyze cat-config systemd/journald.conf | grep -E '^(SystemMaxUse|SystemKeepFree|MaxRetentionSec)='
 sudo du -sh /var/cache/apt /var/lib/apt/lists
 sudo docker system df
 find /var/www/gta-rp-population-graph/shared/backups -maxdepth 3 -type f | sort
@@ -800,12 +844,11 @@ uploads hebdomadaire deja presentes sur le VPS.
 - [x] `sudo systemctl reload caddy` execute.
 - [x] Process manager configure.
 - [x] Firewall verifie.
+- [x] Retention durable `journald` configuree.
 
 ## Points a completer plus tard
 
 - Configuration Caddy multi-domaines.
-- Rotation fine et plafonnement durable de `journald` pour eviter une nouvelle
-  derive a plusieurs Go.
 - Cible de sauvegarde distante hors VPS, afin de ne pas dependre uniquement du
   stockage local.
 - Monitoring minimal et alertes.
