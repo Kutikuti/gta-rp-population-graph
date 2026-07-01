@@ -68,7 +68,7 @@ try {
       transaction
     });
     await models.Role.destroy({
-      where: { id: Object.values(ids.roles) },
+      where: { name: ["user", "moderator", "administrator"] },
       transaction
     });
 
