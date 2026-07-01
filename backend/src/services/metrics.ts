@@ -8,6 +8,7 @@ import {
   notionImportEntryStatuses
 } from "../db/enums.js";
 import { models } from "../db/index.js";
+import { Op } from "sequelize";
 
 export const metricsRegistry = new Registry();
 
@@ -71,6 +72,12 @@ const latestNotionEntriesGauge = new Gauge({
   name: "gta_rp_notion_import_latest_entries_total",
   help: "Nombre d'entrees du dernier batch Notion par statut.",
   labelNames: ["status"] as const,
+  registers: [metricsRegistry]
+});
+
+const latestNotionAppliedEntriesGauge = new Gauge({
+  name: "gta_rp_notion_import_latest_entries_applied_total",
+  help: "Nombre d'entrees du dernier batch Notion deja appliquees sur la production.",
   registers: [metricsRegistry]
 });
 
@@ -190,6 +197,19 @@ export const collectBusinessMetrics = async () => {
       latestNotionEntriesGauge.set({ status }, count);
     })
   );
+
+  const appliedEntriesCount = latestBatch
+    ? await models.NotionImportEntry.count({
+        where: {
+          batchId: latestBatch.id,
+          appliedCharacterId: {
+            [Op.ne]: null
+          }
+        }
+      })
+    : 0;
+
+  latestNotionAppliedEntriesGauge.set(appliedEntriesCount);
 };
 
 export class PrometheusMetricsService implements MetricsService {

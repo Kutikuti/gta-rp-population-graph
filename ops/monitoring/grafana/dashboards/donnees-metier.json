@@ -40,7 +40,12 @@
       "title": "Dernier import Notion",
       "gridPos": { "x": 0, "y": 4, "w": 8, "h": 4 },
       "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
-      "targets": [{ "expr": "gta_rp_notion_import_latest_batch_created_timestamp_seconds", "refId": "A" }]
+      "targets": [
+        {
+          "expr": "(gta_rp_notion_import_latest_batch_created_timestamp_seconds > 0) * 1000",
+          "refId": "A"
+        }
+      ]
     },
     {
       "type": "stat",
@@ -56,7 +61,7 @@
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "targets": [
         {
-          "expr": "label_replace(gta_rp_notion_import_latest_entries_total{status=\"new\"}, \"libelle\", \"Nouvelles\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"updated\"}, \"libelle\", \"Mises a jour\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"unchanged\"}, \"libelle\", \"Inchangees\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"missing\"}, \"libelle\", \"Absentes\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"failed\"}, \"libelle\", \"En erreur\", \"status\", \".*\")",
+          "expr": "label_replace(gta_rp_notion_import_latest_entries_total{status=\"new\"}, \"libelle\", \"Nouvelles\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"updated\"}, \"libelle\", \"Mises a jour\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"unchanged\"}, \"libelle\", \"Inchangees\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"missing\"}, \"libelle\", \"Absentes\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_total{status=\"failed\"}, \"libelle\", \"En erreur\", \"status\", \".*\") or label_replace(gta_rp_notion_import_latest_entries_applied_total, \"libelle\", \"Appliquees\", \"__name__\", \".*\")",
           "legendFormat": "{{libelle}}",
           "refId": "A"
         }

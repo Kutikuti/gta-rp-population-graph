@@ -42,14 +42,24 @@
       "title": "Dernier backup PostgreSQL",
       "gridPos": { "x": 0, "y": 4, "w": 8, "h": 4 },
       "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
-      "targets": [{ "expr": "gta_rp_backup_postgres_latest_timestamp_seconds", "refId": "A" }]
+      "targets": [
+        {
+          "expr": "(gta_rp_backup_postgres_latest_timestamp_seconds > 0) * 1000",
+          "refId": "A"
+        }
+      ]
     },
     {
       "type": "stat",
       "title": "Dernier backup uploads",
       "gridPos": { "x": 8, "y": 4, "w": 8, "h": 4 },
       "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
-      "targets": [{ "expr": "gta_rp_backup_uploads_latest_timestamp_seconds", "refId": "A" }]
+      "targets": [
+        {
+          "expr": "(gta_rp_backup_uploads_latest_timestamp_seconds > 0) * 1000",
+          "refId": "A"
+        }
+      ]
     },
     {
       "type": "stat",
