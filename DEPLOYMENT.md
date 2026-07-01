@@ -554,7 +554,7 @@ pour le developpement local.
 Le script racine lance la sequence complete backend puis frontend :
 
 ```bash
-./run-all-checks.sh
+./script/run-all-checks.sh
 ```
 
 La sequence detaillee reste utile si un sous-ensemble doit etre relance :
@@ -589,7 +589,7 @@ Exemple depuis la machine source :
 
 ```bash
 cd /workspaces/gta-rp-population-graph
-./run-all-checks.sh
+./script/run-all-checks.sh
 
 rsync -avz --delete \
   --exclude '.git' \
