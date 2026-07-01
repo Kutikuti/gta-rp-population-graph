@@ -119,6 +119,7 @@ const serializeAuthenticatedUser = (user: {
 };
 
 const createDefaultDisplayName = () => `Utilisateur ${randomUUID().slice(0, 8)}`;
+const seedEmailSuffix = ".seed@example.test";
 
 export class SequelizeAuthService implements AuthService {
   async getSessionUser(userId: string): Promise<AuthenticatedUser | null> {
@@ -147,13 +148,23 @@ export class SequelizeAuthService implements AuthService {
   }
 
   async authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult> {
-    const defaultRole = await models.Role.findOne({
-      where: { name: "user" },
-      attributes: ["id", "name"]
-    });
+    const [defaultRole, administratorRole] = await Promise.all([
+      models.Role.findOne({
+        where: { name: "user" },
+        attributes: ["id", "name"]
+      }),
+      models.Role.findOne({
+        where: { name: "administrator" },
+        attributes: ["id", "name"]
+      })
+    ]);
 
     if (!defaultRole) {
       throw new Error('Role "user" is missing from the database.');
+    }
+
+    if (!administratorRole) {
+      throw new Error('Role "administrator" is missing from the database.');
     }
 
     const now = new Date();
@@ -186,13 +197,22 @@ export class SequelizeAuthService implements AuthService {
       }
 
       if (!user) {
+        const nonSeedUserCount = await models.User.count({
+          where: {
+            email: {
+              [Op.notLike]: `%${seedEmailSuffix}`
+            }
+          },
+          transaction
+        });
+
         user = await models.User.create(
           {
             email: identity.email,
             displayName: createDefaultDisplayName(),
             displayNameChosenAt: null,
             avatarUrl: identity.avatarUrl,
-            roleId: defaultRole.id,
+            roleId: nonSeedUserCount === 0 ? administratorRole.id : defaultRole.id,
             lastLoginAt: now
           },
           { transaction }
