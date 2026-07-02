@@ -77,7 +77,7 @@ elif command -v sudo >/dev/null 2>&1; then
     --username="${DB_USER}" \
     --format=custom \
     --no-owner \
-    --no-privileges > "${daily_file}"
+    --no-privileges | tee "${daily_file}" >/dev/null
 else
   echo "Neither pg_dump nor sudo docker are available for PostgreSQL backup." >&2
   exit 1

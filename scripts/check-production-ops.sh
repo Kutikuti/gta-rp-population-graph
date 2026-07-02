@@ -15,6 +15,12 @@ PUBLIC_ONLY=false
 SSH_ONLY=false
 FAILED=0
 
+ssh_args=(
+  -i "${SSH_KEY}"
+  -p "${SSH_PORT}"
+  -o StrictHostKeyChecking=accept-new
+)
+
 usage() {
   cat <<'USAGE'
 Run read-only production ops checks.
@@ -106,15 +112,6 @@ check_public() {
     bash -c "curl -fsSI '${BASE_URL}/supervision/' | grep -q '^HTTP/2 302\\|^HTTP/1.1 302\\|^HTTP/2 401\\|^HTTP/1.1 401\\|^HTTP/2 403\\|^HTTP/1.1 403'"
 }
 
-ssh_cmd() {
-  ssh \
-    -i "${SSH_KEY}" \
-    -p "${SSH_PORT}" \
-    -o StrictHostKeyChecking=accept-new \
-    "${SSH_USER}@${SSH_HOST}" \
-    "$1"
-}
-
 check_ssh() {
   echo "== SSH server checks =="
 
@@ -124,34 +121,44 @@ check_ssh() {
   fi
 
   run_check "backend, Caddy and timers are active" \
-    ssh_cmd "systemctl is-active gta-rp-backend.service caddy gta-rp-photo-cleanup.timer gta-rp-postgres-backup.timer gta-rp-uploads-backup.timer gta-rp-monitoring-textfile.timer >/dev/null"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "systemctl is-active gta-rp-backend.service caddy gta-rp-photo-cleanup.timer gta-rp-postgres-backup.timer gta-rp-uploads-backup.timer gta-rp-monitoring-textfile.timer >/dev/null"
 
   run_check "latest PostgreSQL backup exists" \
-    ssh_cmd "find '${REMOTE_BACKUP_ROOT}/postgres/daily' -maxdepth 1 -type f -name '*.dump' -size +0c | grep -q ."
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "find '${REMOTE_BACKUP_ROOT}/postgres/daily' -maxdepth 1 -type f -name '*.dump' -size +0c | grep -q ."
 
   run_check "latest uploads backup exists" \
-    ssh_cmd "find '${REMOTE_BACKUP_ROOT}/uploads/weekly' -maxdepth 1 -type f -name '*.tar.gz' -size +0c | grep -q ."
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "find '${REMOTE_BACKUP_ROOT}/uploads/weekly' -maxdepth 1 -type f -name '*.tar.gz' -size +0c | grep -q ."
 
   run_check "firewall is active and PostgreSQL is not public" \
-    ssh_cmd "sudo ufw status verbose | grep -q 'Status: active' && sudo ufw status verbose | grep -q '5432/tcp.*DENY IN'"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "sudo ufw status verbose | grep -q 'Status: active' && sudo ufw status verbose | grep -q '5432/tcp.*DENY IN'"
 
   run_check "fail2ban sshd jail is available" \
-    ssh_cmd "sudo fail2ban-client status sshd >/dev/null"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "sudo fail2ban-client status sshd >/dev/null"
 
   run_check "root filesystem below 80 percent" \
-    ssh_cmd "test \"\$(df -P / | awk 'NR==2 {gsub(/%/, \"\", \$5); print \$5}')\" -lt 80"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "test \"\$(df -P / | awk 'NR==2 {gsub(/%/, \"\", \$5); print \$5}')\" -lt 80"
 
   run_check "journald retention is configured" \
-    ssh_cmd "systemd-analyze cat-config systemd/journald.conf | grep -q '^SystemMaxUse=500M' && systemd-analyze cat-config systemd/journald.conf | grep -q '^MaxRetentionSec=30day'"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "systemd-analyze cat-config systemd/journald.conf | grep -q '^SystemMaxUse=500M' && systemd-analyze cat-config systemd/journald.conf | grep -q '^MaxRetentionSec=30day'"
 
   run_check "monitoring stack is healthy locally" \
-    ssh_cmd "sudo docker ps --format '{{.Names}}' | grep -E 'monitoring[-_](prometheus|grafana|blackbox-exporter|node-exporter)[-_]1' | wc -l | grep -q '^4$' && curl -fsS http://127.0.0.1:9090/-/healthy >/dev/null"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "sudo docker ps --format '{{.Names}}' | grep -E 'monitoring[-_](prometheus|grafana|blackbox-exporter|node-exporter)[-_]1' | wc -l | grep -q '^4$' && curl -fsS http://127.0.0.1:9090/-/healthy >/dev/null"
 
   run_check "monitoring ports are bound locally only" \
-    ssh_cmd "ss -lnt | grep -q '127.0.0.1:3001' && ss -lnt | grep -q '127.0.0.1:9090' && ss -lnt | grep -q '127.0.0.1:9100' && ss -lnt | grep -q '127.0.0.1:9115'"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "ss -lnt | grep -q '127.0.0.1:3001' && ss -lnt | grep -q '127.0.0.1:9090' && ss -lnt | grep -q '127.0.0.1:9100' && ss -lnt | grep -q '127.0.0.1:9115'"
 
   run_check "monitoring textfile metrics exist" \
-    ssh_cmd "test -s '${MONITORING_SHARED_DIR}/node-exporter-textfile/gta_rp_ops.prom'"
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "test -s '${MONITORING_SHARED_DIR}/node-exporter-textfile/gta_rp_ops.prom'"
 }
 
 if [[ "${SSH_ONLY}" != true ]]; then

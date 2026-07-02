@@ -92,14 +92,10 @@ scp_args=(
 remote_latest() {
   local remote_dir="$1"
   local pattern="$2"
-  local quoted_dir
-  local quoted_pattern
 
-  printf -v quoted_dir "%q" "${remote_dir}"
-  printf -v quoted_pattern "%q" "${pattern}"
-
-  ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "find ${quoted_dir} -maxdepth 1 -type f -name ${quoted_pattern} -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d ' ' -f 2-"
+  ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" bash -s -- "${remote_dir}" "${pattern}" <<'EOF'
+find "$1" -maxdepth 1 -type f -name "$2" -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d ' ' -f 2-
+EOF
 }
 
 fetch_latest() {
