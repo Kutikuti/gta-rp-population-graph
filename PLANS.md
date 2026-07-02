@@ -1364,7 +1364,9 @@ Plan d'implementation propose :
    - enregistrer une vue par defaut regroupee par groupe ;
    - ajouter des preferences locales d'affichage ;
    - permettre d'afficher ou masquer les morts ;
-   - permettre de choisir les types de relations visibles.
+   - permettre de choisir les types de relations visibles ;
+   - prevoir plus tard des presets de visualisation, a discuter au moment du
+     lot D et pas avant.
 3. Aide a la completion et qualite des donnees
    - ajouter une vue ou fenetre listant les fiches a completer ;
    - mettre en avant les champs manquants, importes ou a verifier ;
@@ -1382,6 +1384,8 @@ Plan d'implementation propose :
 6. Reprise du module relations
    - distinguer clairement relations visibles dans le graphe et relations
      visibles uniquement dans la fiche ;
+   - poser une regle produit stable pour la visibilite par defaut dans le
+     graphe public ;
    - mieux gerer anciennes identites/personnages et relations importees
      ambigues ;
    - preparer une interface de gestion plus lisible pour les relations
@@ -1390,7 +1394,7 @@ Plan d'implementation propose :
 Ordre de travail recommande :
 
 - Lot A : fiche personnage + formulaire d'edition - termine
-- Lot B : relations + plusieurs numeros de telephone
+- Lot B : relations + consolidation finale du multi-telephone
 - Lot C : completude des donnees
 - Lot D : graphe et preferences locales
 - Lot E : module streamer
@@ -1455,7 +1459,58 @@ Relations :
 - Refonte du module relations pour distinguer clairement relations visibles
   dans le graphe, relations visibles uniquement dans la fiche, anciennes
   identites/personnages et relations importees ambigues.
+- Regle de visibilite par defaut retenue :
+  - visibles dans le graphe public par defaut : `parent`, `child`,
+    `sibling`, `couple` ;
+  - non visibles par defaut dans le graphe, mais visibles en fiche et
+    activables plus tard par preferences utilisateur : `previous_character`,
+    `ex_partner_reference`, `uncle_reference`, `aunt_reference` et plus
+    generalement les relations secondaires.
 - Preparer une interface de gestion plus lisible pour les relations multiples.
+- Le lot B doit preparer techniquement les futures preferences utilisateur du
+  lot D, sans encore implementer les presets de visualisation.
+- Tous les types de relations geres par le modele doivent pouvoir etre saisis
+  depuis la fiche personnage, y compris ceux qui ne sont pas visibles par
+  defaut dans le graphe public.
+- L'import Notion doit recuperer au maximum les relations disponibles dans la
+  source communautaire. Les types cites pour le lot B (`previous_character`,
+  `ex_partner_reference`, `uncle_reference`, `aunt_reference` ainsi que le
+  noyau familial/couple) sont consideres comme recuperables depuis Notion et
+  doivent etre preserves.
+
+Plan detaille du lot B :
+
+1. Cadrage et contrat produit
+   - figer la liste des types de relations visibles par defaut dans le graphe ;
+   - figer la liste des types visibles seulement dans la fiche ;
+   - confirmer que tous les types geres restent saisissables dans la fiche ;
+   - verifier que cette regle est coherente entre donnees manuelles, moderation
+     et import Notion.
+2. Modele et API
+   - verifier que chaque type de relation porte une regle explicite de
+     visibilite fiche / graphe ;
+   - simplifier si besoin les serialisations backend pour eviter les deductions
+     cote frontend ;
+   - preparer une structure exploitable plus tard par les preferences locales
+     du lot D.
+3. Fiche publique personnage
+   - separer plus lisiblement les relations principales et secondaires ;
+   - eviter les doublons visuels et mieux presenter les relations importees ou
+     moins centrales.
+4. Edition et moderation
+   - rendre l'edition des relations plus lisible dans la fiche ;
+   - clarifier le comportement de suppression, ajout et modification ;
+   - verifier que les diffs de moderation et l'historique restent lisibles.
+5. Import et qualite des donnees
+   - verifier que les relations Notion se rangent dans la bonne categorie ;
+   - recuperer au maximum toutes les relations presentes dans la source Notion
+     quand elles correspondent a un type gere par le modele ;
+   - conserver un workflow tolerant aux relations partiellement resolues ;
+   - consolider au passage les derniers bords du multi-telephone si
+     necessaire, sans reouvrir le lot A.
+6. Validation
+   - ajouter ou adapter les tests backend et frontend ;
+   - mettre a jour la documentation une fois le lot B stabilise.
 
 Point de controle :
 

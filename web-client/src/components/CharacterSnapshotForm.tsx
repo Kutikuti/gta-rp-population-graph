@@ -8,6 +8,7 @@ import {
   resolveApiAssetUrl,
   type VerificationStatus
 } from "../api";
+import addIconUrl from "../assets/misc/add.svg";
 import deleteIconUrl from "../assets/misc/delete.svg";
 import {
   editableRelationTypes,
@@ -321,12 +322,14 @@ export function CharacterSnapshotForm({
           <div className="draft-list-footer">
             <button
               type="button"
-              className="ghost-button"
+              className="add-row-button"
+              aria-label="Ajouter un numéro de téléphone"
+              title="Ajouter un numéro de téléphone"
               onClick={() => {
                 updatePhoneNumbers([...snapshot.phoneNumbers, ""]);
               }}
             >
-              Ajouter un numéro de téléphone
+              <img src={addIconUrl} alt="" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -391,11 +394,13 @@ export function CharacterSnapshotForm({
           <div className="draft-list-footer">
             <button
               type="button"
-              className="ghost-button"
+              className="add-row-button"
+              aria-label="Ajouter une relation"
+              title="Ajouter une relation"
               onClick={addRelationship}
               disabled={!availableCharacterOptions.length}
             >
-              Ajouter un lien
+              <img src={addIconUrl} alt="" aria-hidden="true" />
             </button>
           </div>
         </div>

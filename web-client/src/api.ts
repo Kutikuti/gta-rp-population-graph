@@ -196,7 +196,16 @@ export type CharacterSnapshot = {
   isRpDeath: boolean;
   relationships: Array<{
     characterId: string;
-    type: "parent" | "child" | "sibling" | "couple";
+    type:
+      | "parent"
+      | "child"
+      | "sibling"
+      | "couple"
+      | "previous_character"
+      | "couple_reference"
+      | "ex_partner_reference"
+      | "uncle_reference"
+      | "aunt_reference";
   }>;
   previousCharacters: JsonObject | null;
   verificationStatus: VerificationStatus;
@@ -450,6 +459,29 @@ const normalizeSnapshotRelationships = (relationships: CharacterSnapshot["relati
   });
 };
 
+const snapshotRelationshipType = (
+  relationship: PublicRelationship,
+  currentCharacterId: string
+): CharacterSnapshot["relationships"][number]["type"] => {
+  if (
+    relationship.direction === "directed" &&
+    relationship.targetCharacterId === currentCharacterId &&
+    relationship.type === "parent"
+  ) {
+    return "child";
+  }
+
+  if (
+    relationship.direction === "directed" &&
+    relationship.targetCharacterId === currentCharacterId &&
+    relationship.type === "child"
+  ) {
+    return "parent";
+  }
+
+  return relationship.type as CharacterSnapshot["relationships"][number]["type"];
+};
+
 const appendParam = (params: URLSearchParams, key: string, value: string) => {
   if (value.trim()) {
     params.set(key, value.trim());
@@ -596,21 +628,12 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
   district: character.district,
   isRpDeath: character.isRpDeath,
   relationships: normalizeSnapshotRelationships(
-    [...character.relationships.outgoing, ...character.relationships.incoming]
-      .filter((relationship) => relationship.graphVisible)
-      .map((relationship) => ({
+    [...character.relationships.outgoing, ...character.relationships.incoming].map(
+      (relationship) => ({
         characterId: relationship.relatedCharacter.id,
-        type:
-          relationship.direction === "directed" &&
-          relationship.targetCharacterId === character.id &&
-          relationship.type === "parent"
-            ? "child"
-            : relationship.direction === "directed" &&
-                relationship.targetCharacterId === character.id &&
-                relationship.type === "child"
-              ? "parent"
-              : (relationship.type as "parent" | "child" | "sibling" | "couple")
-      }))
+        type: snapshotRelationshipType(relationship, character.id)
+      })
+    )
   ),
   previousCharacters: character.previousCharacters,
   verificationStatus: character.verificationStatus,

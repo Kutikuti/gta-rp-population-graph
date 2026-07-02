@@ -79,7 +79,6 @@ describe("notion import mapping", () => {
         { type: "parent", target: "Victor Lovelace" },
         { type: "sibling", target: "Byron Lovelace" },
         { type: "couple_reference", target: "Grace Hopper" },
-        { type: "aunt_or_uncle_reference", target: "Noah Example" },
         { type: "ex_partner_reference", target: "Charles Babbage" },
         { type: "uncle_reference", target: "Henri Example" },
         { type: "aunt_reference", target: "Julia Example" }

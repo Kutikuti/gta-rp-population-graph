@@ -48,7 +48,6 @@ describe("database models", () => {
     expect(informativeRelationshipTypes).toEqual([
       "previous_character",
       "couple_reference",
-      "aunt_or_uncle_reference",
       "ex_partner_reference",
       "uncle_reference",
       "aunt_reference"
@@ -60,7 +59,6 @@ describe("database models", () => {
       "couple",
       "previous_character",
       "couple_reference",
-      "aunt_or_uncle_reference",
       "ex_partner_reference",
       "uncle_reference",
       "aunt_reference"

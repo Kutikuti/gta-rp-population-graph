@@ -45,11 +45,6 @@ export const relationshipDefinitionByType: Record<RelationshipType, Relationship
     direction: "symmetric",
     graphVisible: false
   },
-  aunt_or_uncle_reference: {
-    label: "Oncle ou tante",
-    direction: "directed",
-    graphVisible: false
-  },
   ex_partner_reference: {
     label: "Ex",
     direction: "symmetric",

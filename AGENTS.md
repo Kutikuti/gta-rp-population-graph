@@ -106,8 +106,11 @@ Principes :
   `prenom-nom`, avec suffixe numerote en cas de doublon, plutot qu'un UUID.
   Si le prenom ou le nom d'une fiche change, ce slug doit etre regenere pour
   rester coherent avec la fiche publique.
-- Relations typees strictement RP entre personnages et limitees au noyau
-  familial/couple : parent, enfant, fratrie, couple.
+- Relations typees strictement RP entre personnages, avec un noyau visible par
+  defaut dans le graphe (`parent`, `child`, `sibling`, `couple`) et des
+  relations secondaires egalement gerables dans la fiche (`previous_character`,
+  `ex_partner_reference`, `uncle_reference`, `aunt_reference`), certaines
+  n'etant pas affichees par defaut dans le graphe public.
 - Les appartenances metier, police, quartier ou groupe restent des champs de
   fiche ou des tags, pas des relations du graphe public. Les metiers et
   fonctions doivent converger vers un bloc unifie `entreprise / grade /
@@ -206,8 +209,15 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
   facultatifs et unifies pour tous les metiers : `Entreprise`, `Grade` et
   `Matricule`, auxquels s'ajoutent `Groupe` et `Quartier`. Ne pas reintroduire
   de champs dedies type police ou role de groupe qui feraient doublon.
-- Les parentes RP doivent etre editables depuis la fiche via un bloc dedie,
-  avec les types controles `parent`, `enfant`, `fratrie`, `couple`.
+- Les parentes RP doivent etre editables depuis la fiche via un bloc dedie.
+  Tous les types de relations geres par le modele doivent pouvoir y etre
+  saisis, y compris les relations secondaires visibles seulement dans la fiche
+  publique. Le graphe public, lui, n'affiche par defaut que le noyau
+  `parent`, `child`, `sibling`, `couple`.
+- Lors de l'import Notion, il faut recuperer au maximum les relations
+  disponibles dans la source communautaire, y compris `V6` / anciens
+  personnages, ex, oncle, tante et variantes associees, afin d'eviter une
+  perte d'information entre la source et la fiche.
 - Le bloc medias doit permettre soit de rattacher un streamer existant, soit de
   proposer un nouveau streamer par son nom public, ainsi que d'editer les liens
   publics associes. Ce bloc pourra aussi accueillir un lien Discord public pour

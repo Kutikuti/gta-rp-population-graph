@@ -49,6 +49,9 @@ const relationshipNameMap = (relationships: PublicRelationship[]) =>
     )
   );
 
+const displayRelationshipLabel = (relationship: PublicRelationship) =>
+  relationship.label.trim() || relationLabels[relationship.type] || relationship.type;
+
 export function CharacterSheet({
   canEditDirectly,
   character,
@@ -59,6 +62,8 @@ export function CharacterSheet({
 }: CharacterSheetProps) {
   const links = socialEntries(character.socialLinks ?? character.streamer?.socialLinks);
   const relationships = [...character.relationships.outgoing, ...character.relationships.incoming];
+  const primaryRelationships = relationships.filter((relationship) => relationship.graphVisible);
+  const secondaryRelationships = relationships.filter((relationship) => !relationship.graphVisible);
   const photoUrl = resolveApiAssetUrl(character.photoUrl);
   const charactersById = relationshipNameMap(relationships);
   const streamersById = character.streamer
@@ -154,25 +159,40 @@ export function CharacterSheet({
       </section>
 
       <section className="sheet-section">
-        <h3>Relations RP</h3>
+        <h3>Relations</h3>
         <div className="relationship-list">
-          {relationships.length ? (
-            relationships.map((relationship) => (
+          {primaryRelationships.length ? (
+            primaryRelationships.map((relationship) => (
               <div
                 key={`${relationship.id}-${relationship.relatedCharacter.id}`}
                 className="relationship-row"
               >
                 <span>{relationship.relatedCharacter.fullName}</span>
-                <small>
-                  {relationLabels[relationship.type] ?? relationship.type} · {relationship.label}
-                </small>
+                <small>{displayRelationshipLabel(relationship)}</small>
               </div>
             ))
           ) : (
-            <span className="muted-text">Aucune relation documentée.</span>
+            <span className="muted-text">Aucune relation principale documentée.</span>
           )}
         </div>
       </section>
+
+      {secondaryRelationships.length ? (
+        <section className="sheet-section">
+          <h3>Relations complémentaires</h3>
+          <div className="relationship-list">
+            {secondaryRelationships.map((relationship) => (
+              <div
+                key={`${relationship.id}-${relationship.relatedCharacter.id}`}
+                className="relationship-row"
+              >
+                <span>{relationship.relatedCharacter.fullName}</span>
+                <small>{displayRelationshipLabel(relationship)}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="sheet-section">
         <h3>Médias</h3>
