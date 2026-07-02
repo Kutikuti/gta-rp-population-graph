@@ -82,11 +82,14 @@ export function CharacterSnapshotForm({
 }: CharacterSnapshotFormProps) {
   const phoneRowIdsRef = useRef<string[]>(snapshot.phoneNumbers.map(() => crypto.randomUUID()));
 
+  const updateSnapshot = (changes: Partial<CharacterSnapshot>) => {
+    onChange({ ...snapshot, ...changes });
+  };
+
   const updateText = (key: keyof CharacterSnapshot, value: string) => {
-    onChange({
-      ...snapshot,
+    updateSnapshot({
       [key]: key === "firstName" || key === "lastName" ? value : nullableValue(value)
-    });
+    } as Partial<CharacterSnapshot>);
   };
 
   if (phoneRowIdsRef.current.length < snapshot.phoneNumbers.length) {
@@ -104,8 +107,61 @@ export function CharacterSnapshotForm({
   );
   const relationshipType = (value: string) => value as (typeof editableRelationTypes)[number];
   const updatePhoneNumbers = (phoneNumbers: string[]) => {
-    onChange({ ...snapshot, phoneNumbers });
+    updateSnapshot({ phoneNumbers });
   };
+  const updateRelationships = (relationships: CharacterSnapshot["relationships"]) => {
+    updateSnapshot({ relationships });
+  };
+  const addRelationship = () => {
+    const defaultCharacterId = availableCharacterOptions[0]?.id ?? "";
+
+    if (!defaultCharacterId) {
+      return;
+    }
+
+    updateRelationships([
+      ...snapshot.relationships,
+      {
+        characterId: defaultCharacterId,
+        type: "parent"
+      }
+    ]);
+  };
+  const removeRelationshipAt = (index: number) => {
+    updateRelationships(
+      snapshot.relationships.filter((_relationship, currentIndex) => currentIndex !== index)
+    );
+  };
+  const updateRelationshipAt = (
+    index: number,
+    changes: Partial<CharacterSnapshot["relationships"][number]>
+  ) => {
+    updateRelationships(
+      snapshot.relationships.map((relationship, currentIndex) =>
+        currentIndex === index ? { ...relationship, ...changes } : relationship
+      )
+    );
+  };
+  const updateSocialLink = (
+    platform: keyof NonNullable<CharacterSnapshot["socialLinks"]>,
+    value: string
+  ) => {
+    const nextValue = nullableValue(value);
+    const nextLinks = {
+      ...(snapshot.socialLinks ?? {})
+    };
+
+    if (nextValue) {
+      nextLinks[platform] = nextValue;
+    } else {
+      delete nextLinks[platform];
+    }
+
+    updateSnapshot({
+      socialLinks: Object.keys(nextLinks).length ? nextLinks : null
+    });
+  };
+  const isDirectPhotoMode = submitLabel.includes("Appliquer");
 
   return (
     <form
@@ -144,7 +200,7 @@ export function CharacterSnapshotForm({
             <select
               value={snapshot.lifeStatus}
               onChange={(event) => {
-                onChange({ ...snapshot, lifeStatus: event.target.value as LifeStatus });
+                updateSnapshot({ lifeStatus: event.target.value as LifeStatus });
               }}
             >
               {Object.entries(lifeStatusLabels).map(([value, label]) => (
@@ -160,7 +216,7 @@ export function CharacterSnapshotForm({
               type="date"
               value={textValue(snapshot.deathOrDepartureDate)}
               onChange={(event) => {
-                onChange({ ...snapshot, deathOrDepartureDate: nullableValue(event.target.value) });
+                updateSnapshot({ deathOrDepartureDate: nullableValue(event.target.value) });
               }}
             />
           </label>
@@ -289,16 +345,9 @@ export function CharacterSnapshotForm({
                 <select
                   value={relationship.type}
                   onChange={(event) => {
-                    const nextRelationships = snapshot.relationships.map((current, currentIndex) =>
-                      currentIndex === index
-                        ? {
-                            ...current,
-                            type: relationshipType(event.target.value)
-                          }
-                        : current
-                    );
-
-                    onChange({ ...snapshot, relationships: nextRelationships });
+                    updateRelationshipAt(index, {
+                      type: relationshipType(event.target.value)
+                    });
                   }}
                 >
                   {editableRelationTypes.map((value) => (
@@ -313,16 +362,9 @@ export function CharacterSnapshotForm({
                 <select
                   value={relationship.characterId}
                   onChange={(event) => {
-                    const nextRelationships = snapshot.relationships.map((current, currentIndex) =>
-                      currentIndex === index
-                        ? {
-                            ...current,
-                            characterId: event.target.value
-                          }
-                        : current
-                    );
-
-                    onChange({ ...snapshot, relationships: nextRelationships });
+                    updateRelationshipAt(index, {
+                      characterId: event.target.value
+                    });
                   }}
                 >
                   <option value="">Sélectionner</option>
@@ -339,12 +381,7 @@ export function CharacterSnapshotForm({
                 aria-label="Retirer cette relation"
                 title="Retirer cette relation"
                 onClick={() => {
-                  onChange({
-                    ...snapshot,
-                    relationships: snapshot.relationships.filter(
-                      (_relationship, currentIndex) => currentIndex !== index
-                    )
-                  });
+                  removeRelationshipAt(index);
                 }}
               >
                 <img src={deleteIconUrl} alt="" aria-hidden="true" />
@@ -355,24 +392,7 @@ export function CharacterSnapshotForm({
             <button
               type="button"
               className="ghost-button"
-              onClick={() => {
-                const defaultCharacterId = availableCharacterOptions[0]?.id ?? "";
-
-                if (!defaultCharacterId) {
-                  return;
-                }
-
-                onChange({
-                  ...snapshot,
-                  relationships: [
-                    ...snapshot.relationships,
-                    {
-                      characterId: defaultCharacterId,
-                      type: "parent"
-                    }
-                  ]
-                });
-              }}
+              onClick={addRelationship}
               disabled={!availableCharacterOptions.length}
             >
               Ajouter un lien
@@ -393,7 +413,7 @@ export function CharacterSnapshotForm({
                     : resolveApiAssetUrl(snapshot.photoUrl)
                 }
                 isUploading={isPhotoUploading}
-                mode={submitLabel.includes("Appliquer") ? "direct" : "request"}
+                mode={isDirectPhotoMode ? "direct" : "request"}
                 onUpload={onPhotoUpload}
               />
             </div>
@@ -410,8 +430,7 @@ export function CharacterSnapshotForm({
               value={snapshot.streamerId ?? ""}
               onChange={(event) => {
                 const nextStreamerId = nullableValue(event.target.value);
-                onChange({
-                  ...snapshot,
+                updateSnapshot({
                   streamerId: nextStreamerId,
                   streamerName: nextStreamerId ? null : snapshot.streamerName
                 });
@@ -432,8 +451,7 @@ export function CharacterSnapshotForm({
               value={textValue(snapshot.streamerName)}
               placeholder="À créer si absent"
               onChange={(event) => {
-                onChange({
-                  ...snapshot,
+                updateSnapshot({
                   streamerId: null,
                   streamerName: nullableValue(event.target.value)
                 });
@@ -448,21 +466,7 @@ export function CharacterSnapshotForm({
                 value={textValue(snapshot.socialLinks?.[platform] ?? null)}
                 placeholder={`Lien ${label}`}
                 onChange={(event) => {
-                  const nextValue = nullableValue(event.target.value);
-                  const nextLinks = {
-                    ...(snapshot.socialLinks ?? {})
-                  };
-
-                  if (nextValue) {
-                    nextLinks[platform] = nextValue;
-                  } else {
-                    delete nextLinks[platform];
-                  }
-
-                  onChange({
-                    ...snapshot,
-                    socialLinks: Object.keys(nextLinks).length ? nextLinks : null
-                  });
+                  updateSocialLink(platform, event.target.value);
                 }}
               />
             </label>
@@ -477,8 +481,7 @@ export function CharacterSnapshotForm({
           <select
             value={snapshot.verificationStatus}
             onChange={(event) => {
-              onChange({
-                ...snapshot,
+              updateSnapshot({
                 verificationStatus: event.target.value as VerificationStatus
               });
             }}
@@ -495,7 +498,7 @@ export function CharacterSnapshotForm({
           <textarea
             value={textValue(snapshot.sourceNote)}
             onChange={(event) => {
-              onChange({ ...snapshot, sourceNote: nullableValue(event.target.value) });
+              updateSnapshot({ sourceNote: nullableValue(event.target.value) });
             }}
             rows={4}
           />

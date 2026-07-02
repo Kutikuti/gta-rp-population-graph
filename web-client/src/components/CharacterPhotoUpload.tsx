@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useId, useMemo, useState } from "react";
 
 type CharacterPhotoUploadProps = {
   currentPhotoUrl: string | null;
@@ -67,6 +67,46 @@ export function CharacterPhotoUpload({
     [fileUrl]
   );
 
+  const resetCropControls = () => {
+    setZoom(1);
+    setOffsetX(0);
+    setOffsetY(0);
+  };
+
+  const setPreviewFile = (file: File) => {
+    if (fileUrl) {
+      URL.revokeObjectURL(fileUrl);
+    }
+
+    setFileName(file.name);
+    setFileUrl(URL.createObjectURL(file));
+    setFeedback(null);
+    resetCropControls();
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+
+    if (!file) {
+      setFileName(null);
+      return;
+    }
+
+    if (file.size > maxClientPhotoBytes) {
+      setFeedback("Image trop volumineuse. Maximum 2 Mo.");
+      setFileName(file.name);
+      return;
+    }
+
+    setPreviewFile(file);
+  };
+
+  const handleUpload = () => {
+    void uploadCroppedPhoto().catch(() => {
+      setFeedback("La photo n'a pas pu être préparée.");
+    });
+  };
+
   const uploadCroppedPhoto = async () => {
     if (!fileUrl) {
       return;
@@ -126,31 +166,7 @@ export function CharacterPhotoUpload({
             className="sr-only"
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            onChange={(event) => {
-              const file = event.target.files?.[0] ?? null;
-
-              if (!file) {
-                setFileName(null);
-                return;
-              }
-
-              if (file.size > maxClientPhotoBytes) {
-                setFeedback("Image trop volumineuse. Maximum 2 Mo.");
-                setFileName(file.name);
-                return;
-              }
-
-              if (fileUrl) {
-                URL.revokeObjectURL(fileUrl);
-              }
-
-              setFileName(file.name);
-              setFileUrl(URL.createObjectURL(file));
-              setFeedback(null);
-              setZoom(1);
-              setOffsetX(0);
-              setOffsetY(0);
-            }}
+            onChange={handleFileChange}
           />
         </div>
 
@@ -199,11 +215,7 @@ export function CharacterPhotoUpload({
               type="button"
               className="ghost-button photo-use-button"
               disabled={isUploading}
-              onClick={() => {
-                void uploadCroppedPhoto().catch(() => {
-                  setFeedback("La photo n'a pas pu être préparée.");
-                });
-              }}
+              onClick={handleUpload}
             >
               {isUploading ? "Préparation..." : "Utiliser cette photo"}
             </button>
