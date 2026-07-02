@@ -167,6 +167,20 @@ describe("notion import mapping", () => {
     ]);
   });
 
+  it("maps 'Couple relation' to the managed couple relationship type", () => {
+    const result = mapNotionPage({
+      pageId: "page-couple-field",
+      properties: {
+        Prenom: "Ada",
+        Nom: "Lovelace",
+        "Couple relation": "Grace Hopper"
+      }
+    });
+
+    expect(result.mapped.relationships).toEqual([{ type: "couple", target: "Grace Hopper" }]);
+    expect(result.report.ambiguousRelations).toEqual([]);
+  });
+
   it("maps Flashback status, police fields and group tags from Notion properties", () => {
     const aliveResult = mapNotionPage({
       pageId: "page-heitor",
