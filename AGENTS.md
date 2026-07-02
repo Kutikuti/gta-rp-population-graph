@@ -217,7 +217,10 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 - Lors de l'import Notion, il faut recuperer au maximum les relations
   disponibles dans la source communautaire, y compris `V6` / anciens
   personnages, ex, oncle, tante et variantes associees, afin d'eviter une
-  perte d'information entre la source et la fiche.
+  perte d'information entre la source et la fiche. Le champ `Couple relation`
+  doit etre mappe sur la relation geree `couple`. Le champ `Est oncle/tante`,
+  trop ambigu sans type persistant retenu, doit remonter dans les ambiguittes
+  d'import plutot que d'etre silencieusement converti ou perdu.
 - Le bloc medias doit permettre soit de rattacher un streamer existant, soit de
   proposer un nouveau streamer par son nom public, ainsi que d'editer les liens
   publics associes. Ce bloc pourra aussi accueillir un lien Discord public pour

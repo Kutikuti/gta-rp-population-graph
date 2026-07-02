@@ -1477,6 +1477,11 @@ Relations :
   `ex_partner_reference`, `uncle_reference`, `aunt_reference` ainsi que le
   noyau familial/couple) sont consideres comme recuperables depuis Notion et
   doivent etre preserves.
+- Le type intermediaire `couple_reference` est abandonne : `Couple relation`
+  dans Notion doit alimenter directement la relation geree `couple`.
+- Le champ `Est oncle/tante` reste reconnu dans le rapport d'import mais doit
+  remonter comme ambiguite tant qu'aucun type persistant explicite n'est
+  retenu pour lui.
 
 Plan detaille du lot B :
 
@@ -1511,6 +1516,24 @@ Plan detaille du lot B :
 6. Validation
    - ajouter ou adapter les tests backend et frontend ;
    - mettre a jour la documentation une fois le lot B stabilise.
+
+Avancement actuel du lot B :
+
+- OK regles de visibilite clarifiees entre relations du graphe public et
+  relations secondaires visibles en fiche ;
+- OK edition unifiee des relations dans la fiche avec selecteur regroupe entre
+  relations principales et complementaires ;
+- OK affichage public clarifie entre relations principales et relations
+  complementaires, sans doublon visuel de libelle ;
+- OK diffs de moderation, historique public et profil utilisateur rendus plus
+  lisibles pour les relations, telephones et liens sociaux multilignes ;
+- OK suppression du type `couple_reference` au profit du type `couple` ;
+- OK import Notion aligne sur ce choix, avec `Couple relation` mappe vers
+  `couple` ;
+- OK `Est oncle/tante` remonte comme ambiguite d'import plutot que d'etre
+  perdu silencieusement ;
+- OK tests cibles ajoutes sur l'import Notion et le formatage frontend des
+  champs multilignes.
 
 Point de controle :
 
