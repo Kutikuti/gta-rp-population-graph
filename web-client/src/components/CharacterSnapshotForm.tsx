@@ -8,6 +8,7 @@ import {
   resolveApiAssetUrl,
   type VerificationStatus
 } from "../api";
+import deleteIconUrl from "../assets/misc/delete.svg";
 import {
   editableRelationTypes,
   lifeStatusLabels,
@@ -226,7 +227,10 @@ export function CharacterSnapshotForm({
         <legend>Contact</legend>
         <div className="relationship-draft-list">
           {snapshot.phoneNumbers.map((phoneNumber, index) => (
-            <div key={phoneRowIdsRef.current[index]} className="relationship-draft-row">
+            <div
+              key={phoneRowIdsRef.current[index]}
+              className="relationship-draft-row phone-draft-row"
+            >
               <label className="phone-row-field">
                 <input
                   type="text"
@@ -241,10 +245,11 @@ export function CharacterSnapshotForm({
                   }}
                 />
               </label>
-              <div />
               <button
                 type="button"
-                className="ghost-button compact-action"
+                className="remove-row-button"
+                aria-label="Retirer ce numéro de téléphone"
+                title="Retirer ce numéro de téléphone"
                 onClick={() => {
                   updatePhoneNumbers(
                     snapshot.phoneNumbers.filter(
@@ -253,7 +258,7 @@ export function CharacterSnapshotForm({
                   );
                 }}
               >
-                Retirer
+                <img src={deleteIconUrl} alt="" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -272,12 +277,12 @@ export function CharacterSnapshotForm({
       </fieldset>
 
       <fieldset>
-        <legend>Parentés</legend>
+        <legend>Relations</legend>
         <div className="relationship-draft-list">
           {snapshot.relationships.map((relationship, index) => (
             <div
               key={`${relationship.type}-${relationship.characterId}`}
-              className="relationship-draft-row"
+              className="relationship-draft-row relation-draft-row"
             >
               <label>
                 <span>Lien</span>
@@ -330,7 +335,9 @@ export function CharacterSnapshotForm({
               </label>
               <button
                 type="button"
-                className="ghost-button compact-action"
+                className="remove-row-button"
+                aria-label="Retirer cette relation"
+                title="Retirer cette relation"
                 onClick={() => {
                   onChange({
                     ...snapshot,
@@ -340,7 +347,7 @@ export function CharacterSnapshotForm({
                   });
                 }}
               >
-                Retirer
+                <img src={deleteIconUrl} alt="" aria-hidden="true" />
               </button>
             </div>
           ))}
