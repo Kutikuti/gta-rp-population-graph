@@ -12,7 +12,10 @@ import {
   relationLabels,
   verificationLabels
 } from "../constants";
-import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
+import {
+  formatCharacterSnapshotValue,
+  isExpandedCharacterSnapshotField
+} from "../utils/characterDraftFormat";
 import { compactValue, formatDate, socialEntries } from "../utils/format";
 
 type CharacterSheetProps = {
@@ -248,7 +251,13 @@ export function CharacterSheet({
                             ? characterSnapshotFieldLabels[field]
                             : field}
                         </strong>
-                        <span>
+                        <span
+                          className={
+                            isKnownSnapshotField(field) && isExpandedCharacterSnapshotField(field)
+                              ? "history-value history-value-expanded"
+                              : "history-value"
+                          }
+                        >
                           {isKnownSnapshotField(field)
                             ? formatCharacterSnapshotValue(field, change.old, {
                                 streamersById,
@@ -256,7 +265,13 @@ export function CharacterSheet({
                               })
                             : String(change.old ?? "Non renseigné")}
                         </span>
-                        <span>
+                        <span
+                          className={
+                            isKnownSnapshotField(field) && isExpandedCharacterSnapshotField(field)
+                              ? "history-value history-value-expanded"
+                              : "history-value"
+                          }
+                        >
                           {isKnownSnapshotField(field)
                             ? formatCharacterSnapshotValue(field, change.new, {
                                 streamersById,

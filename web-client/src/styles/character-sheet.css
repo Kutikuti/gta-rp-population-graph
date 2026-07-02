@@ -183,6 +183,10 @@
   overflow-wrap: anywhere;
 }
 
+.history-value-expanded {
+  white-space: pre-line;
+}
+
 .tag-list,
 .link-list {
   display: flex;

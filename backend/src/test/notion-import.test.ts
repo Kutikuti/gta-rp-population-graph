@@ -78,7 +78,6 @@ describe("notion import mapping", () => {
         { type: "previous_character", target: "Milo Vega" },
         { type: "parent", target: "Victor Lovelace" },
         { type: "sibling", target: "Byron Lovelace" },
-        { type: "couple_reference", target: "Grace Hopper" },
         { type: "ex_partner_reference", target: "Charles Babbage" },
         { type: "uncle_reference", target: "Henri Example" },
         { type: "aunt_reference", target: "Julia Example" }
@@ -106,7 +105,8 @@ describe("notion import mapping", () => {
     );
     expect(result.report.unknownFields).toEqual(["Champ inconnu"]);
     expect(result.report.ambiguousRelations).toEqual([
-      { type: "collegue", target: "Charles Babbage" }
+      { type: "collegue", target: "Charles Babbage" },
+      { type: "est oncle/tante", target: "Noah Example" }
     ]);
     expect(result.report.photoReferences).toEqual(["https://example.com/ada.webp"]);
   });

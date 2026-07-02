@@ -6,7 +6,10 @@ import type {
   PublicStreamer
 } from "../api";
 import { characterSnapshotFieldLabels } from "../constants";
-import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
+import {
+  formatCharacterSnapshotValue,
+  isExpandedCharacterSnapshotField
+} from "../utils/characterDraftFormat";
 import { CharacterSnapshotForm } from "./CharacterSnapshotForm";
 import type { SnapshotDiffRow } from "./moderation-shared";
 import { LoadingBlock } from "./StateBlock";
@@ -92,14 +95,26 @@ export function ModerationDetailPanel({
                 >
                   <strong>{characterSnapshotFieldLabels[change.field]}</strong>
                   {!isCreationRequest ? (
-                    <span>
+                    <span
+                      className={
+                        isExpandedCharacterSnapshotField(change.field)
+                          ? "diff-value diff-value-expanded"
+                          : "diff-value"
+                      }
+                    >
                       {formatCharacterSnapshotValue(change.field, change.oldValue, {
                         streamersById: streamerNames,
                         charactersById: characterNames
                       })}
                     </span>
                   ) : null}
-                  <span>
+                  <span
+                    className={
+                      isExpandedCharacterSnapshotField(change.field)
+                        ? "diff-value diff-value-expanded"
+                        : "diff-value"
+                    }
+                  >
                     {formatCharacterSnapshotValue(change.field, change.newValue, {
                       streamersById: streamerNames,
                       charactersById: characterNames

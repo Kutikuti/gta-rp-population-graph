@@ -355,7 +355,6 @@ const ambiguousRelationships = (relationships: JsonObject[]) =>
         "sibling",
         "couple",
         "previous_character",
-        "couple_reference",
         "ex_partner_reference",
         "uncle_reference",
         "aunt_reference",
@@ -373,6 +372,9 @@ const relationshipEntriesFromField = (value: unknown, type: string) =>
         target
       }) as JsonObject
   );
+
+const ambiguousRelationshipEntriesFromField = (value: unknown, label: string) =>
+  relationshipEntriesFromField(value, label);
 
 const previousCharacterRelationshipList = (value: unknown) =>
   relationshipEntriesFromField(value, "previous_character");
@@ -416,7 +418,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
     ),
     ...relationshipEntriesFromField(
       findValue(properties, fieldAliases.informativeCoupleRelationships),
-      "couple_reference"
+      "couple"
     ),
     ...relationshipEntriesFromField(
       findValue(properties, fieldAliases.informativeExRelationships),
@@ -429,6 +431,12 @@ export const mapNotionPage = (page: NotionPageInput) => {
     ...relationshipEntriesFromField(
       findValue(properties, fieldAliases.informativeAuntRelationships),
       "aunt_reference"
+    )
+  ]);
+  const ambiguousImportRelationships = dedupeRelationships([
+    ...ambiguousRelationshipEntriesFromField(
+      findValue(properties, fieldAliases.informativeAuntOrUncleRelationships),
+      "est oncle/tante"
     )
   ]);
   const photoReferences = uniqueStrings(
@@ -506,7 +514,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
     recognizedFields: recognizedFieldNames(properties),
     missingFields,
     unknownFields: unknownFieldNames(properties),
-    ambiguousRelations: ambiguousRelationships(relationships),
+    ambiguousRelations: ambiguousRelationships([...relationships, ...ambiguousImportRelationships]),
     photoReferences,
     errors
   };

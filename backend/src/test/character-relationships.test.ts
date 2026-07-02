@@ -21,7 +21,7 @@ describe("character relationship definitions", () => {
     expect(isEditableRelationshipType("parent")).toBe(true);
     expect(isEditableRelationshipType("sibling")).toBe(true);
     expect(isEditableRelationshipType("previous_character")).toBe(true);
-    expect(isEditableRelationshipType("couple_reference")).toBe(true);
+    expect(isEditableRelationshipType("ex_partner_reference")).toBe(true);
   });
 
   it("keeps inverse and display metadata coherent", () => {

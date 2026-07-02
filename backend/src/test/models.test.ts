@@ -47,7 +47,6 @@ describe("database models", () => {
     expect(graphRelationshipTypes).toEqual(["parent", "child", "sibling", "couple"]);
     expect(informativeRelationshipTypes).toEqual([
       "previous_character",
-      "couple_reference",
       "ex_partner_reference",
       "uncle_reference",
       "aunt_reference"
@@ -58,7 +57,6 @@ describe("database models", () => {
       "sibling",
       "couple",
       "previous_character",
-      "couple_reference",
       "ex_partner_reference",
       "uncle_reference",
       "aunt_reference"

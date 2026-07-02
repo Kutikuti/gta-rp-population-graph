@@ -30,7 +30,6 @@ export const relationLabels: Record<string, string> = {
   sibling: "Fratrie",
   couple: "Couple",
   previous_character: "Ancien personnage",
-  couple_reference: "Couple",
   ex_partner_reference: "Ex",
   uncle_reference: "Oncle",
   aunt_reference: "Tante"
@@ -42,11 +41,24 @@ export const editableRelationTypes = [
   "sibling",
   "couple",
   "previous_character",
-  "couple_reference",
   "ex_partner_reference",
   "uncle_reference",
   "aunt_reference"
 ] as const;
+
+export const relationTypeGroups: Array<{
+  label: string;
+  types: (typeof editableRelationTypes)[number][];
+}> = [
+  {
+    label: "Relations principales",
+    types: ["parent", "child", "sibling", "couple"]
+  },
+  {
+    label: "Relations complémentaires",
+    types: ["previous_character", "ex_partner_reference", "uncle_reference", "aunt_reference"]
+  }
+];
 
 export const characterSnapshotFieldLabels: Record<keyof CharacterSnapshot, string> = {
   firstName: "Prénom",

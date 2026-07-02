@@ -11,9 +11,9 @@ import {
 import addIconUrl from "../assets/misc/add.svg";
 import deleteIconUrl from "../assets/misc/delete.svg";
 import {
-  editableRelationTypes,
   lifeStatusLabels,
   relationLabels,
+  relationTypeGroups,
   verificationLabels
 } from "../constants";
 import { CharacterPhotoUpload } from "./CharacterPhotoUpload";
@@ -47,6 +47,8 @@ const socialPlatforms = [
   ["instagram", "Instagram"],
   ["tiktok", "TikTok"]
 ] as const;
+
+type RelationType = CharacterSnapshot["relationships"][number]["type"];
 
 const fieldGroups: Array<{
   title: string;
@@ -106,7 +108,7 @@ export function CharacterSnapshotForm({
   const availableCharacterOptions = characterOptions.filter(
     (character) => character.id !== currentCharacterId
   );
-  const relationshipType = (value: string) => value as (typeof editableRelationTypes)[number];
+  const relationshipType = (value: string) => value as RelationType;
   const updatePhoneNumbers = (phoneNumbers: string[]) => {
     updateSnapshot({ phoneNumbers });
   };
@@ -353,10 +355,14 @@ export function CharacterSnapshotForm({
                     });
                   }}
                 >
-                  {editableRelationTypes.map((value) => (
-                    <option key={value} value={value}>
-                      {relationLabels[value]}
-                    </option>
+                  {relationTypeGroups.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.types.map((value) => (
+                        <option key={value} value={value}>
+                          {relationLabels[value]}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </label>

@@ -864,6 +864,10 @@
   overflow-wrap: anywhere;
 }
 
+.diff-value-expanded {
+  white-space: pre-line;
+}
+
 .compact-request-list .request-list-item {
   display: grid;
   gap: 4px;
@@ -926,6 +930,10 @@
   font-size: 0.76rem;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.profile-request-value-expanded {
+  white-space: pre-line;
 }
 
 @media (max-width: 860px) {

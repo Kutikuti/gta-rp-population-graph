@@ -14,7 +14,10 @@ import {
   listMyChangeRequests
 } from "../api";
 import { characterSnapshotFieldLabels } from "../constants";
-import { formatCharacterSnapshotValue } from "../utils/characterDraftFormat";
+import {
+  formatCharacterSnapshotValue,
+  isExpandedCharacterSnapshotField
+} from "../utils/characterDraftFormat";
 import { formatDate } from "../utils/format";
 import { type AuthProvider, AuthProviderIcon, authProviderLabels } from "./AuthProviderIcon";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
@@ -322,7 +325,13 @@ export function ProfileView({
                           return (
                             <div key={field} className="profile-request-change">
                               <span>{characterSnapshotFieldLabels[field]}</span>
-                              <strong>
+                              <strong
+                                className={
+                                  isExpandedCharacterSnapshotField(field)
+                                    ? "profile-request-value profile-request-value-expanded"
+                                    : "profile-request-value"
+                                }
+                              >
                                 {formatCharacterSnapshotValue(field, value, {
                                   streamersById: requestStreamerMap,
                                   charactersById: characterNames

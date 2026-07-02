@@ -23,9 +23,10 @@ export const tagTypes = ["family", "district", "organization", "business", "othe
 export type TagType = (typeof tagTypes)[number];
 
 export const graphRelationshipTypes = ["parent", "child", "sibling", "couple"] as const;
+// Informative relationships are kept on the character sheet and in moderation/history,
+// but are not rendered on the public graph by default.
 export const informativeRelationshipTypes = [
   "previous_character",
-  "couple_reference",
   "ex_partner_reference",
   "uncle_reference",
   "aunt_reference"

@@ -202,7 +202,6 @@ export type CharacterSnapshot = {
       | "sibling"
       | "couple"
       | "previous_character"
-      | "couple_reference"
       | "ex_partner_reference"
       | "uncle_reference"
       | "aunt_reference";

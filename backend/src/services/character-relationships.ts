@@ -13,6 +13,7 @@ type RelationshipDefinition = {
 };
 
 export const relationshipDefinitionByType: Record<RelationshipType, RelationshipDefinition> = {
+  // Core graph relationships: explicit RP links that are intended to structure the public graph.
   parent: {
     label: "Parent",
     direction: "directed",
@@ -35,14 +36,10 @@ export const relationshipDefinitionByType: Record<RelationshipType, Relationship
     direction: "symmetric",
     graphVisible: true
   },
+  // Informative relationships: kept in sheets/history/imports, but hidden from the graph by default.
   previous_character: {
     label: "Ancien personnage",
     direction: "directed",
-    graphVisible: false
-  },
-  couple_reference: {
-    label: "Couple",
-    direction: "symmetric",
     graphVisible: false
   },
   ex_partner_reference: {

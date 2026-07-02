@@ -6,6 +6,12 @@ type FormatCharacterSnapshotValueOptions = {
   charactersById?: ReadonlyMap<string, string>;
 };
 
+const expandedSnapshotFields: ReadonlySet<keyof CharacterSnapshot> = new Set([
+  "relationships",
+  "phoneNumbers",
+  "socialLinks"
+]);
+
 const socialPlatformLabels: Record<string, string> = {
   twitch: "Twitch",
   kick: "Kick",
@@ -13,6 +19,9 @@ const socialPlatformLabels: Record<string, string> = {
   instagram: "Instagram",
   tiktok: "TikTok"
 };
+
+export const isExpandedCharacterSnapshotField = (field: keyof CharacterSnapshot): boolean =>
+  expandedSnapshotFields.has(field);
 
 export const formatCharacterSnapshotValue = (
   field: keyof CharacterSnapshot,
@@ -50,17 +59,19 @@ export const formatCharacterSnapshotValue = (
         const characterId = String(relationship.characterId);
         const type = String(relationship.type);
 
-        return `${relationLabels[type] ?? type} · ${
+        return `• ${relationLabels[type] ?? type} : ${
           options.charactersById?.get(characterId) ?? characterId
         }`;
       })
       .filter(Boolean);
 
-    return items.length ? items.join(", ") : "Aucune parenté";
+    return items.length ? items.join("\n") : "Aucune parenté";
   }
 
   if (field === "phoneNumbers" && Array.isArray(value)) {
-    return value.length ? value.join(", ") : "Non renseigné";
+    return value.length
+      ? value.map((phoneNumber) => `• ${phoneNumber}`).join("\n")
+      : "Non renseigné";
   }
 
   if (field === "socialLinks" && typeof value === "object") {
@@ -71,7 +82,8 @@ export const formatCharacterSnapshotValue = (
     return entries.length
       ? entries
           .map(([platform, url]) => `${socialPlatformLabels[platform] ?? platform}: ${url}`)
-          .join(", ")
+          .map((entry) => `• ${entry}`)
+          .join("\n")
       : "Non renseigné";
   }
 
