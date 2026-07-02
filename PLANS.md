@@ -1341,7 +1341,7 @@ Point de controle :
 
 ### Etape 13 - Ameliorations fonctionnelles et ergonomie avancee
 
-Statut : commencee le 2026-07-01.
+Statut : commencee le 2026-07-01. Lot A clos le 2026-07-02.
 
 Cette etape sert de backlog structure pour les ameliorations non bloquantes a
 traiter apres la stabilisation du deploiement, des imports et des premiers
@@ -1356,10 +1356,10 @@ Plan d'implementation propose :
    - clarifier les blocs organisation, groupe, medias et relations ;
    - preparer le support de plusieurs numeros de telephone par personnage,
      sans casser moderation, import et affichage public.
-   - avancement 2026-07-01 : support des plusieurs numeros en cours de place
-     cote schema initial + migration locale, snapshots, API publique, fiche
-     publique et formulaire d'edition ; resteront a verifier les retouches UX
-     fines du panneau et, plus tard, les imports Notion si la source evolue.
+   - avancement 2026-07-02 : lot A considere comme termine ; fiche publique
+     reclarifiee, formulaire stabilise, bloc photo corrige et support des
+     plusieurs numeros actif cote schema initial + migration locale,
+     snapshots, API publique et edition.
 2. Ameliorations graphe et preferences locales
    - enregistrer une vue par defaut regroupee par groupe ;
    - ajouter des preferences locales d'affichage ;
@@ -1389,7 +1389,7 @@ Plan d'implementation propose :
 
 Ordre de travail recommande :
 
-- Lot A : fiche personnage + formulaire d'edition
+- Lot A : fiche personnage + formulaire d'edition - termine
 - Lot B : relations + plusieurs numeros de telephone
 - Lot C : completude des donnees
 - Lot D : graphe et preferences locales
