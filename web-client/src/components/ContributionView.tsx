@@ -234,7 +234,6 @@ export function ContributionView({
       ) : (
         <div className="full-page-grid">
           <div className="work-panel">
-            {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
             <CharacterSnapshotForm
               snapshot={snapshot}
               characterOptions={characterOptions}
@@ -255,6 +254,7 @@ export function ContributionView({
               onPhotoUpload={uploadPhoto}
               onSubmit={submit}
             />
+            {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
           </div>
 
           <aside className="work-panel side-work-panel">
