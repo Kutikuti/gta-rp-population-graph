@@ -7,8 +7,10 @@ import {
   type ChangeRequestSummary,
   type CharacterSnapshot,
   characterToSnapshot,
+  type DataCompletenessReport,
   editCharacterDirectly,
   getCharacter,
+  getModerationDataCompleteness,
   listCharacterDirectory,
   listModerationChangeRequests,
   listStreamers,
@@ -16,6 +18,7 @@ import {
   type PublicStreamer,
   rejectChangeRequest
 } from "../api";
+import { DataCompletenessPanel } from "./DataCompletenessPanel";
 import { ModerationDetailPanel } from "./ModerationDetailPanel";
 import { ModerationRequestList } from "./ModerationRequestList";
 import { canModerate, diffSnapshots, getSelectedModerationRequest } from "./moderation-shared";
@@ -23,10 +26,16 @@ import { canModerate, diffSnapshots, getSelectedModerationRequest } from "./mode
 type ModerationViewProps = {
   session: AuthSession | null;
   onDataChanged: () => Promise<void>;
+  onEditCharacter: (slug: string) => void;
   onError: (message: string) => void;
 };
 
-export function ModerationView({ session, onDataChanged, onError }: ModerationViewProps) {
+export function ModerationView({
+  session,
+  onDataChanged,
+  onEditCharacter,
+  onError
+}: ModerationViewProps) {
   const [requests, setRequests] = useState<ChangeRequestSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentSnapshot, setCurrentSnapshot] = useState<CharacterSnapshot | null>(null);
@@ -39,6 +48,8 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
   const [lastChanges, setLastChanges] = useState<ChangeDiff | null>(null);
   const [streamers, setStreamers] = useState<PublicStreamer[]>([]);
   const [characterOptions, setCharacterOptions] = useState<PublicCharacterReference[]>([]);
+  const [completenessReport, setCompletenessReport] = useState<DataCompletenessReport | null>(null);
+  const [isCompletenessLoading, setIsCompletenessLoading] = useState(false);
 
   const selectedRequest = getSelectedModerationRequest(requests, selectedId);
 
@@ -68,6 +79,34 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
       .finally(() => {
         if (isActive) {
           setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [onError, session]);
+
+  useEffect(() => {
+    if (!canModerate(session)) {
+      setCompletenessReport(null);
+      return;
+    }
+
+    let isActive = true;
+    setIsCompletenessLoading(true);
+    getModerationDataCompleteness()
+      .then((report) => {
+        if (isActive) {
+          setCompletenessReport(report);
+        }
+      })
+      .catch(() => {
+        onError("La vue de complétude n'a pas pu être chargée.");
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsCompletenessLoading(false);
         }
       });
 
@@ -225,42 +264,51 @@ export function ModerationView({ session, onDataChanged, onError }: ModerationVi
           <p className="muted-copy">Accès réservé aux modérateurs.</p>
         </section>
       ) : (
-        <div className="moderation-layout">
-          <ModerationRequestList
-            isLoading={isLoading}
-            requests={requests}
-            selectedRequestId={selectedRequest?.id ?? null}
-            onSelectRequest={(requestId) => {
-              setSelectedId(requestId);
-              setFeedback(null);
-              setLastChanges(null);
-            }}
+        <div className="moderation-page-content">
+          <DataCompletenessPanel
+            isLoading={isCompletenessLoading}
+            onEditCharacter={onEditCharacter}
+            report={completenessReport}
+            title="Fiches à compléter"
           />
 
-          <ModerationDetailPanel
-            characterNames={characterNames}
-            characterOptions={characterOptions}
-            editSnapshot={editSnapshot}
-            feedback={feedback}
-            isDetailLoading={isDetailLoading}
-            isSubmitting={isSubmitting}
-            lastChanges={lastChanges}
-            rejectComment={rejectComment}
-            selectedRequest={selectedRequest}
-            streamerNames={streamerNames}
-            streamers={streamers}
-            visibleDiff={visibleDiff}
-            onApprove={approveSelected}
-            onChangeEditSnapshot={setEditSnapshot}
-            onReject={rejectSelected}
-            onRejectCommentChange={setRejectComment}
-            onResetEditSnapshot={() => {
-              if (selectedRequest) {
-                setEditSnapshot(selectedRequest.proposedSnapshot);
-              }
-            }}
-            onSubmitDirectEdit={submitDirectEdit}
-          />
+          <div className="moderation-layout">
+            <ModerationRequestList
+              isLoading={isLoading}
+              requests={requests}
+              selectedRequestId={selectedRequest?.id ?? null}
+              onSelectRequest={(requestId) => {
+                setSelectedId(requestId);
+                setFeedback(null);
+                setLastChanges(null);
+              }}
+            />
+
+            <ModerationDetailPanel
+              characterNames={characterNames}
+              characterOptions={characterOptions}
+              editSnapshot={editSnapshot}
+              feedback={feedback}
+              isDetailLoading={isDetailLoading}
+              isSubmitting={isSubmitting}
+              lastChanges={lastChanges}
+              rejectComment={rejectComment}
+              selectedRequest={selectedRequest}
+              streamerNames={streamerNames}
+              streamers={streamers}
+              visibleDiff={visibleDiff}
+              onApprove={approveSelected}
+              onChangeEditSnapshot={setEditSnapshot}
+              onReject={rejectSelected}
+              onRejectCommentChange={setRejectComment}
+              onResetEditSnapshot={() => {
+                if (selectedRequest) {
+                  setEditSnapshot(selectedRequest.proposedSnapshot);
+                }
+              }}
+              onSubmitDirectEdit={submitDirectEdit}
+            />
+          </div>
         </div>
       )}
     </section>

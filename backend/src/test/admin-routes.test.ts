@@ -22,6 +22,10 @@ import type {
   ExternalIdentity,
   LinkIdentityResult
 } from "../services/auth.js";
+import type {
+  DataCompletenessReport,
+  DataCompletenessService
+} from "../services/data-completeness.js";
 import type { GoogleOauthClient } from "../services/google-oauth.js";
 
 const authUsers = {
@@ -107,6 +111,27 @@ const notionImportDetail: AdminNotionImportDetail = {
   ]
 };
 
+const dataCompletenessReport: DataCompletenessReport = {
+  summary: {
+    total: 2,
+    withMissingFields: 1,
+    importedOrCommunity: 1,
+    needsReview: 1
+  },
+  items: [
+    {
+      id: "00000000-0000-4000-8000-000000000301",
+      publicSlug: "camille-morel",
+      fullName: "Camille Morel",
+      verificationStatus: "to_check",
+      dataSource: "notion",
+      missingFields: [{ key: "photoUrl", label: "Photo" }],
+      attentionFlags: ["À vérifier", "Importée"],
+      updatedAt: "2026-06-24T00:00:00.000Z"
+    }
+  ]
+};
+
 class FixtureAuthService implements AuthService {
   private readonly usersById = new Map(Object.values(authUsers).map((user) => [user.id, user]));
 
@@ -156,6 +181,12 @@ class FixtureGoogleOauthClient implements GoogleOauthClient {
       displayName: code,
       avatarUrl: null
     };
+  }
+}
+
+class FixtureDataCompletenessService implements DataCompletenessService {
+  async getReport() {
+    return dataCompletenessReport;
   }
 }
 
@@ -283,11 +314,15 @@ const loginAs = async (agent: ReturnType<typeof request.agent>, code: keyof type
   await agent.get("/api/auth/google/callback").query({ code, state });
 };
 
-const createFixtureApp = (adminService: AdminService = new FixtureAdminService()) =>
+const createFixtureApp = (
+  adminService: AdminService = new FixtureAdminService(),
+  dataCompletenessService: DataCompletenessService = new FixtureDataCompletenessService()
+) =>
   createApp({
     authService: new FixtureAuthService(),
     googleOauthClient: new FixtureGoogleOauthClient(),
-    adminService
+    adminService,
+    dataCompletenessService
   });
 
 describe("admin routes", () => {
@@ -310,6 +345,31 @@ describe("admin routes", () => {
     expect(response.status).toBe(200);
     expect(response.body.users).toHaveLength(1);
     expect(response.body.tags[0]).toMatchObject({ name: "Quartier Nord", usageCount: 2 });
+  });
+
+  it("returns the data completeness report to administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.get("/api/admin/completeness");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      summary: {
+        total: 2,
+        withMissingFields: 1,
+        importedOrCommunity: 1,
+        needsReview: 1
+      },
+      items: [
+        {
+          publicSlug: "camille-morel",
+          fullName: "Camille Morel",
+          missingFields: [{ key: "photoUrl", label: "Photo" }],
+          attentionFlags: ["À vérifier", "Importée"]
+        }
+      ]
+    });
   });
 
   it("returns notion import batches to administrators", async () => {

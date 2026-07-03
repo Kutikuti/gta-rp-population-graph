@@ -69,11 +69,21 @@
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 16px;
+  align-items: start;
 }
 
 .admin-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 16px;
+  width: min(1180px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.admin-page-content,
+.moderation-page-content {
+  display: grid;
   gap: 16px;
   width: min(1180px, 100%);
   min-width: 0;
@@ -111,10 +121,148 @@
   gap: 12px;
 }
 
+.moderation-list-panel {
+  min-height: 220px;
+}
+
+.moderation-list-empty {
+  display: grid;
+  align-content: center;
+  min-height: 132px;
+  margin: 0;
+}
+
 .admin-panel h3 {
   margin: 0;
   color: #dff4ff;
   font-size: 0.95rem;
+}
+
+.completeness-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.completeness-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.completeness-search {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.completeness-search input {
+  width: 100%;
+  border: 1px solid #184970;
+  color: #eaf7ff;
+  background: #061522;
+  padding: 8px 9px;
+  font-size: 0.8rem;
+}
+
+.completeness-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.completeness-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.completeness-panel-header h3 {
+  margin: 0;
+  color: #dff4ff;
+  font-size: 0.95rem;
+}
+
+.completeness-panel-header p {
+  margin: 4px 0 0;
+}
+
+.completeness-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.completeness-summary span,
+.completeness-chip,
+.completeness-missing-list span {
+  border: 1px solid #1e547d;
+  background: #081827;
+  color: #bfe4ff;
+  padding: 4px 7px;
+  font-size: 0.73rem;
+  font-weight: 800;
+}
+
+.is-active-filter {
+  border-color: #65bfff;
+  background: #0a2238;
+}
+
+.completeness-list {
+  display: grid;
+  gap: 10px;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.completeness-item {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #143d60;
+  background: #061522;
+  padding: 10px;
+}
+
+.completeness-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.completeness-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.completeness-item-header strong,
+.completeness-item-header small {
+  display: block;
+}
+
+.completeness-item-header small {
+  margin-top: 4px;
+  color: #8fb2cf;
+  font-size: 0.72rem;
+}
+
+.completeness-item-header a {
+  color: #8fcfff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.completeness-chip-list,
+.completeness-missing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .imports-batches-panel,
@@ -681,6 +829,10 @@
   color: #cfffe8;
 }
 
+.snapshot-form + .inline-feedback {
+  margin-top: 12px;
+}
+
 .warning-text {
   border-color: #816829;
   color: #ffe3a3;
@@ -958,6 +1110,20 @@
   .profile-sso-actions,
   .relationship-draft-row {
     grid-template-columns: 1fr;
+  }
+
+  .completeness-panel-header,
+  .completeness-item-header,
+  .completeness-toolbar {
+    flex-direction: column;
+  }
+
+  .completeness-item-actions {
+    justify-content: flex-start;
+  }
+
+  .completeness-summary {
+    justify-content: flex-start;
   }
 
   .admin-log-panel {

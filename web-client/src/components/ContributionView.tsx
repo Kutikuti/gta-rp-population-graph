@@ -24,6 +24,7 @@ import { EmptyBlock, LoadingBlock } from "./StateBlock";
 type ContributionViewProps = {
   character: PublicCharacterDetail | null;
   creationContext: CharacterCreationContext | null;
+  isCharacterLoading?: boolean;
   session: AuthSession | null;
   onDataChanged: () => Promise<void>;
   onError: (message: string) => void;
@@ -87,6 +88,7 @@ const snapshotFromProps = (
 export function ContributionView({
   character,
   creationContext,
+  isCharacterLoading = false,
   session,
   onDataChanged,
   onError,
@@ -229,6 +231,8 @@ export function ContributionView({
 
       {!session?.authenticated ? (
         <EmptyBlock label="Connexion requise pour proposer une modification." />
+      ) : isCharacterLoading && !snapshot && !creationContext ? (
+        <LoadingBlock label="Chargement de la fiche..." />
       ) : !snapshot || (!character && !creationContext) ? (
         <EmptyBlock label="Sélectionnez un personnage ou relancez une recherche avant de contribuer." />
       ) : (

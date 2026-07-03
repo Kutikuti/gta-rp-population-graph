@@ -1370,7 +1370,10 @@ Plan d'implementation propose :
 3. Aide a la completion et qualite des donnees
    - ajouter une vue ou fenetre listant les fiches a completer ;
    - mettre en avant les champs manquants, importes ou a verifier ;
-   - rendre cette vue exploitable par moderation et administration.
+   - rendre cette vue exploitable par moderation et administration ;
+   - avancement 2026-07-02 : premiere tranche en cours, avec service backend
+     partage et panneau commun moderation / administration pour lister les
+     fiches a completer selon les champs manquants et les statuts a revoir.
 4. Pages publiques annexes
    - ajouter une page information / contact / soutien ;
    - rester sobre et coherente avec la navigation existante ;
@@ -1390,6 +1393,18 @@ Plan d'implementation propose :
      ambigues ;
    - preparer une interface de gestion plus lisible pour les relations
      multiples.
+7. Gestion de la reglementation RGPD
+   - cadrer les donnees personnelles effectivement traitees par la plateforme
+     (comptes SSO, noms d'affichage, avatars, photos de personnage, journaux
+     d'administration et adresses IP si elles sont journalisees) ;
+   - verifier la minimisation des donnees conservees et la separation entre
+     identite SSO privee et profil public ;
+   - preparer les bases produit et techniques pour les droits d'acces,
+     rectification, suppression et export quand ils s'appliquent ;
+   - definir une politique de retention pour les sessions, logs, photos
+     temporaires, imports et sauvegardes ;
+   - prevoir les textes et points de contact necessaires : information
+     utilisateur, finalites, responsable de traitement et canal de demande.
 
 Ordre de travail recommande :
 
@@ -1399,6 +1414,7 @@ Ordre de travail recommande :
 - Lot D : graphe et preferences locales
 - Lot E : module streamer
 - Lot F : page publique information / contact / soutien
+- Lot G : cadrage RGPD et hygiene des donnees personnelles
 
 Contraintes de mise en oeuvre :
 

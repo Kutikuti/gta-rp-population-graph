@@ -14,6 +14,10 @@ import type {
   ChangeRequestSummary,
   CharacterSnapshot
 } from "../services/change-requests.js";
+import type {
+  DataCompletenessReport,
+  DataCompletenessService
+} from "../services/data-completeness.js";
 import type { GoogleOauthClient } from "../services/google-oauth.js";
 
 const ids = {
@@ -94,6 +98,27 @@ const summary = (status: ChangeRequestSummary["status"]): ChangeRequestSummary =
   createdAt: "2026-06-18T11:00:00.000Z",
   updatedAt: "2026-06-18T12:00:00.000Z"
 });
+
+const dataCompletenessReport: DataCompletenessReport = {
+  summary: {
+    total: 2,
+    withMissingFields: 1,
+    importedOrCommunity: 1,
+    needsReview: 1
+  },
+  items: [
+    {
+      id: ids.character,
+      publicSlug: "camille-morel",
+      fullName: "Camille Morel",
+      verificationStatus: "to_check",
+      dataSource: "notion",
+      missingFields: [{ key: "photoUrl", label: "Photo" }],
+      attentionFlags: ["À vérifier", "Importée"],
+      updatedAt: "2026-06-18T12:00:00.000Z"
+    }
+  ]
+};
 
 class FixtureAuthService implements AuthService {
   private readonly usersById: Map<string, AuthenticatedUser> = new Map(
@@ -255,6 +280,12 @@ class FixtureChangeRequestService implements ChangeRequestService {
   }
 }
 
+class FixtureDataCompletenessService implements DataCompletenessService {
+  async getReport() {
+    return dataCompletenessReport;
+  }
+}
+
 const oauthStateFromLocation = (location: string | undefined) => {
   const state = location ? new URL(location).searchParams.get("state") : null;
 
@@ -272,11 +303,15 @@ const loginAs = async (agent: ReturnType<typeof request.agent>, code: keyof type
   await agent.get("/api/auth/google/callback").query({ code, state });
 };
 
-const createFixtureApp = (service = new FixtureChangeRequestService()) => ({
+const createFixtureApp = (
+  service = new FixtureChangeRequestService(),
+  dataCompletenessService: DataCompletenessService = new FixtureDataCompletenessService()
+) => ({
   app: createApp({
     authService: new FixtureAuthService(),
     googleOauthClient: new FixtureGoogleOauthClient(),
-    changeRequestService: service
+    changeRequestService: service,
+    dataCompletenessService
   }),
   service
 });
@@ -433,6 +468,33 @@ describe("change request routes", () => {
     expect(rejectResponse.status).toBe(200);
     expect(rejectResponse.body.status).toBe("rejected");
     expect(service.lastRejectedComment).toBe("Source insuffisante.");
+  });
+
+  it("returns the data completeness report to moderators", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+
+    await loginAs(agent, "moderator");
+
+    const response = await agent.get("/api/moderation/completeness");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      summary: {
+        total: 2,
+        withMissingFields: 1,
+        importedOrCommunity: 1,
+        needsReview: 1
+      },
+      items: [
+        {
+          publicSlug: "camille-morel",
+          fullName: "Camille Morel",
+          missingFields: [{ key: "photoUrl", label: "Photo" }],
+          attentionFlags: ["À vérifier", "Importée"]
+        }
+      ]
+    });
   });
 
   it("requires a moderator comment on rejection", async () => {

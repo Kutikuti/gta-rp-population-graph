@@ -8,12 +8,19 @@ import {
   moderationListSchema,
   rejectChangeRequestSchema
 } from "../services/change-requests.js";
+import {
+  type DataCompletenessService,
+  SequelizeDataCompletenessService
+} from "../services/data-completeness.js";
 
 const idParamSchema = z.object({
   id: z.uuid()
 });
 
-export const createModerationRouter = (changeRequestService: ChangeRequestService) => {
+export const createModerationRouter = (
+  changeRequestService: ChangeRequestService,
+  dataCompletenessService: DataCompletenessService = new SequelizeDataCompletenessService()
+) => {
   const router = Router();
 
   router.get("/session", requireRole(["moderator", "administrator"]), (request, response) => {
@@ -23,6 +30,18 @@ export const createModerationRouter = (changeRequestService: ChangeRequestServic
       user: request.currentUser
     });
   });
+
+  router.get(
+    "/completeness",
+    requireRole(["moderator", "administrator"]),
+    async (_request, response, next) => {
+      try {
+        response.json(await dataCompletenessService.getReport());
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
   router.get(
     "/change-requests",

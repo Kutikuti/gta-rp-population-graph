@@ -24,6 +24,10 @@ import {
   SequelizeChangeRequestService
 } from "./services/change-requests.js";
 import { characterPhotoPublicDir } from "./services/character-photos.js";
+import {
+  type DataCompletenessService,
+  SequelizeDataCompletenessService
+} from "./services/data-completeness.js";
 import { type DiscordOauthClient, DiscordOidcClient } from "./services/discord-oauth.js";
 import { type GoogleOauthClient, GoogleOidcClient } from "./services/google-oauth.js";
 import type { MetricsService } from "./services/metrics.js";
@@ -38,6 +42,7 @@ export type AppDependencies = {
   twitchOauthClient?: TwitchOauthClient;
   changeRequestService?: ChangeRequestService;
   adminService?: AdminService;
+  dataCompletenessService?: DataCompletenessService;
   metricsService?: MetricsService;
 };
 
@@ -49,6 +54,8 @@ export const createApp = (dependencies: AppDependencies = {}) => {
   const changeRequestService =
     dependencies.changeRequestService ?? new SequelizeChangeRequestService();
   const adminService = dependencies.adminService ?? new SequelizeAdminService();
+  const dataCompletenessService =
+    dependencies.dataCompletenessService ?? new SequelizeDataCompletenessService();
   const app = express();
 
   if (env.NODE_ENV === "production") {
@@ -102,9 +109,9 @@ export const createApp = (dependencies: AppDependencies = {}) => {
     })
   );
   app.use("/api/contributions", createContributionsRouter(changeRequestService));
-  app.use("/api/moderation", createModerationRouter(changeRequestService));
+  app.use("/api/moderation", createModerationRouter(changeRequestService, dataCompletenessService));
   app.use("/api/profile", createProfileRouter(authService));
-  app.use("/api/admin", createAdminRouter(adminService));
+  app.use("/api/admin", createAdminRouter(adminService, dataCompletenessService));
   app.use("/api", createPublicRouter(dependencies.publicDataService));
 
   app.use(notFoundHandler);

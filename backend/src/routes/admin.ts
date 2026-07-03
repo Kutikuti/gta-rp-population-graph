@@ -9,6 +9,10 @@ import type {
   AdminNotionImportApplyResult,
   AdminNotionImportPhotoResult
 } from "../services/admin-notion-imports.js";
+import {
+  type DataCompletenessService,
+  SequelizeDataCompletenessService
+} from "../services/data-completeness.js";
 
 const nullableText = (max: number) =>
   z
@@ -55,7 +59,10 @@ const notionImportInvalidError = (
   }
 };
 
-export const createAdminRouter = (adminService: AdminService = new SequelizeAdminService()) => {
+export const createAdminRouter = (
+  adminService: AdminService = new SequelizeAdminService(),
+  dataCompletenessService: DataCompletenessService = new SequelizeDataCompletenessService()
+) => {
   const router = Router();
 
   router.use(requireRole(["administrator"]));
@@ -71,6 +78,14 @@ export const createAdminRouter = (adminService: AdminService = new SequelizeAdmi
   router.get("/dashboard", async (_request, response, next) => {
     try {
       response.json(await adminService.getDashboard());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/completeness", async (_request, response, next) => {
+    try {
+      response.json(await dataCompletenessService.getReport());
     } catch (error) {
       next(error);
     }

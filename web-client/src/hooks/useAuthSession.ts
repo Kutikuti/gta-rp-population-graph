@@ -133,6 +133,20 @@ export function useAuthSession(onError: (message: string) => void) {
     setAuthRedirectResult(null);
   }, [authRedirectResult, authSession, isAuthLoading]);
 
+  useEffect(() => {
+    if (!authFeedback) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setAuthFeedback(null);
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [authFeedback]);
+
   const handleLogout = async () => {
     try {
       await logout();

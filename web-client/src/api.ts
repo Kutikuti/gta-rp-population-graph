@@ -286,6 +286,30 @@ export type AdminDashboard = {
   actions: AdminActionEntry[];
 };
 
+export type DataCompletenessItem = {
+  id: string;
+  publicSlug: string;
+  fullName: string;
+  verificationStatus: VerificationStatus;
+  dataSource: string;
+  missingFields: Array<{
+    key: string;
+    label: string;
+  }>;
+  attentionFlags: string[];
+  updatedAt: string;
+};
+
+export type DataCompletenessReport = {
+  summary: {
+    total: number;
+    withMissingFields: number;
+    importedOrCommunity: number;
+    needsReview: number;
+  };
+  items: DataCompletenessItem[];
+};
+
 export type AdminNotionImportBatch = {
   id: string;
   sourceName: string;
@@ -561,6 +585,8 @@ export const unlinkProfileIdentity = (provider: "google" | "discord" | "twitch")
   );
 
 export const getAdminDashboard = () => fetchJson<AdminDashboard>("/api/admin/dashboard");
+export const getAdminDataCompleteness = () =>
+  fetchJson<DataCompletenessReport>("/api/admin/completeness");
 
 export const listAdminNotionImports = () =>
   fetchJson<AdminNotionImportBatch[]>("/api/admin/notion-imports");
@@ -681,6 +707,9 @@ export const listModerationChangeRequests = (status: ChangeRequestStatus = "pend
   const params = new URLSearchParams({ status });
   return fetchJson<ChangeRequestSummary[]>(`/api/moderation/change-requests?${params.toString()}`);
 };
+
+export const getModerationDataCompleteness = () =>
+  fetchJson<DataCompletenessReport>("/api/moderation/completeness");
 
 export const approveChangeRequest = (id: string) =>
   sendJson<{ request: ChangeRequestSummary; changes: ChangeDiff }>(

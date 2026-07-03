@@ -6,8 +6,10 @@ import {
   type AuthSession,
   banAdminUser,
   createAdminTag,
+  type DataCompletenessReport,
   deleteAdminTag,
   getAdminDashboard,
+  getAdminDataCompleteness,
   revokeAdminUserBan,
   updateAdminTag,
   updateAdminUserRole
@@ -21,18 +23,22 @@ import {
   normalizeTagInput,
   tagInputFromTag
 } from "./admin-shared";
+import { DataCompletenessPanel } from "./DataCompletenessPanel";
 
 type AdminViewProps = {
   session: AuthSession | null;
   onError: (message: string) => void;
+  onEditCharacter: (slug: string) => void;
 };
 
-export function AdminView({ session, onError }: AdminViewProps) {
+export function AdminView({ session, onEditCharacter, onError }: AdminViewProps) {
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
   const [tagInput, setTagInput] = useState<AdminTagInput>(emptyTagInput);
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [banReasons, setBanReasons] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isCompletenessLoading, setIsCompletenessLoading] = useState(false);
+  const [completenessReport, setCompletenessReport] = useState<DataCompletenessReport | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const canAdmin = session?.authenticated && session.user.role.name === "administrator";
@@ -52,11 +58,23 @@ export function AdminView({ session, onError }: AdminViewProps) {
     }
   }, [onError]);
 
+  const loadCompleteness = useCallback(async () => {
+    setIsCompletenessLoading(true);
+    try {
+      setCompletenessReport(await getAdminDataCompleteness());
+    } catch {
+      onError("La vue de complétude n'a pas pu être chargée.");
+    } finally {
+      setIsCompletenessLoading(false);
+    }
+  }, [onError]);
+
   useEffect(() => {
     if (canAdmin) {
       void loadDashboard();
+      void loadCompleteness();
     }
-  }, [canAdmin, loadDashboard]);
+  }, [canAdmin, loadCompleteness, loadDashboard]);
 
   if (!session?.authenticated) {
     return (
@@ -87,7 +105,7 @@ export function AdminView({ session, onError }: AdminViewProps) {
   const runAction = async (action: () => Promise<unknown>, message: string) => {
     try {
       await action();
-      await loadDashboard();
+      await Promise.all([loadDashboard(), loadCompleteness()]);
       setFeedback(message);
     } catch (error) {
       onError(adminErrorMessage(error));
@@ -120,55 +138,64 @@ export function AdminView({ session, onError }: AdminViewProps) {
         {feedback ? <p className="auth-feedback auth-feedback-success">{feedback}</p> : null}
       </div>
 
-      <div className="admin-layout">
-        <AdminUsersPanel
-          banReasons={banReasons}
-          isLoading={isLoading}
-          users={users}
-          onBanReasonChange={(userId, value) => {
-            setBanReasons((current) => ({
-              ...current,
-              [userId]: value
-            }));
-          }}
-          onBanUser={(user) => {
-            const reason = banReasons[user.id]?.trim();
-
-            if (!reason) {
-              onError("Un motif de bannissement est requis.");
-              return;
-            }
-
-            void runAction(() => banAdminUser(user.id, reason), "Utilisateur banni.");
-          }}
-          onRevokeBan={(user) => {
-            void runAction(() => revokeAdminUserBan(user.id), "Bannissement levé.");
-          }}
-          onUpdateRole={(user, roleName) => {
-            void runAction(() => updateAdminUserRole(user.id, roleName), "Rôle mis à jour.");
-          }}
+      <div className="admin-page-content">
+        <DataCompletenessPanel
+          isLoading={isCompletenessLoading}
+          onEditCharacter={onEditCharacter}
+          report={completenessReport}
+          title="Fiches à compléter"
         />
 
-        <AdminTagsPanel
-          editingTag={editingTag}
-          tagInput={tagInput}
-          tags={tags}
-          onCancelEdit={() => {
-            setEditingTagId(null);
-            setTagInput(emptyTagInput);
-          }}
-          onDeleteTag={(tag) => {
-            void runAction(() => deleteAdminTag(tag.id), "Tag supprimé.");
-          }}
-          onEditTag={(tag) => {
-            setEditingTagId(tag.id);
-            setTagInput(tagInputFromTag(tag));
-          }}
-          onSubmit={submitTag}
-          onTagInputChange={setTagInput}
-        />
+        <div className="admin-layout">
+          <AdminUsersPanel
+            banReasons={banReasons}
+            isLoading={isLoading}
+            users={users}
+            onBanReasonChange={(userId, value) => {
+              setBanReasons((current) => ({
+                ...current,
+                [userId]: value
+              }));
+            }}
+            onBanUser={(user) => {
+              const reason = banReasons[user.id]?.trim();
 
-        <AdminActionsPanel actions={actions} />
+              if (!reason) {
+                onError("Un motif de bannissement est requis.");
+                return;
+              }
+
+              void runAction(() => banAdminUser(user.id, reason), "Utilisateur banni.");
+            }}
+            onRevokeBan={(user) => {
+              void runAction(() => revokeAdminUserBan(user.id), "Bannissement levé.");
+            }}
+            onUpdateRole={(user, roleName) => {
+              void runAction(() => updateAdminUserRole(user.id, roleName), "Rôle mis à jour.");
+            }}
+          />
+
+          <AdminTagsPanel
+            editingTag={editingTag}
+            tagInput={tagInput}
+            tags={tags}
+            onCancelEdit={() => {
+              setEditingTagId(null);
+              setTagInput(emptyTagInput);
+            }}
+            onDeleteTag={(tag) => {
+              void runAction(() => deleteAdminTag(tag.id), "Tag supprimé.");
+            }}
+            onEditTag={(tag) => {
+              setEditingTagId(tag.id);
+              setTagInput(tagInputFromTag(tag));
+            }}
+            onSubmit={submitTag}
+            onTagInputChange={setTagInput}
+          />
+
+          <AdminActionsPanel actions={actions} />
+        </div>
       </div>
     </section>
   );

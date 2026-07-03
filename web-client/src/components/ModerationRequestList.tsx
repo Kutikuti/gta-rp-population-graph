@@ -1,6 +1,6 @@
 import type { ChangeRequestSummary } from "../api";
 import { formatDate } from "../utils/format";
-import { EmptyBlock, LoadingBlock } from "./StateBlock";
+import { LoadingBlock } from "./StateBlock";
 
 type ModerationRequestListProps = {
   isLoading: boolean;
@@ -45,7 +45,9 @@ export function ModerationRequestList({
           ))}
         </div>
       ) : null}
-      {!isLoading && !requests.length ? <EmptyBlock label="Aucune demande en attente." /> : null}
+      {!isLoading && !requests.length ? (
+        <p className="muted-text moderation-list-empty">Aucune demande en attente.</p>
+      ) : null}
     </aside>
   );
 }

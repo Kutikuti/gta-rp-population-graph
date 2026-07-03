@@ -153,6 +153,12 @@ function App() {
     }
   }, [handleError, refreshCharacterDetails, refreshPublicGraphData]);
 
+  const openContributionForCharacter = useCallback((slug: string) => {
+    setCreationContext(null);
+    setSelectedId(slug);
+    setActiveView("contribution");
+  }, []);
+
   return (
     <main className="app-shell">
       <section className="workspace" aria-labelledby="workspace-title">
@@ -248,6 +254,7 @@ function App() {
           <ContributionView
             character={selectedCharacter}
             creationContext={creationContext}
+            isCharacterLoading={Boolean(selectedId) && !selectedCharacter && isDetailLoading}
             session={authSession}
             onDataChanged={refreshAfterModerationChange}
             onError={handleError}
@@ -259,11 +266,16 @@ function App() {
           <ModerationView
             session={authSession}
             onDataChanged={refreshAfterModerationChange}
+            onEditCharacter={openContributionForCharacter}
             onError={handleError}
           />
         ) : null}
         {activeView === "administration" ? (
-          <AdminView session={authSession} onError={handleError} />
+          <AdminView
+            session={authSession}
+            onEditCharacter={openContributionForCharacter}
+            onError={handleError}
+          />
         ) : null}
         {activeView === "imports" ? (
           <NotionImportsView
