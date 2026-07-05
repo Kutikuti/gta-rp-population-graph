@@ -72,6 +72,11 @@ export function CharacterSheet({
   const streamersById = character.streamer
     ? new Map([[character.streamer.id, character.streamer.publicName]])
     : undefined;
+  const statusLabel =
+    (character.lifeStatus === "deceased" || character.lifeStatus === "left") &&
+    character.deathOrDepartureDate
+      ? `${lifeStatusLabels[character.lifeStatus]} (${formatDate(character.deathOrDepartureDate)})`
+      : lifeStatusLabels[character.lifeStatus];
 
   return (
     <article className="character-sheet">
@@ -117,7 +122,7 @@ export function CharacterSheet({
       <dl className="metric-grid">
         <div>
           <dt>Statut</dt>
-          <dd>{lifeStatusLabels[character.lifeStatus]}</dd>
+          <dd>{statusLabel}</dd>
         </div>
         <div>
           <dt>Naissance</dt>
