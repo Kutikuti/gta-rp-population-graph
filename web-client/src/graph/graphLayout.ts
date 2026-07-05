@@ -88,8 +88,7 @@ export const graphLayoutOptions = (
       fit: true,
       padding: 48,
       animate: false,
-      positions: (nodeId: string) =>
-        positions[nodeId] ?? { x: containerSize.width / 2, y: containerSize.height / 2 }
+      positions
     };
   }
 
@@ -107,8 +106,7 @@ export const graphLayoutOptions = (
       fit: true,
       padding: 48,
       animate: false,
-      positions: (nodeId: string) =>
-        positions[nodeId] ?? { x: containerSize.width / 2, y: containerSize.height / 2 }
+      positions
     };
   }
 

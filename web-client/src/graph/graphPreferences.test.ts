@@ -71,6 +71,10 @@ const graph: PublicGraph = {
 };
 
 describe("graphPreferences", () => {
+  it("hides deceased characters by default", () => {
+    expect(initialGraphPreferences.showDeceased).toBe(false);
+  });
+
   it("normalizes partial or invalid stored values", () => {
     expect(normalizeGraphPreferences(null)).toEqual(initialGraphPreferences);
     expect(
@@ -120,6 +124,6 @@ describe("graphPreferences", () => {
       initialGraphPreferences
     );
 
-    expect(filteredGraph?.edges.map((edge) => edge.data.id)).toEqual(["edge-1", "edge-2"]);
+    expect(filteredGraph?.edges.map((edge) => edge.data.id)).toEqual(["edge-2"]);
   });
 });

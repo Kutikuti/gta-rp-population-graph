@@ -23,7 +23,7 @@ export type GraphPreferences = {
 
 export const initialGraphPreferences: GraphPreferences = {
   layoutMode: "grouped",
-  showDeceased: true,
+  showDeceased: false,
   visibleRelationshipTypes: [...supportedGraphRelationshipTypes]
 };
 

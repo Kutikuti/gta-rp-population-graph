@@ -62,13 +62,13 @@ describe("graphLayoutOptions", () => {
     const layout = graphLayoutOptions(graph, "grouped", { width: 1200, height: 800 });
     const presetLayout = layout as {
       name: string;
-      positions: (nodeId: string) => { x: number; y: number };
+      positions: Record<string, { x: number; y: number }>;
     };
 
     expect(presetLayout.name).toBe("preset");
-    expect(typeof presetLayout.positions).toBe("function");
+    expect(presetLayout.positions).toBeTruthy();
 
-    const positions = graph.nodes.map((node) => presetLayout.positions(node.data.id));
+    const positions = graph.nodes.map((node) => presetLayout.positions[node.data.id]);
 
     expect(positions[0]).toBeTruthy();
     expect(positions[1]).toBeTruthy();
@@ -90,10 +90,10 @@ describe("graphLayoutOptions", () => {
     const layout = graphLayoutOptions(graph, "company", { width: 1200, height: 800 });
     const presetLayout = layout as {
       name: string;
-      positions: (nodeId: string) => { x: number; y: number };
+      positions: Record<string, { x: number; y: number }>;
     };
 
     expect(presetLayout.name).toBe("preset");
-    expect(presetLayout.positions("char-1").x).not.toBe(presetLayout.positions("char-3").x);
+    expect(presetLayout.positions["char-1"]?.x).not.toBe(presetLayout.positions["char-3"]?.x);
   });
 });
