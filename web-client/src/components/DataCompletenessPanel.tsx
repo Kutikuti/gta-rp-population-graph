@@ -21,6 +21,7 @@ export function DataCompletenessPanel({
   const [onlyReview, setOnlyReview] = useState(false);
   const [onlyImported, setOnlyImported] = useState(false);
   const [onlyMissing, setOnlyMissing] = useState(false);
+  const [sortMode, setSortMode] = useState<"priority" | "name" | "updated">("priority");
   const normalizedQuery = query.trim().toLocaleLowerCase("fr");
   const filteredItems = useMemo(
     () =>
@@ -60,6 +61,23 @@ export function DataCompletenessPanel({
       }),
     [items, normalizedQuery, onlyImported, onlyMissing, onlyReview]
   );
+  const displayedItems = useMemo(() => {
+    const nextItems = [...filteredItems];
+
+    if (sortMode === "name") {
+      nextItems.sort((left, right) => left.fullName.localeCompare(right.fullName, "fr"));
+      return nextItems;
+    }
+
+    if (sortMode === "updated") {
+      nextItems.sort(
+        (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+      );
+      return nextItems;
+    }
+
+    return nextItems;
+  }, [filteredItems, sortMode]);
 
   return (
     <section className="work-panel completeness-panel">
@@ -120,6 +138,19 @@ export function DataCompletenessPanel({
             Champs manquants
           </button>
         </div>
+        <label className="completeness-sort">
+          <span>Trier</span>
+          <select
+            value={sortMode}
+            onChange={(event) => {
+              setSortMode(event.target.value as "priority" | "name" | "updated");
+            }}
+          >
+            <option value="priority">Par priorité</option>
+            <option value="updated">Plus récentes</option>
+            <option value="name">Nom A-Z</option>
+          </select>
+        </label>
       </div>
 
       {isLoading ? <p className="muted-text">Chargement de la complétude...</p> : null}
@@ -130,9 +161,9 @@ export function DataCompletenessPanel({
         <p className="muted-text">Aucune fiche ne correspond aux filtres actuels.</p>
       ) : null}
 
-      {!isLoading && filteredItems.length > 0 ? (
+      {!isLoading && displayedItems.length > 0 ? (
         <div className="completeness-list">
-          {filteredItems.map((item) => (
+          {displayedItems.map((item) => (
             <article key={item.id} className="completeness-item">
               <div className="completeness-item-header">
                 <div>

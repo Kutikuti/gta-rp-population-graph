@@ -35,6 +35,16 @@ const report: DataCompletenessReport = {
       missingFields: [],
       attentionFlags: ["Communautaire"],
       updatedAt: "2026-07-02T13:00:00.000Z"
+    },
+    {
+      id: "char-3",
+      publicSlug: "alix-mizuno",
+      fullName: "Alix Mizuno",
+      verificationStatus: "verified",
+      dataSource: "manual",
+      missingFields: [],
+      attentionFlags: [],
+      updatedAt: "2026-07-02T15:00:00.000Z"
     }
   ]
 };
@@ -125,5 +135,24 @@ describe("DataCompletenessPanel", () => {
     await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
 
     expect(onEditCharacter).toHaveBeenCalledWith("camille-morel");
+  });
+
+  it("lets the user change the local sort order", async () => {
+    const user = userEvent.setup();
+
+    render(<DataCompletenessPanel isLoading={false} report={report} />);
+
+    const initialNames = screen.getAllByRole("strong").map((element) => element.textContent);
+    expect(initialNames).toEqual(["Camille Morel", "Ines Morel", "Alix Mizuno"]);
+
+    await user.selectOptions(screen.getByRole("combobox"), "name");
+
+    const sortedByName = screen.getAllByRole("strong").map((element) => element.textContent);
+    expect(sortedByName).toEqual(["Alix Mizuno", "Camille Morel", "Ines Morel"]);
+
+    await user.selectOptions(screen.getByRole("combobox"), "updated");
+
+    const sortedByUpdated = screen.getAllByRole("strong").map((element) => element.textContent);
+    expect(sortedByUpdated).toEqual(["Alix Mizuno", "Ines Morel", "Camille Morel"]);
   });
 });

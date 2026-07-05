@@ -31,8 +31,9 @@ export type DataCompletenessService = {
 const completenessLabels = {
   birthDate: "Date de naissance",
   companyBadgeNumber: "Matricule",
+  companyName: "Entreprise",
   companyRank: "Grade",
-  media: "Médias",
+  lifeStatus: "Statut vital",
   nickname: "Surnom",
   phoneNumbers: "Téléphone",
   photoUrl: "Photo",
@@ -42,53 +43,56 @@ const completenessLabels = {
 const fullName = (character: { firstName: string; lastName: string }) =>
   `${character.firstName} ${character.lastName}`.trim();
 
+const hasText = (value: string | null | undefined) =>
+  typeof value === "string" && value.trim().length > 0;
+
+const normalizedStringList = (values: string[]) =>
+  values.map((value) => value.trim()).filter(Boolean);
+
 const missingFieldsForCharacter = (character: {
   birthDate: string | null;
   companyBadgeNumber: string | null;
   companyName: string | null;
   companyRank: string | null;
-  nickname: string | null;
+  lifeStatus: string;
   phoneNumbers: string[];
   photoUrl: string | null;
-  socialLinks: Record<string, string> | null;
-  sourceNote: string | null;
-  streamerId: string | null;
 }) => {
   const missingFields: DataCompletenessItem["missingFields"] = [];
+  const phoneNumbers = normalizedStringList(character.phoneNumbers);
+  const hasCompanyName = hasText(character.companyName);
+  const hasCompanyRank = hasText(character.companyRank);
+  const hasCompanyBadgeNumber = hasText(character.companyBadgeNumber);
 
-  if (!character.nickname) {
-    missingFields.push({ key: "nickname", label: completenessLabels.nickname });
-  }
-
-  if (!character.birthDate) {
+  if (!hasText(character.birthDate)) {
     missingFields.push({ key: "birthDate", label: completenessLabels.birthDate });
   }
 
-  if (!character.photoUrl) {
+  if (character.lifeStatus === "unknown") {
+    missingFields.push({ key: "lifeStatus", label: completenessLabels.lifeStatus });
+  }
+
+  if (!hasText(character.photoUrl)) {
     missingFields.push({ key: "photoUrl", label: completenessLabels.photoUrl });
   }
 
-  if (character.phoneNumbers.length === 0) {
+  if (phoneNumbers.length === 0) {
     missingFields.push({ key: "phoneNumbers", label: completenessLabels.phoneNumbers });
   }
 
-  if (!character.streamerId && !character.socialLinks) {
-    missingFields.push({ key: "media", label: completenessLabels.media });
-  }
-
-  if (character.companyName && !character.companyRank) {
+  if (hasCompanyName && !hasCompanyRank) {
     missingFields.push({ key: "companyRank", label: completenessLabels.companyRank });
   }
 
-  if (character.companyName && !character.companyBadgeNumber) {
+  if (hasCompanyName && !hasCompanyBadgeNumber) {
     missingFields.push({
       key: "companyBadgeNumber",
       label: completenessLabels.companyBadgeNumber
     });
   }
 
-  if (!character.sourceNote) {
-    missingFields.push({ key: "sourceNote", label: completenessLabels.sourceNote });
+  if ((hasCompanyRank || hasCompanyBadgeNumber) && !hasCompanyName) {
+    missingFields.push({ key: "companyName", label: completenessLabels.companyName });
   }
 
   return missingFields;
@@ -151,6 +155,7 @@ export class SequelizeDataCompletenessService implements DataCompletenessService
         "companyName",
         "companyRank",
         "companyBadgeNumber",
+        "lifeStatus",
         "verificationStatus",
         "dataSource",
         "sourceNote",
@@ -165,12 +170,9 @@ export class SequelizeDataCompletenessService implements DataCompletenessService
           companyBadgeNumber: character.companyBadgeNumber,
           companyName: character.companyName,
           companyRank: character.companyRank,
-          nickname: character.nickname,
+          lifeStatus: character.lifeStatus,
           phoneNumbers: character.phoneNumbers ?? [],
-          photoUrl: character.photoUrl,
-          socialLinks: (character.socialLinks as Record<string, string> | null) ?? null,
-          sourceNote: character.sourceNote,
-          streamerId: character.streamerId
+          photoUrl: character.photoUrl
         });
         const attentionFlags = attentionFlagsForCharacter({
           dataSource: character.dataSource,

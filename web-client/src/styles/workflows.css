@@ -171,6 +171,23 @@
   gap: 8px;
 }
 
+.completeness-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  color: #8fb2cf;
+  font-size: 0.88rem;
+}
+
+.completeness-sort select {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #27567d;
+  background: #09131f;
+  color: #e7f4ff;
+}
+
 .completeness-panel-header {
   display: flex;
   align-items: flex-start;

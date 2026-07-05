@@ -1456,6 +1456,18 @@ Donnees a completer :
 - Ajouter une fenetre ou une page listant les fiches a completer.
 - Permettre aux administrateurs et moderateurs d'identifier rapidement les
   champs manquants, importes ou encore a verifier.
+- Etat 2026-07-05 : premiere tranche active avec service backend partage,
+  panneau commun moderation / administration, recherche, filtres rapides, tri
+  local et actions `Voir la fiche` / `Modifier`.
+- Le calcul backend de completude est desormais normalise pour mieux couvrir
+  les cas reels : chaines vides, tableaux vides, statut vital `unknown` et
+  incoherences d'organisation (`grade` / `matricule` sans `entreprise`).
+- L'absence de medias ne compte pas, a elle seule, comme une fiche incomplete
+  car tous les personnages n'ont pas vocation a etre relies a un streamer ou a
+  des liens publics.
+- Reste volontairement hors scope pour l'instant : automatisation de suivi
+  “en cours de traitement”, filtres experts supplementaires et orchestration
+  plus poussée du workflow de rattrapage.
 
 Pages publiques :
 
