@@ -19,6 +19,7 @@ export const charactersQuerySchema = paginationSchema.extend({
   lifeStatus: z.enum(lifeStatuses).optional(),
   tag: z.string().trim().min(1).max(120).optional(),
   streamer: z.string().trim().min(1).max(160).optional(),
+  twitchLive: z.enum(["live"]).optional(),
   verificationStatus: z.enum(verificationStatuses).optional()
 });
 

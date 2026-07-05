@@ -108,6 +108,7 @@ export const characterCreationContextSchema = z
     lifeStatus: nullableText(40),
     tag: nullableText(120),
     streamer: nullableText(160),
+    twitchLive: nullableText(40),
     verificationStatus: nullableText(40),
     matchTotal: z.number().int().min(0).max(100000).optional()
   })

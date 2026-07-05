@@ -1,4 +1,4 @@
-import { cast, col, type Includeable, Op, type WhereOptions, where } from "sequelize";
+import { cast, col, type Includeable, Op, type Order, type WhereOptions, where } from "sequelize";
 import type {
   DataSource,
   LifeStatus,
@@ -45,6 +45,7 @@ export type CharacterListFilters = Pagination & {
   lifeStatus?: LifeStatus;
   tag?: string;
   streamer?: string;
+  twitchLive?: "live";
   verificationStatus?: VerificationStatus;
 };
 
@@ -370,22 +371,86 @@ const characterWhere = (
   return where;
 };
 
+const applyPagination = <T>(items: T[], pagination: Pagination) =>
+  items.slice(pagination.offset, pagination.offset + pagination.limit);
+
+const characterOrder: Order = [
+  ["lastName", "ASC"],
+  ["firstName", "ASC"]
+];
+
 export class SequelizePublicDataService implements PublicDataService {
   constructor(
     private readonly twitchLiveStatusService: TwitchLiveStatusService = new TwitchLiveStatusService()
   ) {}
 
+  private async loadTwitchStatuses(
+    characters: Character[]
+  ): Promise<Map<string, TwitchLiveStatus>> {
+    const entries = await Promise.all(
+      characters.map(
+        async (character) =>
+          [
+            character.id,
+            await this.twitchLiveStatusService.getStatusForSocialLinks(
+              character.socialLinks ?? character.streamer?.socialLinks
+            )
+          ] as const
+      )
+    );
+
+    return new Map(entries);
+  }
+
+  private async filterCharactersByTwitchLive(
+    characters: Character[],
+    twitchLive: CharacterListFilters["twitchLive"]
+  ) {
+    const statusesByCharacterId = await this.loadTwitchStatuses(characters);
+
+    if (twitchLive !== "live") {
+      return {
+        characters,
+        statusesByCharacterId
+      };
+    }
+
+    return {
+      characters: characters.filter(
+        (character) => statusesByCharacterId.get(character.id) === "live"
+      ),
+      statusesByCharacterId
+    };
+  }
+
   async listCharacters(filters: CharacterListFilters): Promise<PublicCharacterList> {
-    const result = await models.Character.findAndCountAll({
+    const baseQuery = {
       where: characterWhere(filters),
       include: characterIncludes(filters),
+      order: characterOrder
+    };
+
+    if (filters.twitchLive === "live") {
+      const characters = await models.Character.findAll(baseQuery);
+      const { characters: filteredCharacters, statusesByCharacterId } =
+        await this.filterCharactersByTwitchLive(characters, filters.twitchLive);
+      const pagedCharacters = applyPagination(filteredCharacters, filters);
+
+      return {
+        items: pagedCharacters.map((character) =>
+          serializeCharacterSummary(character, statusesByCharacterId.get(character.id) ?? "unknown")
+        ),
+        total: filteredCharacters.length,
+        limit: filters.limit,
+        offset: filters.offset
+      };
+    }
+
+    const result = await models.Character.findAndCountAll({
+      ...baseQuery,
       distinct: true,
       limit: filters.limit,
-      offset: filters.offset,
-      order: [
-        ["lastName", "ASC"],
-        ["firstName", "ASC"]
-      ]
+      offset: filters.offset
     });
 
     return {
@@ -413,20 +478,19 @@ export class SequelizePublicDataService implements PublicDataService {
   }
 
   async listCharacterMatches(filters: CharacterMatchFilters): Promise<PublicCharacterMatches> {
-    const result = await models.Character.findAndCountAll({
-      attributes: ["id"],
+    const characters = await models.Character.findAll({
       where: characterWhere(filters),
       include: characterIncludes(filters),
-      distinct: true,
-      order: [
-        ["lastName", "ASC"],
-        ["firstName", "ASC"]
-      ]
+      order: characterOrder
     });
+    const { characters: filteredCharacters } = await this.filterCharactersByTwitchLive(
+      characters,
+      filters.twitchLive
+    );
 
     return {
-      ids: result.rows.map((character) => character.id),
-      total: result.count
+      ids: filteredCharacters.map((character) => character.id),
+      total: filteredCharacters.length
     };
   }
 

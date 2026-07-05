@@ -6,6 +6,7 @@ export const initialFilters: CharacterFilters = {
   lifeStatus: "",
   tag: "",
   streamer: "",
+  twitchLive: "",
   verificationStatus: ""
 };
 
@@ -91,5 +92,6 @@ export const isActiveFilters = (filters: CharacterFilters) =>
       filters.lifeStatus ||
       filters.tag ||
       filters.streamer ||
+      filters.twitchLive ||
       filters.verificationStatus
   );

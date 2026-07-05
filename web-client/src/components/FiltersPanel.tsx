@@ -114,6 +114,19 @@ export function FiltersPanel({
       </label>
 
       <label className="field">
+        <span>Twitch</span>
+        <select
+          value={filters.twitchLive}
+          onChange={(event) => {
+            onChange("twitchLive", event.target.value);
+          }}
+        >
+          <option value="">Tous</option>
+          <option value="live">En direct uniquement</option>
+        </select>
+      </label>
+
+      <label className="field">
         <span>Vérification</span>
         <select
           value={filters.verificationStatus}

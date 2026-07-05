@@ -173,6 +173,7 @@ export type CharacterFilters = {
   lifeStatus: "" | LifeStatus;
   tag: string;
   streamer: string;
+  twitchLive: "" | "live";
   verificationStatus: "" | VerificationStatus;
 };
 
@@ -522,6 +523,10 @@ const characterFilterParams = (filters: CharacterFilters) => {
 
   if (filters.lifeStatus) {
     params.set("lifeStatus", filters.lifeStatus);
+  }
+
+  if (filters.twitchLive) {
+    params.set("twitchLive", filters.twitchLive);
   }
 
   if (filters.verificationStatus) {

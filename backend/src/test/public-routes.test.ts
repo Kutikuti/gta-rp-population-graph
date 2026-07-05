@@ -226,8 +226,17 @@ const filterCharacters = (filters: CharacterMatchFilters) =>
       ? character.streamer?.publicName === filters.streamer ||
         character.streamer?.id === filters.streamer
       : true;
+    const matchesTwitchLive =
+      filters.twitchLive === "live" ? character.streamer?.twitchLiveStatus === "live" : true;
 
-    return matchesQuery && matchesLifeStatus && matchesCompany && matchesTag && matchesStreamer;
+    return (
+      matchesQuery &&
+      matchesLifeStatus &&
+      matchesCompany &&
+      matchesTag &&
+      matchesStreamer &&
+      matchesTwitchLive
+    );
   });
 
 const createFixtureService = (): PublicDataService => ({
@@ -320,6 +329,17 @@ describe("public consultation API", () => {
     const body = response.body as PublicCharacterMatches;
 
     expect(body).toEqual({ ids: [camille.id, malik.id], total: 2 });
+  });
+
+  it("filters matching character ids by Twitch live status", async () => {
+    const response = await request(app)
+      .get("/api/characters/matches")
+      .query({ twitchLive: "live" });
+
+    expect(response.status).toBe(200);
+    const body = response.body as PublicCharacterMatches;
+
+    expect(body).toEqual({ ids: [camille.id], total: 1 });
   });
 
   it("returns one detailed character sheet", async () => {
