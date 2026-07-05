@@ -158,6 +158,9 @@ Les commandes de base existent deja :
 - Tests frontend : `cd web-client && npm test`
 - Developpement backend : `cd backend && npm run dev`
 - Developpement frontend : `cd web-client && npm run dev`
+- Reset backend sans seeds : `cd backend && npm run db:reset`
+- Reset backend avec seeds : `cd backend && npm run db:reset:seed`
+- Import Notion automatique complet : `cd backend && npm run notion:sync-all`
 
 # Deploiement
 

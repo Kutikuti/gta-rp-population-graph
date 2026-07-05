@@ -123,6 +123,28 @@ const syncRecordValues = async (
   });
 };
 
+const syncRecordValuesConservatively = async (
+  pageIds: string[],
+  spaceId: string,
+  fetchImpl: FetchLike
+) => {
+  const mergedRecordMaps: NotionRecordMap[] = [];
+
+  for (const batchIds of chunk(pageIds, 20)) {
+    if (batchIds.length === 0) {
+      continue;
+    }
+
+    await delay(900);
+    mergedRecordMaps.push(await syncRecordValues(batchIds, spaceId, fetchImpl));
+  }
+
+  return mergedRecordMaps.reduce<NotionRecordMap>(
+    (current, recordMap) => mergeRecordMaps(current, recordMap),
+    {}
+  );
+};
+
 const hydrateMissingPageDependencies = async (
   recordMap: NotionRecordMap,
   spaceId: string,
@@ -147,12 +169,12 @@ const hydrateMissingPageDependencies = async (
 
     previousMissingSignature = missingSignature;
 
-    for (const childIds of chunk(missingIds, 50)) {
+    for (const childIds of chunk(missingIds, 20)) {
       if (childIds.length === 0) {
         continue;
       }
 
-      await delay(400);
+      await delay(1_100);
       const childRecordMap = await syncRecordValues(childIds, spaceId, fetchImpl);
       hydrated = mergeRecordMaps(hydrated, childRecordMap);
     }
@@ -192,10 +214,10 @@ const scrapeCollectionPages = async (
     return pages;
   }
 
-  for (const pageIds of chunk(ids, 50)) {
-    await delay(250);
+  for (const pageIds of chunk(ids, 20)) {
+    await delay(900);
 
-    let recordMap = await syncRecordValues(pageIds, source.spaceId, fetchImpl);
+    let recordMap = await syncRecordValuesConservatively(pageIds, source.spaceId, fetchImpl);
     recordMap = await hydrateMissingPageDependencies(recordMap, source.spaceId, fetchImpl);
 
     for (const pageBlock of pageIds

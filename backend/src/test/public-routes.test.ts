@@ -156,6 +156,8 @@ const graph: PublicGraph = {
       label: character.fullName,
       characterId: character.id,
       fullName: character.fullName,
+      companyName: character.companyName,
+      groupName: character.groupName,
       lifeStatus: character.lifeStatus,
       verificationStatus: character.verificationStatus,
       photoUrl: character.photoUrl,

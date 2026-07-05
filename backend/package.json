@@ -18,10 +18,12 @@
     "db:migrate:pending": "tsx src/db/migrate.ts pending",
     "db:migrate:executed": "tsx src/db/migrate.ts executed",
     "db:seed": "tsx src/db/seed.ts",
-    "db:reset": "tsx src/db/migrate.ts down --all && tsx src/db/migrate.ts up && tsx src/db/seed.ts",
+    "db:reset": "tsx src/db/migrate.ts down --all && tsx src/db/migrate.ts up",
+    "db:reset:seed": "tsx src/db/migrate.ts down --all && tsx src/db/migrate.ts up && tsx src/db/seed.ts",
     "notion:import-report": "tsx src/import-notion.ts",
     "notion:preview": "tsx src/preview-notion-import.ts",
     "notion:scrape-report": "tsx src/scrape-notion.ts",
+    "notion:sync-all": "tsx src/sync-notion.ts",
     "photo:cleanup": "tsx src/cleanup-photo-drafts.ts"
   },
   "dependencies": {

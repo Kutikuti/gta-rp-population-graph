@@ -1,4 +1,5 @@
 import { sequelize } from "./db/index.js";
+import { defaultNotionSourceUrl } from "./notion-defaults.js";
 import {
   formatNotionImportSummary,
   SequelizeNotionImportService
@@ -7,13 +8,9 @@ import { scrapePublicNotionPage } from "./services/notion-scraper.js";
 
 const args = process.argv.slice(2);
 const jsonOutput = args.includes("--json");
-const sourceUrl = args.find((arg) => !arg.startsWith("--"));
+const sourceUrl = args.find((arg) => !arg.startsWith("--")) ?? defaultNotionSourceUrl;
 
 try {
-  if (!sourceUrl) {
-    throw new Error("Usage: npm run notion:scrape-report -- <notion-url>");
-  }
-
   const input = await scrapePublicNotionPage(sourceUrl);
   const service = new SequelizeNotionImportService();
   const result = await service.importFromInput(input);

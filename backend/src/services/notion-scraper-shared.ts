@@ -53,7 +53,7 @@ export const compact = <T>(values: Array<T | null | undefined>) =>
   values.filter((value): value is T => value !== null && value !== undefined);
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-export const maxRateLimitRetries = 8;
+export const maxRateLimitRetries = 12;
 
 export const retryDelayMs = (response: Response, attempt: number) => {
   const retryAfter = response.headers.get("retry-after");
@@ -66,10 +66,10 @@ export const retryDelayMs = (response: Response, attempt: number) => {
     }
   }
 
-  return Math.min(30_000, 1_500 * 2 ** attempt);
+  return Math.min(60_000, 2_500 * 2 ** attempt);
 };
 
-export const transientRetryDelayMs = (attempt: number) => Math.min(30_000, 1_000 * 2 ** attempt);
+export const transientRetryDelayMs = (attempt: number) => Math.min(45_000, 1_500 * 2 ** attempt);
 
 export const unwrapRecordValue = <T>(
   record: { value?: T | { value?: T } } | undefined
