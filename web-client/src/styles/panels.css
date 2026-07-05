@@ -1,5 +1,6 @@
 .filters-panel,
-.details-panel {
+.details-panel,
+.graph-preferences-panel {
   position: fixed;
   z-index: 30;
   min-width: 0;
@@ -43,6 +44,23 @@
   padding: 14px;
 }
 
+.graph-preferences-panel {
+  left: 14px;
+  bottom: 14px;
+}
+
+.graph-preferences-panel.is-collapsed {
+  display: grid;
+}
+
+.graph-preferences-panel.is-open {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: min(320px, calc(100vw - 28px));
+  padding: 14px;
+}
+
 .search-toggle,
 .panel-icon-button {
   display: grid;
@@ -56,6 +74,20 @@
 .search-toggle {
   width: 44px;
   height: 44px;
+}
+
+.graph-preferences-toggle {
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 8px;
+}
+
+.graph-preferences-toggle-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
 .search-toggle-icon {
@@ -136,6 +168,37 @@
 .field select:focus {
   border-color: #50aefc;
   box-shadow: 0 0 0 2px rgba(80, 174, 252, 0.18);
+}
+
+.graph-preferences-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #d9edf9;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.graph-preferences-checkbox input {
+  margin: 0;
+}
+
+.graph-preferences-section {
+  display: grid;
+  gap: 8px;
+}
+
+.graph-preferences-label {
+  color: #9fc6e9;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.graph-preferences-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .search-result-summary {

@@ -107,6 +107,8 @@ export type PublicGraph = {
       label: string;
       characterId: string;
       fullName: string;
+      companyName: string | null;
+      groupName: string | null;
       lifeStatus: LifeStatus;
       verificationStatus: VerificationStatus;
       photoUrl: string | null;

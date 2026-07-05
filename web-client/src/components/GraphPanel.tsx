@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 
 import type { PublicGraph } from "../api";
+import type { GraphPreferences } from "../graph/graphPreferences";
+import { GraphPreferencesPanel } from "./GraphPreferencesPanel";
 import { ErrorBlock, LoadingBlock } from "./StateBlock";
 
 const GraphView = lazy(() => import("../GraphView"));
@@ -12,6 +14,11 @@ type GraphPanelProps = {
   selectedId: string | null;
   isLoading: boolean;
   error: string | null;
+  graphPreferences: GraphPreferences;
+  isPreferencesOpen: boolean;
+  onGraphPreferencesChange: (preferences: GraphPreferences) => void;
+  onPreferencesClose: () => void;
+  onPreferencesOpen: () => void;
   onSelect: (id: string) => void;
 };
 
@@ -22,10 +29,22 @@ export function GraphPanel({
   selectedId,
   isLoading,
   error,
+  graphPreferences,
+  isPreferencesOpen,
+  onGraphPreferencesChange,
+  onPreferencesClose,
+  onPreferencesOpen,
   onSelect
 }: GraphPanelProps) {
   return (
     <section className="graph-panel" aria-label="Graphe des personnages">
+      <GraphPreferencesPanel
+        isOpen={isPreferencesOpen}
+        preferences={graphPreferences}
+        onChange={onGraphPreferencesChange}
+        onClose={onPreferencesClose}
+        onOpen={onPreferencesOpen}
+      />
       {error ? (
         <ErrorBlock message={error} />
       ) : isLoading ? (
@@ -36,6 +55,7 @@ export function GraphPanel({
         <Suspense fallback={<LoadingBlock label="Initialisation du graphe..." />}>
           <GraphView
             graph={graph}
+            layoutMode={graphPreferences.layoutMode}
             matchingIds={matchingIds}
             isSearchActive={isSearchActive}
             selectedId={selectedId}

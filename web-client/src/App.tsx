@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { CharacterCreationContext, CharacterFilters } from "./api";
 import "./App.css";
@@ -12,8 +12,10 @@ import { NotionImportsView } from "./components/NotionImportsView";
 import { ProfileView } from "./components/ProfileView";
 import { SearchSidebar } from "./components/SearchSidebar";
 import { initialFilters } from "./constants";
+import { filterGraphForPreferences } from "./graph/graphPreferences";
 import { useAuthSession } from "./hooks/useAuthSession";
 import { useCharacterDetails } from "./hooks/useCharacterDetails";
+import { useGraphPreferences } from "./hooks/useGraphPreferences";
 import { usePersistentFilters } from "./hooks/usePersistentFilters";
 import { usePublicGraphData } from "./hooks/usePublicGraphData";
 import { useSearchMatches } from "./hooks/useSearchMatches";
@@ -24,6 +26,7 @@ function App() {
   const [filters, setFilters] = usePersistentFilters();
   const [selectedId, setSelectedId] = useState<string | null>(readInitialCharacterId);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isGraphPreferencesOpen, setIsGraphPreferencesOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creationContext, setCreationContext] = useState<CharacterCreationContext | null>(null);
   const [toast, setToast] = useState<{
@@ -40,6 +43,7 @@ function App() {
   }, []);
 
   const { graph, isBootLoading, refreshPublicGraphData, tags } = usePublicGraphData(handleError);
+  const [graphPreferences, setGraphPreferences] = useGraphPreferences();
   const {
     authFeedback,
     authSession,
@@ -54,6 +58,10 @@ function App() {
   );
   const { history, isDetailLoading, refreshCharacterDetails, selectedCharacter } =
     useCharacterDetails(selectedId, handleError);
+  const filteredGraph = useMemo(
+    () => filterGraphForPreferences(graph, graphPreferences),
+    [graph, graphPreferences]
+  );
   const canEditDirectly =
     authSession?.authenticated &&
     (authSession.user.role.name === "moderator" || authSession.user.role.name === "administrator");
@@ -210,12 +218,21 @@ function App() {
             />
 
             <GraphPanel
-              graph={graph}
+              graph={filteredGraph}
               matchingIds={matchingIds}
               isSearchActive={isSearchActive}
               selectedId={selectedId}
               isLoading={isBootLoading}
               error={error}
+              graphPreferences={graphPreferences}
+              isPreferencesOpen={isGraphPreferencesOpen}
+              onGraphPreferencesChange={setGraphPreferences}
+              onPreferencesClose={() => {
+                setIsGraphPreferencesOpen(false);
+              }}
+              onPreferencesOpen={() => {
+                setIsGraphPreferencesOpen(true);
+              }}
               onSelect={handleSelect}
             />
 

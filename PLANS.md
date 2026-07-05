@@ -1450,6 +1450,19 @@ Graphe :
 - Ajouter un parametrage local de l'affichage : afficher ou masquer les morts,
   choisir les types de relations visibles et conserver ces preferences cote
   navigateur.
+- Etat 2026-07-05 : lot D demarre avec un premier socle frontend en place :
+  preferences locales persistantes, filtrage du graphe selon `showDeceased`
+  et types de relations visibles, plus panneau public compact `Affichage`.
+- Cette premiere tranche couvre maintenant :
+  - le masquage local des personnages decedes ;
+  - la visibilite locale de tous les types de relations geres, avec noyau
+    `parent`, `child`, `sibling`, `couple` actif par defaut et relations
+    secondaires masquées par defaut ;
+  - une disposition locale `Groupes` / `Libre`, avec regroupement spatial par
+    `groupName` actif par defaut.
+- La prochaine amelioration probable du lot D concerne surtout le raffinement
+  visuel du regroupement (lisibilite des grappes, eventuels reperes visuels de
+  groupe, ajustement fin du layout) plutot que le contrat fonctionnel de base.
 
 Donnees a completer :
 

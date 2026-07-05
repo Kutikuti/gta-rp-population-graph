@@ -7,7 +7,7 @@ import type {
   TagType,
   VerificationStatus
 } from "../db/enums.js";
-import { graphRelationshipTypes } from "../db/enums.js";
+import { relationshipTypes } from "../db/enums.js";
 import { models } from "../db/index.js";
 import {
   Character,
@@ -153,6 +153,8 @@ export type CytoscapeNode = {
     label: string;
     characterId: string;
     fullName: string;
+    companyName: string | null;
+    groupName: string | null;
     lifeStatus: LifeStatus;
     verificationStatus: VerificationStatus;
     photoUrl: string | null;
@@ -484,7 +486,7 @@ export class SequelizePublicDataService implements PublicDataService {
       models.CharacterRelationship.findAll({
         where: {
           type: {
-            [Op.in]: graphRelationshipTypes
+            [Op.in]: relationshipTypes
           }
         },
         order: [["label", "ASC"]]
@@ -499,6 +501,8 @@ export class SequelizePublicDataService implements PublicDataService {
           label: fullName(character),
           characterId: character.id,
           fullName: fullName(character),
+          companyName: character.companyName,
+          groupName: character.groupName,
           lifeStatus: character.lifeStatus,
           verificationStatus: character.verificationStatus,
           photoUrl: character.photoUrl,

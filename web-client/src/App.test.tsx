@@ -6,10 +6,12 @@ import { App } from "./App";
 
 vi.mock("./GraphView", () => ({
   default: ({
+    layoutMode,
     matchingIds,
     selectedId,
     onSelect
   }: {
+    layoutMode: string;
     matchingIds: string[];
     selectedId: string | null;
     onSelect: (id: string) => void;
@@ -23,6 +25,7 @@ vi.mock("./GraphView", () => ({
       >
         Nœud Camille Morel
       </button>
+      <span>Disposition {layoutMode}</span>
       <span>Correspondances {matchingIds.join(",")}</span>
       <span>Selection {selectedId}</span>
     </div>

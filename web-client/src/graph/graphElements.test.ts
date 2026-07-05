@@ -9,6 +9,8 @@ const baseNode: PublicGraph["nodes"][number]["data"] = {
   label: "Camille Morel",
   characterId: "00000000-0000-4000-8000-000000000301",
   fullName: "Camille Morel",
+  companyName: "Blue Line Logistics",
+  groupName: "Quartier Nord",
   lifeStatus: "alive",
   verificationStatus: "community",
   photoUrl: null,

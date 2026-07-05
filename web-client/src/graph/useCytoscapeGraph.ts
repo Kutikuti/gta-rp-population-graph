@@ -4,10 +4,12 @@ import { useEffect, useRef } from "react";
 import type { PublicGraph } from "../api";
 import { cytoscapeStyles } from "./cytoscapeStyles";
 import { toCytoscapeElements } from "./graphElements";
+import { type GraphLayoutMode, graphLayoutOptions } from "./graphLayout";
 
 type UseCytoscapeGraphParams = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   graph: PublicGraph;
+  layoutMode: GraphLayoutMode;
   matchingIdSet: Set<string>;
   isSearchActive: boolean;
   selectedId: string | null;
@@ -17,6 +19,7 @@ type UseCytoscapeGraphParams = {
 export function useCytoscapeGraph({
   containerRef,
   graph,
+  layoutMode,
   matchingIdSet,
   isSearchActive,
   selectedId,
@@ -40,14 +43,10 @@ export function useCytoscapeGraph({
       minZoom: 0.35,
       maxZoom: 2.2,
       style: cytoscapeStyles,
-      layout: {
-        name: "cose",
-        animate: false,
-        fit: true,
-        padding: 48,
-        nodeRepulsion: 6800,
-        idealEdgeLength: 150
-      }
+      layout: graphLayoutOptions(graph, layoutMode, {
+        width: containerRef.current.clientWidth || window.innerWidth,
+        height: containerRef.current.clientHeight || window.innerHeight
+      })
     });
 
     const handleNodeTap = (event: EventObject) => {
@@ -77,7 +76,7 @@ export function useCytoscapeGraph({
       cy.destroy();
       cytoscapeRef.current = null;
     };
-  }, [containerRef, graph]);
+  }, [containerRef, graph, layoutMode]);
 
   useEffect(() => {
     const cy = cytoscapeRef.current;
