@@ -22,7 +22,7 @@ export type GraphPreferences = {
 };
 
 export const initialGraphPreferences: GraphPreferences = {
-  layoutMode: "grouped",
+  layoutMode: "company",
   showDeceased: false,
   visibleRelationshipTypes: [...supportedGraphRelationshipTypes]
 };
@@ -39,6 +39,7 @@ export const normalizeGraphPreferences = (value: unknown): GraphPreferences => {
   const layoutMode =
     candidate.layoutMode === "network" ||
     candidate.layoutMode === "grouped" ||
+    candidate.layoutMode === "family" ||
     candidate.layoutMode === "company"
       ? candidate.layoutMode
       : initialGraphPreferences.layoutMode;

@@ -54,7 +54,20 @@ const graph: PublicGraph = {
       }
     }
   ],
-  edges: []
+  edges: [
+    {
+      data: {
+        id: "edge-1",
+        type: "relationship",
+        source: "char-1",
+        target: "char-2",
+        label: "Fratrie",
+        relationshipType: "sibling",
+        direction: "symmetric",
+        verificationStatus: "community"
+      }
+    }
+  ]
 };
 
 describe("graphLayoutOptions", () => {
@@ -95,5 +108,26 @@ describe("graphLayoutOptions", () => {
 
     expect(presetLayout.name).toBe("preset");
     expect(presetLayout.positions["char-1"]?.x).not.toBe(presetLayout.positions["char-3"]?.x);
+  });
+
+  it("can cluster positions by family relationships", () => {
+    const layout = graphLayoutOptions(graph, "family", { width: 1200, height: 800 });
+    const presetLayout = layout as {
+      name: string;
+      positions: Record<string, { x: number; y: number }>;
+    };
+
+    expect(presetLayout.name).toBe("preset");
+
+    const char1 = presetLayout.positions["char-1"];
+    const char2 = presetLayout.positions["char-2"];
+    const char3 = presetLayout.positions["char-3"];
+
+    const familyDistance =
+      Math.abs((char1?.x ?? 0) - (char2?.x ?? 0)) + Math.abs((char1?.y ?? 0) - (char2?.y ?? 0));
+    const outsiderDistance =
+      Math.abs((char1?.x ?? 0) - (char3?.x ?? 0)) + Math.abs((char1?.y ?? 0) - (char3?.y ?? 0));
+
+    expect(familyDistance).toBeLessThan(outsiderDistance);
   });
 });

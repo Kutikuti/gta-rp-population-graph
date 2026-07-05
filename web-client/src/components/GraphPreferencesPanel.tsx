@@ -98,6 +98,17 @@ export function GraphPreferencesPanel({
               <button
                 type="button"
                 className={`ghost-button compact-action ${
+                  preferences.layoutMode === "family" ? "is-active-filter" : ""
+                }`}
+                onClick={() => {
+                  onChange({ ...preferences, layoutMode: "family" });
+                }}
+              >
+                Familles
+              </button>
+              <button
+                type="button"
+                className={`ghost-button compact-action ${
                   preferences.layoutMode === "company" ? "is-active-filter" : ""
                 }`}
                 onClick={() => {

@@ -73,18 +73,19 @@ const graph: PublicGraph = {
 describe("graphPreferences", () => {
   it("hides deceased characters by default", () => {
     expect(initialGraphPreferences.showDeceased).toBe(false);
+    expect(initialGraphPreferences.layoutMode).toBe("company");
   });
 
   it("normalizes partial or invalid stored values", () => {
     expect(normalizeGraphPreferences(null)).toEqual(initialGraphPreferences);
     expect(
       normalizeGraphPreferences({
-        layoutMode: "company",
+        layoutMode: "family",
         showDeceased: false,
         visibleRelationshipTypes: ["sibling", "invalid", "aunt_reference", "sibling"]
       })
     ).toEqual({
-      layoutMode: "company",
+      layoutMode: "family",
       showDeceased: false,
       visibleRelationshipTypes: ["sibling", "aunt_reference"]
     });
