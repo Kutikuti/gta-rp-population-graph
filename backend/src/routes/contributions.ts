@@ -5,6 +5,7 @@ import { z } from "zod";
 import { env } from "../config/env.js";
 import { models } from "../db/index.js";
 import { requireAuthenticatedUser } from "../middleware/auth.js";
+import { shouldSkipDevelopmentRateLimit } from "../middleware/rate-limit.js";
 import {
   type ChangeRequestService,
   changeRequestCreateSchema,
@@ -23,7 +24,8 @@ const photoUploadRateLimit = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   limit: env.PHOTO_UPLOAD_RATE_LIMIT_MAX,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: shouldSkipDevelopmentRateLimit
 });
 
 const photoUploadBody = express.raw({

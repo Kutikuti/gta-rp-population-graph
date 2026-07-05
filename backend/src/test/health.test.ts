@@ -13,4 +13,14 @@ describe("GET /api/health", () => {
       service: "gta-rp-population-graph-api"
     });
   });
+
+  it("does not rate limit loopback requests in non-production environments", async () => {
+    const app = createApp();
+
+    for (let index = 0; index < 105; index += 1) {
+      const response = await request(app).get("/api/health");
+
+      expect(response.status).toBe(200);
+    }
+  });
 });

@@ -8,6 +8,7 @@ import { sessionMiddleware } from "./config/session.js";
 import { loadCurrentUser } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { recordHttpMetrics } from "./middleware/metrics.js";
+import { shouldSkipDevelopmentRateLimit } from "./middleware/rate-limit.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createContributionsRouter } from "./routes/contributions.js";
@@ -76,7 +77,9 @@ export const createApp = (dependencies: AppDependencies = {}) => {
       limit: env.RATE_LIMIT_MAX_REQUESTS,
       standardHeaders: true,
       legacyHeaders: false,
-      skip: (request) => request.method === "GET" && request.path === "/api/supervision/authorize"
+      skip: (request) =>
+        shouldSkipDevelopmentRateLimit(request) ||
+        (request.method === "GET" && request.path === "/api/supervision/authorize")
     })
   );
   app.use(
