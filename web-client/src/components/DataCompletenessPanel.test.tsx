@@ -52,7 +52,7 @@ describe("DataCompletenessPanel", () => {
     expect(screen.getByText("Téléphone")).toBeInTheDocument();
     expect(screen.getByText("À vérifier")).toBeInTheDocument();
     expect(screen.getByText("Importée")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Ouvrir" })[0]).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Voir la fiche" })[0]).toHaveAttribute(
       "href",
       "/?character=camille-morel"
     );

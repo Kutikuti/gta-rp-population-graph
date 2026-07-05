@@ -140,7 +140,12 @@ export function DataCompletenessPanel({
                   <small>Mis à jour le {formatDate(item.updatedAt)}</small>
                 </div>
                 <div className="completeness-item-actions">
-                  <a href={`/?character=${encodeURIComponent(item.publicSlug)}`}>Ouvrir</a>
+                  <a
+                    href={`/?character=${encodeURIComponent(item.publicSlug)}`}
+                    className="ghost-button compact-action completeness-view-sheet-action"
+                  >
+                    Voir la fiche
+                  </a>
                   {onEditCharacter ? (
                     <button
                       type="button"

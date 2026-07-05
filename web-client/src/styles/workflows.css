@@ -237,7 +237,11 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
+}
+
+.completeness-view-sheet-action {
+  text-decoration: none;
 }
 
 .completeness-item-header strong,
