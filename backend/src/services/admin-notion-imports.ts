@@ -199,6 +199,7 @@ export class SequelizeAdminNotionImportService {
       const streamerId = await resolveOrCreateStreamerId(
         candidate.streamerPublicName,
         candidate.verificationStatus,
+        candidate.socialLinks,
         transaction
       );
       const nextTagNames = tagEntities

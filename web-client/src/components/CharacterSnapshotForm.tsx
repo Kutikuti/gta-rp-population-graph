@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   type CharacterSnapshot,
@@ -44,6 +44,7 @@ const socialPlatforms = [
   ["twitch", "Twitch"],
   ["kick", "Kick"],
   ["youtube", "YouTube"],
+  ["discord", "Discord"],
   ["instagram", "Instagram"],
   ["tiktok", "TikTok"]
 ] as const;
@@ -84,6 +85,7 @@ export function CharacterSnapshotForm({
   onSubmit
 }: CharacterSnapshotFormProps) {
   const phoneRowIdsRef = useRef<string[]>(snapshot.phoneNumbers.map(() => crypto.randomUUID()));
+  const [isNewStreamerOpen, setIsNewStreamerOpen] = useState(Boolean(snapshot.streamerName));
 
   const updateSnapshot = (changes: Partial<CharacterSnapshot>) => {
     onChange({ ...snapshot, ...changes });
@@ -165,6 +167,17 @@ export function CharacterSnapshotForm({
     });
   };
   const isDirectPhotoMode = submitLabel.includes("Appliquer");
+
+  useEffect(() => {
+    if (snapshot.streamerName && !isNewStreamerOpen) {
+      setIsNewStreamerOpen(true);
+      return;
+    }
+
+    if (!snapshot.streamerName && snapshot.streamerId && isNewStreamerOpen) {
+      setIsNewStreamerOpen(false);
+    }
+  }, [isNewStreamerOpen, snapshot.streamerId, snapshot.streamerName]);
 
   return (
     <form
@@ -435,40 +448,81 @@ export function CharacterSnapshotForm({
       <fieldset>
         <legend>Médias</legend>
         <div className="form-grid media-grid">
-          <label className="media-primary-field">
-            <span>Streamer existant</span>
-            <select
-              value={snapshot.streamerId ?? ""}
-              onChange={(event) => {
-                const nextStreamerId = nullableValue(event.target.value);
-                updateSnapshot({
-                  streamerId: nextStreamerId,
-                  streamerName: nextStreamerId ? null : snapshot.streamerName
-                });
-              }}
-            >
-              <option value="">Aucun streamer</option>
-              {streamers.map((streamer) => (
-                <option key={streamer.id} value={streamer.id}>
-                  {streamer.publicName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="media-primary-field">
-            <span>Nouveau streamer</span>
-            <input
-              type="text"
-              value={textValue(snapshot.streamerName)}
-              placeholder="À créer si absent"
-              onChange={(event) => {
-                updateSnapshot({
-                  streamerId: null,
-                  streamerName: nullableValue(event.target.value)
-                });
-              }}
-            />
-          </label>
+          <div className="media-streamer-row">
+            <label className="media-streamer-field">
+              <span>Streamer existant</span>
+              <select
+                value={snapshot.streamerId ?? ""}
+                onChange={(event) => {
+                  const nextStreamerId = nullableValue(event.target.value);
+                  updateSnapshot({
+                    streamerId: nextStreamerId,
+                    streamerName: nextStreamerId ? null : snapshot.streamerName
+                  });
+
+                  if (nextStreamerId) {
+                    setIsNewStreamerOpen(false);
+                  }
+                }}
+              >
+                <option value="">Aucun streamer</option>
+                {streamers.map((streamer) => (
+                  <option key={streamer.id} value={streamer.id}>
+                    {streamer.publicName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {!isNewStreamerOpen ? (
+              <button
+                type="button"
+                className="add-row-button media-streamer-toggle"
+                aria-label="Ajouter un streamer"
+                title="Ajouter un streamer"
+                onClick={() => {
+                  setIsNewStreamerOpen(true);
+                  updateSnapshot({
+                    streamerId: null,
+                    streamerName: null,
+                    socialLinks: null
+                  });
+                }}
+              >
+                <img src={addIconUrl} alt="" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+          {isNewStreamerOpen ? (
+            <div className="media-streamer-create-row">
+              <label className="media-streamer-create-field">
+                <span>Nouveau streamer</span>
+                <input
+                  type="text"
+                  value={textValue(snapshot.streamerName)}
+                  placeholder="Nom public"
+                  onChange={(event) => {
+                    updateSnapshot({
+                      streamerId: null,
+                      streamerName: nullableValue(event.target.value)
+                    });
+                  }}
+                />
+              </label>
+              <div className="media-streamer-create-action">
+                <span aria-hidden="true" className="media-streamer-action-spacer" />
+                <button
+                  type="button"
+                  className="ghost-button compact-action media-streamer-cancel"
+                  onClick={() => {
+                    setIsNewStreamerOpen(false);
+                    updateSnapshot({ streamerName: null });
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : null}
           {socialPlatforms.map(([platform, label]) => (
             <label key={platform}>
               <span>{label}</span>

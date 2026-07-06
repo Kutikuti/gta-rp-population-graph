@@ -6,6 +6,7 @@ describe("socialEntries", () => {
   it("sorts known social links with Twitch first", () => {
     expect(
       socialEntries({
+        discord: "https://discord.gg/example",
         instagram: "https://instagram.com/example",
         tiktok: "https://tiktok.com/@example",
         youtube: "https://youtube.com/@example",
@@ -14,6 +15,7 @@ describe("socialEntries", () => {
     ).toEqual([
       ["twitch", "https://twitch.tv/example"],
       ["youtube", "https://youtube.com/@example"],
+      ["discord", "https://discord.gg/example"],
       ["instagram", "https://instagram.com/example"],
       ["tiktok", "https://tiktok.com/@example"]
     ]);

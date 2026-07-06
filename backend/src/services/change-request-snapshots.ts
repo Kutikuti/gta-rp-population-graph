@@ -17,6 +17,7 @@ import {
   relationshipLabel
 } from "./character-relationships.js";
 import { generateUniqueCharacterSlug } from "./character-slug.js";
+import { resolveOrCreateStreamer } from "./streamer-links.js";
 
 type ChangeValue = string | boolean | JsonObject | JsonObject[] | SocialLinks | null;
 
@@ -159,48 +160,13 @@ export const calculateCharacterCreationDiff = (snapshot: CharacterSnapshot): Cha
   }, {});
 
 const resolveStreamerId = async (snapshot: CharacterSnapshot, transaction: Transaction) => {
-  if (snapshot.streamerId) {
-    const streamer = await models.Streamer.findByPk(snapshot.streamerId, {
-      attributes: ["id"],
-      transaction
-    });
-
-    if (!streamer) {
-      throw new Error(`Streamer ${snapshot.streamerId} is missing.`);
-    }
-
-    return streamer.id;
-  }
-
-  if (!snapshot.streamerName) {
-    return null;
-  }
-
-  const existing = await models.Streamer.findOne({
-    attributes: ["id"],
-    where: {
-      publicName: {
-        [Op.iLike]: snapshot.streamerName
-      }
-    },
+  return resolveOrCreateStreamer({
+    streamerId: snapshot.streamerId,
+    streamerPublicName: snapshot.streamerName,
+    socialLinks: snapshot.socialLinks,
+    verificationStatus: snapshot.verificationStatus,
     transaction
   });
-
-  if (existing) {
-    return existing.id;
-  }
-
-  const created = await models.Streamer.create(
-    {
-      publicName: snapshot.streamerName,
-      primaryPlatform: null,
-      socialLinks: null,
-      verificationStatus: snapshot.verificationStatus
-    },
-    { transaction }
-  );
-
-  return created.id;
 };
 
 const applyRelationships = async (

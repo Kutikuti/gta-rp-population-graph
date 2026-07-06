@@ -1494,6 +1494,24 @@ Streamers :
   publics, le live Twitch, les fiches liees et les cas ou aucun streamer n'est
   explicitement renseigne.
 - Ajouter la possibilite de renseigner un lien Discord public pour un streamer.
+- Etat 2026-07-06 : premier sous-lot realise.
+  - le bloc `Medias` accepte maintenant aussi un lien Discord public ;
+  - les types frontend/backend `socialLinks` couvrent desormais `discord` en
+    plus des plateformes deja prises en charge ;
+  - l'ordre d'affichage public des liens sociaux a ete etendu pour inserer
+    Discord parmi les plateformes prioritaires ;
+  - la creation ou le rattachement d'un streamer a partir d'une fiche ou d'un
+    import Notion n'engendre plus systematiquement un streamer "vide" :
+    quand des liens publics sont connus, ils sont aussi injectes dans la fiche
+    streamer et servent a deriver une `primaryPlatform` initiale.
+- Reste a traiter dans le lot E :
+  - clarifier le contrat produit entre `streamer` et `socialLinks` de fiche,
+    aujourd'hui encore tolere comme mode mixte pour compatibilite ;
+  - decider si les liens publics doivent vivre a terme uniquement sur la fiche
+    streamer, ou si des surcharges par personnage restent legitimes ;
+  - revoir l'edition et l'affichage pour mieux expliciter cette distinction ;
+  - consolider les tests autour des cas de fusion / mise a jour d'un streamer
+    existant quand plusieurs personnages lui sont rattaches.
 
 Relations :
 

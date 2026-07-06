@@ -38,7 +38,7 @@ import {
 
 export type JsonObject = Record<string, unknown>;
 export type SocialLinks = Partial<
-  Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>
+  Record<"twitch" | "kick" | "youtube" | "discord" | "instagram" | "tiktok", string>
 >;
 
 export class Role extends Model<InferAttributes<Role>, InferCreationAttributes<Role>> {

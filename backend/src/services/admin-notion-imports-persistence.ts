@@ -10,6 +10,7 @@ import {
   normalizeText
 } from "./admin-notion-imports-shared.js";
 import { relationshipDirection, relationshipLabel } from "./character-relationships.js";
+import { resolveOrCreateStreamer } from "./streamer-links.js";
 
 const DEFAULT_TAG_COLOR = "#2f9bff";
 
@@ -53,37 +54,15 @@ export const relationshipsForCharacter = async (characterId: string, transaction
 export const resolveOrCreateStreamerId = async (
   streamerPublicName: string | null,
   verificationStatus: VerificationStatus,
+  socialLinks: Character["socialLinks"],
   transaction: Transaction
 ) => {
-  if (!streamerPublicName) {
-    return null;
-  }
-
-  const existing = await models.Streamer.findOne({
-    attributes: ["id"],
-    where: {
-      publicName: {
-        [Op.iLike]: streamerPublicName
-      }
-    },
+  return resolveOrCreateStreamer({
+    streamerPublicName,
+    socialLinks,
+    verificationStatus,
     transaction
   });
-
-  if (existing) {
-    return existing.id;
-  }
-
-  const created = await models.Streamer.create(
-    {
-      publicName: streamerPublicName,
-      primaryPlatform: null,
-      socialLinks: null,
-      verificationStatus
-    },
-    { transaction }
-  );
-
-  return created.id;
 };
 
 export const resolveOrCreateTags = async (tagNames: string[], transaction: Transaction) => {

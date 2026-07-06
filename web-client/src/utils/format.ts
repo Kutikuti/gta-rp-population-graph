@@ -15,7 +15,7 @@ export const formatDateTime = (value: string | null) =>
 
 export const compactValue = (value: string | null | undefined) => value || "Non renseigné";
 
-const socialPlatformOrder = ["twitch", "youtube", "instagram", "tiktok"] as const;
+const socialPlatformOrder = ["twitch", "youtube", "discord", "instagram", "tiktok"] as const;
 const socialPlatformRanks: Readonly<Record<string, number>> = Object.fromEntries(
   socialPlatformOrder.map((platform, index) => [platform, index])
 );

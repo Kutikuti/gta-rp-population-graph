@@ -29,6 +29,7 @@ const socialLinksSchema = z
     twitch: nullableText(300),
     kick: nullableText(300),
     youtube: nullableText(300),
+    discord: nullableText(300),
     instagram: nullableText(300),
     tiktok: nullableText(300)
   })

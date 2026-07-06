@@ -129,6 +129,7 @@ const fieldAliases = {
   twitch: ["twitch"],
   kick: ["kick"],
   youtube: ["youtube", "youTube"],
+  discord: ["discord"],
   instagram: ["instagram"],
   tiktok: ["tiktok", "tikTok"],
   previousCharacters: [
@@ -471,6 +472,7 @@ export const mapNotionPage = (page: NotionPageInput) => {
     twitch: stringValue(findValue(properties, fieldAliases.twitch)),
     kick: stringValue(findValue(properties, fieldAliases.kick)),
     youtube: stringValue(findValue(properties, fieldAliases.youtube)),
+    discord: stringValue(findValue(properties, fieldAliases.discord)),
     instagram: stringValue(findValue(properties, fieldAliases.instagram)),
     tiktok: stringValue(findValue(properties, fieldAliases.tiktok))
   };

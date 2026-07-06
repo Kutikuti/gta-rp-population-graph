@@ -5,7 +5,7 @@ export type ChangeRequestStatus = "pending" | "approved" | "rejected";
 export type ChangeRequestType = "update" | "create";
 
 export type SocialLinks = Partial<
-  Record<"twitch" | "kick" | "youtube" | "instagram" | "tiktok", string>
+  Record<"twitch" | "kick" | "youtube" | "discord" | "instagram" | "tiktok", string>
 >;
 
 export type PublicStreamer = {
