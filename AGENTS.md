@@ -127,7 +127,9 @@ Principes :
 - Demandes de modification par utilisateur connecte simple.
 - Demandes de creation de fiche par utilisateur connecte, proposees depuis la
   recherche quand aucun resultat satisfaisant n'est trouve, et validees par
-  moderation avant publication afin de limiter les doublons.
+  moderation avant publication afin de limiter les doublons. Pour un
+  moderateur ou un administrateur, cette meme entree de recherche doit ouvrir
+  une creation directe de fiche plutot qu'une demande en attente.
 - Photo optionnelle de personnage, proposee uniquement dans une modification de
   fiche existante. La creation de fiche ne doit pas permettre l'upload de photo
   afin de limiter le spam et le stockage inutile.
@@ -226,8 +228,11 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
   d'import plutot que d'etre silencieusement converti ou perdu.
 - Le bloc medias doit permettre soit de rattacher un streamer existant, soit de
   proposer un nouveau streamer par son nom public, ainsi que d'editer les liens
-  publics associes. Ce bloc pourra aussi accueillir un lien Discord public pour
-  un streamer quand ce besoin sera implemente.
+  publics associes. Il accepte maintenant aussi un lien Discord public pour un
+  streamer. L'UX d'edition doit rester claire : selection d'un streamer
+  existant par defaut, et creation d'un nouveau streamer via une action
+  explicite qui ne cree effectivement le streamer qu'a la validation de la
+  fiche.
 - Une fiche personnage peut contenir plusieurs numeros de telephone. L'edition,
   l'affichage public, la moderation et les differences d'historique doivent
   rester lisibles avec cette structure.

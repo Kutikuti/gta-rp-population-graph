@@ -1504,12 +1504,25 @@ Streamers :
     import Notion n'engendre plus systematiquement un streamer "vide" :
     quand des liens publics sont connus, ils sont aussi injectes dans la fiche
     streamer et servent a deriver une `primaryPlatform` initiale.
+  - dans le formulaire d'edition, la saisie d'un nouveau streamer passe
+    maintenant par une action explicite `add`, qui revele le champ de nom
+    public sans creer le streamer avant validation de la fiche ; ce mode vide
+    aussi les champs streamer deja saisis pour repartir d'un etat propre ;
+  - depuis une recherche sans resultat, un moderateur ou administrateur ouvre
+    desormais une creation directe de fiche, tandis qu'un utilisateur simple
+    reste sur un flux de demande moderee.
 - Reste a traiter dans le lot E :
   - clarifier le contrat produit entre `streamer` et `socialLinks` de fiche,
     aujourd'hui encore tolere comme mode mixte pour compatibilite ;
   - decider si les liens publics doivent vivre a terme uniquement sur la fiche
     streamer, ou si des surcharges par personnage restent legitimes ;
   - revoir l'edition et l'affichage pour mieux expliciter cette distinction ;
+  - mieux prendre en charge les cas de changement d'un streamer existant vers
+    un autre, ou de decrochage complet d'un streamer, en conservant des
+    comportements evidents pour les liens publics associes ;
+  - statuer sur la gestion des liens quand plusieurs personnages partagent le
+    meme streamer mais veulent malgre tout des liens medias partiellement
+    differents ;
   - consolider les tests autour des cas de fusion / mise a jour d'un streamer
     existant quand plusieurs personnages lui sont rattaches.
 
