@@ -3,6 +3,7 @@ import { FiltersPanel } from "./FiltersPanel";
 
 type SearchSidebarProps = {
   canSuggestCreation: boolean;
+  creationActionLabel: string;
   filters: CharacterFilters;
   isOpen: boolean;
   resultSummary: string | null;
@@ -16,6 +17,7 @@ type SearchSidebarProps = {
 
 export function SearchSidebar({
   canSuggestCreation,
+  creationActionLabel,
   filters,
   isOpen,
   resultSummary,
@@ -34,6 +36,7 @@ export function SearchSidebar({
       {isOpen ? (
         <FiltersPanel
           canSuggestCreation={canSuggestCreation}
+          creationActionLabel={creationActionLabel}
           filters={filters}
           onClose={onClose}
           tags={tags}

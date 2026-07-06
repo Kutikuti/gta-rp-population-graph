@@ -1,6 +1,7 @@
 import { models, sequelize } from "../db/index.js";
 import type { JsonObject } from "../db/models/index.js";
 import {
+  applyDirectCharacterCreation,
   applyDirectCharacterEdit,
   approvePendingChangeRequest
 } from "./change-request-mutations.js";
@@ -65,6 +66,10 @@ export interface ChangeRequestService {
     moderatorId: string;
     snapshot: CharacterSnapshot;
   }): Promise<{ characterId: string; changes: ChangeDiff } | null>;
+  createCharacterDirectly(input: {
+    moderatorId: string;
+    snapshot: CharacterSnapshot;
+  }): Promise<{ characterId: string; changes: ChangeDiff }>;
 }
 
 export class SequelizeChangeRequestService implements ChangeRequestService {
@@ -251,6 +256,25 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
 
       return applyDirectCharacterEdit({
         character,
+        moderatorId: input.moderatorId,
+        snapshot: input.snapshot,
+        transaction
+      });
+    });
+  }
+
+  async createCharacterDirectly(input: {
+    moderatorId: string;
+    snapshot: CharacterSnapshot;
+  }): Promise<{ characterId: string; changes: ChangeDiff }> {
+    return sequelize.transaction(async (transaction) => {
+      const photoUrl = input.snapshot.photoUrl;
+
+      if (isPendingCharacterPhotoToken(photoUrl)) {
+        await assertPendingCharacterPhotoExists(photoUrl, input.moderatorId);
+      }
+
+      return applyDirectCharacterCreation({
         moderatorId: input.moderatorId,
         snapshot: input.snapshot,
         transaction

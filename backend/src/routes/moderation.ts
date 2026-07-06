@@ -181,5 +181,27 @@ export const createModerationRouter = (
     }
   );
 
+  router.post(
+    "/characters",
+    requireRole(["moderator", "administrator"]),
+    async (request, response, next) => {
+      try {
+        if (!request.currentUser) {
+          throw new Error("Moderation route reached without current user.");
+        }
+
+        const payload = directCharacterEditSchema.parse(request.body);
+        const result = await changeRequestService.createCharacterDirectly({
+          moderatorId: request.currentUser.id,
+          snapshot: payload.snapshot
+        });
+
+        response.status(201).json(result);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
   return router;
 };

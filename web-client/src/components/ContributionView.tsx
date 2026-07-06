@@ -8,6 +8,7 @@ import {
   characterToSnapshot,
   createChangeRequest,
   createCharacterCreationRequest,
+  createCharacterDirectly,
   editCharacterDirectly,
   listCharacterDirectory,
   listMyChangeRequests,
@@ -167,6 +168,13 @@ export function ContributionView({
     setFeedback(null);
 
     try {
+      if (creationContext && canEditDirectly(session)) {
+        await createCharacterDirectly(snapshot);
+        await onDataChanged();
+        onSubmitted("Fiche créée.", true);
+        return;
+      }
+
       if (character && !creationContext && canEditDirectly(session)) {
         await editCharacterDirectly(character.id, snapshot);
         await onDataChanged();
@@ -224,7 +232,9 @@ export function ContributionView({
               ? canEditDirectly(session)
                 ? `Modifier la fiche de ${character.fullName}`
                 : `Proposer une correction pour ${character.fullName}`
-              : "Proposer une nouvelle fiche"}
+              : canEditDirectly(session)
+                ? "Créer une nouvelle fiche"
+                : "Proposer une nouvelle fiche"}
           </h2>
         </div>
       </div>
@@ -244,8 +254,10 @@ export function ContributionView({
               currentCharacterId={character?.id ?? null}
               streamers={streamers}
               submitLabel={
-                character && !creationContext && canEditDirectly(session)
-                  ? "Appliquer la modification"
+                canEditDirectly(session)
+                  ? character && !creationContext
+                    ? "Appliquer la modification"
+                    : "Créer la fiche"
                   : "Envoyer la demande"
               }
               isSubmitting={isSubmitting}

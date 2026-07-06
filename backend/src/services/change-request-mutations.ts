@@ -53,6 +53,28 @@ const createCharacterFromSnapshot = async (
   return character;
 };
 
+export const applyDirectCharacterCreation = async (input: {
+  moderatorId: string;
+  snapshot: CharacterSnapshot;
+  transaction: Transaction;
+}): Promise<{ characterId: string; changes: ChangeDiff }> => {
+  const preparedSnapshot = await prepareSnapshotForWrite(input.snapshot);
+  const character = await createCharacterFromSnapshot(preparedSnapshot, input.transaction);
+  const changes = calculateCharacterCreationDiff(preparedSnapshot);
+
+  await models.ChangeHistory.create(
+    {
+      characterId: character.id,
+      changeRequestId: null,
+      moderatorId: input.moderatorId,
+      changes
+    },
+    { transaction: input.transaction }
+  );
+
+  return { characterId: character.id, changes };
+};
+
 const loadTargetCharacterForApproval = async (
   request: ChangeRequest,
   transaction: Transaction

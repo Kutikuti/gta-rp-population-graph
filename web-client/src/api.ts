@@ -735,3 +735,8 @@ export const editCharacterDirectly = (characterId: string, snapshot: CharacterSn
     "PATCH",
     { snapshot }
   );
+
+export const createCharacterDirectly = (snapshot: CharacterSnapshot) =>
+  sendJson<{ characterId: string; changes: ChangeDiff }>("/api/moderation/characters", "POST", {
+    snapshot
+  });

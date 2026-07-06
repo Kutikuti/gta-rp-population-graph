@@ -120,9 +120,10 @@ const camilleDetail = {
   createdAt: now
 };
 
-const jsonResponse = (body: unknown) =>
+const jsonResponse = (body: unknown, status = 200) =>
   Promise.resolve({
-    ok: true,
+    ok: status >= 200 && status < 300,
+    status,
     json: () => Promise.resolve(body)
   } as Response);
 
@@ -1075,6 +1076,88 @@ describe("App", () => {
     await waitFor(() => {
       expect(
         screen.queryByRole("heading", { name: "Proposer une nouvelle fiche" })
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("lets an administrator create a new character directly after an empty search", async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000901",
+            email: "admin@example.test",
+            displayName: "Admin Example",
+            mustChooseDisplayName: false,
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000001",
+              name: "administrator"
+            },
+            isBanned: false,
+            linkedIdentities: []
+          }
+        });
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([
+          { id: camille.id, fullName: camille.fullName },
+          { id: ines.id, fullName: ines.fullName }
+        ]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      if (url.includes("/api/moderation/characters")) {
+        return jsonResponse(
+          {
+            characterId: "00000000-0000-4000-8000-000000000801",
+            changes: { firstName: { old: null, new: "Nadia" } }
+          },
+          201
+        );
+      }
+
+      if (url.includes("/api/contributions/change-requests")) {
+        return jsonResponse([]);
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Ouvrir la recherche" }));
+    await user.type(screen.getByPlaceholderText("Nom, téléphone, matricule..."), "Nadia Soler");
+
+    expect(await screen.findByText("Aucun personnage trouvé.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Créer une nouvelle fiche" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Créer une nouvelle fiche" })
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Créer la fiche" }));
+
+    expect(await screen.findByText("Fiche créée.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("heading", { name: "Créer une nouvelle fiche" })
       ).not.toBeInTheDocument();
     });
   });

@@ -4,6 +4,7 @@ import { isActiveFilters, lifeStatusLabels, verificationLabels } from "../consta
 type FiltersPanelProps = {
   filters: CharacterFilters;
   canSuggestCreation: boolean;
+  creationActionLabel: string;
   onClose: () => void;
   tags: PublicTag[];
   resultSummary: string | null;
@@ -14,6 +15,7 @@ type FiltersPanelProps = {
 
 export function FiltersPanel({
   canSuggestCreation,
+  creationActionLabel,
   filters,
   onClose,
   tags,
@@ -146,7 +148,7 @@ export function FiltersPanel({
       {resultSummary ? <p className="search-result-summary">{resultSummary}</p> : null}
       {canSuggestCreation ? (
         <button type="button" className="ghost-button primary-action" onClick={onSuggestCreation}>
-          Proposer une nouvelle fiche
+          {creationActionLabel}
         </button>
       ) : null}
     </>

@@ -278,6 +278,18 @@ class FixtureChangeRequestService implements ChangeRequestService {
       }
     };
   }
+
+  async createCharacterDirectly(input: { moderatorId: string; snapshot: CharacterSnapshot }) {
+    return {
+      characterId: ids.character,
+      changes: {
+        firstName: {
+          old: null,
+          new: input.snapshot.firstName
+        }
+      }
+    };
+  }
 }
 
 class FixtureDataCompletenessService implements DataCompletenessService {
@@ -531,6 +543,27 @@ describe("change request routes", () => {
     expect(response.body).toMatchObject({
       characterId: ids.character,
       changes: { sourceNote: { new: "Correction proposee." } }
+    });
+  });
+
+  it("lets moderators create a character directly", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+
+    await loginAs(agent, "moderator");
+
+    const response = await agent.post("/api/moderation/characters").send({
+      snapshot: {
+        ...snapshot,
+        firstName: "Nadia",
+        lastName: "Soler"
+      }
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      characterId: ids.character,
+      changes: { firstName: { old: null, new: "Nadia" } }
     });
   });
 });

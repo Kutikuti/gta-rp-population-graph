@@ -65,6 +65,9 @@ function App() {
   const canEditDirectly =
     authSession?.authenticated &&
     (authSession.user.role.name === "moderator" || authSession.user.role.name === "administrator");
+  const creationActionLabel = canEditDirectly
+    ? "Créer une nouvelle fiche"
+    : "Proposer une nouvelle fiche";
 
   useEffect(() => {
     if (!toast) {
@@ -202,6 +205,7 @@ function App() {
               canSuggestCreation={
                 Boolean(authSession?.authenticated) && isSearchActive && searchTotal === 0
               }
+              creationActionLabel={creationActionLabel}
               filters={filters}
               isOpen={isSearchOpen}
               resultSummary={searchResultSummary}
