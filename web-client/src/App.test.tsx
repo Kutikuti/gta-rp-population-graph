@@ -89,7 +89,6 @@ const camilleDetail = {
   deathOrDepartureDate: null,
   photoUrl: null,
   companyRank: "Responsable planning",
-  socialLinks: null,
   twitchLiveStatus: "live",
   isRpDeath: false,
   previousCharacters: { v5: "Nom inconnu" },
@@ -287,12 +286,18 @@ describe("App", () => {
     });
   });
 
-  it("shows the live Twitch indicator when the displayed Twitch link belongs directly to the character", async () => {
+  it("shows the live Twitch indicator when the displayed Twitch link belongs to the linked streamer", async () => {
     const user = userEvent.setup();
-    const directTwitchDetail = {
+    const streamedCharacterDetail = {
       ...camilleDetail,
-      streamer: null,
-      socialLinks: { twitch: "https://twitch.tv/owlfr_" },
+      streamer: {
+        id: "00000000-0000-4000-8000-000000000202",
+        publicName: "owlfr_",
+        primaryPlatform: "twitch",
+        socialLinks: { twitch: "https://twitch.tv/owlfr_" },
+        verificationStatus: "community",
+        twitchLiveStatus: "live"
+      },
       twitchLiveStatus: "live"
     };
 
@@ -343,7 +348,7 @@ describe("App", () => {
         url.includes(`/api/characters/${camille.id}`) ||
         url.includes(`/api/characters/${camille.publicSlug}`)
       ) {
-        return jsonResponse(directTwitchDetail);
+        return jsonResponse(streamedCharacterDetail);
       }
 
       if (url.includes("/api/history")) {
@@ -736,7 +741,7 @@ describe("App", () => {
             fullName: "Ada Lovelace",
             lifeStatus: "alive",
             streamer: "AdaLive",
-            twitch: "adalive",
+            socialLinks: { twitch: "https://twitch.tv/adalive" },
             company: "Laboratoire",
             group: "Analystes",
             tags: "Tech",
@@ -770,7 +775,7 @@ describe("App", () => {
               fullName: "Zoe Washburne",
               lifeStatus: "alive",
               streamer: null,
-              twitch: null,
+              socialLinks: null,
               company: null,
               group: null,
               tags: "",
@@ -789,7 +794,7 @@ describe("App", () => {
               fullName: "Ada Lovelace",
               lifeStatus: "alive",
               streamer: "AdaLive",
-              twitch: "adalive",
+              socialLinks: { twitch: "https://twitch.tv/adalive" },
               company: "Laboratoire",
               group: "Analystes",
               tags: "Tech",
@@ -841,7 +846,7 @@ describe("App", () => {
     expect(screen.getByText("Flashback Whitelist V6")).toBeInTheDocument();
     expect(screen.getAllByText("Ada Lovelace").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Zoe Washburne").length).toBeGreaterThan(0);
-    expect(screen.getByText("adalive")).toBeInTheDocument();
+    expect(screen.getByText("Twitch")).toBeInTheDocument();
     expect(screen.getAllByText("À faire")).toHaveLength(1);
     expect(screen.getAllByText("Appliquée")).toHaveLength(1);
 

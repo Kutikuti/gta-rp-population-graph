@@ -229,10 +229,14 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 - Le bloc medias doit permettre soit de rattacher un streamer existant, soit de
   proposer un nouveau streamer par son nom public, ainsi que d'editer les liens
   publics associes. Il accepte maintenant aussi un lien Discord public pour un
-  streamer. L'UX d'edition doit rester claire : selection d'un streamer
-  existant par defaut, et creation d'un nouveau streamer via une action
-  explicite qui ne cree effectivement le streamer qu'a la validation de la
-  fiche.
+  streamer. Les liens publics ne doivent plus etre portes par une fiche
+  personnage : ils appartiennent toujours au `Streamer` rattache. Quand une
+  fiche change de streamer, elle recupere automatiquement les liens du streamer
+  selectionne ; quand elle passe a `Aucun streamer`, les liens disparaissent de
+  la fiche publique. L'UX d'edition doit rester claire : selection d'un
+  streamer existant par defaut, et creation d'un nouveau streamer via une
+  action explicite qui ne cree effectivement le streamer qu'a la validation de
+  la fiche.
 - Une fiche personnage peut contenir plusieurs numeros de telephone. L'edition,
   l'affichage public, la moderation et les differences d'historique doivent
   rester lisibles avec cette structure.

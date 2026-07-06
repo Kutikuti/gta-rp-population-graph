@@ -151,7 +151,6 @@ export class SequelizeDataCompletenessService implements DataCompletenessService
         "photoUrl",
         "phoneNumbers",
         "streamerId",
-        "socialLinks",
         "companyName",
         "companyRank",
         "companyBadgeNumber",

@@ -197,7 +197,6 @@ export class Character extends Model<
   declare companyBadgeNumber: string | null;
   declare phoneNumbers: string[] | null;
   declare streamerId: ForeignKey<Streamer["id"]> | null;
-  declare socialLinks: SocialLinks | null;
   declare groupName: string | null;
   declare district: string | null;
   declare isRpDeath: boolean;
@@ -594,7 +593,6 @@ export const initModels = (sequelize: Sequelize) => {
       companyBadgeNumber: DataTypes.STRING(80),
       phoneNumbers: DataTypes.JSONB,
       streamerId: DataTypes.UUID,
-      socialLinks: DataTypes.JSONB,
       groupName: DataTypes.STRING(160),
       district: DataTypes.STRING(120),
       isRpDeath: {

@@ -1494,6 +1494,17 @@ Streamers :
   publics, le live Twitch, les fiches liees et les cas ou aucun streamer n'est
   explicitement renseigne.
 - Ajouter la possibilite de renseigner un lien Discord public pour un streamer.
+- Decision produit 2026-07-06 :
+  - les liens medias ne sont jamais portes par une fiche personnage ;
+  - ils appartiennent toujours au `Streamer` rattache ;
+  - quand une fiche est rattachee a un streamer existant, elle recupere
+    automatiquement les liens de ce streamer ;
+  - plusieurs personnages peuvent etre rattaches au meme streamer ;
+  - si une fiche change de streamer, tous les liens affiches basculent vers
+    ceux du nouveau streamer ;
+  - si une fiche passe a `Aucun streamer`, tous les liens disparaissent ;
+  - les imports Notion et les creations de streamers doivent respecter ce
+    contrat en cours de refonte, sans recreer de liens propres a la fiche.
 - Etat 2026-07-06 : premier sous-lot realise.
   - le bloc `Medias` accepte maintenant aussi un lien Discord public ;
   - les types frontend/backend `socialLinks` couvrent desormais `discord` en
@@ -1511,20 +1522,34 @@ Streamers :
   - depuis une recherche sans resultat, un moderateur ou administrateur ouvre
     desormais une creation directe de fiche, tandis qu'un utilisateur simple
     reste sur un flux de demande moderee.
-- Reste a traiter dans le lot E :
-  - clarifier le contrat produit entre `streamer` et `socialLinks` de fiche,
-    aujourd'hui encore tolere comme mode mixte pour compatibilite ;
-  - decider si les liens publics doivent vivre a terme uniquement sur la fiche
-    streamer, ou si des surcharges par personnage restent legitimes ;
-  - revoir l'edition et l'affichage pour mieux expliciter cette distinction ;
-  - mieux prendre en charge les cas de changement d'un streamer existant vers
-    un autre, ou de decrochage complet d'un streamer, en conservant des
-    comportements evidents pour les liens publics associes ;
-  - statuer sur la gestion des liens quand plusieurs personnages partagent le
-    meme streamer mais veulent malgre tout des liens medias partiellement
-    differents ;
-  - consolider les tests autour des cas de fusion / mise a jour d'un streamer
-    existant quand plusieurs personnages lui sont rattaches.
+- Etat 2026-07-06 : second sous-lot realise.
+  - `Streamer` est maintenant la source de verite unique pour les liens
+    publics ; le schema initial et le modele `Character` ne portent plus de
+    colonne `socialLinks` persistante ;
+  - l'API publique, les snapshots d'edition, les imports Notion et les mises a
+    jour directes lisent ou ecrivent desormais ces liens uniquement via le
+    streamer rattache ;
+  - l'edition manuelle d'une fiche remplace explicitement les liens du streamer
+    selectionne, alors que l'import Notion conserve un mode d'enrichissement
+    progressif pour completer un streamer existant sans effacer ses autres
+    liens ;
+  - dans le formulaire d'edition, choisir un streamer existant recharge ses
+    liens, retirer le streamer les vide, et aucun champ media n'est editable
+    sans streamer selectionne ou creation de streamer en cours.
+- Etat 2026-07-06 : troisieme sous-lot realise.
+  - la fiche publique et le detail d'import Notion expliquent maintenant
+    explicitement que les liens affiches sont ceux du streamer rattache, pas
+    ceux de la fiche personnage ;
+  - les tests backend couvrent desormais les imports successifs de plusieurs
+    personnages vers un meme streamer public, avec enrichissement progressif
+    des liens sans recreation ni effacement accidentel.
+- Etat 2026-07-06 : quatrieme sous-lot realise.
+  - la previsualisation et le detail des imports Notion n'utilisent plus un
+    champ `twitch` isole ; ils exposent desormais `socialLinks`, comme le
+    reste du module streamer ;
+  - l'admin affiche un resume des plateformes detectees plutot qu'un seul
+    handle Twitch, ce qui aligne enfin l'aperçu d'import avec le modele reel
+    des liens publics.
 
 Relations :
 

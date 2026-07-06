@@ -24,6 +24,17 @@ export function NotionImportDetailPanel({
   onApplyEntry,
   onImportPhoto
 }: NotionImportDetailPanelProps) {
+  const hasImportedStreamer = Boolean(selectedEntry?.streamer);
+  const hasImportedLinks = Boolean(
+    selectedEntry?.socialLinks && Object.keys(selectedEntry.socialLinks).length > 0
+  );
+  const socialLinksSummary =
+    selectedEntry?.socialLinks && Object.keys(selectedEntry.socialLinks).length > 0
+      ? Object.entries(selectedEntry.socialLinks)
+          .map(([platform, url]) => `${platform} : ${url}`)
+          .join("\n")
+      : null;
+
   return (
     <aside className="work-panel imports-detail-panel">
       <h3>Détail</h3>
@@ -73,8 +84,8 @@ export function NotionImportDetailPanel({
               <dd>{formatNotionVerificationStatus(selectedEntry.mappedSnapshot)}</dd>
             </div>
             <div>
-              <dt>Twitch</dt>
-              <dd>{selectedEntry.twitch ?? selectedEntry.streamer ?? "-"}</dd>
+              <dt>Liens publics</dt>
+              <dd>{socialLinksSummary ?? selectedEntry.streamer ?? "-"}</dd>
             </div>
             <div>
               <dt>Métier</dt>
@@ -97,6 +108,11 @@ export function NotionImportDetailPanel({
               <dd>{selectedEntry.appliedAt ? formatDateTime(selectedEntry.appliedAt) : "-"}</dd>
             </div>
           </dl>
+          <p className="muted-copy">
+            {hasImportedStreamer || hasImportedLinks
+              ? "À l'application, les liens publics seront portés par le streamer rattaché. Si ce streamer existe déjà, ses liens pourront être enrichis ou mis à jour."
+              : "À l'application, aucun lien public ne sera conservé sur la fiche tant qu'aucun streamer n'est rattaché."}
+          </p>
           {selectedEntry.photoReferences.length > 0 ? (
             <div className="import-photo-list">
               <img

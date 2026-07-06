@@ -69,7 +69,6 @@ export type PublicCharacterDetail = PublicCharacterSummary & {
   birthDate: string | null;
   deathOrDepartureDate: string | null;
   companyRank: string | null;
-  socialLinks: SocialLinks | null;
   twitchLiveStatus: "live" | "offline" | "unknown";
   isRpDeath: boolean;
   previousCharacters: Record<string, string> | null;
@@ -329,7 +328,7 @@ export type AdminNotionImportEntry = {
   fullName: string;
   lifeStatus: string | null;
   streamer: string | null;
-  twitch: string | null;
+  socialLinks: SocialLinks | null;
   company: string | null;
   group: string | null;
   tags: string;
@@ -655,7 +654,7 @@ export const characterToSnapshot = (character: PublicCharacterDetail): Character
   phoneNumbers: character.phoneNumbers,
   streamerId: character.streamer?.id ?? null,
   streamerName: null,
-  socialLinks: character.socialLinks,
+  socialLinks: character.streamer?.socialLinks ?? null,
   groupName: character.groupName,
   district: character.district,
   isRpDeath: character.isRpDeath,

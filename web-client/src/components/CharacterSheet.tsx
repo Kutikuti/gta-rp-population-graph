@@ -63,7 +63,8 @@ export function CharacterSheet({
   onContribute,
   onShare
 }: CharacterSheetProps) {
-  const links = socialEntries(character.socialLinks ?? character.streamer?.socialLinks);
+  const links = socialEntries(character.streamer?.socialLinks);
+  const hasStreamer = Boolean(character.streamer);
   const relationships = [...character.relationships.outgoing, ...character.relationships.incoming];
   const primaryRelationships = relationships.filter((relationship) => relationship.graphVisible);
   const secondaryRelationships = relationships.filter((relationship) => !relationship.graphVisible);
@@ -203,9 +204,9 @@ export function CharacterSheet({
       ) : null}
 
       <section className="sheet-section">
-        <h3>Médias</h3>
+        <h3>Médias du streamer</h3>
         <div className="info-list">
-          <span>Streamer : {compactValue(character.streamer?.publicName)}</span>
+          <span>Streamer rattaché : {compactValue(character.streamer?.publicName)}</span>
         </div>
         <div className="link-list">
           {links.length ? (
@@ -220,8 +221,10 @@ export function CharacterSheet({
                 ) : null}
               </a>
             ))
+          ) : hasStreamer ? (
+            <span className="muted-text">Aucun lien public renseigné sur ce streamer.</span>
           ) : (
-            <span className="muted-text">Aucun lien public.</span>
+            <span className="muted-text">Aucun streamer rattaché.</span>
           )}
         </div>
       </section>

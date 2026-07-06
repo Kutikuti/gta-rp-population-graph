@@ -7,6 +7,22 @@ import {
   notionImportStatusOptions
 } from "./notion-imports-shared";
 
+const socialLinksSummary = (entry: AdminNotionImportEntry) => {
+  if (!entry.socialLinks) {
+    return entry.streamer ?? "-";
+  }
+
+  const platforms = Object.keys(entry.socialLinks);
+
+  if (platforms.length === 0) {
+    return entry.streamer ?? "-";
+  }
+
+  return platforms
+    .map((platform) => platform.charAt(0).toUpperCase() + platform.slice(1))
+    .join(", ");
+};
+
 type NotionImportsTableProps = {
   detail: { batch: AdminNotionImportBatch } | null;
   filteredEntries: AdminNotionImportEntry[];
@@ -95,7 +111,7 @@ export function NotionImportsTable({
               <th>Statut</th>
               <th>Personnage</th>
               <th>Suivi</th>
-              <th>Twitch</th>
+              <th>Liens</th>
               <th>Organisation</th>
             </tr>
           </thead>
@@ -135,7 +151,7 @@ export function NotionImportsTable({
                     {entry.appliedCharacterId ? "Appliquée" : "À faire"}
                   </span>
                 </td>
-                <td>{entry.twitch ?? entry.streamer ?? "-"}</td>
+                <td>{socialLinksSummary(entry)}</td>
                 <td>{entry.group ?? entry.company ?? "-"}</td>
               </tr>
             ))}

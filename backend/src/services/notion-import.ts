@@ -35,7 +35,7 @@ export type NotionImportPreviewItem = {
   fullName: string;
   lifeStatus: string | null;
   streamer: string | null;
-  twitch: string | null;
+  socialLinks: Record<string, string> | null;
   company: string | null;
   group: string | null;
   tags: string;
@@ -330,7 +330,14 @@ export const previewNotionImportEntry = (
     fullName: [firstName, lastName].filter(Boolean).join(" ") || "(nom incomplet)",
     lifeStatus: snapshotString(snapshot, "lifeStatus"),
     streamer: snapshotString(snapshot, "streamerPublicName"),
-    twitch: typeof socialLinks.twitch === "string" ? socialLinks.twitch : null,
+    socialLinks:
+      Object.keys(socialLinks).length > 0
+        ? (Object.fromEntries(
+            Object.entries(socialLinks).filter(
+              (entry): entry is [string, string] => typeof entry[1] === "string"
+            )
+          ) as Record<string, string>)
+        : null,
     company: snapshotString(snapshot, "companyName"),
     group: snapshotString(snapshot, "groupName"),
     tags,

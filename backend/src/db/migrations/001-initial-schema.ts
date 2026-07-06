@@ -388,10 +388,6 @@ export const up = async ({ context }: MigrationParams<MigrationContext>) => {
           onUpdate: "CASCADE",
           onDelete: "SET NULL"
         },
-        social_links: {
-          type: DataTypes.JSONB,
-          allowNull: true
-        },
         group_name: {
           type: DataTypes.STRING(160),
           allowNull: true

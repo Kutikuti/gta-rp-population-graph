@@ -100,6 +100,13 @@ export const characterToSnapshot = async (
   character: Character,
   transaction?: Transaction
 ): Promise<CharacterSnapshot> => {
+  const streamer = character.streamerId
+    ? await models.Streamer.findByPk(character.streamerId, {
+        attributes: ["socialLinks"],
+        transaction
+      })
+    : null;
+
   return {
     firstName: character.firstName,
     lastName: character.lastName,
@@ -114,7 +121,7 @@ export const characterToSnapshot = async (
     phoneNumbers: character.phoneNumbers ?? [],
     streamerId: character.streamerId,
     streamerName: null,
-    socialLinks: character.socialLinks,
+    socialLinks: streamer?.socialLinks ?? null,
     groupName: character.groupName,
     district: character.district,
     isRpDeath: character.isRpDeath,
@@ -164,6 +171,7 @@ const resolveStreamerId = async (snapshot: CharacterSnapshot, transaction: Trans
     streamerId: snapshot.streamerId,
     streamerPublicName: snapshot.streamerName,
     socialLinks: snapshot.socialLinks,
+    syncMode: "replace",
     verificationStatus: snapshot.verificationStatus,
     transaction
   });
@@ -258,7 +266,6 @@ export const applySnapshot = async (
       companyBadgeNumber: snapshot.companyBadgeNumber,
       phoneNumbers: snapshot.phoneNumbers,
       streamerId,
-      socialLinks: snapshot.socialLinks,
       groupName: snapshot.groupName,
       district: snapshot.district,
       isRpDeath: snapshot.isRpDeath,

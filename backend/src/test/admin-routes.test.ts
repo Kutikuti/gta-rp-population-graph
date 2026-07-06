@@ -95,7 +95,7 @@ const notionImportDetail: AdminNotionImportDetail = {
       fullName: "Ada Lovelace",
       lifeStatus: "alive",
       streamer: "AdaLive",
-      twitch: "https://twitch.example/adalive",
+      socialLinks: { twitch: "https://twitch.example/adalive" },
       company: "Laboratoire",
       group: "Analystes",
       tags: "Tech",

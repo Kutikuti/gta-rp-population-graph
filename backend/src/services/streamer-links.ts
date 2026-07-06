@@ -4,6 +4,8 @@ import type { VerificationStatus } from "../db/enums.js";
 import { models } from "../db/index.js";
 import type { SocialLinks, Streamer } from "../db/models/index.js";
 
+export type StreamerSyncMode = "merge" | "replace";
+
 export const streamerPlatformOrder = [
   "twitch",
   "youtube",
@@ -50,17 +52,51 @@ export const mergeSocialLinks = (
   });
 };
 
+export const resolveSocialLinksForSync = (
+  currentLinks: SocialLinks | null | undefined,
+  nextLinks: SocialLinks | null | undefined,
+  mode: StreamerSyncMode = "merge"
+) => {
+  if (mode === "replace") {
+    return normalizeSocialLinks(nextLinks);
+  }
+
+  return mergeSocialLinks(currentLinks, nextLinks);
+};
+
+export const resolvePrimaryPlatformForSync = (
+  currentPrimaryPlatform: string | null | undefined,
+  nextLinks: SocialLinks | null | undefined,
+  mode: StreamerSyncMode = "merge"
+) => {
+  const nextPrimaryPlatform = primaryPlatformFromSocialLinks(nextLinks);
+
+  if (mode === "replace") {
+    return nextPrimaryPlatform;
+  }
+
+  return nextPrimaryPlatform ?? currentPrimaryPlatform ?? null;
+};
+
 export const syncStreamerMetadata = async (input: {
   streamer: Streamer;
   socialLinks: SocialLinks | null | undefined;
+  mode?: StreamerSyncMode;
   transaction: Transaction;
 }) => {
-  const mergedSocialLinks = mergeSocialLinks(input.streamer.socialLinks, input.socialLinks);
-  const primaryPlatform =
-    primaryPlatformFromSocialLinks(mergedSocialLinks) ?? input.streamer.primaryPlatform;
+  const nextSocialLinks = resolveSocialLinksForSync(
+    input.streamer.socialLinks,
+    input.socialLinks,
+    input.mode
+  );
+  const primaryPlatform = resolvePrimaryPlatformForSync(
+    input.streamer.primaryPlatform,
+    nextSocialLinks,
+    input.mode
+  );
 
   if (
-    JSON.stringify(input.streamer.socialLinks ?? null) === JSON.stringify(mergedSocialLinks) &&
+    JSON.stringify(input.streamer.socialLinks ?? null) === JSON.stringify(nextSocialLinks) &&
     input.streamer.primaryPlatform === primaryPlatform
   ) {
     return input.streamer;
@@ -68,7 +104,7 @@ export const syncStreamerMetadata = async (input: {
 
   await input.streamer.update(
     {
-      socialLinks: mergedSocialLinks,
+      socialLinks: nextSocialLinks,
       primaryPlatform
     },
     { transaction: input.transaction }
@@ -81,6 +117,7 @@ export const resolveOrCreateStreamer = async (input: {
   streamerId?: string | null;
   streamerPublicName?: string | null;
   socialLinks?: SocialLinks | null;
+  syncMode?: StreamerSyncMode;
   verificationStatus: VerificationStatus;
   transaction: Transaction;
 }) => {
@@ -96,6 +133,7 @@ export const resolveOrCreateStreamer = async (input: {
     await syncStreamerMetadata({
       streamer,
       socialLinks: input.socialLinks,
+      mode: input.syncMode,
       transaction: input.transaction
     });
 
@@ -119,6 +157,7 @@ export const resolveOrCreateStreamer = async (input: {
     await syncStreamerMetadata({
       streamer: existing,
       socialLinks: input.socialLinks,
+      mode: input.syncMode,
       transaction: input.transaction
     });
 

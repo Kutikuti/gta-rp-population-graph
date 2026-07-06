@@ -101,6 +101,7 @@ export class SequelizeAdminNotionImportService {
 
       let character: Character | null = null;
       let created = false;
+      let currentStreamerSocialLinks: Record<string, string> | null = null;
 
       if (entry.appliedCharacterId) {
         character = await models.Character.findByPk(entry.appliedCharacterId, {
@@ -164,7 +165,6 @@ export class SequelizeAdminNotionImportService {
             companyBadgeNumber: candidate.companyBadgeNumber,
             phoneNumbers: candidate.phoneNumbers,
             streamerId: null,
-            socialLinks: candidate.socialLinks,
             groupName: candidate.groupName,
             district: candidate.district,
             isRpDeath: candidate.isRpDeath,
@@ -175,6 +175,13 @@ export class SequelizeAdminNotionImportService {
           },
           { transaction }
         );
+      } else if (character.streamerId) {
+        const streamer = await models.Streamer.findByPk(character.streamerId, {
+          attributes: ["socialLinks"],
+          transaction
+        });
+
+        currentStreamerSocialLinks = streamer?.socialLinks ?? null;
       }
 
       const resolvedRelationships = await resolveRelationshipTargets(
@@ -268,7 +275,7 @@ export class SequelizeAdminNotionImportService {
       setChange(
         changes,
         "socialLinks",
-        created ? null : character.socialLinks,
+        created ? null : currentStreamerSocialLinks,
         candidate.socialLinks
       );
       setChange(changes, "tags", currentTagNames, nextTagNames);
@@ -297,7 +304,6 @@ export class SequelizeAdminNotionImportService {
           companyBadgeNumber: candidate.companyBadgeNumber,
           phoneNumbers: candidate.phoneNumbers,
           streamerId,
-          socialLinks: candidate.socialLinks,
           groupName: candidate.groupName,
           district: candidate.district,
           isRpDeath: candidate.isRpDeath,

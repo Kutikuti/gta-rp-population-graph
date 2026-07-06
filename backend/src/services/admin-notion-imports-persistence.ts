@@ -2,7 +2,7 @@ import { Op, type Transaction } from "sequelize";
 
 import type { VerificationStatus } from "../db/enums.js";
 import { models } from "../db/index.js";
-import type { Character, Tag } from "../db/models/index.js";
+import type { Character, SocialLinks, Tag } from "../db/models/index.js";
 import {
   characterFullName,
   type ImportRelationshipDraft,
@@ -54,7 +54,7 @@ export const relationshipsForCharacter = async (characterId: string, transaction
 export const resolveOrCreateStreamerId = async (
   streamerPublicName: string | null,
   verificationStatus: VerificationStatus,
-  socialLinks: Character["socialLinks"],
+  socialLinks: SocialLinks | null,
   transaction: Transaction
 ) => {
   return resolveOrCreateStreamer({

@@ -56,7 +56,10 @@ try {
         status: candidate.status,
         nom: candidate.fullName,
         vie: candidate.lifeStatus,
-        twitch: candidate.twitch ?? candidate.streamer,
+        liens:
+          candidate.socialLinks && Object.keys(candidate.socialLinks).length > 0
+            ? Object.keys(candidate.socialLinks).join(", ")
+            : candidate.streamer,
         metier: candidate.company,
         groupe: candidate.group,
         tags: candidate.tags,

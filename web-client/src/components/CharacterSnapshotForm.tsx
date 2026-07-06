@@ -86,6 +86,10 @@ export function CharacterSnapshotForm({
 }: CharacterSnapshotFormProps) {
   const phoneRowIdsRef = useRef<string[]>(snapshot.phoneNumbers.map(() => crypto.randomUUID()));
   const [isNewStreamerOpen, setIsNewStreamerOpen] = useState(Boolean(snapshot.streamerName));
+  const selectedStreamer = snapshot.streamerId
+    ? (streamers.find((streamer) => streamer.id === snapshot.streamerId) ?? null)
+    : null;
+  const areSocialLinksEditable = Boolean(snapshot.streamerId || isNewStreamerOpen);
 
   const updateSnapshot = (changes: Partial<CharacterSnapshot>) => {
     onChange({ ...snapshot, ...changes });
@@ -165,6 +169,26 @@ export function CharacterSnapshotForm({
     updateSnapshot({
       socialLinks: Object.keys(nextLinks).length ? nextLinks : null
     });
+  };
+  const selectExistingStreamer = (streamerId: string | null) => {
+    if (!streamerId) {
+      updateSnapshot({
+        streamerId: null,
+        streamerName: null,
+        socialLinks: null
+      });
+      setIsNewStreamerOpen(false);
+      return;
+    }
+
+    const streamer = streamers.find((item) => item.id === streamerId) ?? null;
+
+    updateSnapshot({
+      streamerId,
+      streamerName: null,
+      socialLinks: streamer?.socialLinks ?? null
+    });
+    setIsNewStreamerOpen(false);
   };
   const isDirectPhotoMode = submitLabel.includes("Appliquer");
 
@@ -454,15 +478,7 @@ export function CharacterSnapshotForm({
               <select
                 value={snapshot.streamerId ?? ""}
                 onChange={(event) => {
-                  const nextStreamerId = nullableValue(event.target.value);
-                  updateSnapshot({
-                    streamerId: nextStreamerId,
-                    streamerName: nextStreamerId ? null : snapshot.streamerName
-                  });
-
-                  if (nextStreamerId) {
-                    setIsNewStreamerOpen(false);
-                  }
+                  selectExistingStreamer(nullableValue(event.target.value));
                 }}
               >
                 <option value="">Aucun streamer</option>
@@ -515,7 +531,10 @@ export function CharacterSnapshotForm({
                   className="ghost-button compact-action media-streamer-cancel"
                   onClick={() => {
                     setIsNewStreamerOpen(false);
-                    updateSnapshot({ streamerName: null });
+                    updateSnapshot({
+                      streamerName: null,
+                      socialLinks: selectedStreamer?.socialLinks ?? null
+                    });
                   }}
                 >
                   Annuler
@@ -529,7 +548,10 @@ export function CharacterSnapshotForm({
               <input
                 type="text"
                 value={textValue(snapshot.socialLinks?.[platform] ?? null)}
-                placeholder={`Lien ${label}`}
+                placeholder={
+                  areSocialLinksEditable ? `Lien ${label}` : "Sélectionner ou créer un streamer"
+                }
+                disabled={!areSocialLinksEditable}
                 onChange={(event) => {
                   updateSocialLink(platform, event.target.value);
                 }}
