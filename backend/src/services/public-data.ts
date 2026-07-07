@@ -17,7 +17,13 @@ import {
   Streamer,
   Tag
 } from "../db/models/index.js";
-import { relationshipGraphVisible } from "./character-relationships.js";
+import {
+  canonicalRelationshipKey,
+  canonicalRelationshipRecord,
+  relationshipGraphVisible,
+  relationshipLabel,
+  relationshipTypeForCharacterView
+} from "./character-relationships.js";
 import { type TwitchLiveStatus, TwitchLiveStatusService } from "./twitch-live.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -257,20 +263,28 @@ const serializeCharacterSummary = (
 
 const serializeRelationship = (
   relationship: CharacterRelationship,
-  relatedCharacter: Character | undefined
+  relatedCharacter: Character | undefined,
+  currentCharacterId: string
 ): PublicRelationship => {
   if (!relatedCharacter) {
     throw new Error(`Relationship ${relationship.id} is missing its related character.`);
   }
 
+  const type = relationshipTypeForCharacterView(
+    relationship.type,
+    relationship.direction,
+    relationship.sourceCharacterId,
+    currentCharacterId
+  );
+
   return {
     id: relationship.id,
     sourceCharacterId: relationship.sourceCharacterId,
     targetCharacterId: relationship.targetCharacterId,
-    type: relationship.type,
-    graphVisible: relationshipGraphVisible(relationship.type),
+    type,
+    graphVisible: relationshipGraphVisible(type),
     direction: relationship.direction,
-    label: relationship.label,
+    label: relationshipLabel(type),
     description: relationship.description,
     source: relationship.source,
     verificationStatus: relationship.verificationStatus,
@@ -286,28 +300,54 @@ const serializeRelationship = (
 const serializeCharacterDetail = (
   character: Character,
   twitchLiveStatus: TwitchLiveStatus = "unknown"
-): PublicCharacterDetail => ({
-  ...serializeCharacterSummary(character, twitchLiveStatus),
-  birthDate: character.birthDate,
-  deathOrDepartureDate: character.deathOrDepartureDate,
-  photoUrl: character.photoUrl,
-  companyRank: character.companyRank,
-  twitchLiveStatus,
-  isRpDeath: character.isRpDeath,
-  previousCharacters: character.previousCharacters,
-  sourceNote: character.sourceNote,
-  relationships: {
-    outgoing:
-      character.outgoingRelationships?.map((relationship) =>
-        serializeRelationship(relationship, relationship.targetCharacter)
-      ) ?? [],
-    incoming:
-      character.incomingRelationships?.map((relationship) =>
-        serializeRelationship(relationship, relationship.sourceCharacter)
-      ) ?? []
-  },
-  createdAt: isoDate(character.createdAt)
-});
+): PublicCharacterDetail => {
+  const relationshipViewKey = (relationship: PublicRelationship) =>
+    `${relationship.type}:${relationship.relatedCharacter.id}`;
+
+  const dedupeRelationshipList = (relationships: PublicRelationship[]) => {
+    const seen = new Set<string>();
+
+    return relationships.filter((relationship) => {
+      const key = relationshipViewKey(relationship);
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const outgoing = dedupeRelationshipList(
+    character.outgoingRelationships?.map((relationship) =>
+      serializeRelationship(relationship, relationship.targetCharacter, character.id)
+    ) ?? []
+  );
+  const outgoingKeys = new Set(outgoing.map(relationshipViewKey));
+  const incoming = dedupeRelationshipList(
+    character.incomingRelationships?.map((relationship) =>
+      serializeRelationship(relationship, relationship.sourceCharacter, character.id)
+    ) ?? []
+  ).filter((relationship) => !outgoingKeys.has(relationshipViewKey(relationship)));
+
+  return {
+    ...serializeCharacterSummary(character, twitchLiveStatus),
+    birthDate: character.birthDate,
+    deathOrDepartureDate: character.deathOrDepartureDate,
+    photoUrl: character.photoUrl,
+    companyRank: character.companyRank,
+    twitchLiveStatus,
+    isRpDeath: character.isRpDeath,
+    previousCharacters: character.previousCharacters,
+    sourceNote: character.sourceNote,
+    relationships: {
+      outgoing,
+      incoming
+    },
+    createdAt: isoDate(character.createdAt)
+  };
+};
 
 const characterIncludes = (
   filters?: Pick<CharacterListFilters, "tag" | "streamer">
@@ -555,6 +595,27 @@ export class SequelizePublicDataService implements PublicDataService {
       })
     ]);
 
+    const dedupedRelationships = relationships.filter((relationship, index, items) => {
+      const key = canonicalRelationshipKey(
+        relationship.type,
+        relationship.direction,
+        relationship.sourceCharacterId,
+        relationship.targetCharacterId
+      );
+
+      return (
+        items.findIndex(
+          (candidate) =>
+            canonicalRelationshipKey(
+              candidate.type,
+              candidate.direction,
+              candidate.sourceCharacterId,
+              candidate.targetCharacterId
+            ) === key
+        ) === index
+      );
+    });
+
     return {
       nodes: characters.map((character) => ({
         data: {
@@ -572,18 +633,27 @@ export class SequelizePublicDataService implements PublicDataService {
           tagIds: character.tags?.map((tag) => tag.id) ?? []
         }
       })),
-      edges: relationships.map((relationship) => ({
-        data: {
-          id: relationship.id,
-          type: "relationship",
-          source: relationship.sourceCharacterId,
-          target: relationship.targetCharacterId,
-          label: relationship.label,
-          relationshipType: relationship.type,
-          direction: relationship.direction,
-          verificationStatus: relationship.verificationStatus
-        }
-      }))
+      edges: dedupedRelationships.map((relationship) => {
+        const canonical = canonicalRelationshipRecord(
+          relationship.type,
+          relationship.direction,
+          relationship.sourceCharacterId,
+          relationship.targetCharacterId
+        );
+
+        return {
+          data: {
+            id: relationship.id,
+            type: "relationship",
+            source: canonical.sourceCharacterId,
+            target: canonical.targetCharacterId,
+            label: relationshipLabel(canonical.type),
+            relationshipType: canonical.type,
+            direction: canonical.direction,
+            verificationStatus: relationship.verificationStatus
+          }
+        };
+      })
     };
   }
 

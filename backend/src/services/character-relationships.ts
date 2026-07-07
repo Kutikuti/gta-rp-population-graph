@@ -87,3 +87,70 @@ export const relationshipGraphVisible = (type: RelationshipType) =>
 
 export const invertRelationshipType = (type: RelationshipType) =>
   relationshipDefinitionByType[type].inverseType ?? type;
+
+export const relationshipTypeForCharacterView = (
+  type: RelationshipType,
+  direction: RelationshipDirection,
+  sourceCharacterId: string,
+  currentCharacterId: string
+) =>
+  direction === "directed" && sourceCharacterId !== currentCharacterId
+    ? invertRelationshipType(type)
+    : type;
+
+export const canonicalRelationshipRecord = (
+  type: RelationshipType,
+  direction: RelationshipDirection,
+  sourceCharacterId: string,
+  targetCharacterId: string
+): {
+  type: RelationshipType;
+  direction: RelationshipDirection;
+  sourceCharacterId: string;
+  targetCharacterId: string;
+} => {
+  if (direction === "symmetric") {
+    const sortedPair = [sourceCharacterId, targetCharacterId].sort((a, b) =>
+      a.localeCompare(b, "fr")
+    );
+
+    return {
+      type,
+      direction,
+      sourceCharacterId: sortedPair[0] ?? sourceCharacterId,
+      targetCharacterId: sortedPair[1] ?? targetCharacterId
+    };
+  }
+
+  if (type === "child") {
+    return {
+      type: "parent" as const,
+      direction,
+      sourceCharacterId: targetCharacterId,
+      targetCharacterId: sourceCharacterId
+    };
+  }
+
+  return {
+    type,
+    direction,
+    sourceCharacterId,
+    targetCharacterId
+  };
+};
+
+export const canonicalRelationshipKey = (
+  type: RelationshipType,
+  direction: RelationshipDirection,
+  sourceCharacterId: string,
+  targetCharacterId: string
+) => {
+  const canonical = canonicalRelationshipRecord(
+    type,
+    direction,
+    sourceCharacterId,
+    targetCharacterId
+  );
+
+  return `${canonical.type}:${canonical.sourceCharacterId}:${canonical.targetCharacterId}`;
+};

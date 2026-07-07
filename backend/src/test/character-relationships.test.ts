@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canonicalRelationshipKey,
+  canonicalRelationshipRecord,
   invertRelationshipType,
   isEditableRelationshipType,
   isGraphRelationshipType,
   relationshipDefinitionByType,
-  relationshipGraphVisible
+  relationshipGraphVisible,
+  relationshipTypeForCharacterView
 } from "../services/character-relationships.js";
 
 describe("character relationship definitions", () => {
@@ -33,5 +36,26 @@ describe("character relationship definitions", () => {
       direction: "directed",
       graphVisible: false
     });
+  });
+
+  it("normalizes child relationships to the same canonical key as their inverse parent link", () => {
+    expect(canonicalRelationshipRecord("child", "directed", "parent-1", "child-1")).toEqual({
+      type: "parent",
+      direction: "directed",
+      sourceCharacterId: "child-1",
+      targetCharacterId: "parent-1"
+    });
+    expect(canonicalRelationshipKey("child", "directed", "parent-1", "child-1")).toBe(
+      canonicalRelationshipKey("parent", "directed", "child-1", "parent-1")
+    );
+  });
+
+  it("inverts a directed relationship when viewed from the other character", () => {
+    expect(relationshipTypeForCharacterView("parent", "directed", "child-1", "child-1")).toBe(
+      "parent"
+    );
+    expect(relationshipTypeForCharacterView("parent", "directed", "child-1", "parent-1")).toBe(
+      "child"
+    );
   });
 });

@@ -9,7 +9,13 @@ import {
   importCandidateFromEntry,
   normalizeText
 } from "./admin-notion-imports-shared.js";
-import { relationshipDirection, relationshipLabel } from "./character-relationships.js";
+import {
+  canonicalRelationshipKey,
+  canonicalRelationshipRecord,
+  relationshipDirection,
+  relationshipLabel,
+  relationshipTypeForCharacterView
+} from "./character-relationships.js";
 import { resolveOrCreateStreamer } from "./streamer-links.js";
 
 const DEFAULT_TAG_COLOR = "#2f9bff";
@@ -35,17 +41,34 @@ export const relationshipsForCharacter = async (characterId: string, transaction
   });
 
   return relationships
-    .map((relationship) => ({
-      type: relationship.type,
-      target:
-        relationship.sourceCharacterId === characterId
-          ? relationship.targetCharacter
-            ? characterFullName(relationship.targetCharacter)
-            : relationship.targetCharacterId
-          : relationship.sourceCharacter
-            ? characterFullName(relationship.sourceCharacter)
-            : relationship.sourceCharacterId
-    }))
+    .map((relationship) => {
+      const type = relationshipTypeForCharacterView(
+        relationship.type,
+        relationship.direction,
+        relationship.sourceCharacterId,
+        characterId
+      );
+
+      return {
+        type,
+        target:
+          relationship.sourceCharacterId === characterId
+            ? relationship.targetCharacter
+              ? characterFullName(relationship.targetCharacter)
+              : relationship.targetCharacterId
+            : relationship.sourceCharacter
+              ? characterFullName(relationship.sourceCharacter)
+              : relationship.sourceCharacterId
+      };
+    })
+    .filter((relationship, index, items) => {
+      return (
+        items.findIndex(
+          (candidate) =>
+            candidate.type === relationship.type && candidate.target === relationship.target
+        ) === index
+      );
+    })
     .sort((left, right) =>
       `${left.type}:${left.target}`.localeCompare(`${right.type}:${right.target}`, "fr")
     );
@@ -208,8 +231,18 @@ export const syncImportedRelationships = async (
     return (
       array.findIndex(
         (candidate) =>
-          candidate.type === relationship.type &&
-          candidate.targetCharacterId === relationship.targetCharacterId
+          canonicalRelationshipKey(
+            candidate.type,
+            relationshipDirection(candidate.type),
+            characterId,
+            candidate.targetCharacterId
+          ) ===
+          canonicalRelationshipKey(
+            relationship.type,
+            relationshipDirection(relationship.type),
+            characterId,
+            relationship.targetCharacterId
+          )
       ) === index
     );
   });
@@ -218,29 +251,53 @@ export const syncImportedRelationships = async (
     return;
   }
 
-  const symmetricRelationships = uniqueRelationships.filter(
-    (relationship) => relationshipDirection(relationship.type) === "symmetric"
-  );
-  const existingSymmetricKeys = new Set<string>();
+  const canonicalRelationships = uniqueRelationships.map((relationship) => {
+    const direction = relationshipDirection(relationship.type);
+    const canonical = canonicalRelationshipRecord(
+      relationship.type,
+      direction,
+      characterId,
+      relationship.targetCharacterId
+    );
 
-  if (symmetricRelationships.length > 0) {
-    const existingSymmetricRelationships = await models.CharacterRelationship.findAll({
-      attributes: ["sourceCharacterId", "targetCharacterId", "type"],
+    return {
+      relationship,
+      canonical,
+      key: canonicalRelationshipKey(
+        relationship.type,
+        direction,
+        characterId,
+        relationship.targetCharacterId
+      )
+    };
+  });
+
+  const relationshipTypesToCheck = [
+    ...new Set(canonicalRelationships.map(({ canonical }) => canonical.type))
+  ];
+  const targetCharacterIds = [
+    ...new Set(uniqueRelationships.map((relationship) => relationship.targetCharacterId))
+  ];
+  const existingKeys = new Set<string>();
+
+  if (relationshipTypesToCheck.length > 0 && targetCharacterIds.length > 0) {
+    const existingRelationships = await models.CharacterRelationship.findAll({
+      attributes: ["sourceCharacterId", "targetCharacterId", "type", "direction"],
       where: {
         type: {
-          [Op.in]: [...new Set(symmetricRelationships.map((relationship) => relationship.type))]
+          [Op.in]: relationshipTypesToCheck
         },
         [Op.or]: [
           {
             sourceCharacterId: characterId,
             targetCharacterId: {
-              [Op.in]: symmetricRelationships.map((relationship) => relationship.targetCharacterId)
+              [Op.in]: targetCharacterIds
             }
           },
           {
             targetCharacterId: characterId,
             sourceCharacterId: {
-              [Op.in]: symmetricRelationships.map((relationship) => relationship.targetCharacterId)
+              [Op.in]: targetCharacterIds
             }
           }
         ]
@@ -248,41 +305,37 @@ export const syncImportedRelationships = async (
       transaction
     });
 
-    for (const relationship of existingSymmetricRelationships) {
-      const pair = [relationship.sourceCharacterId, relationship.targetCharacterId]
-        .sort((left, right) => left.localeCompare(right, "fr"))
-        .join(":");
-      existingSymmetricKeys.add(`${relationship.type}:${pair}`);
+    for (const relationship of existingRelationships) {
+      existingKeys.add(
+        canonicalRelationshipKey(
+          relationship.type,
+          relationship.direction,
+          relationship.sourceCharacterId,
+          relationship.targetCharacterId
+        )
+      );
     }
   }
 
-  const relationshipsToCreate = uniqueRelationships.filter((relationship) => {
-    if (relationshipDirection(relationship.type) !== "symmetric") {
-      return true;
-    }
-
-    const pair = [characterId, relationship.targetCharacterId]
-      .sort((left, right) => left.localeCompare(right, "fr"))
-      .join(":");
-
-    return !existingSymmetricKeys.has(`${relationship.type}:${pair}`);
-  });
+  const relationshipsToCreate = canonicalRelationships.filter(({ key }) => !existingKeys.has(key));
 
   if (relationshipsToCreate.length === 0) {
     return;
   }
 
   await models.CharacterRelationship.bulkCreate(
-    relationshipsToCreate.map((relationship) => ({
-      sourceCharacterId: characterId,
-      targetCharacterId: relationship.targetCharacterId,
-      type: relationship.type,
-      direction: relationshipDirection(relationship.type),
-      label: relationshipLabel(relationship.type),
-      description: null,
-      source: "notion",
-      verificationStatus
-    })),
+    relationshipsToCreate.map(({ canonical }) => {
+      return {
+        sourceCharacterId: canonical.sourceCharacterId,
+        targetCharacterId: canonical.targetCharacterId,
+        type: canonical.type,
+        direction: canonical.direction,
+        label: relationshipLabel(canonical.type),
+        description: null,
+        source: "notion",
+        verificationStatus
+      };
+    }),
     { transaction }
   );
 };

@@ -143,13 +143,8 @@ const fieldAliases = {
     "v5"
   ],
   legacyCharacterLinks: ["v6"],
-  parentRelationships: [
-    "est parent",
-    "père relation",
-    "pere relation",
-    "mère relation",
-    "mere relation"
-  ],
+  parentRelationships: ["père relation", "pere relation", "mère relation", "mere relation"],
+  parentIndicator: ["est parent"],
   siblingRelationships: [
     "frères/soeurs relation",
     "freres/soeurs relation",
@@ -188,6 +183,20 @@ const stringValue = (value: unknown): string | null => {
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+};
+
+const booleanValue = (value: unknown): boolean | null => {
+  const normalized = stringValue(value)?.toLowerCase();
+
+  if (normalized === "yes" || normalized === "oui" || normalized === "true") {
+    return true;
+  }
+
+  if (normalized === "no" || normalized === "non" || normalized === "false") {
+    return false;
+  }
+
+  return null;
 };
 
 const findValue = (properties: Record<string, unknown>, aliases: readonly string[]) => {
@@ -403,16 +412,18 @@ export const mapNotionPage = (page: NotionPageInput) => {
   const lastName = stringValue(findValue(properties, fieldAliases.lastName));
   const companyName = stringValue(findValue(properties, fieldAliases.companyName));
   const groupName = stringValue(findValue(properties, fieldAliases.groupName));
+  const isParent = booleanValue(findValue(properties, fieldAliases.parentIndicator));
   const previousCharacterLinks = listValue(
     findValue(properties, fieldAliases.legacyCharacterLinks)
+  );
+  const parentRelationshipTargets = relationshipEntriesFromField(
+    findValue(properties, fieldAliases.parentRelationships),
+    isParent ? "child" : "parent"
   );
   const relationships = dedupeRelationships([
     ...relationshipListValue(findValue(properties, fieldAliases.relationships)),
     ...previousCharacterRelationshipList(findValue(properties, fieldAliases.legacyCharacterLinks)),
-    ...relationshipEntriesFromField(
-      findValue(properties, fieldAliases.parentRelationships),
-      "parent"
-    ),
+    ...parentRelationshipTargets,
     ...relationshipEntriesFromField(
       findValue(properties, fieldAliases.siblingRelationships),
       "sibling"

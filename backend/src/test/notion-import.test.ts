@@ -167,6 +167,37 @@ describe("notion import mapping", () => {
     ]);
   });
 
+  it("maps parent relation fields as child links when the page marks the character as a parent", () => {
+    const result = mapNotionPage({
+      pageId: "page-parent",
+      properties: {
+        Prenom: "Victor",
+        Nom: "Lovelace",
+        "Est parent": "Yes",
+        "Père relation": ["Ada Lovelace", "Byron Lovelace"]
+      }
+    });
+
+    expect(result.mapped.relationships).toEqual([
+      { type: "child", target: "Ada Lovelace" },
+      { type: "child", target: "Byron Lovelace" }
+    ]);
+  });
+
+  it("keeps parent relation fields as parent links when the page is not marked as a parent", () => {
+    const result = mapNotionPage({
+      pageId: "page-child",
+      properties: {
+        Prenom: "Ada",
+        Nom: "Lovelace",
+        "Est parent": "No",
+        "Père relation": "Victor Lovelace"
+      }
+    });
+
+    expect(result.mapped.relationships).toEqual([{ type: "parent", target: "Victor Lovelace" }]);
+  });
+
   it("maps 'Couple relation' to the managed couple relationship type", () => {
     const result = mapNotionPage({
       pageId: "page-couple-field",
