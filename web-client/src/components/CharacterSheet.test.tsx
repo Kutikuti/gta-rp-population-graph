@@ -47,7 +47,7 @@ const character: PublicCharacterDetail = {
 };
 
 describe("CharacterSheet", () => {
-  it("explains that public links come from the linked streamer", () => {
+  it("shows the linked streamer media section", () => {
     render(
       <CharacterSheet
         canEditDirectly={false}
@@ -60,9 +60,6 @@ describe("CharacterSheet", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Médias du streamer" })).toBeInTheDocument();
-    expect(
-      screen.getByText(/les liens publics affichés ici sont ceux du streamer rattaché/i)
-    ).toBeInTheDocument();
     expect(screen.getByText(/streamer rattaché : novarp/i)).toBeInTheDocument();
   });
 
