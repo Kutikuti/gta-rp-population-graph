@@ -39,7 +39,9 @@ export function PublicInfoView() {
             <a className="ghost-button" href={`mailto:${CONTACT_EMAIL}`}>
               Me contacter par mail
             </a>
-            <span className="ghost-button public-info-static-chip">Discord : {DISCORD_USERNAME}</span>
+            <span className="ghost-button public-info-static-chip">
+              Discord : {DISCORD_USERNAME}
+            </span>
           </div>
         </section>
 
