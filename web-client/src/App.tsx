@@ -10,6 +10,7 @@ import { GraphPanel } from "./components/GraphPanel";
 import { ModerationView } from "./components/ModerationView";
 import { NotionImportsView } from "./components/NotionImportsView";
 import { ProfileView } from "./components/ProfileView";
+import { PublicInfoView } from "./components/PublicInfoView";
 import { SearchSidebar } from "./components/SearchSidebar";
 import { initialFilters } from "./constants";
 import { filterGraphForPreferences } from "./graph/graphPreferences";
@@ -21,6 +22,8 @@ import { usePublicGraphData } from "./hooks/usePublicGraphData";
 import { useSearchMatches } from "./hooks/useSearchMatches";
 
 const readInitialCharacterId = () => new URL(window.location.href).searchParams.get("character");
+const readInitialView = () =>
+  new URL(window.location.href).searchParams.get("view") === "info" ? "information" : "explore";
 
 function App() {
   const [filters, setFilters] = usePersistentFilters();
@@ -34,8 +37,14 @@ function App() {
     message: string;
   } | null>(null);
   const [activeView, setActiveView] = useState<
-    "explore" | "contribution" | "moderation" | "administration" | "imports" | "profile"
-  >("explore");
+    | "explore"
+    | "contribution"
+    | "moderation"
+    | "administration"
+    | "imports"
+    | "profile"
+    | "information"
+  >(readInitialView);
 
   const handleError = useCallback((message: string) => {
     setError(message);
@@ -110,8 +119,14 @@ function App() {
       url.searchParams.delete("character");
     }
 
+    if (activeView === "information") {
+      url.searchParams.set("view", "info");
+    } else {
+      url.searchParams.delete("view");
+    }
+
     window.history.replaceState({}, "", url.toString());
-  }, [selectedCharacter, selectedId]);
+  }, [activeView, selectedCharacter, selectedId]);
 
   useEffect(() => {
     if (selectedCharacter && selectedId === selectedCharacter.publicSlug) {
@@ -231,6 +246,9 @@ function App() {
               graphPreferences={graphPreferences}
               isPreferencesOpen={isGraphPreferencesOpen}
               onGraphPreferencesChange={setGraphPreferences}
+              onInfoOpen={() => {
+                setActiveView("information");
+              }}
               onPreferencesClose={() => {
                 setIsGraphPreferencesOpen(false);
               }}
@@ -313,6 +331,7 @@ function App() {
             onError={handleError}
           />
         ) : null}
+        {activeView === "information" ? <PublicInfoView /> : null}
         {toast ? (
           <div className={`app-toast app-toast-${toast.tone}`} role="status" aria-live="polite">
             {toast.message}

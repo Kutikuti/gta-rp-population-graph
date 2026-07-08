@@ -51,4 +51,8 @@
   .metric-grid {
     grid-template-columns: 1fr;
   }
+
+  .public-info-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -1377,7 +1377,11 @@ Plan d'implementation propose :
 4. Pages publiques annexes
    - ajouter une page information / contact / soutien ;
    - rester sobre et coherente avec la navigation existante ;
-   - integrer le point de contact et le lien Buy Me a Coffee.
+   - integrer le point de contact ;
+   - conserver Buy Me a Coffee uniquement dans le README pour l'instant ;
+   - avancement 2026-07-08 : implementation lancee avec une page publique
+     dediee, accessible depuis un bouton rond `?` en bas a droite du graphe,
+     et une URL partageable `?view=info`.
 5. Reprise du module streamer
    - clarifier la distinction streamer / reseaux publics / plateformes ;
    - mieux gerer le live Twitch, les fiches liees et l'absence de streamer
@@ -1413,7 +1417,7 @@ Ordre de travail recommande :
 - Lot C : completude des donnees
 - Lot D : graphe et preferences locales
 - Lot E : module streamer
-- Lot F : page publique information / contact / soutien
+- Lot F : page publique information / contact / soutien - en cours
 - Lot G : cadrage RGPD et hygiene des donnees personnelles
 
 Contraintes de mise en oeuvre :

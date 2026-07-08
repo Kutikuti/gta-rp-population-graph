@@ -7,7 +7,14 @@ type AppHeaderProps = {
     message: string;
   } | null;
   authSession: AuthSession | null;
-  activeView: "explore" | "contribution" | "moderation" | "administration" | "imports" | "profile";
+  activeView:
+    | "explore"
+    | "contribution"
+    | "moderation"
+    | "administration"
+    | "imports"
+    | "profile"
+    | "information";
   isAuthLoading: boolean;
   onAdministration: () => void;
   onExplore: () => void;

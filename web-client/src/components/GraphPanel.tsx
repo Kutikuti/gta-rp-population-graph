@@ -17,6 +17,7 @@ type GraphPanelProps = {
   graphPreferences: GraphPreferences;
   isPreferencesOpen: boolean;
   onGraphPreferencesChange: (preferences: GraphPreferences) => void;
+  onInfoOpen: () => void;
   onPreferencesClose: () => void;
   onPreferencesOpen: () => void;
   onSelect: (id: string) => void;
@@ -32,6 +33,7 @@ export function GraphPanel({
   graphPreferences,
   isPreferencesOpen,
   onGraphPreferencesChange,
+  onInfoOpen,
   onPreferencesClose,
   onPreferencesOpen,
   onSelect
@@ -63,6 +65,14 @@ export function GraphPanel({
           />
         </Suspense>
       )}
+      <button
+        type="button"
+        className="graph-help-button"
+        aria-label="Informations du projet"
+        onClick={onInfoOpen}
+      >
+        ?
+      </button>
     </section>
   );
 }

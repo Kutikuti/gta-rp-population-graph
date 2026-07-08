@@ -4,7 +4,14 @@ import type { AuthSession } from "../api";
 import { AuthProviderIcon } from "./AuthProviderIcon";
 
 type AuthControlsProps = {
-  activeView: "explore" | "contribution" | "moderation" | "administration" | "imports" | "profile";
+  activeView:
+    | "explore"
+    | "contribution"
+    | "moderation"
+    | "administration"
+    | "imports"
+    | "profile"
+    | "information";
   isLoading: boolean;
   session: AuthSession | null;
   loginOptions: Array<{

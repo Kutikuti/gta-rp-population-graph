@@ -411,6 +411,29 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Camille Morel" })).toBeInTheDocument();
   });
 
+  it("opens the public information page from the graph help button", async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Informations du projet" }));
+
+    expect(await screen.findByRole("heading", { name: "A propos du projet" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ouvrir le depot GitHub" })).toHaveAttribute(
+      "href",
+      "https://github.com/Kutikuti/gta-rp-population-graph"
+    );
+    expect(window.location.search).toContain("view=info");
+  });
+
+  it("opens the public information page directly from the URL", async () => {
+    window.history.replaceState({}, "", "/?view=info");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "A propos du projet" })).toBeInTheDocument();
+  });
+
   it("offers Google, Discord and Twitch login from the header", async () => {
     const user = userEvent.setup();
 

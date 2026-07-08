@@ -49,6 +49,24 @@
   bottom: 14px;
 }
 
+.graph-help-button {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #205d91;
+  border-radius: 999px;
+  background: #071827;
+  color: #cceaff;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
 .graph-preferences-panel.is-collapsed {
   display: grid;
 }
