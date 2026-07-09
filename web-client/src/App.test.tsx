@@ -434,6 +434,31 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "A propos du projet" })).toBeInTheDocument();
   });
 
+  it("opens the privacy page from the public information page", async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Informations du projet" }));
+    await user.click(screen.getByRole("button", { name: "Confidentialité" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Données personnelles et cookies" })
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Accepter")).not.toBeInTheDocument();
+    expect(window.location.search).toContain("view=privacy");
+  });
+
+  it("opens the privacy page directly from the URL", async () => {
+    window.history.replaceState({}, "", "/?view=privacy");
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Données personnelles et cookies" })
+    ).toBeInTheDocument();
+  });
+
   it("offers Google, Discord and Twitch login from the header", async () => {
     const user = userEvent.setup();
 
@@ -641,6 +666,193 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Viewer Example")).toBeInTheDocument();
     expect(screen.getByText("Famille Morel")).toBeInTheDocument();
+  });
+
+  it("loads admin RGPD data, marks anonymized accounts and confirms anonymization explicitly", async () => {
+    const anonymizeRequest = vi.fn();
+
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : input.toString();
+
+      if (url.includes("/api/auth/session")) {
+        return jsonResponse({
+          authenticated: true,
+          user: {
+            id: "00000000-0000-4000-8000-000000000913",
+            email: "admin@example.test",
+            displayName: "Admin Example",
+            mustChooseDisplayName: false,
+            avatarUrl: null,
+            role: {
+              id: "00000000-0000-4000-8000-000000000003",
+              name: "administrator"
+            },
+            isBanned: false,
+            linkedIdentities: []
+          }
+        });
+      }
+
+      if (url.includes("/api/admin/dashboard")) {
+        return jsonResponse({
+          users: [
+            {
+              id: "00000000-0000-4000-8000-000000000901",
+              email: "viewer@example.test",
+              displayName: "Viewer Example",
+              role: {
+                id: "00000000-0000-4000-8000-000000000001",
+                name: "user"
+              },
+              isBanned: false,
+              createdAt: now,
+              lastLoginAt: null
+            },
+            {
+              id: "00000000-0000-4000-8000-000000000902",
+              email: "deleted-00000000-0000-4000-8000-000000000902@deleted.local",
+              displayName: "Utilisateur supprimé",
+              role: {
+                id: "00000000-0000-4000-8000-000000000001",
+                name: "user"
+              },
+              isBanned: false,
+              createdAt: now,
+              lastLoginAt: null
+            }
+          ],
+          tags: [{ ...tag, usageCount: 1 }],
+          actions: []
+        });
+      }
+
+      if (url.includes("/api/admin/completeness")) {
+        return jsonResponse({
+          summary: {
+            total: 0,
+            withMissingFields: 0,
+            importedOrCommunity: 0,
+            needsReview: 0
+          },
+          items: []
+        });
+      }
+
+      if (url.includes("/api/admin/users/00000000-0000-4000-8000-000000000901/personal-data")) {
+        if (init?.method === "DELETE") {
+          anonymizeRequest();
+          return jsonResponse({
+            status: "anonymized",
+            user: {
+              id: "00000000-0000-4000-8000-000000000901",
+              email: "deleted-00000000-0000-4000-8000-000000000901@deleted.local",
+              displayName: "Utilisateur supprimé",
+              role: {
+                id: "00000000-0000-4000-8000-000000000001",
+                name: "user"
+              },
+              isBanned: false,
+              createdAt: now,
+              lastLoginAt: null
+            },
+            revokedSessions: 1,
+            unlinkedIdentities: 1
+          });
+        }
+
+        return jsonResponse({
+          exportedAt: now,
+          user: {
+            id: "00000000-0000-4000-8000-000000000901",
+            email: "viewer@example.test",
+            displayName: "Viewer Example",
+            role: {
+              id: "00000000-0000-4000-8000-000000000001",
+              name: "user"
+            },
+            isBanned: false,
+            createdAt: now,
+            lastLoginAt: null
+          },
+          linkedIdentities: [
+            {
+              id: "identity-google-viewer",
+              provider: "google",
+              providerEmail: "viewer@example.test",
+              providerDisplayName: "Viewer Example",
+              providerAvatarUrl: null,
+              connectedAt: now,
+              lastUsedAt: now
+            }
+          ],
+          sessions: {
+            total: 1,
+            active: 1,
+            latestExpiryAt: now
+          },
+          contributions: {
+            total: 2,
+            pending: 1,
+            approved: 1,
+            rejected: 0,
+            latestRequestAt: now
+          },
+          moderationTrace: {
+            changeHistoriesAsModerator: 0,
+            adminActionsAsActor: 0,
+            latestAdminActionAt: null
+          }
+        });
+      }
+
+      if (url.includes("/api/tags")) {
+        return jsonResponse([tag]);
+      }
+
+      if (url.includes("/api/characters/directory")) {
+        return jsonResponse([]);
+      }
+
+      if (url.includes("/api/streamers")) {
+        return jsonResponse([camille.streamer]);
+      }
+
+      if (url.includes("/api/graph")) {
+        return jsonResponse({ nodes: [], edges: [] });
+      }
+
+      if (url.includes("/api/characters/matches")) {
+        return jsonResponse({ ids: [], total: 0 });
+      }
+
+      return errorResponse(404);
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Administration" }));
+
+    expect(await screen.findByText("Compte anonymisé")).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole("button", { name: "Données RGPD" })[0]);
+
+    expect(await screen.findByRole("heading", { name: "Données RGPD" })).toBeInTheDocument();
+    expect(screen.getAllByText("viewer@example.test").length).toBeGreaterThan(1);
+
+    await user.click(screen.getByRole("button", { name: "Anonymiser le compte" }));
+
+    expect(await screen.findByRole("dialog", { name: "Anonymiser le compte" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Anonymiser" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Tape ANONYMISER pour confirmer"), "ANONYMISER");
+    await user.click(screen.getByRole("button", { name: "Anonymiser" }));
+
+    await waitFor(() => {
+      expect(anonymizeRequest).toHaveBeenCalledTimes(1);
+    });
+    expect((await screen.findAllByText(/Compte anonymisé/)).length).toBeGreaterThan(0);
   });
 
   it("shows a Google linking entry point when the profile has no linked Google identity yet", async () => {

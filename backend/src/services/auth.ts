@@ -67,11 +67,37 @@ export interface AuthService {
   authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult>;
   linkIdentity(userId: string, identity: ExternalIdentity): Promise<LinkIdentityResult | null>;
   updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null>;
+  exportPersonalData?(userId: string): Promise<PersonalDataExport | null>;
   unlinkIdentity(
     userId: string,
     provider: AuthProvider
   ): Promise<AuthenticatedUser | "last_identity" | null>;
 }
+
+export type PersonalDataExport = {
+  exportedAt: string;
+  account: {
+    id: string;
+    email: string;
+    displayName: string;
+    displayNameChosenAt: string | null;
+    avatarUrl: string | null;
+    role: RoleName;
+    isBanned: boolean;
+    lastLoginAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  linkedIdentities: Array<{
+    id: string;
+    provider: AuthProvider;
+    providerEmail: string | null;
+    providerDisplayName: string | null;
+    providerAvatarUrl: string | null;
+    connectedAt: string;
+    lastUsedAt: string | null;
+  }>;
+};
 
 const activeBanWhere = {
   revokedAt: null,
@@ -384,6 +410,68 @@ export class SequelizeAuthService implements AuthService {
     });
 
     return this.getSessionUser(user.id);
+  }
+
+  async exportPersonalData(userId: string): Promise<PersonalDataExport | null> {
+    const user = await models.User.findByPk(userId, {
+      include: [
+        {
+          association: "role",
+          attributes: ["id", "name"]
+        },
+        {
+          association: "bans",
+          attributes: ["id"],
+          required: false,
+          where: activeBanWhere
+        },
+        {
+          association: "identities",
+          attributes: [
+            "id",
+            "provider",
+            "providerEmail",
+            "providerDisplayName",
+            "providerAvatarUrl",
+            "createdAt",
+            "lastUsedAt"
+          ],
+          required: false,
+          order: [["createdAt", "ASC"]]
+        }
+      ]
+    });
+
+    if (!user?.role) {
+      return null;
+    }
+
+    return {
+      exportedAt: new Date().toISOString(),
+      account: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        displayNameChosenAt: user.displayNameChosenAt
+          ? user.displayNameChosenAt.toISOString()
+          : null,
+        avatarUrl: user.avatarUrl,
+        role: user.role.name,
+        isBanned: Boolean(user.bans?.length),
+        lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString()
+      },
+      linkedIdentities: (user.identities ?? []).map((identity) => ({
+        id: identity.id,
+        provider: identity.provider,
+        providerEmail: identity.providerEmail,
+        providerDisplayName: identity.providerDisplayName,
+        providerAvatarUrl: identity.providerAvatarUrl,
+        connectedAt: identity.createdAt.toISOString(),
+        lastUsedAt: identity.lastUsedAt ? identity.lastUsedAt.toISOString() : null
+      }))
+    };
   }
 
   async unlinkIdentity(

@@ -868,6 +868,7 @@ export const initModels = (sequelize: Sequelize) => {
     UserIdentity,
     Ban,
     AdminAction,
+    UserSession,
     NotionImportBatch,
     NotionImportEntry,
     Streamer,

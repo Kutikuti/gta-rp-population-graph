@@ -1418,7 +1418,38 @@ Ordre de travail recommande :
 - Lot D : graphe et preferences locales
 - Lot E : module streamer
 - Lot F : page publique information / contact / soutien - en cours
-- Lot G : cadrage RGPD et hygiene des donnees personnelles
+- Lot G : cadrage RGPD et hygiene des donnees personnelles - en cours
+
+Avancement 2026-07-08 :
+
+- page publique de confidentialite en cours d'integration au frontend public ;
+- documentation projet enrichie avec une base RGPD/cookies et un registre
+  simplifie des traitements ;
+- choix retenu confirme : pas de bandeau cookies dans le perimetre actuel tant
+  qu'aucun traceur client non strictement necessaire n'est ajoute.
+- runbook de deploiement complete avec une procedure minimale de traitement des
+  demandes RGPD et les gardes-fous de suppression.
+- politique cible de conservation maintenant explicitee plus finement dans la
+  documentation : comptes et identites inactifs a revoir apres `24` mois,
+  demandes non appliquees `24` mois, historiques/admin `12` mois glissants,
+  imports editoriaux `12` mois, sans automatisation complete a ce stade.
+- premier outillage RGPD livre : export personnel synthétique dans le profil et
+  vue admin de support accessible depuis le panneau utilisateurs pour preparer
+  les reponses d'acces.
+- premiere action assistee livree : revocation des sessions d'un utilisateur
+  depuis le panneau RGPD admin, avec blocage explicite de l'auto-revocation.
+- dissociation assistee des identites SSO livree depuis le panneau RGPD admin,
+  avec blocage du dernier moyen de connexion et de l'auto-dissociation.
+- anonymisation assistee des comptes livree depuis le panneau RGPD admin :
+  retrait des moyens de connexion, revocation des sessions et remplacement des
+  donnees directement identifiantes, tout en conservant les references
+  necessaires aux historiques et a la moderation.
+- nettoyage UX/code effectue : panneau RGPD admin extrait dans un composant
+  dedie et confirmation d'anonymisation renforcee par saisie explicite de
+  `ANONYMISER`.
+- lisibilite admin renforcee : les comptes deja anonymises sont marques dans
+  la liste utilisateurs, et le flux RGPD admin est couvert par un test frontend
+  dedie en plus des tests backend admin/profil.
 
 Contraintes de mise en oeuvre :
 

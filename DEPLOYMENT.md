@@ -136,6 +136,96 @@ sudo systemctl status caddy --no-pager
 sudo journalctl -u caddy -n 100 --no-pager
 ```
 
+## Cadre RGPD et cookies
+
+Le projet suit actuellement une logique de conformite minimale documentee dans
+[`PRIVACY.md`](PRIVACY.md).
+
+Points retenus a date :
+
+- le projet est concerne par le RGPD ;
+- aucune declaration CNIL prealable classique n'est prevue pour le perimetre
+  actuel ;
+- aucun bandeau de consentement cookies n'est prevu tant que le site reste
+  limite :
+  - au cookie de session strictement necessaire ;
+  - au `localStorage` de preferences d'interface ;
+  - a une mesure serveur sans traceur client tiers.
+
+Tout ajout futur de script tiers, mesure d'audience client, pixel, replay,
+heatmap ou traceur marketing doit declencher une revue RGPD/cookies avant mise
+en production.
+
+## Traitement operationnel des demandes RGPD
+
+Point de contact actuel :
+
+- email : `julien.j.rechaussat@gmail.com`
+- contact Discord informel : `jeiwel`
+
+Procedure minimale :
+
+1. Verifier l'identite du demandeur :
+   - de preference via le compte authentifie ;
+   - sinon par echange manuel suffisant pour eviter une divulgation abusive.
+2. Qualifier la demande :
+   - acces ;
+   - rectification ;
+   - suppression ;
+   - opposition si applicable.
+3. Identifier les donnees concernees :
+   - compte utilisateur ;
+   - identites SSO liees ;
+   - sessions actives ;
+   - demandes envoyees ;
+   - historiques et journaux lies au compte si necessaire ;
+   - eventuelles donnees publiques explicitement rattachees au compte.
+4. Appliquer la reponse appropriee.
+
+Regles pratiques actuelles :
+
+- Peuvent etre supprimes ou dissocies rapidement :
+  - sessions actives, avec revocation possible depuis le panneau RGPD admin ;
+  - identites SSO liees, avec dissociation possible depuis le panneau RGPD
+    admin tant que ce n'est pas le dernier moyen de connexion ;
+  - compte utilisateur via anonymisation controlee si aucune contrainte ne s'y
+    oppose : retrait des moyens de connexion, revocation des sessions et
+    remplacement des donnees directement identifiantes ;
+  - propositions de photo encore temporaires ;
+  - certaines demandes non integrees, au cas par cas.
+- Ne doivent pas etre supprimes sans revue :
+  - historiques de changement ;
+  - journaux d'administration ;
+  - donnees necessaires a la securite, a la lutte contre l'abus ou a la
+    tracabilite editoriale ;
+  - sauvegardes deja generees, qui suivent leur cycle de rotation normal.
+
+Politique cible de conservation a appliquer dans l'exploitation :
+
+- comptes utilisateur et identites SSO liees : desactivation cible apres `24`
+  mois d'inactivite, puis suppression ou archivage court apres revue ;
+- demandes de modification non appliquees : cible `24` mois ;
+- historiques de changement et journaux d'administration : cible glissante
+  `12` mois, prolongeable si incident, abus ou contentieux documente ;
+- imports editoriaux : cible `12` mois apres le dernier traitement utile du
+  lot avant purge ou archivage court ;
+- traces et journaux techniques : viser `6` a `12` mois seulement si
+  l'outillage de journalisation le justifie, la configuration actuelle restant
+  volontairement plus courte avec `journald` plafonne a `30` jours.
+
+Ces durées cibles ne sont pas toutes automatisees aujourd'hui. Tant que les
+purges dediees n'existent pas, une revue periodique d'exploitation doit servir
+de garde-fou pour eviter une conservation indefinie par oubli.
+
+L'anonymisation admin d'un compte ne supprime pas physiquement les historiques
+ni les journaux deja necessaires a la moderation et a la tracabilite. Elle
+conserve la ligne technique utilisateur avec des donnees non identifiantes afin
+de ne pas casser les references existantes.
+
+Le frontend affiche actuellement l'email de connexion uniquement dans le profil
+de l'utilisateur authentifie concerne. Cet affichage reste acceptable tant
+qu'il n'est pas expose publiquement.
+
 ## Maintenance systeme recente
 
 Maintenance executee le `2026-06-30` sur le VPS actuel :

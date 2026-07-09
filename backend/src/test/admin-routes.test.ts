@@ -12,6 +12,10 @@ import type {
   AdminService,
   AdminTag,
   AdminUser,
+  AdminUserAnonymizationResult,
+  AdminUserIdentityUnlinkResult,
+  AdminUserPersonalDataExport,
+  AdminUserSessionRevocationResult,
   BanInput,
   TagInput
 } from "../services/admin.js";
@@ -201,6 +205,122 @@ class FixtureAdminService implements AdminService {
     return this.dashboard;
   }
 
+  async exportUserPersonalData(userId: string): Promise<AdminUserPersonalDataExport | null> {
+    if (userId === "missing") {
+      return null;
+    }
+
+    return {
+      exportedAt: "2026-07-08T10:00:00.000Z",
+      user: {
+        ...adminUser,
+        id: userId
+      },
+      linkedIdentities: [
+        {
+          id: "identity-google-user",
+          provider: "google",
+          providerEmail: "user@example.test",
+          providerDisplayName: "User Example",
+          providerAvatarUrl: null,
+          connectedAt: "2026-06-22T00:00:00.000Z",
+          lastUsedAt: "2026-07-07T00:00:00.000Z"
+        }
+      ],
+      sessions: {
+        total: 2,
+        active: 1,
+        latestExpiryAt: "2026-07-09T00:00:00.000Z"
+      },
+      contributions: {
+        total: 3,
+        pending: 1,
+        approved: 1,
+        rejected: 1,
+        latestRequestAt: "2026-07-07T00:00:00.000Z"
+      },
+      moderationTrace: {
+        changeHistoriesAsModerator: 0,
+        adminActionsAsActor: 1,
+        latestAdminActionAt: "2026-07-06T00:00:00.000Z"
+      }
+    };
+  }
+
+  async revokeUserSessions(
+    actorUserId: string,
+    userId: string
+  ): Promise<AdminUserSessionRevocationResult> {
+    if (userId === "missing") {
+      return { status: "not_found" };
+    }
+
+    if (actorUserId === userId) {
+      return { status: "self" };
+    }
+
+    return {
+      status: "revoked",
+      revokedCount: 2
+    };
+  }
+
+  async unlinkUserIdentity(
+    actorUserId: string,
+    userId: string,
+    provider: "google" | "discord" | "twitch"
+  ): Promise<AdminUserIdentityUnlinkResult> {
+    if (userId === "missing") {
+      return { status: "not_found" };
+    }
+
+    if (actorUserId === userId) {
+      return { status: "self" };
+    }
+
+    if (provider === "twitch") {
+      return { status: "identity_not_found" };
+    }
+
+    if (provider === "discord") {
+      return { status: "last_identity" };
+    }
+
+    return {
+      status: "unlinked",
+      provider
+    };
+  }
+
+  async anonymizeUserAccount(
+    actorUserId: string,
+    userId: string
+  ): Promise<AdminUserAnonymizationResult> {
+    if (userId === "missing") {
+      return { status: "not_found" };
+    }
+
+    if (actorUserId === userId) {
+      return { status: "self" };
+    }
+
+    if (userId === "last-admin") {
+      return { status: "last_admin" };
+    }
+
+    return {
+      status: "anonymized",
+      user: {
+        ...adminUser,
+        id: userId,
+        email: "deleted-user@deleted.local",
+        displayName: "Utilisateur supprimé"
+      },
+      revokedSessions: 2,
+      unlinkedIdentities: 1
+    };
+  }
+
   async listNotionImports() {
     return [notionImportBatch];
   }
@@ -345,6 +465,128 @@ describe("admin routes", () => {
     expect(response.status).toBe(200);
     expect(response.body.users).toHaveLength(1);
     expect(response.body.tags[0]).toMatchObject({ name: "Quartier Nord", usageCount: 2 });
+  });
+
+  it("returns one user's RGPD support export to administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.get(`/api/admin/users/${adminUser.id}/personal-data`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      user: {
+        id: adminUser.id,
+        email: adminUser.email
+      },
+      sessions: {
+        total: 2,
+        active: 1
+      },
+      contributions: {
+        pending: 1,
+        approved: 1,
+        rejected: 1
+      }
+    });
+  });
+
+  it("revokes one user's sessions for administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete(`/api/admin/users/${adminUser.id}/sessions`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      status: "revoked",
+      revokedCount: 2
+    });
+  });
+
+  it("blocks administrators from revoking their own sessions", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete(`/api/admin/users/${authUsers.administrator.id}/sessions`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("SELF_SESSION_REVOCATION");
+  });
+
+  it("unlinks one user identity for administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete(`/api/admin/users/${adminUser.id}/identities/google`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      status: "unlinked",
+      provider: "google"
+    });
+  });
+
+  it("blocks unlinking the last identity from administration", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete(`/api/admin/users/${adminUser.id}/identities/discord`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("LAST_IDENTITY");
+  });
+
+  it("blocks administrators from unlinking their own identities", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete(
+      `/api/admin/users/${authUsers.administrator.id}/identities/google`
+    );
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("SELF_IDENTITY_UNLINK");
+  });
+
+  it("anonymizes one user account for administrators", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete(`/api/admin/users/${adminUser.id}/personal-data`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      status: "anonymized",
+      revokedSessions: 2,
+      unlinkedIdentities: 1,
+      user: {
+        id: adminUser.id,
+        displayName: "Utilisateur supprimé"
+      }
+    });
+  });
+
+  it("blocks administrators from anonymizing their own account", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete(
+      `/api/admin/users/${authUsers.administrator.id}/personal-data`
+    );
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("SELF_ACCOUNT_ANONYMIZATION");
+  });
+
+  it("blocks anonymizing the last administrator", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const response = await agent.delete("/api/admin/users/last-admin/personal-data");
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("LAST_ADMIN");
   });
 
   it("returns the data completeness report to administrators", async () => {

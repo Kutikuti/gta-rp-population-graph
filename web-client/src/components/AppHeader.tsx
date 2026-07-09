@@ -14,7 +14,8 @@ type AppHeaderProps = {
     | "administration"
     | "imports"
     | "profile"
-    | "information";
+    | "information"
+    | "privacy";
   isAuthLoading: boolean;
   onAdministration: () => void;
   onExplore: () => void;

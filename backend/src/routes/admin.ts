@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 
-import { roleNames, tagTypes } from "../db/enums.js";
+import { authProviders, roleNames, tagTypes } from "../db/enums.js";
 import { badRequestError, conflictError, notFoundError } from "../middleware/api-error.js";
 import { requireRole } from "../middleware/auth.js";
 import { type AdminService, SequelizeAdminService } from "../services/admin.js";
@@ -35,6 +35,11 @@ const roleInputSchema = z.object({
 
 const banInputSchema = z.object({
   reason: z.string().trim().min(3).max(800)
+});
+
+const identityParamsSchema = z.object({
+  id: z.string().trim().min(1),
+  provider: z.enum(authProviders)
 });
 
 const notionImportEntryNotFoundError = () =>
@@ -78,6 +83,109 @@ export const createAdminRouter = (
   router.get("/dashboard", async (_request, response, next) => {
     try {
       response.json(await adminService.getDashboard());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/users/:id/personal-data", async (request, response, next) => {
+    try {
+      const exportPayload = await adminService.exportUserPersonalData(request.params.id);
+
+      if (!exportPayload) {
+        throw notFoundError("USER_NOT_FOUND", "Utilisateur introuvable.");
+      }
+
+      response.json(exportPayload);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.delete("/users/:id/sessions", async (request, response, next) => {
+    try {
+      const result = await adminService.revokeUserSessions(
+        request.currentUser?.id ?? "",
+        request.params.id
+      );
+
+      if (result.status === "not_found") {
+        throw notFoundError("USER_NOT_FOUND", "Utilisateur introuvable.");
+      }
+
+      if (result.status === "self") {
+        throw conflictError(
+          "SELF_SESSION_REVOCATION",
+          "Impossible de révoquer tes propres sessions depuis l'administration."
+        );
+      }
+
+      response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.delete("/users/:id/identities/:provider", async (request, response, next) => {
+    try {
+      const params = identityParamsSchema.parse(request.params);
+      const result = await adminService.unlinkUserIdentity(
+        request.currentUser?.id ?? "",
+        params.id,
+        params.provider
+      );
+
+      if (result.status === "not_found") {
+        throw notFoundError("USER_NOT_FOUND", "Utilisateur introuvable.");
+      }
+
+      if (result.status === "identity_not_found") {
+        throw notFoundError("IDENTITY_NOT_FOUND", "Compte lié introuvable.");
+      }
+
+      if (result.status === "last_identity") {
+        throw conflictError(
+          "LAST_IDENTITY",
+          "Impossible de dissocier le dernier moyen de connexion."
+        );
+      }
+
+      if (result.status === "self") {
+        throw conflictError(
+          "SELF_IDENTITY_UNLINK",
+          "Impossible de dissocier tes propres comptes liés depuis l'administration."
+        );
+      }
+
+      response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.delete("/users/:id/personal-data", async (request, response, next) => {
+    try {
+      const result = await adminService.anonymizeUserAccount(
+        request.currentUser?.id ?? "",
+        request.params.id
+      );
+
+      if (result.status === "not_found") {
+        throw notFoundError("USER_NOT_FOUND", "Utilisateur introuvable.");
+      }
+
+      if (result.status === "last_admin") {
+        throw conflictError("LAST_ADMIN", "Impossible d'anonymiser le dernier administrateur.");
+      }
+
+      if (result.status === "self") {
+        throw conflictError(
+          "SELF_ACCOUNT_ANONYMIZATION",
+          "Impossible d'anonymiser ton propre compte depuis l'administration."
+        );
+      }
+
+      response.json(result);
     } catch (error) {
       next(error);
     }

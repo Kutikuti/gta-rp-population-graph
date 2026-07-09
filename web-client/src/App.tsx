@@ -9,6 +9,7 @@ import { DetailsSidebar } from "./components/DetailsSidebar";
 import { GraphPanel } from "./components/GraphPanel";
 import { ModerationView } from "./components/ModerationView";
 import { NotionImportsView } from "./components/NotionImportsView";
+import { PrivacyView } from "./components/PrivacyView";
 import { ProfileView } from "./components/ProfileView";
 import { PublicInfoView } from "./components/PublicInfoView";
 import { SearchSidebar } from "./components/SearchSidebar";
@@ -22,8 +23,16 @@ import { usePublicGraphData } from "./hooks/usePublicGraphData";
 import { useSearchMatches } from "./hooks/useSearchMatches";
 
 const readInitialCharacterId = () => new URL(window.location.href).searchParams.get("character");
-const readInitialView = () =>
-  new URL(window.location.href).searchParams.get("view") === "info" ? "information" : "explore";
+const readInitialView = () => {
+  const view = new URL(window.location.href).searchParams.get("view");
+  if (view === "info") {
+    return "information";
+  }
+  if (view === "privacy") {
+    return "privacy";
+  }
+  return "explore";
+};
 
 function App() {
   const [filters, setFilters] = usePersistentFilters();
@@ -44,6 +53,7 @@ function App() {
     | "imports"
     | "profile"
     | "information"
+    | "privacy"
   >(readInitialView);
 
   const handleError = useCallback((message: string) => {
@@ -121,6 +131,8 @@ function App() {
 
     if (activeView === "information") {
       url.searchParams.set("view", "info");
+    } else if (activeView === "privacy") {
+      url.searchParams.set("view", "privacy");
     } else {
       url.searchParams.delete("view");
     }
@@ -331,7 +343,20 @@ function App() {
             onError={handleError}
           />
         ) : null}
-        {activeView === "information" ? <PublicInfoView /> : null}
+        {activeView === "information" ? (
+          <PublicInfoView
+            onOpenPrivacy={() => {
+              setActiveView("privacy");
+            }}
+          />
+        ) : null}
+        {activeView === "privacy" ? (
+          <PrivacyView
+            onOpenInfo={() => {
+              setActiveView("information");
+            }}
+          />
+        ) : null}
         {toast ? (
           <div className={`app-toast app-toast-${toast.tone}`} role="status" aria-live="polite">
             {toast.message}

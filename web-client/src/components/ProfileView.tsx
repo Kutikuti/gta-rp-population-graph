@@ -4,9 +4,11 @@ import type {
   AuthSession,
   ChangeRequestSummary,
   CharacterSnapshot,
+  PersonalDataExport,
   PublicCharacterReference
 } from "../api";
 import {
+  exportProfilePersonalData,
   getDiscordLinkUrl,
   getGoogleLinkUrl,
   getTwitchLinkUrl,
@@ -71,7 +73,9 @@ export function ProfileView({
   const [characterOptions, setCharacterOptions] = useState<PublicCharacterReference[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
+  const [personalDataExport, setPersonalDataExport] = useState<PersonalDataExport | null>(null);
 
   useEffect(() => {
     if (session?.authenticated) {
@@ -166,6 +170,18 @@ export function ProfileView({
     setUnlinkingProvider(provider);
     await onIdentityUnlink(provider);
     setUnlinkingProvider(null);
+  };
+
+  const handlePersonalDataExport = async () => {
+    setIsExporting(true);
+
+    try {
+      setPersonalDataExport(await exportProfilePersonalData());
+    } catch {
+      onError("Impossible de préparer l'export de tes données personnelles.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const characterNames = new Map(
@@ -276,6 +292,71 @@ export function ProfileView({
                 );
               })}
             </div>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={isExporting}
+                onClick={() => {
+                  void handlePersonalDataExport();
+                }}
+              >
+                {isExporting ? "Préparation..." : "Exporter mes données"}
+              </button>
+            </div>
+            {personalDataExport ? (
+              <div className="profile-export-panel">
+                <h4>Export personnel</h4>
+                <p className="muted-copy">
+                  Préparé le {formatDate(personalDataExport.exportedAt)}. Cet export couvre le
+                  compte et les identités liées actuellement stockés.
+                </p>
+                <div className="profile-export-grid">
+                  <div className="profile-request-change">
+                    <span>Email</span>
+                    <strong className="profile-request-value">
+                      {personalDataExport.account.email}
+                    </strong>
+                  </div>
+                  <div className="profile-request-change">
+                    <span>Role</span>
+                    <strong className="profile-request-value">
+                      {personalDataExport.account.role}
+                    </strong>
+                  </div>
+                  <div className="profile-request-change">
+                    <span>Dernière connexion</span>
+                    <strong className="profile-request-value">
+                      {personalDataExport.account.lastLoginAt
+                        ? formatDate(personalDataExport.account.lastLoginAt)
+                        : "Aucune"}
+                    </strong>
+                  </div>
+                  <div className="profile-request-change">
+                    <span>Comptes liés</span>
+                    <strong className="profile-request-value">
+                      {personalDataExport.linkedIdentities.length}
+                    </strong>
+                  </div>
+                </div>
+                <div className="profile-export-identities">
+                  {personalDataExport.linkedIdentities.map((identity) => (
+                    <div key={identity.id} className="profile-export-identity">
+                      <strong>{authProviderLabels[identity.provider]}</strong>
+                      <span>
+                        {identity.providerEmail ?? identity.providerDisplayName ?? "Identité liée"}
+                      </span>
+                      <small>
+                        Lié le {formatDate(identity.connectedAt)}
+                        {identity.lastUsedAt
+                          ? ` • Utilisé le ${formatDate(identity.lastUsedAt)}`
+                          : ""}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="profile-sso-panel">

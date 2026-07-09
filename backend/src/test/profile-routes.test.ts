@@ -102,6 +102,39 @@ class FixtureAuthService implements AuthService {
     return updatedUser;
   }
 
+  async exportPersonalData(userId: string) {
+    const user = this.usersById.get(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      exportedAt: "2026-07-08T10:00:00.000Z",
+      account: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        displayNameChosenAt: null,
+        avatarUrl: user.avatarUrl,
+        role: user.role.name,
+        isBanned: user.isBanned,
+        lastLoginAt: null,
+        createdAt: "2026-06-28T00:00:00.000Z",
+        updatedAt: "2026-07-08T10:00:00.000Z"
+      },
+      linkedIdentities: user.linkedIdentities.map((identity) => ({
+        id: identity.id,
+        provider: identity.provider,
+        providerEmail: null,
+        providerDisplayName: null,
+        providerAvatarUrl: null,
+        connectedAt: identity.connectedAt,
+        lastUsedAt: identity.lastUsedAt
+      }))
+    };
+  }
+
   async unlinkIdentity(userId: string, provider: "google" | "discord" | "twitch") {
     const user = this.usersById.get(userId);
 
@@ -179,6 +212,30 @@ describe("profile API", () => {
 
     expect(response.status).toBe(409);
     expect(response.body.error.code).toBe("LAST_IDENTITY");
+  });
+
+  it("exports the authenticated user's personal data", async () => {
+    const app = createApp({
+      authService: new FixtureAuthService(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    await loginAs(agent, "multi");
+
+    const response = await agent.get("/api/profile/personal-data");
+
+    expect(response.status).toBe(200);
+    expect(response.body.account).toMatchObject({
+      id: multiIdentityUser.id,
+      email: multiIdentityUser.email,
+      displayName: multiIdentityUser.displayName
+    });
+    expect(response.body.linkedIdentities).toEqual([
+      expect.objectContaining({ provider: "google", providerEmail: null }),
+      expect.objectContaining({ provider: "discord", providerEmail: null })
+    ]);
+    expect(typeof response.body.exportedAt).toBe("string");
   });
 
   it("dissociates one identity when another login provider remains", async () => {

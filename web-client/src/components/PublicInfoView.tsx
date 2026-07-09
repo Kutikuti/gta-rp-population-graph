@@ -1,8 +1,10 @@
-const PROJECT_REPOSITORY_URL = "https://github.com/Kutikuti/gta-rp-population-graph";
-const CONTACT_EMAIL = "julien.j.rechaussat@gmail.com";
-const DISCORD_USERNAME = "jeiwel";
+import { CONTACT_EMAIL, DISCORD_USERNAME, PROJECT_REPOSITORY_URL } from "./public-static-content";
 
-export function PublicInfoView() {
+type PublicInfoViewProps = {
+  onOpenPrivacy: () => void;
+};
+
+export function PublicInfoView({ onOpenPrivacy }: PublicInfoViewProps) {
   return (
     <section className="full-page-view public-info-view" aria-labelledby="public-info-title">
       <div className="full-page-header public-info-header">
@@ -13,6 +15,11 @@ export function PublicInfoView() {
             Un annuaire narratif et un graphe de personnages pour aider les spectateurs a suivre les
             liens RP et retrouver rapidement les informations utiles.
           </p>
+        </div>
+        <div className="public-info-top-actions">
+          <button type="button" className="ghost-button" onClick={onOpenPrivacy}>
+            Confidentialité
+          </button>
         </div>
       </div>
 

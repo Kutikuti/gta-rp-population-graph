@@ -3,18 +3,25 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react
 import {
   type AdminDashboard,
   type AdminTagInput,
+  type AdminUser,
+  type AdminUserPersonalDataExport,
   type AuthSession,
+  anonymizeAdminUserAccount,
   banAdminUser,
   createAdminTag,
   type DataCompletenessReport,
   deleteAdminTag,
   getAdminDashboard,
   getAdminDataCompleteness,
+  getAdminUserPersonalData,
   revokeAdminUserBan,
+  revokeAdminUserSessions,
+  unlinkAdminUserIdentity,
   updateAdminTag,
   updateAdminUserRole
 } from "../api";
 import { AdminActionsPanel } from "./AdminActionsPanel";
+import { AdminAnonymizationDialog } from "./AdminAnonymizationDialog";
 import { AdminTagsPanel } from "./AdminTagsPanel";
 import { AdminUsersPanel } from "./AdminUsersPanel";
 import {
@@ -38,7 +45,12 @@ export function AdminView({ session, onEditCharacter, onError }: AdminViewProps)
   const [banReasons, setBanReasons] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isCompletenessLoading, setIsCompletenessLoading] = useState(false);
+  const [isPersonalDataLoading, setIsPersonalDataLoading] = useState(false);
   const [completenessReport, setCompletenessReport] = useState<DataCompletenessReport | null>(null);
+  const [personalDataExport, setPersonalDataExport] = useState<AdminUserPersonalDataExport | null>(
+    null
+  );
+  const [anonymizationCandidate, setAnonymizationCandidate] = useState<AdminUser | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const canAdmin = session?.authenticated && session.user.role.name === "administrator";
@@ -112,6 +124,55 @@ export function AdminView({ session, onEditCharacter, onError }: AdminViewProps)
     }
   };
 
+  const loadPersonalDataExport = async (user: AdminUser) => {
+    setIsPersonalDataLoading(true);
+
+    try {
+      setPersonalDataExport(await getAdminUserPersonalData(user.id));
+    } catch {
+      onError("Les données RGPD de cet utilisateur n'ont pas pu être chargées.");
+    } finally {
+      setIsPersonalDataLoading(false);
+    }
+  };
+
+  const revokeUserSessions = async (user: AdminUser) => {
+    try {
+      const result = await revokeAdminUserSessions(user.id);
+      setFeedback(
+        result ? `${result.revokedCount} session(s) révoquée(s).` : "Sessions révoquées."
+      );
+      await loadPersonalDataExport(user);
+    } catch (error) {
+      onError(adminErrorMessage(error));
+    }
+  };
+
+  const unlinkUserIdentity = async (user: AdminUser, provider: "google" | "discord" | "twitch") => {
+    try {
+      await unlinkAdminUserIdentity(user.id, provider);
+      setFeedback("Compte lié dissocié.");
+      await loadPersonalDataExport(user);
+    } catch (error) {
+      onError(adminErrorMessage(error));
+    }
+  };
+
+  const anonymizeUserAccount = async (user: AdminUser) => {
+    try {
+      const result = await anonymizeAdminUserAccount(user.id);
+      setFeedback(
+        result
+          ? `Compte anonymisé. ${result.unlinkedIdentities} identité(s) dissociée(s), ${result.revokedSessions} session(s) révoquée(s).`
+          : "Compte anonymisé."
+      );
+      setAnonymizationCandidate(null);
+      await Promise.all([loadDashboard(), loadPersonalDataExport(user)]);
+    } catch (error) {
+      onError(adminErrorMessage(error));
+    }
+  };
+
   const submitTag = async (event: FormEvent) => {
     event.preventDefault();
     const input = normalizeTagInput(tagInput);
@@ -150,6 +211,8 @@ export function AdminView({ session, onEditCharacter, onError }: AdminViewProps)
           <AdminUsersPanel
             banReasons={banReasons}
             isLoading={isLoading}
+            isPersonalDataLoading={isPersonalDataLoading}
+            personalDataExport={personalDataExport}
             users={users}
             onBanReasonChange={(userId, value) => {
               setBanReasons((current) => ({
@@ -166,6 +229,18 @@ export function AdminView({ session, onEditCharacter, onError }: AdminViewProps)
               }
 
               void runAction(() => banAdminUser(user.id, reason), "Utilisateur banni.");
+            }}
+            onLoadPersonalData={(user) => {
+              void loadPersonalDataExport(user);
+            }}
+            onRevokeSessions={(user) => {
+              void revokeUserSessions(user);
+            }}
+            onUnlinkIdentity={(user, provider) => {
+              void unlinkUserIdentity(user, provider);
+            }}
+            onAnonymizeUser={(user) => {
+              setAnonymizationCandidate(user);
             }}
             onRevokeBan={(user) => {
               void runAction(() => revokeAdminUserBan(user.id), "Bannissement levé.");
@@ -197,6 +272,17 @@ export function AdminView({ session, onEditCharacter, onError }: AdminViewProps)
           <AdminActionsPanel actions={actions} />
         </div>
       </div>
+      {anonymizationCandidate ? (
+        <AdminAnonymizationDialog
+          user={anonymizationCandidate}
+          onCancel={() => {
+            setAnonymizationCandidate(null);
+          }}
+          onConfirm={(user) => {
+            void anonymizeUserAccount(user);
+          }}
+        />
+      ) : null}
     </section>
   );
 }

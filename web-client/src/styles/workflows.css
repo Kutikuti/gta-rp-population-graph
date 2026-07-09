@@ -44,7 +44,17 @@
 }
 
 .public-info-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   width: min(980px, 100%);
+}
+
+.public-info-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .public-info-layout {
@@ -71,6 +81,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.public-info-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
 }
 
 .public-info-static-chip {
@@ -198,6 +215,66 @@
   margin: 0;
   color: #dff4ff;
   font-size: 0.95rem;
+}
+
+.admin-rgpd-panel {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #123c5f;
+  padding-top: 12px;
+}
+
+.admin-rgpd-panel h4 {
+  margin: 0;
+  color: #eaf7ff;
+  font-size: 0.86rem;
+}
+
+.admin-rgpd-identity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-rgpd-identity-header .ghost-button {
+  min-height: 32px;
+  padding: 5px 8px;
+}
+
+.admin-confirmation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 6, 12, 0.76);
+}
+
+.admin-confirmation-dialog {
+  display: grid;
+  width: min(480px, 100%);
+  gap: 14px;
+  border: 1px solid #1f6fa6;
+  background: #061522;
+  padding: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.admin-confirmation-dialog h3 {
+  margin: 0;
+  color: #eaf7ff;
+  font-size: 1rem;
+}
+
+.admin-confirmation-dialog label {
+  display: grid;
+  gap: 6px;
+  color: #a9c9e4;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .completeness-panel {
@@ -611,9 +688,20 @@
 .admin-row strong {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   color: #f0f9ff;
   font-size: 0.85rem;
+}
+
+.admin-status-chip {
+  border: 1px solid #6f5f20;
+  background: rgba(129, 104, 41, 0.18);
+  padding: 2px 6px;
+  color: #ffe3a3;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .admin-row small {
@@ -989,6 +1077,46 @@
   margin: 0;
   color: #eaf7ff;
   font-size: 0.92rem;
+}
+
+.profile-export-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-export-panel {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.profile-export-panel h4 {
+  margin: 0;
+  color: #eaf7ff;
+  font-size: 0.82rem;
+}
+
+.profile-export-identities {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-export-identity {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid #123c5f;
+  background: #081a2a;
+}
+
+.profile-export-identity strong {
+  color: #eaf7ff;
+}
+
+.profile-export-identity span,
+.profile-export-identity small {
+  color: #8fb2cf;
 }
 
 .profile-sso-actions {

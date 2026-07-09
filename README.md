@@ -40,6 +40,20 @@ La securite du serveur est la priorite numero 1 du developpement.
 - [PLANS.md](PLANS.md) : plan MVP, decisions produit/techniques et feuille de
   route de developpement.
 - [DEPLOYMENT.md](DEPLOYMENT.md) : runbook vivant de mise en production.
+- [PRIVACY.md](PRIVACY.md) : base documentaire RGPD, cookies et registre
+  simplifie des traitements.
+
+## Confidentialité et cookies
+
+Le projet utilise actuellement :
+
+- un cookie de session serveur strictement necessaire a l'authentification ;
+- du `localStorage` pour les preferences d'interface du graphe ;
+- une mesure serveur technique sans traceur client tiers.
+
+Dans ce perimetre, aucun bandeau de consentement cookies n'est prevu pour
+l'instant. Les regles de conservation, la cartographie des traitements et la
+procedure minimale RGPD sont documentees dans [PRIVACY.md](PRIVACY.md).
 
 ## Etat actuel
 

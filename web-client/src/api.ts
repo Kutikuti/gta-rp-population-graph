@@ -166,6 +166,31 @@ export type AuthSession =
       user: AuthenticatedUser;
     };
 
+export type PersonalDataExport = {
+  exportedAt: string;
+  account: {
+    id: string;
+    email: string;
+    displayName: string;
+    displayNameChosenAt: string | null;
+    avatarUrl: string | null;
+    role: RoleName;
+    isBanned: boolean;
+    lastLoginAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  linkedIdentities: Array<{
+    id: string;
+    provider: "google" | "discord" | "twitch";
+    providerEmail: string | null;
+    providerDisplayName: string | null;
+    providerAvatarUrl: string | null;
+    connectedAt: string;
+    lastUsedAt: string | null;
+  }>;
+};
+
 export type CharacterFilters = {
   q: string;
   company: string;
@@ -254,6 +279,54 @@ export type AdminUser = {
   isBanned: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+};
+
+export type AdminUserPersonalDataExport = {
+  exportedAt: string;
+  user: AdminUser;
+  linkedIdentities: Array<{
+    id: string;
+    provider: "google" | "discord" | "twitch";
+    providerEmail: string | null;
+    providerDisplayName: string | null;
+    providerAvatarUrl: string | null;
+    connectedAt: string;
+    lastUsedAt: string | null;
+  }>;
+  sessions: {
+    total: number;
+    active: number;
+    latestExpiryAt: string | null;
+  };
+  contributions: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    latestRequestAt: string | null;
+  };
+  moderationTrace: {
+    changeHistoriesAsModerator: number;
+    adminActionsAsActor: number;
+    latestAdminActionAt: string | null;
+  };
+};
+
+export type AdminUserSessionRevocationResult = {
+  status: "revoked";
+  revokedCount: number;
+};
+
+export type AdminUserIdentityUnlinkResult = {
+  status: "unlinked";
+  provider: "google" | "discord" | "twitch";
+};
+
+export type AdminUserAnonymizationResult = {
+  status: "anonymized";
+  user: AdminUser;
+  revokedSessions: number;
+  unlinkedIdentities: number;
 };
 
 export type AdminTag = {
@@ -590,7 +663,14 @@ export const unlinkProfileIdentity = (provider: "google" | "discord" | "twitch")
     }
   );
 
+export const exportProfilePersonalData = () =>
+  fetchJson<PersonalDataExport>("/api/profile/personal-data");
+
 export const getAdminDashboard = () => fetchJson<AdminDashboard>("/api/admin/dashboard");
+
+export const getAdminUserPersonalData = (id: string) =>
+  fetchJson<AdminUserPersonalDataExport>(`/api/admin/users/${id}/personal-data`);
+
 export const getAdminDataCompleteness = () =>
   fetchJson<DataCompletenessReport>("/api/admin/completeness");
 
@@ -628,6 +708,17 @@ export const banAdminUser = (id: string, reason: string) =>
 
 export const revokeAdminUserBan = (id: string) =>
   deleteJson<AdminUser>(`/api/admin/users/${id}/ban`);
+
+export const revokeAdminUserSessions = (id: string) =>
+  deleteJson<AdminUserSessionRevocationResult>(`/api/admin/users/${id}/sessions`);
+
+export const unlinkAdminUserIdentity = (id: string, provider: "google" | "discord" | "twitch") =>
+  deleteJson<AdminUserIdentityUnlinkResult>(
+    `/api/admin/users/${id}/identities/${encodeURIComponent(provider)}`
+  );
+
+export const anonymizeAdminUserAccount = (id: string) =>
+  deleteJson<AdminUserAnonymizationResult>(`/api/admin/users/${id}/personal-data`);
 
 export const logout = async () => {
   const response = await fetch(buildApiUrl("/api/auth/logout"), {

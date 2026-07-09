@@ -1,23 +1,44 @@
-import type { AdminUser } from "../api";
+import type { AdminUser, AdminUserPersonalDataExport } from "../api";
 import { formatDate } from "../utils/format";
+import { AdminRgpdPanel } from "./AdminRgpdPanel";
 import { roleLabels } from "./admin-shared";
 
 type AdminUsersPanelProps = {
   banReasons: Record<string, string>;
   isLoading: boolean;
+  isPersonalDataLoading: boolean;
+  personalDataExport: AdminUserPersonalDataExport | null;
   users: AdminUser[];
+  onAnonymizeUser: (user: AdminUser) => void;
   onBanReasonChange: (userId: string, value: string) => void;
   onBanUser: (user: AdminUser) => void;
+  onLoadPersonalData: (user: AdminUser) => void;
+  onRevokeSessions: (user: AdminUser) => void;
+  onUnlinkIdentity: (
+    user: AdminUser,
+    provider: AdminUserPersonalDataExport["linkedIdentities"][number]["provider"]
+  ) => void;
   onRevokeBan: (user: AdminUser) => void;
   onUpdateRole: (user: AdminUser, roleName: AdminUser["role"]["name"]) => void;
 };
 
+const anonymizedEmailPattern = /^deleted-[\w-]+@deleted\.local$/;
+
+const isAnonymizedUser = (user: AdminUser) =>
+  user.displayName === "Utilisateur supprimé" || anonymizedEmailPattern.test(user.email);
+
 export function AdminUsersPanel({
   banReasons,
   isLoading,
+  isPersonalDataLoading,
+  personalDataExport,
   users,
+  onAnonymizeUser,
   onBanReasonChange,
   onBanUser,
+  onLoadPersonalData,
+  onRevokeSessions,
+  onUnlinkIdentity,
   onRevokeBan,
   onUpdateRole
 }: AdminUsersPanelProps) {
@@ -29,7 +50,12 @@ export function AdminUsersPanel({
         {users.map((user) => (
           <article key={user.id} className="admin-row">
             <div>
-              <strong>{user.displayName}</strong>
+              <strong>
+                {user.displayName}
+                {isAnonymizedUser(user) ? (
+                  <span className="admin-status-chip">Compte anonymisé</span>
+                ) : null}
+              </strong>
               <small>{user.email}</small>
               <small>
                 Créé le {formatDate(user.createdAt)}
@@ -79,10 +105,30 @@ export function AdminUsersPanel({
                   </button>
                 </>
               )}
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={isPersonalDataLoading}
+                onClick={() => {
+                  onLoadPersonalData(user);
+                }}
+              >
+                Données RGPD
+              </button>
             </div>
           </article>
         ))}
       </div>
+      {isPersonalDataLoading ? <p className="muted-copy">Chargement des données RGPD...</p> : null}
+      {personalDataExport ? (
+        <AdminRgpdPanel
+          exportData={personalDataExport}
+          isLoading={isPersonalDataLoading}
+          onAnonymizeUser={onAnonymizeUser}
+          onRevokeSessions={onRevokeSessions}
+          onUnlinkIdentity={onUnlinkIdentity}
+        />
+      ) : null}
     </section>
   );
 }

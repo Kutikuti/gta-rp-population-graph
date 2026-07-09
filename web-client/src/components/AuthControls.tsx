@@ -11,7 +11,8 @@ type AuthControlsProps = {
     | "administration"
     | "imports"
     | "profile"
-    | "information";
+    | "information"
+    | "privacy";
   isLoading: boolean;
   session: AuthSession | null;
   loginOptions: Array<{

@@ -27,6 +27,34 @@ export const createProfileRouter = (authService: AuthService) => {
     });
   });
 
+  router.get("/personal-data", requireAuthenticatedUser, async (request, response, next) => {
+    try {
+      if (!request.currentUser) {
+        throw new Error("Authenticated route reached without current user.");
+      }
+
+      if (!authService.exportPersonalData) {
+        throw new Error("Profile personal data export is not available on this auth service.");
+      }
+
+      const exportPayload = await authService.exportPersonalData(request.currentUser.id);
+
+      if (!exportPayload) {
+        response.status(404).json({
+          error: {
+            code: "USER_NOT_FOUND",
+            message: "Utilisateur introuvable."
+          }
+        });
+        return;
+      }
+
+      response.json(exportPayload);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.patch("/display-name", requireAuthenticatedUser, async (request, response, next) => {
     try {
       if (!request.currentUser) {
