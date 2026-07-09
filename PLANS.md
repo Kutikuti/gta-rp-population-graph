@@ -1417,14 +1417,20 @@ Ordre de travail recommande :
 - Lot C : completude des donnees
 - Lot D : graphe et preferences locales
 - Lot E : module streamer
-- Lot F : page publique information / contact / soutien - en cours
+- Lot F : page publique information / contact / soutien - termine
 - Lot G : cadrage RGPD et hygiene des donnees personnelles - en cours
 
 Avancement 2026-07-08 :
 
-- page publique de confidentialite en cours d'integration au frontend public ;
+- lot F termine : page publique information/contact livree, accessible depuis
+  un bouton rond `?` en bas a droite du graphe et via l'URL partageable
+  `?view=info`. Le soutien financier reste volontairement hors produit pour
+  l'instant et limite au README ;
+- page publique de confidentialite integree au frontend public, sans bandeau
+  cookies ;
 - documentation projet enrichie avec une base RGPD/cookies et un registre
-  simplifie des traitements ;
+  simplifie des traitements dans `PRIVACY.md`, reference depuis `README.md` et
+  complete par une procedure operationnelle dans `DEPLOYMENT.md` ;
 - choix retenu confirme : pas de bandeau cookies dans le perimetre actuel tant
   qu'aucun traceur client non strictement necessaire n'est ajoute.
 - runbook de deploiement complete avec une procedure minimale de traitement des
@@ -1450,6 +1456,21 @@ Avancement 2026-07-08 :
 - lisibilite admin renforcee : les comptes deja anonymises sont marques dans
   la liste utilisateurs, et le flux RGPD admin est couvert par un test frontend
   dedie en plus des tests backend admin/profil.
+
+Point doc Lot G au 2026-07-08 :
+
+- coherent : le perimetre cookies est aligne entre `PRIVACY.md`, `README.md`
+  et `DEPLOYMENT.md` : cookie de session strictement necessaire, preferences
+  locales via `localStorage`, pas de traceur client tiers et donc pas de
+  bandeau de consentement dans le perimetre actuel ;
+- coherent : la procedure de demandes RGPD est documentee cote runbook avec
+  export, revocation de sessions, dissociation SSO et anonymisation controlee ;
+- coherent : les durees deja automatisees sont documentees, notamment sessions,
+  brouillons photo, journaux systeme et sauvegardes ;
+- restant a decider/implementer plus tard : purge automatique des comptes
+  inactifs, demandes anciennes, historiques/admin actions et imports editoriaux.
+  La doc fixe une politique cible mais ne pretend pas encore que tout est
+  automatise.
 
 Contraintes de mise en oeuvre :
 
