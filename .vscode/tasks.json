@@ -2,6 +2,28 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "dev:serena",
+      "type": "shell",
+      "command": "serena",
+      "args": [
+        "start-mcp-server",
+        "--context=vscode",
+        "--project",
+        "${workspaceFolder}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "dev:backend",
       "type": "shell",
       "command": "npm run dev",
@@ -55,6 +77,7 @@
       "label": "run all terminals",
       "dependsOrder": "parallel",
       "dependsOn": [
+        "dev:serena",
         "dev:backend",
         "dev:web-client",
         "terminal:root"
