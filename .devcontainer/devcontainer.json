@@ -1,7 +1,8 @@
 {
   "build": {
     "context": "..",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "options": ["--pull"]
   },
   "containerEnv": {
     "DEVCONTAINER_UPDATE_CHECK_TTL_SECONDS": "86400",
@@ -25,12 +26,14 @@
         "ms-vscode-remote.remote-containers",
         "openai.chatgpt",
         "tamasfe.even-better-toml",
+        "TypeScriptTeam.native-preview",
         "timonwong.shellcheck",
         "unional.vscode-sort-package-json",
         "wayou.vscode-todo-highlight",
         "yzhang.markdown-all-in-one"
       ],
       "settings": {
+        "js/ts.experimental.useTsgo": true,
         "terminal.integrated.defaultProfile.linux": "bash"
       }
     }

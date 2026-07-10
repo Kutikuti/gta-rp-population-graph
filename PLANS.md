@@ -595,7 +595,7 @@ Statut : terminee le 2026-07-10. Lots A a G termines.
 
 ### Etape 14 - Migration vers TypeScript 7 et npm 12
 
-Statut : planifiee apres la stabilisation de l'etape 13.
+Statut : en cours depuis le 2026-07-10.
 
 Ces deux montees de version majeures doivent rester une passe technique dediee.
 Elles ne doivent pas etre melangees a un lot fonctionnel afin de pouvoir
@@ -632,6 +632,18 @@ Point de controle :
   Node distincte n'a pas ete decidee et validee.
 - Aucun changement fonctionnel ou de schema de donnees n'est introduit par
   cette etape technique.
+
+Avancement au 2026-07-10 :
+
+- TypeScript `7.0.2` est configure dans les deux applications et les lockfiles
+  ont ete regeneres avec npm `12.0.0`.
+- Les installations propres, `sharp`, `esbuild`, Vite, les 196 tests, les
+  checks Biome et les builds backend/frontend sont valides localement.
+- Le devcontainer est configure pour npm 12, l'extension TypeScript 7 et
+  `tsgo`. Sa reconstruction reste necessaire pour remplacer l'outillage du
+  conteneur deja ouvert.
+- L'alignement du prefixe `/opt/node-gta-rp` et les smoke tests VPS restent a
+  executer avant de terminer l'etape.
 
 ### Etape 15 - Finalisation UX de l'application et du graphe
 

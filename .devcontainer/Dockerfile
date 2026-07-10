@@ -12,6 +12,7 @@ ENV LC_ALL=C.UTF-8
 # Base Linux, ops, SSH, archive, checksum, search, and debugging tools.
 # This group supports repo scripts under ops/* and src/_scripts/*.
 RUN apt-get update \
+  && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
   bash \
   bash-completion \

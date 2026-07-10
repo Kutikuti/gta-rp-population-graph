@@ -94,14 +94,17 @@ durcissement minimal du VPS (`ufw`, `fail2ban`, nettoyage photo, backups).
 
 ## Lancement local
 
-Version Node.js attendue : `24.18.0` ou plus recente. Les fichiers `.nvmrc` et
-`.node-version` sont fournis pour les gestionnaires de versions Node.js.
+Chaine d'outillage de reference : Node.js `24.18.0`, npm `12.0.0` et
+TypeScript `7.0.2`. Les fichiers `.nvmrc` et `.node-version` sont fournis pour
+les gestionnaires de versions Node.js. Le devcontainer installe aussi
+l'extension officielle TypeScript 7 et utilise `tsgo` pour les diagnostics de
+l'editeur.
 
 Installation et demarrage backend :
 
 ```bash
 cd backend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -109,7 +112,7 @@ Installation et demarrage frontend :
 
 ```bash
 cd web-client
-npm install
+npm ci
 npm run dev
 ```
 

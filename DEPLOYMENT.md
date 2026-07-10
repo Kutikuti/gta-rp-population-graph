@@ -17,7 +17,9 @@ interactive.
 ## Prerequis serveur
 
 - VPS Ubuntu a jour.
-- Node.js `24.18.0` ou plus recent.
+- Node.js `24.18.0` et npm `12.0.0` dans le prefixe applicatif isole
+  `/opt/node-gta-rp`. Ne pas modifier les installations Node.js utilisees par
+  les autres applications du VPS.
 - PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
 - Caddy pour le reverse proxy, TLS automatique et les domaines.
 - Process manager pour l'API Node.js : service `systemd` sur le VPS actuel.
@@ -647,6 +649,35 @@ npm run check
 npm test
 npm run build
 ```
+
+## Chaine Node.js isolee
+
+Le projet utilise `/opt/node-gta-rp` afin de ne pas modifier les versions
+Node.js et npm des autres applications du VPS. La version attendue se controle
+avec :
+
+```bash
+/opt/node-gta-rp/bin/node --version
+/opt/node-gta-rp/bin/npm --version
+```
+
+Pour aligner uniquement npm sur la version du projet :
+
+```bash
+sudo /opt/node-gta-rp/bin/npm install --global npm@12.0.0 --prefix /opt/node-gta-rp
+/opt/node-gta-rp/bin/npm --version
+```
+
+La mise a jour doit etre suivie d'un `npm ci` et d'un build dans le backend et
+le frontend. En cas de regression liee a npm 12, revenir sans changer Node.js :
+
+```bash
+sudo /opt/node-gta-rp/bin/npm install --global npm@11.16.0 --prefix /opt/node-gta-rp
+/opt/node-gta-rp/bin/npm --version
+```
+
+Les lockfiles restent au format v3 et peuvent ensuite etre reinstalles avec
+`npm ci`.
 
 ## Procedure de mise a jour reproductible
 
