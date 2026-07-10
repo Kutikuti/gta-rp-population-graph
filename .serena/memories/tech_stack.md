@@ -1,6 +1,6 @@
 # Tech Stack
 
-- Node.js attendu: `>=24.16.0`; verifier Node cote WSL/devcontainer avant commandes npm si doute.
+- Node.js attendu: `>=24.18.0`; verifier Node cote WSL/devcontainer avant commandes npm si doute.
 - Package manager observe: npm via scripts `package.json`; pas de workspace racine declare.
 - Backend: TypeScript strict, Express 5, Sequelize 6, PostgreSQL (`pg`), Umzug, Zod, Helmet, CORS, express-rate-limit, dotenv, tsx.
 - Backend tests/outillage: Vitest, Supertest, ESLint, TypeScript 6.

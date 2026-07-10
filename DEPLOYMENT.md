@@ -17,7 +17,7 @@ interactive.
 ## Prerequis serveur
 
 - VPS Ubuntu a jour.
-- Node.js `24.16.0` ou plus recent.
+- Node.js `24.18.0` ou plus recent.
 - PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
 - Caddy pour le reverse proxy, TLS automatique et les domaines.
 - Process manager pour l'API Node.js : service `systemd` sur le VPS actuel.

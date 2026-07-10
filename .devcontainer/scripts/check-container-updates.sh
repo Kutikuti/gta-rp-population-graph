@@ -5,7 +5,24 @@ CACHE_DIR=".devcontainer/.cache/update-check"
 SUMMARY_FILE="$CACHE_DIR/summary.txt"
 DETAILS_FILE="$CACHE_DIR/details.txt"
 STAMP_FILE="$CACHE_DIR/last-check"
+CONFIG_FINGERPRINT_FILE="$CACHE_DIR/config-fingerprint"
 TTL_SECONDS="${DEVCONTAINER_UPDATE_CHECK_TTL_SECONDS:-86400}"
+
+VERSIONS_FILE="/usr/local/share/devcontainer/versions.env"
+if [ ! -f "$VERSIONS_FILE" ]; then
+  VERSIONS_FILE=".devcontainer/versions.env"
+fi
+
+NODE_VERSION_FILE="/usr/local/share/devcontainer/node-version"
+if [ ! -f "$NODE_VERSION_FILE" ]; then
+  NODE_VERSION_FILE=".node-version"
+fi
+
+config_fingerprint="$(sha256sum "$VERSIONS_FILE" "$NODE_VERSION_FILE" | sha256sum | awk '{print $1}')"
+cached_config_fingerprint=""
+if [ -r "$CONFIG_FINGERPRINT_FILE" ]; then
+  cached_config_fingerprint="$(cat "$CONFIG_FINGERPRINT_FILE")"
+fi
 
 announce() {
   printf 'devcontainer update check: %s\n' "$1"
@@ -19,24 +36,17 @@ if [ -r "$STAMP_FILE" ]; then
   last_check="$(cat "$STAMP_FILE")"
 fi
 
-if [[ "$last_check" =~ ^[0-9]+$ ]] && [ "$TTL_SECONDS" -gt 0 ] && [ $((now - last_check)) -lt "$TTL_SECONDS" ]; then
+if [[ "$last_check" =~ ^[0-9]+$ ]] &&
+  [ "$TTL_SECONDS" -gt 0 ] &&
+  [ $((now - last_check)) -lt "$TTL_SECONDS" ] &&
+  [ "$cached_config_fingerprint" = "$config_fingerprint" ]; then
   announce "cache is fresh; skipping network checks"
   exit 0
 fi
 
 announce "loading pinned tool versions"
-VERSIONS_FILE="/usr/local/share/devcontainer/versions.env"
-if [ ! -f "$VERSIONS_FILE" ]; then
-  VERSIONS_FILE=".devcontainer/versions.env"
-fi
-
 # shellcheck disable=SC1090
 . "$VERSIONS_FILE"
-
-NODE_VERSION_FILE="/usr/local/share/devcontainer/node-version"
-if [ ! -f "$NODE_VERSION_FILE" ]; then
-  NODE_VERSION_FILE=".node-version"
-fi
 
 NODE_VERSION="$(tr -d '[:space:]' < "$NODE_VERSION_FILE")"
 CHECKED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -232,4 +242,5 @@ mv "$SUMMARY_FILE.tmp" "$SUMMARY_FILE"
 mv "$DETAILS_FILE.tmp" "$DETAILS_FILE"
 
 printf '%s\n' "$now" > "$STAMP_FILE"
+printf '%s\n' "$config_fingerprint" > "$CONFIG_FINGERPRINT_FILE"
 announce "done"

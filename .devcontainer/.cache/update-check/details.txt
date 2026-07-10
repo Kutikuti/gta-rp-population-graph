@@ -1,15 +1,12 @@
 Mewtwo devcontainer update check details
-Checked: 2026-07-08T08:22:10Z
+Checked: 2026-07-10T13:48:42Z
 
 WARN: debian:13.5-slim digest changed; rebuild the devcontainer when convenient
-WARN: apt has 2 upgradable package(s); rebuild the devcontainer instead of running apt upgrade
-apt upgradable packages:
-  libssh2-1t64/stable-security 1.11.1-1+deb13u1 amd64 [upgradable from: 1.11.1-1]
-  linux-libc-dev/stable-security 6.12.95-1 all [upgradable from: 6.12.90-2]
-WARN: Node 24 has a newer version: pinned v24.16.0, latest v24.18.0
-WARN: npm has a newer version: pinned 11.16.0, latest 11.18.0
-WARN: uv has a newer version: pinned 0.11.20, latest 0.11.28
+apt: metadata refresh failed; see /tmp/mewtwo-devcontainer-apt-update.log
+Node 24: pinned v24.18.0, latest v24.18.0
+WARN: npm has a newer version: pinned 11.16.0, latest 12.0.0
+uv: pinned 0.11.28, latest 0.11.28
 Serena: pinned 1.5.3, latest 1.5.3
-WARN: RTK has a newer version: pinned v0.42.2, latest v0.43.0
-WARN: ast-grep has a newer version: pinned 0.40.3, latest 0.44.1
-WARN: Repomix has a newer version: pinned 1.4.2, latest 1.16.0
+RTK: pinned v0.43.0, latest v0.43.0
+ast-grep: pinned 0.44.1, latest 0.44.1
+Repomix: pinned 1.16.0, latest 1.16.0

@@ -1695,13 +1695,53 @@ Point de controle :
   contribution et de moderation.
 - Les preferences locales d'affichage ne modifient pas les donnees serveur.
 
+### Etape 14 - Migration vers TypeScript 7 et npm 12
+
+Statut : planifiee apres la stabilisation de l'etape 13.
+
+Ces deux montees de version majeures doivent rester une passe technique dediee.
+Elles ne doivent pas etre melangees a un lot fonctionnel afin de pouvoir
+distinguer les regressions d'outillage des changements produit.
+
+Plan propose :
+
+1. Auditer les notes de migration TypeScript 7 et npm 12, ainsi que la
+   compatibilite de Vite, Vitest, `tsx`, Sequelize, Express et des definitions
+   `@types` utilisees.
+2. Mettre a jour TypeScript simultanement dans `backend/` et `web-client/`, sans
+   passer les definitions Node en version 26 tant que l'execution reste sur
+   Node.js 24 LTS.
+3. Passer le devcontainer a npm 12 et verifier explicitement les nouvelles
+   politiques d'installation, la configuration `allowScripts`, les lockfiles
+   et les installations natives de `sharp` et `esbuild`.
+4. Revoir les deux configurations TypeScript et n'activer de nouvelles options
+   strictes que lorsqu'elles correspondent a une decision explicite du projet.
+5. Corriger les incompatibilites de compilation sans affaiblir le typage, sans
+   contourner les erreurs avec des casts generiques ni masquer des diagnostics.
+6. Verifier `npm install` et `npm ci`, puis les scripts de developpement,
+   migrations, imports Notion, builds de production et tests backend/frontend
+   avec la nouvelle chaine d'outillage.
+7. Executer `scripts/run-all-checks.sh`, puis documenter les adaptations et les
+   eventuels points de vigilance avant de considerer l'etape terminee.
+
+Point de controle :
+
+- Les builds backend et frontend passent sous TypeScript 7.
+- Les installations reproductibles et les scripts autorises fonctionnent sous
+  npm 12 sans relacher les protections du devcontainer.
+- Tous les checks et tests existants restent verts.
+- Node.js 24.18 LTS reste la version d'execution cible tant qu'une migration
+  Node distincte n'a pas ete decidee et validee.
+- Aucun changement fonctionnel ou de schema de donnees n'est introduit par
+  cette etape technique.
+
 ## Hypotheses
 
 - La page Notion communautaire est la source initiale, mais son accessibilite et
   sa structure devront etre confirmees par tests de parsing.
 - Google OAuth reste disponible aux cotes de Discord OAuth et Twitch OAuth.
 - Le frontend demarre avec Vite, React et TypeScript.
-- Le developpement utilise Node.js `24.16.0` ou plus recent, en restant sur la
+- Le developpement utilise Node.js `24.18.0` ou plus recent, en restant sur la
   branche LTS plutot que sur la branche Current.
 - L'etat live Twitch est bien inclus dans cette etape 12 aux cotes des
   integrations SSO, afin de reutiliser la configuration serveur Twitch et

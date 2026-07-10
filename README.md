@@ -86,7 +86,7 @@ durcissement minimal du VPS (`ufw`, `fail2ban`, nettoyage photo, backups).
 
 ## Lancement local
 
-Version Node.js attendue : `24.16.0` ou plus recente. Les fichiers `.nvmrc` et
+Version Node.js attendue : `24.18.0` ou plus recente. Les fichiers `.nvmrc` et
 `.node-version` sont fournis pour les gestionnaires de versions Node.js.
 
 Installation et demarrage backend :
