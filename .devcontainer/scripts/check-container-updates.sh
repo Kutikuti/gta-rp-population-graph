@@ -18,7 +18,16 @@ if [ ! -f "$NODE_VERSION_FILE" ]; then
   NODE_VERSION_FILE=".node-version"
 fi
 
-config_fingerprint="$(sha256sum "$VERSIONS_FILE" "$NODE_VERSION_FILE" | sha256sum | awk '{print $1}')"
+fingerprint_inputs=("$VERSIONS_FILE" "$NODE_VERSION_FILE" "$0")
+for image_state_file in \
+  /usr/local/share/devcontainer/base-image.digest \
+  /var/lib/dpkg/status; do
+  if [ -r "$image_state_file" ]; then
+    fingerprint_inputs+=("$image_state_file")
+  fi
+done
+
+config_fingerprint="$(sha256sum "${fingerprint_inputs[@]}" | sha256sum | awk '{print $1}')"
 cached_config_fingerprint=""
 if [ -r "$CONFIG_FINGERPRINT_FILE" ]; then
   cached_config_fingerprint="$(cat "$CONFIG_FINGERPRINT_FILE")"
