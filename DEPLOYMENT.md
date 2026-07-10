@@ -44,6 +44,7 @@ Variables critiques :
 - `DB_SSL`
 - `DB_MAINTENANCE_NAME`
 - `SESSION_SECRET`
+- `SESSION_COOKIE_NAME`
 - `SESSION_COOKIE_SECURE=true`
 - `SESSION_COOKIE_SAME_SITE`
 - `SESSION_TTL_HOURS`
@@ -226,7 +227,7 @@ Le frontend affiche actuellement l'email de connexion uniquement dans le profil
 de l'utilisateur authentifie concerne. Cet affichage reste acceptable tant
 qu'il n'est pas expose publiquement.
 
-## Maintenance systeme recente
+## Derniere maintenance systeme consignee
 
 Maintenance executee le `2026-06-30` sur le VPS actuel :
 
@@ -266,7 +267,7 @@ curl -I https://gta-rp.f1prediction.fr/
 curl -I https://f1prediction.fr/
 ```
 
-## Verification ops du 2026-07-01
+## Etat operationnel de reference du 2026-07-01
 
 Passe non destructive executee depuis l'environnement de travail :
 
@@ -296,7 +297,7 @@ un usage existant du VPS. Ne pas le fermer sans verifier l'autre application.
 ## Check ops reproductible
 
 Le depot fournit un script de controle read-only pour rejouer les verifications
-ops essentielles sans installer encore de dashboard complet :
+ops essentielles en complement des dashboards Grafana :
 
 ```bash
 scripts/check-production-ops.sh
@@ -322,9 +323,8 @@ scripts/check-production-ops.sh --ssh-only
 
 Le script accepte les memes variables d'environnement SSH que le script de
 recuperation de sauvegarde : `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_KEY` et
-`REMOTE_BACKUP_ROOT`. Il ne remplace pas les futurs smoke tests metier
-interactifs, mais sert de controle ops rapide apres maintenance, deploiement ou
-incident.
+`REMOTE_BACKUP_ROOT`. Il ne remplace pas les smoke tests metier interactifs,
+mais sert de controle ops rapide apres maintenance, deploiement ou incident.
 
 ## Hygiene stockage
 
@@ -381,11 +381,11 @@ Points d'attention :
 ## Reverse proxy Caddy
 
 Le VPS actuel utilise Caddy, pas Nginx. Le site existant reste servi sur
-`f1prediction.fr` et `www.f1prediction.fr`. Le nouveau site doit etre ajoute
-dans un bloc Caddy separe pour `gta-rp.f1prediction.fr`, afin de ne pas toucher
-a la disponibilite du site existant.
+`f1prediction.fr` et `www.f1prediction.fr`. Le site GTA-RP est servi dans un
+bloc Caddy separe pour `gta-rp.f1prediction.fr`, afin de ne pas toucher a la
+disponibilite du site existant.
 
-Exemple cible :
+Configuration de reference :
 
 ```caddyfile
 gta-rp.f1prediction.fr {
@@ -425,9 +425,9 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
 ```
 
-Caddy emettra le certificat TLS automatiquement quand le DNS
-`gta-rp.f1prediction.fr` pointera bien vers le VPS et que les ports 80/443
-seront joignables publiquement.
+Caddy gere automatiquement le certificat TLS tant que le DNS
+`gta-rp.f1prediction.fr` pointe vers le VPS et que les ports 80/443 restent
+joignables publiquement.
 
 Les photos issues des imports Notion ne doivent pas etre servies directement
 depuis une URL distante. L'administration telecharge la photo au moment de
@@ -525,23 +525,17 @@ Lancer la stack :
 
 ```bash
 cd /var/www/gta-rp-population-graph/current/ops/monitoring
-sudo docker compose --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env config
-sudo docker compose --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env up -d
-sudo docker compose --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env ps
+sudo docker compose \
+  --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env config
+sudo docker compose \
+  --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env up -d
+sudo docker compose \
+  --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env ps
 ```
 
-Le plugin `docker compose` v2 est installe sur le VPS depuis le `2026-07-01`.
-L'ancien binaire `docker-compose` v1 reste disponible temporairement en fallback.
-Si ce fallback est necessaire, le fichier `shared/monitoring/.env` peut etre
-lie dans le dossier Compose pour que `docker-compose` le charge automatiquement :
-
-```bash
-cd /var/www/gta-rp-population-graph/current/ops/monitoring
-ln -sfn /var/www/gta-rp-population-graph/shared/monitoring/.env .env
-sudo docker-compose config
-sudo docker-compose up -d
-sudo docker-compose ps
-```
+Le plugin `docker compose` v2 est la commande de reference sur le VPS. Ne pas
+reintroduire l'ancien binaire `docker-compose` v1 dans les nouvelles
+procedures.
 
 Installer le timer des metriques textfile :
 
@@ -629,12 +623,10 @@ La migration initiale unique cree aussi la table `user_sessions` necessaire au
 store de session persistant. Tant que cette migration n'est pas appliquee,
 l'API ne doit pas etre demarree en production ou en environnement partage.
 
-La migration des slugs publics de personnages backfill automatiquement la
-colonne `public_slug` a partir du nom et prenom existants, au format lisible
-`prenom-nom`, avec suffixe numerote si un doublon est detecte. Ces slugs
-servent ensuite aux URLs publiques partageables des fiches. Lors d'une
-modification ulterieure du prenom ou du nom, le slug est regenere
-automatiquement avec la meme logique.
+La migration initiale cree la colonne `public_slug` au format lisible
+`prenom-nom`, avec suffixe numerote si un doublon est detecte. Ces slugs servent
+aux URLs publiques partageables. Lors d'une modification du prenom ou du nom,
+le slug est regenere automatiquement avec la meme logique.
 
 Ne pas lancer `npm run db:seed` en production. Les seeds sont uniquement faits
 pour le developpement local.
@@ -644,7 +636,7 @@ pour le developpement local.
 Le script racine lance la sequence complete backend puis frontend :
 
 ```bash
-./script/run-all-checks.sh
+./scripts/run-all-checks.sh
 ```
 
 La sequence detaillee reste utile si un sous-ensemble doit etre relance :
@@ -679,10 +671,16 @@ Exemple depuis la machine source :
 
 ```bash
 cd /workspaces/gta-rp-population-graph
-./script/run-all-checks.sh
+./scripts/run-all-checks.sh
 
 rsync -avz --delete \
   --exclude '.git' \
+  --exclude '.backups' \
+  --exclude '.codex' \
+  --exclude '.devcontainer' \
+  --exclude '.secrets' \
+  --exclude '.serena' \
+  --exclude '.vscode' \
   --exclude 'node_modules' \
   --exclude 'backend/node_modules' \
   --exclude 'web-client/node_modules' \
@@ -690,7 +688,7 @@ rsync -avz --delete \
   --exclude 'web-client/dist' \
   --exclude 'backend/.env' \
   --exclude 'backend/storage' \
-  -e "ssh -i ~/.ssh/codex_gta_rp_deploy" \
+  -e "ssh -i .secrets/codex_gta_rp_deploy" \
   /workspaces/gta-rp-population-graph/ \
   codex-deploy@65.109.171.143:/var/www/gta-rp-population-graph/current/
 ```
@@ -699,12 +697,12 @@ Puis sur le VPS :
 
 ```bash
 cd /var/www/gta-rp-population-graph/current/backend
-npm install
+npm ci
 npm run build
 npm run db:migrate:pending
 
 cd /var/www/gta-rp-population-graph/current/web-client
-npm install
+npm ci
 npm run build
 
 cd /var/www/gta-rp-population-graph/current/backend
@@ -861,15 +859,6 @@ Le timer se lance toutes les heures, execute le nettoyage, logue le nombre de
 fichiers scannes/supprimes/ignores, puis s'arrete. L'API Express reste separee :
 un echec du job ne doit pas rendre le site indisponible.
 
-Quand le frontend aura son pipeline de production final :
-
-```bash
-cd web-client
-npm run check
-npm test
-npm run build
-```
-
 ## Backup et rollback
 
 Avant toute migration de production :
@@ -879,23 +868,31 @@ Avant toute migration de production :
 3. Verifier que la commande de restauration est connue et testee sur un
    environnement non production.
 
+Le dossier `current` du VPS n'est pas un checkout Git. Le rollback applicatif
+doit donc repartir d'un checkout source positionne sur le commit ou tag stable
+precedent, puis reutiliser la procedure `rsync` de deploiement.
+
 Rollback applicatif minimal :
 
-1. Revenir au tag ou commit applicatif precedent.
-2. Reinstaller les dependances si necessaire.
-3. Relancer le build backend et frontend.
-4. Redemarrer le process manager.
-5. Restaurer la base seulement si la migration appliquee n'est pas compatible
+1. Positionner la machine source sur le tag ou commit applicatif precedent.
+2. Relancer les checks et synchroniser ce contenu vers `current`.
+3. Reinstaller les dependances avec `npm ci`.
+4. Relancer les builds backend et frontend.
+5. Redemarrer le service backend.
+6. Restaurer la base seulement si la migration appliquee n'est pas compatible
    avec l'ancien code.
 
-Sequence plus concrete sur ce VPS :
+Sur le VPS apres resynchronisation :
 
 ```bash
-cd /var/www/gta-rp-population-graph/current
-git fetch --all --tags
-git checkout <commit-ou-tag-precedent>
-cd backend && npm install && npm run build
-cd ../web-client && npm install && npm run build
+cd /var/www/gta-rp-population-graph/current/backend
+npm ci
+npm run build
+
+cd /var/www/gta-rp-population-graph/current/web-client
+npm ci
+npm run build
+
 sudo systemctl restart gta-rp-backend.service
 curl -sS https://gta-rp.f1prediction.fr/api/health
 ```
@@ -907,11 +904,11 @@ Si une restauration de base est necessaire, toujours :
    permet ;
 3. ne remplacer la base active qu'avec une procedure validee manuellement.
 
-## Strategie de backup cible pour un VPS 10 Go
+## Strategie de backup pour un VPS a stockage contraint
 
 Le VPS dispose de peu de stockage. Il faut donc eviter les dumps volumineux
-conserves longtemps sur disque local. La strategie cible doit rester autonome,
-avec rotation automatique, tout en preparant une vraie sortie hors VPS.
+conserves longtemps sur disque local. La strategie doit rester autonome, avec
+rotation automatique, tout en preparant une vraie sortie hors VPS.
 
 Principes retenus :
 
@@ -924,7 +921,7 @@ Principes retenus :
   suffisante contre une perte disque ou machine. Le local sert surtout de
   tampon court terme.
 
-Plan recommande :
+Configuration retenue :
 
 1. Sauvegardes PostgreSQL locales automatiques :
    - format `pg_dump --format=custom` ou dump compresse `gzip`
@@ -965,7 +962,7 @@ Cette retention est volontairement conservative pour tenir dans `10` Go. Si la
 base ou les photos grossissent, il faudra reduire encore la retention locale ou
 accelerer la mise en place d'une cible hors VPS.
 
-Implementation technique recommande :
+Implementation technique versionnee :
 
 - Un script `backup-postgres.sh` :
   - lit le `.env` backend
@@ -1035,7 +1032,9 @@ pg_restore \
   --clean \
   --if-exists \
   /var/www/gta-rp-population-graph/shared/backups/postgres/daily/<backup>.dump
-psql -h 127.0.0.1 -p 5432 -U postgres -d gta_rp_population_graph_restore_test -c '\dt'
+psql \
+  -h 127.0.0.1 -p 5432 -U postgres \
+  -d gta_rp_population_graph_restore_test -c '\dt'
 dropdb -h 127.0.0.1 -p 5432 -U postgres gta_rp_population_graph_restore_test
 unset PGPASSWORD
 ```
@@ -1044,7 +1043,9 @@ Commande de restauration d'une archive uploads vers un dossier de travail :
 
 ```bash
 mkdir -p /tmp/gta-rp-uploads-restore-test
-tar -xzf /var/www/gta-rp-population-graph/shared/backups/uploads/weekly/<backup>.tar.gz -C /tmp/gta-rp-uploads-restore-test
+backup_dir=/var/www/gta-rp-population-graph/shared/backups/uploads/weekly
+archive="$backup_dir/<backup>.tar.gz"
+tar -xzf "$archive" -C /tmp/gta-rp-uploads-restore-test
 find /tmp/gta-rp-uploads-restore-test -maxdepth 3 -type f | sort
 rm -rf /tmp/gta-rp-uploads-restore-test
 ```
@@ -1117,7 +1118,7 @@ uploads hebdomadaire deja presentes sur le VPS.
       `npm run db:ensure` execute avec succes.
 - [x] Backup initial configure.
 - [x] `npm run db:migrate` execute.
-- [ ] `npm run db:migrate:pending` retourne `[]`.
+- [x] `npm run db:migrate:pending` retourne `[]`.
 - [x] Dossier `PHOTO_STORAGE_DIR` cree ou creatable par l'utilisateur backend.
 - [x] Service `gta-rp-photo-cleanup.service` configure.
 - [x] Timer `gta-rp-photo-cleanup.timer` configure et actif.
@@ -1148,6 +1149,8 @@ uploads hebdomadaire deja presentes sur le VPS.
 - Cible de sauvegarde distante hors VPS, afin de ne pas dependre uniquement du
   stockage local.
 - Alerting externe email ou Discord sur les signaux critiques.
+- Automatisation des purges RGPD apres validation definitive des durees de
+  conservation documentees.
 
 ## Durcissement SSH minimal
 
@@ -1185,13 +1188,13 @@ Etat reseau actuellement constate sur le VPS :
 - `5000/tcp` reste ouvert tant que le site historique `f1prediction.fr` depend
   encore de ce backend Node distinct.
 
-## Promotion du premier administrateur
+## Premier administrateur et recuperation
 
-Une fois le premier compte cree via Google, Discord ou Twitch, il existe en
-base avec le role par defaut `user`. La promotion initiale peut se faire
-directement en SQL via le role logique, sans hardcoder un UUID.
+Sur une base sans utilisateur reel hors seeds, le premier compte cree via
+Google, Discord ou Twitch recoit automatiquement le role `administrator`. Les
+comptes suivants recoivent le role `user`.
 
-Verifier d'abord le compte cible :
+Verifier le role obtenu apres la premiere connexion :
 
 ```sql
 SELECT u.id, u.email, u.display_name, r.name AS role_name
@@ -1200,7 +1203,9 @@ JOIN roles r ON r.id = u.role_id
 WHERE u.email = 'ton.email@example.com';
 ```
 
-Promouvoir ensuite le compte :
+La promotion SQL suivante est uniquement une procedure de recuperation si la
+creation automatique n'a pas pu s'appliquer ou si une base existante ne possede
+plus d'administrateur :
 
 ```sql
 UPDATE users

@@ -5,23 +5,25 @@ Site web d'annuaire et de graphe pour un serveur GTA-RP.
 L'objectif est de permettre aux spectateurs de retrouver facilement les
 personnages, leurs informations publiques, leurs streamers et leurs liens RP.
 
-## Objectif MVP
+## Fonctionnalites principales
 
 - Explorer les personnages via un graphe interactif.
 - Consulter une fiche detaillee pour chaque personnage.
 - Partager un lien direct vers une fiche precise avec recentrage du graphe.
-- Rechercher et filtrer par nom, surnom, streamer, matricule, tag ou statut.
+- Rechercher et filtrer par nom, surnom, telephone, entreprise, streamer, tag,
+  statut vital ou live Twitch.
 - Proposer des modifications via un systeme de moderation.
 - Garder un historique des changements valides.
+- Administrer les utilisateurs, tags, imports Notion et demandes RGPD.
 
-## Stack cible
+## Stack
 
 - Backend : Express, TypeScript, Sequelize, PostgreSQL.
 - Frontend : Vite, React, TypeScript.
 - Graphe : Cytoscape.js.
 - Qualite code : Biome pour lint et formatage, TypeScript pour le type-check.
 - Authentification : Google OAuth, Discord OAuth et Twitch OAuth.
-- Production cible : VPS Ubuntu avec Caddy, sur le sous-domaine
+- Production : VPS Ubuntu avec Caddy, sur le sous-domaine
   `gta-rp.f1prediction.fr`.
 
 ## Direction produit
@@ -57,19 +59,25 @@ procedure minimale RGPD sont documentees dans [PRIVACY.md](PRIVACY.md).
 
 ## Etat actuel
 
-Le socle backend/frontend, la base PostgreSQL, les routes publiques de
-consultation, Google OAuth, Discord OAuth, Twitch OAuth, la contribution
-moderee, la moderation, le profil utilisateur et les photos securisees sont en
-place.
+Les etapes 1 a 13 du plan sont terminees. Le backend/frontend, PostgreSQL, les
+routes publiques, le multi-SSO Google/Discord/Twitch, la contribution moderee,
+la moderation, l'administration, le profil utilisateur, la conformite RGPD
+minimale et les photos securisees sont en place.
 
 La fiche publique et les formulaires de modification supportent maintenant :
 
 - un bloc medias distinct avec streamer existant ou nouveau streamer ;
-- les liens publics Twitch, Kick, YouTube, Instagram et TikTok ;
+- plusieurs numeros de telephone ;
+- les liens publics Twitch, Kick, YouTube, Instagram, TikTok et Discord, portes
+  uniquement par le streamer rattache ;
 - l'edition des parentes RP ;
 - un lien partageable vers une fiche publique via un slug lisible
   `prenom-nom`, avec suffixe numerote si un doublon existe, et mis a jour si le
   nom public du personnage change.
+
+Le graphe propose des preferences locales, le masquage des personnages decedes,
+le choix des relations visibles, un filtre Twitch live et les dispositions
+`Entreprise`, `Famille`, `Groupe` et `Libre`.
 
 Le workflow d'import Notion est egalement operationnel cote administration :
 
@@ -108,7 +116,7 @@ npm run dev
 Checks utiles :
 
 ```bash
-./script/run-all-checks.sh
+./scripts/run-all-checks.sh
 ```
 
 ou detail par application :
@@ -141,7 +149,7 @@ Depuis le devcontainer, utiliser `DB_HOST=host.docker.internal` dans
 `backend/.env` si PostgreSQL tourne dans Docker sur le host. Depuis WSL hors
 devcontainer, `DB_HOST=localhost` suffit avec le port `5432` expose.
 
-Commandes backend pour l'etape 2 :
+Commandes de base de donnees :
 
 ```bash
 cd backend
@@ -157,7 +165,7 @@ npm run db:migrate:executed
 
 | Commande | Usage |
 | --- | --- |
-| `./script/run-all-checks.sh` | Lance les builds, checks et tests backend puis frontend avec une seule commande. |
+| `./scripts/run-all-checks.sh` | Validation complete backend/frontend. |
 
 ### Backend
 
@@ -183,10 +191,12 @@ cd backend
 | `npm run db:migrate:pending` | Liste les migrations en attente. |
 | `npm run db:migrate:executed` | Liste les migrations deja appliquees. |
 | `npm run db:seed` | Insere les donnees de seed. |
-| `npm run db:reset` | Rejoue toutes les migrations puis les seeds. |
-| `npm run notion:scrape-report` | Scrape une URL Notion publique puis enregistre un rapport d'import. |
-| `npm run notion:import-report` | Importe un fichier JSON Notion prepare puis enregistre un rapport. |
-| `npm run notion:preview` | Affiche une previsualisation terminale d'un batch Notion importe. |
+| `npm run db:reset` | Rejoue toutes les migrations sans inserer les seeds. |
+| `npm run db:reset:seed` | Reset complet avec seeds. |
+| `npm run notion:scrape-report` | Scrape Notion et cree un rapport. |
+| `npm run notion:import-report` | Importe un JSON de travail. |
+| `npm run notion:preview` | Previsualise un batch importe. |
+| `npm run notion:sync-all` | Applique la source Notion complete. |
 | `npm run photo:cleanup` | Nettoie les brouillons de photos expires. |
 
 Exemples utiles :
@@ -208,21 +218,23 @@ npm run db:seed
 ### Import Notion
 
 La source initiale est la page publique Notion Flashback Whitelist V6. Le flux
-normal consiste a scraper l'URL publique, enregistrer un batch d'import, puis
-controler le rapport et la previsualisation avant toute publication future.
+controle consiste a scraper l'URL publique, enregistrer un batch d'import, puis
+controler le rapport et la previsualisation avant application dans les donnees
+publiques.
 
-Scraper directement la page Notion publique :
+Scraper la page Notion publique par defaut :
 
 ```bash
 cd backend
-npm run notion:scrape-report -- "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c"
+npm run notion:scrape-report
 ```
 
-Afficher le meme rapport en JSON complet :
+Une autre URL peut etre passee explicitement apres `--`. Afficher le rapport en
+JSON complet :
 
 ```bash
 cd backend
-npm run notion:scrape-report -- "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c" --json
+npm run notion:scrape-report -- --json
 ```
 
 Importer un fichier JSON prepare, si un export de travail existe :
@@ -267,13 +279,26 @@ cd backend
 npm run notion:preview -- <batch-id> --json
 ```
 
+Lancer la synchronisation automatique complete sur la source par defaut :
+
+```bash
+cd backend
+npm run notion:sync-all
+```
+
+Cette commande applique les fiches et tente d'importer les photos. Elle est
+reservee a une base que l'on souhaite effectivement alimenter ; pour une revue
+humaine fiche par fiche, utiliser le scrape puis l'interface d'administration.
+
 Notes importantes :
 
 - Le scrape Notion ecrit uniquement des donnees de travail dans les tables
   `notion_import_batches` et `notion_import_entries`.
-- Ces imports ne publient pas encore les fiches dans les donnees publiques.
-- Les donnees Notion restent communautaires et doivent etre verifiees avant
-  publication.
+- Le scrape seul ne publie aucune fiche. L'application se fait ensuite depuis
+  l'administration ou via `notion:sync-all`.
+- Les donnees Notion restent communautaires : conserver leur statut de
+  verification et ne pas presenter une valeur incertaine comme certaine, meme
+  apres application.
 - Il est possible de relancer le scrape plusieurs fois : les pages sont classees
   en `new`, `updated`, `unchanged`, `missing` ou `failed`.
 - Dans l'interface d'administration, les fiches importees peuvent ensuite etre
@@ -388,11 +413,12 @@ Verification rapide :
 - Recharger la page pour confirmer que la session persiste.
 - Utiliser `Deconnexion` pour verifier la destruction de session.
 
-La procedure de promotion du premier administrateur est documentee dans
-[DEPLOYMENT.md](DEPLOYMENT.md).
+Sur une base sans utilisateur reel, le premier compte cree hors seeds recoit
+automatiquement le role administrateur. La procedure de verification et de
+recuperation est documentee dans [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Donnees
 
-La source initiale prevue est la page Notion communautaire Flashback Whitelist
-V6. Les donnees importees doivent etre considerees comme communautaires et
-verifiees avant publication.
+La source initiale est la page Notion communautaire Flashback Whitelist V6. Les
+donnees importees restent communautaires et doivent etre verifiees avant ou
+apres application selon le niveau de confiance du champ.

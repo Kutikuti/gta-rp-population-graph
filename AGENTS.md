@@ -9,11 +9,11 @@ principale n'est pas l'affichage, mais la qualite et la moderation des donnees.
 Pendant tout le developpement, la priorite numero 1 est la securite du serveur
 et la prevention des intrusions.
 
-# Architecture cible
+## Architecture actuelle
 
-## Backend
+### Backend
 
-- Dossier cible : `backend/`.
+- Dossier : `backend/`.
 - API Express en TypeScript.
 - ORM Sequelize.
 - Base de donnees PostgreSQL.
@@ -35,12 +35,15 @@ Modeles metier attendus :
 - `User`
 - `Role`
 - `Ban`
-- `UserIdentity` ou equivalent futur pour lier plusieurs fournisseurs SSO a un
-  meme compte utilisateur.
+- `UserIdentity` pour lier plusieurs fournisseurs SSO a un meme compte.
+- `AdminAction`
+- `NotionImportBatch`
+- `NotionImportEntry`
+- `UserSession`
 
-## Frontend
+### Frontend
 
-- Dossier cible : `web-client/`.
+- Dossier : `web-client/`.
 - Client React avec Vite et TypeScript.
 - Create React App ne doit pas etre utilise pour ce nouveau projet, car il est
   deprecie. L'autre application en CRA peut servir de reference React, mais pas
@@ -55,7 +58,7 @@ Modeles metier attendus :
   comme alternative orientee WebGL.
 - Eviter les pages marketing ou les effets purement decoratifs.
 
-# Donnees
+## Donnees
 
 La source initiale privilegiee est la page Notion communautaire Flashback
 Whitelist V6. Elle doit etre traitee comme une source communautaire a verifier,
@@ -66,7 +69,7 @@ Principes :
 - L'import Notion se fait personnage par personnage : il n'y a pas d'export CSV
   disponible comme source fiable.
 - Conserver les donnees brutes importees et produire un rapport de mapping avant
-  publication.
+  application automatique ou validation humaine.
 - Ne pas presenter une donnee incertaine comme certaine.
 - Prevoir un statut ou indicateur de verification quand l'information est
   importee ou communautaire.
@@ -79,13 +82,11 @@ Principes :
 - Ne pas exposer publiquement les noms et prenoms fournis par les fournisseurs
   OAuth. Les utilisateurs doivent pouvoir choisir un nom d'affichage public
   distinct de leur identite SSO.
-- Les extractions admin futures ne doivent pas bloquer le MVP.
 - Les relations documentees concernent uniquement les personnages et le RP, pas
   les relations reelles entre streamers.
 - Le champ Notion `V6`, lorsqu'il est present, doit etre considere comme une
-  piste de rattachement vers les anciens personnages du meme joueur. Ce besoin
-  pourra conduire a ajouter un type de relation dedie, distinct des relations
-  familiales affichees dans le graphe public.
+  piste de rattachement vers les anciens personnages du meme joueur et mappe
+  vers la relation secondaire `previous_character`.
 - Lors de l'import Notion, les liens publics doivent conserver l'URL cible
   reelle du lien et pas seulement son texte visible.
 - L'application d'une fiche Notion ne doit pas etre bloquee uniquement parce
@@ -93,7 +94,7 @@ Principes :
   relations doivent pouvoir se completer ensuite sans creer de doublon
   symetrique.
 
-# Fonctionnalites MVP
+## Fonctionnalites MVP
 
 - Consultation anonyme des personnages.
 - Recherche par nom, prenom, surnom, un ou plusieurs numeros de telephone,
@@ -116,13 +117,8 @@ Principes :
   fonctions doivent converger vers un bloc unifie `entreprise / grade /
   matricule`, y compris pour la police, la medecine ou toute autre
   organisation.
-- A moyen terme, certaines relations supplementaires pourront exister sans etre
-  affichees dans le graphe public, uniquement dans la fiche personnage. Le
-  modele de relations doit donc pouvoir evoluer au-dela des seules relations
-  visibles sur le graphe.
-- Cette evolution est desormais attendue dans `character_relationships` lui-meme
-  avec une regle explicite par type : visible dans la fiche, et visible ou non
-  dans le graphe public selon la nature de la relation.
+- Les relations secondaires sont stockees dans `character_relationships`,
+  visibles dans la fiche et masquees par defaut dans le graphe selon leur type.
 - Tags administrables.
 - Demandes de modification par utilisateur connecte simple.
 - Demandes de creation de fiche par utilisateur connecte, proposees depuis la
@@ -136,26 +132,33 @@ Principes :
 - Les modifications effectuees par un moderateur ou un administrateur sont
   appliquees directement cote serveur et doivent toujours creer un historique.
 - Page profil utilisateur permettant de modifier son nom d'affichage public,
-  consulter ses contributions et gerer ses rattachements SSO.
+  consulter ses contributions, gerer ses rattachements SSO et exporter ses
+  donnees personnelles.
 - Validation ou refus par moderateur.
 - Roles utilisateur, moderateur, administrateur et utilisateur banni.
 - Page globale d'historique.
-- Page contact, remerciements et soutien.
+- Pages publiques information/contact et confidentialite, plus outils admin
+  d'assistance RGPD. Le soutien financier reste limite au README tant qu'une
+  decision produit contraire n'est pas prise.
+- Le premier compte reel cree sur une base sans utilisateur hors seeds recoit
+  automatiquement le role administrateur.
 
-# Environnement
+## Environnement
 
-- Developpement local sur Windows avec WSL Ubuntu.
-- Production cible sur VPS Hetzner Ubuntu deja utilise pour un autre site.
+- Developpement local sur Windows avec WSL Ubuntu et devcontainer recommande.
+- Node.js `24.18.0` LTS est la version de reference actuelle.
+- Production sur VPS Hetzner Ubuntu deja utilise pour un autre site.
 - Prevoir que plusieurs noms de domaine puissent pointer vers le meme serveur.
 - Ne pas supposer que Node.js est installe dans WSL ; verifier avant de lancer
   des commandes npm cote Ubuntu.
 
-# Commandes utiles
+## Commandes utiles
 
 Les commandes de base existent deja :
 
-- Installation backend : `cd backend && npm install`
-- Installation frontend : `cd web-client && npm install`
+- Validation globale : `./scripts/run-all-checks.sh`
+- Installation backend reproductible : `cd backend && npm ci`
+- Installation frontend reproductible : `cd web-client && npm ci`
 - Tests backend : `cd backend && npm test`
 - Tests frontend : `cd web-client && npm test`
 - Developpement backend : `cd backend && npm run dev`
@@ -164,10 +167,9 @@ Les commandes de base existent deja :
 - Reset backend avec seeds : `cd backend && npm run db:reset:seed`
 - Import Notion automatique complet : `cd backend && npm run notion:sync-all`
 
-# Deploiement
+## Deploiement
 
-Le deploiement initial sur VPS est deja amorce sur
-`gta-rp.f1prediction.fr` avec :
+Le deploiement VPS est operationnel sur `gta-rp.f1prediction.fr` avec :
 
 - API Node.js geree par un service `systemd`.
 - PostgreSQL local via Docker, non expose publiquement.
@@ -175,11 +177,13 @@ Le deploiement initial sur VPS est deja amorce sur
 - Caddy responsable du reverse proxy, du TLS automatique et de la coexistence
   avec le site historique.
 - Variables d'environnement separees hors Git.
+- Sauvegardes, nettoyage photo et metriques textfile planifies par `systemd`.
+- Supervision Prometheus/Grafana protegee par la session administrateur.
 
 Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 `DEPLOYMENT.md`.
 
-# Style
+## Style
 
 - Langue des textes produit : francais.
 - Interface : sobre, utilitaire, lisible, non marketing.
@@ -199,6 +203,10 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
   occupe l'essentiel de l'espace disponible ; la recherche est repliee par
   defaut derriere une icone ou un bouton compact, et la fiche personnage n'est
   pas visible tant qu'aucun noeud n'a ete selectionne.
+- Par defaut, les personnages decedes sont masques, la disposition
+  `Entreprise` est selectionnee et seules les relations principales
+  `parent`, `child`, `sibling`, `couple` sont visibles. Ces choix restent
+  modifiables et persistants dans les preferences locales.
 - Une fois ouverte par selection d'un noeud, la fiche personnage doit pouvoir
   etre refermee pour redonner l'espace au graphe. La selection doit etre
   evidente directement dans le graphe et dans la fiche, sans barre de statut
@@ -265,7 +273,7 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 - Ajouter des commentaires seulement quand ils aident a comprendre une logique
   metier non evidente.
 
-# Qualite et securite
+## Qualite et securite
 
 - Developper selon des standards modernes : TypeScript strict, validation des
   entrees, separation claire des couches, gestion explicite des erreurs,
@@ -289,6 +297,11 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
   charge utile.
 - Les secrets, tokens OAuth, chaines de connexion et cles API doivent rester
   hors Git et passer par variables d'environnement.
+- Ne pas ajouter de traceur client tiers, pixel, analytics marketing ou script
+  non strictement necessaire sans revue RGPD/cookies et mise a jour de
+  `PRIVACY.md`.
+- Minimiser les donnees personnelles, conserver l'identite SSO privee et ne
+  jamais exposer publiquement l'email de connexion d'un utilisateur.
 - Prevoir des points reguliers d'etat du code : dette technique, zones a
   refactoriser, risques securite, tests manquants et complexite inutile.
 - Pour tout nouveau developpement, eviter d'empiler toute la logique dans un
@@ -298,7 +311,7 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 - Refactoriser progressivement quand une zone devient confuse, avant qu'elle ne
   bloque les evolutions ou fragilise la securite.
 
-# Avant chaque modification
+## Avant chaque modification
 
 - Lire `AGENTS.md`, `PLANS.md` et le fichier concerne.
 - Pour toute vraie tache de developpement, initialiser Serena au debut de la
@@ -323,7 +336,7 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 - Pour toute fonctionnalite importante, mettre a jour ou consulter `PLANS.md`
   avant d'implementer.
 
-# Apres modification
+## Apres modification
 
 - Lancer les tests pertinents quand ils existent.
 - Signaler clairement les tests non lances et pourquoi.
@@ -332,7 +345,7 @@ Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 - Mettre a jour `PLANS.md` si la decision produit ou technique change.
 - Garder les changements limites a la demande en cours.
 
-# Plans
+## Plans
 
 Le plan produit et technique vivant du projet est dans `PLANS.md`. Toute
 implementation substantielle doit rester coherente avec ce document ou le mettre

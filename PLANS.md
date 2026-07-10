@@ -39,7 +39,7 @@ Inclus :
 - Import initial depuis Notion communautaire.
 - Connexion Google OAuth, Discord OAuth et Twitch OAuth.
 - Page profil utilisateur avec nom d'affichage public modifiable, historique de
-  contributions et emplacement prevu pour les futurs rattachements SSO.
+  contributions et gestion des rattachements SSO.
 - Demandes de modification moderees pour les utilisateurs simples.
 - Demandes de creation de fiche moderees, declenchees depuis une recherche sans
   resultat satisfaisant pour reduire le risque de doublon.
@@ -52,16 +52,13 @@ Inclus :
 Hors MVP :
 
 - Ingestion Discord automatisee.
-- Parsing Twitch automatise.
+- Synchronisation exhaustive automatisee des plateformes de streaming.
 - Extraction officielle admin comme dependance obligatoire.
 - Interface immersive ou direction visuelle fortement inspiree GTA.
 - Application mobile native.
 - Upload de photo lors de la creation initiale d'une fiche par utilisateur
   simple. La photo doit etre proposee apres existence de la fiche, via
   modification moderee, afin de limiter le spam.
-- Etat live Twitch dans les fiches personnage. Cette integration sera traitee
-  apres le SSO Twitch afin de reutiliser la configuration Twitch serveur, les
-  secrets et la gestion des limites d'API.
 
 ## Parcours utilisateur
 
@@ -133,15 +130,13 @@ Informations attendues :
 - Entreprise.
 - Grade.
 - Matricule.
-- Telephone.
+- Un ou plusieurs numeros de telephone.
 - Bloc medias distinct dans le formulaire d'edition, avec streamer existant,
-  proposition de nouveau streamer si absent, photo et liens publics.
+  proposition de nouveau streamer si absent et liens publics du streamer.
 - Streamer associe.
-- Reseaux du streamer ou du personnage : Twitch, Kick, YouTube, Instagram,
-  TikTok.
+- Reseaux du streamer : Twitch, Kick, YouTube, Instagram, TikTok et Discord.
 - Groupe et quartier.
-- Mort RP.
-- Anciens personnages V1, V2, V3, V4 et V5.
+- References vers les anciens personnages.
 - Tags.
 - Relations.
 - Statut de verification.
@@ -157,8 +152,8 @@ champs dedies type police ou role de groupe ne doivent pas revenir.
 
 - Nom public.
 - Lien Twitch.
-- Liens Kick, YouTube, Instagram et TikTok si disponibles.
-- Plateforme principale si besoin futur.
+- Liens Kick, YouTube, Instagram, TikTok et Discord si disponibles.
+- Plateforme principale.
 - Personnages associes.
 
 ### Tag
@@ -166,34 +161,33 @@ champs dedies type police ou role de groupe ne doivent pas revenir.
 - Nom.
 - Type optionnel : famille, quartier, organisation, entreprise, autre.
 - Couleur d'affichage.
-- Description.
+- Description optionnelle.
 
 ### CharacterRelationship
 
 Les relations concernent strictement les personnages au sein du RP. Ne pas
 modeliser ni afficher les relations reelles entre streamers.
 
-Relations typees :
+Relations principales visibles par defaut dans le graphe :
 
 - Parent.
 - Enfant.
 - Fratrie.
 - Couple.
 
-Extension future a prevoir :
+Relations secondaires visibles dans la fiche et masquees par defaut dans le
+graphe :
 
-- Relation `ancien personnage` ou equivalente pour rattacher plusieurs fiches
-  au meme joueur quand la source communautaire le permet, par exemple via le
-  champ Notion `V6`.
-- D'autres types de relations pourront exister uniquement dans la fiche
-  personnage, sans etre affiches dans le graphe public. Le modele devra donc
-  distinguer a terme les relations visibles sur le graphe et les relations
-  informatives reservees a la fiche.
-- Cette distinction doit passer par le modele persistant `character_relationships`
-  avec une regle explicite par type : certaines relations sont stockees,
-  exposees dans la fiche et deliberement exclues du graphe public.
+- Ancien personnage.
+- Ex-partenaire.
+- Oncle.
+- Tante.
 
-Les appartenances metier, police, quartier, organisation ou groupe restent des
+La distinction passe par le modele persistant `character_relationships`, avec
+une regle explicite de visibilite par type. Tous les types geres restent
+saisissables dans la fiche et activables dans les preferences du graphe.
+
+Les appartenances entreprise, quartier ou groupe restent des
 champs de fiche ou des tags. Elles ne sont pas des relations du graphe public
 MVP, afin de garder le graphe centre sur les liens narratifs forts.
 
@@ -214,8 +208,8 @@ couple et fratrie sont symetriques pour l'affichage, meme si elles sont
 stockees une seule fois.
 
 Dans l'edition d'une fiche, les parentes RP sont gerees dans un bloc dedie.
-L'utilisateur, le moderateur ou l'administrateur editent la relation du point
-de vue du personnage courant : `Parent`, `Enfant`, `Fratrie`, `Couple`.
+Tous les types principaux et secondaires peuvent etre saisis du point de vue du
+personnage courant.
 
 ### ChangeRequest
 
@@ -238,7 +232,7 @@ de vue du personnage courant : `Parent`, `Enfant`, `Fratrie`, `Couple`.
 - Liste des modifications appliquees champ par champ.
 - Anciennes valeurs.
 - Nouvelles valeurs.
-- Moderateur responsable.
+- Acteur responsable de l'application du changement.
 - Date de validation.
 
 ### User
@@ -275,31 +269,15 @@ de vue du personnage courant : `Parent`, `Enfant`, `Fratrie`, `Couple`.
   taille, rate limit specifique, validation forte, reencodage serveur et
   stockage hors des chemins fournis par l'utilisateur.
 
-Routes a prevoir :
+Familles de routes en place :
 
-- `GET /api/characters`
-- `GET /api/characters/directory`
-- `GET /api/characters/:id`
-- `GET /api/graph`
-- `GET /api/streamers`
-- `GET /api/tags`
-- `GET /api/history`
-- `GET /api/me`
-- `PATCH /api/me/profile`
-- `GET /api/me/change-requests`
-- `GET /api/me/identities`
-- `POST /api/contributions/change-requests`
-- `POST /api/contributions/change-requests/character-creations`
-- `POST /api/contributions/characters/:id/photo-drafts`
-- `GET /api/contributions/change-requests`
-- `GET /api/moderation/change-requests`
-- `POST /api/moderation/change-requests/:id/approve`
-- `POST /api/moderation/change-requests/:id/reject`
-- `POST /api/admin/tags`
-- `PATCH /api/admin/tags/:id`
-- `DELETE /api/admin/tags/:id`
-- `PATCH /api/admin/users/:id/role`
-- `POST /api/admin/users/:id/ban`
+- consultation publique sous `/api/characters`, `/api/graph`, `/api/tags` et
+  `/api/history` ;
+- authentification sous `/api/auth` et profil sous `/api/profile` ;
+- contribution sous `/api/contributions` ;
+- moderation sous `/api/moderation` ;
+- administration et imports Notion sous `/api/admin` ;
+- supervision protegee sous `/api/supervision` et `/api/internal`.
 
 ### Frontend
 
@@ -340,7 +318,7 @@ Routes a prevoir :
 - Stockage des donnees brutes dans une table temporaire ou structure
   intermediaire.
 - Mapping explicite vers les champs `Character`, `Streamer`, `Tag`, reseaux
-  sociaux, anciens personnages, police, relations et photos.
+  sociaux, anciens personnages, organisation, relations et photos.
 - Rapport des champs manquants ou ambigus.
 - Rapport des relations detectees et des relations impossibles a relier
   automatiquement.
@@ -362,7 +340,7 @@ Routes a prevoir :
   composants reutilisables, typographie stable et conventions d'interaction
   uniformes.
 - Les pages moderation et administration peuvent legerement contraster avec
-  l'exploration publique, a confirmer apres les premiers jets d'ecran.
+  l'exploration publique tout en restant dans le meme systeme visuel.
 - Les pages moderation et administration doivent etre des pages pleines dediees
   avec une ergonomie back-office, pas des vues integrees au panneau lateral des
   fiches personnages.
@@ -417,7 +395,8 @@ Routes a prevoir :
   d'environnement.
 - Les moderateurs peuvent modifier directement une fiche, mais cette action doit
   creer le meme type d'historique detaille qu'une demande acceptee.
-- Le premier administrateur sera promu manuellement en base.
+- Le premier compte reel cree sur une base sans utilisateur devient
+  automatiquement administrateur ; les suivants recoivent le role utilisateur.
 
 ## Qualite de developpement
 
@@ -460,1240 +439,159 @@ Frontend :
 
 ### Etape 1 - Socle projet
 
-Statut : terminée le 2026-06-16.
+Statut : terminee le 2026-06-16.
 
-- Initialiser `backend/` en Express TypeScript avec configuration stricte,
-  Biome, tests, gestion des variables d'environnement et structure de couches.
-- Initialiser `web-client/` avec Vite, React et TypeScript.
-- Ajouter une configuration commune minimale : scripts npm, `.env.example`,
-  formatage/lint via Biome et documentation de lancement.
-- Mettre en place une premiere politique de securite backend : Helmet, CORS
-  explicite, rate limit de base, gestion centralisee des erreurs.
-
-Point de controle :
-
-- Le backend demarre.
-- Le frontend demarre.
-- Les tests et checks de base passent.
-- Aucun secret n'est versionne.
+- Backend Express TypeScript et frontend React/Vite initialises avec TypeScript
+  strict, Biome, Vitest et gestion des variables d'environnement.
+- Socle de securite backend en place : Helmet, CORS explicite, rate limits et
+  gestion centralisee des erreurs.
+- Scripts de developpement, checks, tests et builds documentes et fonctionnels.
 
 ### Etape 2 - Modele de donnees et base PostgreSQL
 
-Statut : terminée le 2026-06-16.
+Statut : terminee le 2026-06-16.
 
-- Configurer Sequelize, PostgreSQL, migrations et connexion par variables
-  d'environnement.
-- Creer les modeles principaux : `Character`, `Streamer`, `Tag`,
-  `CharacterRelationship`, `User`, `Ban`, `ChangeRequest`, `ChangeHistory`.
-- Modeliser les reseaux sociaux, anciens personnages, police, statut de
-  verification et relations strictement RP.
-- Ajouter des seeds realistes pour developper sans attendre l'import Notion.
-
-Point de controle :
-
-- Les migrations creent une base propre.
-- Les seeds produisent un graphe exploitable.
-- Les contraintes de base evitent les donnees incoherentes les plus evidentes.
-
-Bilan :
-
-- `db:ensure`, migrations, seeds, checks Biome, tests et build backend valides.
-- La migration initiale evite les ENUM PostgreSQL natifs au profit de colonnes
-  texte avec contraintes `CHECK`, pour conserver les valeurs controlees sans
-  declencher le warning de depreciation `pg` observe avec Sequelize.
-- `DEPLOYMENT.md` documente le runbook initial de mise en production, incluant
-  creation de base, migrations, sauvegardes et rollback.
+- Schema PostgreSQL et modeles Sequelize principaux en place, avec migration
+  initiale consolidee pour repartir sur une base neuve.
+- Valeurs metier controlees par colonnes texte et contraintes `CHECK`, sans ENUM
+  PostgreSQL natif.
+- Commandes de creation, migration, reset avec ou sans seeds et runbook de base
+  documentes.
 
 ### Etape 3 - API publique de consultation
 
 Statut : terminee le 2026-06-17.
 
-- Implementer les routes publiques de lecture : personnages, fiche detaillee,
-  tags, graphe, historique public.
-- Ajouter recherche et filtres cote API.
-- Retourner une structure de graphe adaptee a Cytoscape.js : noeuds, liens,
-  types, statuts, tags et metadonnees utiles au rendu.
-- Ajouter tests backend sur recherche, filtres, lecture de fiche et donnees de
-  graphe.
-
-Point de controle :
-
-- Un visiteur anonyme peut consulter toutes les donnees publiques.
-- Aucune route publique ne permet de modifier les donnees.
-- Les performances restent correctes sur les seeds.
-
-Bilan :
-
-- Routes `GET /api/characters`, `GET /api/characters/:id`, `GET /api/tags`,
-  `GET /api/graph` et `GET /api/history` ajoutees.
-- Recherche et filtres publics valides cote API avec Zod.
-- Structure graphe retournee au format exploitable par Cytoscape.js.
-- Tests backend ajoutes sur recherche, filtres, fiche, graphe, tags, historique
-  et erreurs de validation.
-- Validation faite sur base PostgreSQL seedee : personnages, tags, graphe,
-  historique, filtres texte/UUID et erreurs de validation repondent comme
-  attendu.
-- Aucune route publique d'ecriture n'est exposee ; les checks Biome, tests et
-  build backend passent apres correction du filtrage texte/UUID.
+- Routes publiques de lecture disponibles pour les personnages, tags, graphe
+  et historique.
+- Recherche et filtres valides avec Zod, sans route publique d'ecriture.
+- Reponse graphe structuree pour Cytoscape.js et couverte par les tests backend.
 
 ### Etape 4 - Interface publique et graphe
 
-Statut : terminée le 2026-06-18.
+Statut : terminee le 2026-06-18.
 
-- Construire la vue principale dark mode : recherche/filtres, graphe
-  Cytoscape.js, panneau lateral de fiche.
-- Implementer selection, zoom/pan, survol, mise en evidence des resultats et
-  filtres persistants.
-- Construire la fiche personnage avec informations, reseaux, relations, tags,
-  statut de verification et historique.
-- Ajouter les états chargement, erreur, vide et aucun résultat.
-
-Point de controle :
-
-- Le parcours visiteur anonyme est utilisable de bout en bout.
-- Le graphe reste lisible sur desktop. Le mobile doit rester utilisable, mais
-  le focus principal du MVP public est l'expérience PC.
-- Le style dark terminal bleu est cohérent et moderne.
-
-Bilan intermediaire :
-
-- Vue publique connectée à l'API réelle avec recherche, filtres persistants,
-  graphe Cytoscape.js et panneau de fiche.
-- Sélection, zoom/pan natif Cytoscape.js, survol et mise en évidence des
-  résultats de recherche implémentés. Les résultats sont portés par le graphe :
-  les correspondances sont mises en évidence, les non-correspondances sont
-  atténuées, et le panneau de recherche affiche seulement un texte de synthèse
-  avec le nombre de résultats, sans liste détaillée.
-- Fiche personnage avec informations principales, streamer, tags, relations,
-  réseaux, statut de vérification et historique public.
-- États chargement, erreur, vide et aucun résultat ajoutés ; tests, checks Biome et
-  build frontend passent.
-- Refonte graphe-first engagée : le graphe occupe le viewport, la recherche est
-  repliée par défaut, la fiche est masquée avant sélection et refermable, les
-  statistiques publiques et libellés de supervision du graphe ont été retirés.
-- Les nœuds personnages sont circulaires avec initiales quand aucune photo
-  n'est renseignee. Quand une photo validee existe, elle remplace les initiales
-  dans le noeud du graphe.
-- La sélection d'un nœud est réversible par un second clic, sans recadrer le
-  graphe à la désélection. Le layout du graphe ne se relance plus lors des
-  changements de recherche.
-- Les relations du graphe public sont limitées au noyau parent, enfant,
-  fratrie et couple ; les appartenances métier, police, quartier ou groupe
-  restent des champs de fiche ou des tags.
-- La recherche du graphe utilise un endpoint dédié `/api/characters/matches`
-  qui renvoie tous les IDs correspondants, sans dépendre du `limit=100` de la
-  future liste paginée.
-- Les champs de recherche déclenchent les correspondances avec un debounce de
-  300 ms côté frontend pour éviter une requête API à chaque caractère.
-- `App.tsx` reste à surveiller sur sa taille : extraire la logique de recherche
-  ou de chargement si l'étape 5 ou 6 alourdit encore le composant.
-
-Clôture :
-
-- Validation visuelle PC jugée satisfaisante pour le MVP actuel.
-- L'accessibilité clavier de navigation dans les résultats reste une amélioration
-  future, non bloquante à ce stade.
-- La volumétrie de `/api/characters/matches` reste un point de vigilance
-  technique informatif, pas un blocage de clôture.
+- Experience publique graphe-first connectee a l'API, avec recherche repliee,
+  filtres, selection, zoom/pan et mise en evidence des correspondances.
+- Fiche personnage masquee avant selection, refermable et partageable par slug
+  public lisible.
+- Noeuds circulaires avec photo sans initiales superposees, ou initiales en
+  fallback.
+- Etats de chargement, erreur, vide et aucun resultat traites.
 
 ### Etape 5 - Authentification et autorisations
 
-Statut : terminée le 2026-06-18.
+Statut : terminee le 2026-06-18.
 
-- Ajouter Google OAuth cote backend.
-- Utiliser une session serveur avec cookie `HttpOnly` pour l'application web,
-  plutot qu'un jeton sensible stocke cote frontend.
-- Implementer les roles utilisateur, moderateur, administrateur et banni.
-- Proteger toutes les routes sensibles cote serveur, sans confiance implicite
-  dans le frontend.
-- Prevoir la promotion manuelle du premier administrateur en base.
-
-Plan propose :
-
-- Ajouter la configuration d'authentification dans l'environnement backend :
-  variables Google OAuth, secret de session, URL de callback et liste d'origines
-  autorisees.
-- Installer et brancher la session Express avec cookie `HttpOnly`, `SameSite`
-  et configuration `secure` selon l'environnement.
-- Integrer Google OAuth cote backend avec creation ou recuperation de
-  l'utilisateur local, rattachement du role par defaut `user` et refus explicite
-  des comptes bannis.
-- Exposer les routes d'authentification minimales pour le frontend public :
-  `GET /auth/session`, `GET /auth/google`, `GET /auth/google/callback`,
-  `POST /auth/logout`.
-- Ajouter un middleware serveur central pour lire l'utilisateur courant, verifier
-  l'authentification, le role minimal et le bannissement.
-- Appliquer ce middleware sur les futures routes de contribution, moderation et
-  administration, meme si leurs pages arrivent plus tard.
-- Ajouter les tests backend sur session, login, logout, refus d'utilisateur
-  banni et controle de role.
-- Documenter le flux d'authentification MVP et la procedure de promotion
-  manuelle du premier administrateur.
-
-Bilan intermediaire :
-
-- Session Express backend ajoutee avec cookie `HttpOnly`, nom configurable et
-  mode `secure` reserve a la production pour rester compatible avec le
-  developpement local.
-- Flux Google OAuth backend pose : demarrage `/api/auth/google`, callback
-  `/api/auth/google/callback`, session courante `/api/auth/session`, logout
-  `/api/auth/logout`.
-- Integration utilisateur locale en base preparee autour de `User`, `Role` et
-  `Ban`, avec creation ou mise a jour de l'utilisateur a partir de l'identite
-  Google.
-- Middleware backend de lecture de session, utilisateur courant, verification
-  d'authentification et controle de role prepare pour les futures routes
-  protegees.
-- Premiers espaces backend proteges ajoutes pour valider les autorisations :
-  `/api/contributions/session`, `/api/moderation/session` et
-  `/api/admin/session`, avec controle respectif utilisateur connecte,
-  moderateur ou administrateur.
-- Tests backend ajoutes sur session anonyme, demarrage OAuth, callback valide,
-  refus de callback invalide, utilisateur banni, logout et controle de role.
-- Frontend branche sur la session : bouton `Connexion Google`, affichage du
-  compte connecte, deconnexion et feedback apres redirection OAuth.
-- Documentation locale ajoutee pour le flux de connexion, et procedure de
-  promotion du premier administrateur documentee dans le runbook de deploiement.
-
-Vigilances restantes :
-
-- Promouvoir le premier administrateur reel quand les pages admin deviennent
-  utiles.
-- Verifier les espaces proteges avec de vrais comptes de role different lorsque
-  les ecrans contribution, moderation et administration existeront.
-
-Point de controle :
-
-- Un utilisateur connecte est identifie correctement.
-- Les roles sont verifies par le backend.
-- Un utilisateur banni ne peut pas contribuer.
+- Authentification OAuth, sessions serveur par cookie `HttpOnly` et controles de
+  roles centralises cote backend.
+- Utilisateurs bannis bloques sur les routes protegees.
+- Premier compte reel automatiquement administrateur sur une base vide.
 
 ### Etape 6 - Contribution et moderation
 
 Statut : terminee le 2026-06-20.
 
-- Implementer les demandes de modification sur snapshot complet de fiche.
-- Implementer les demandes de creation de fiche depuis une recherche sans
-  resultat satisfaisant, avec stockage du contexte de recherche et passage par
-  la meme file de moderation.
-- Calculer le diff champ par champ a l'acceptation.
-- Creer l'historique detaille pour chaque demande acceptee.
-- Construire les pages pleines de moderation : liste, detail, comparaison,
-  acceptation et refus avec commentaire obligatoire.
-- Permettre aux moderateurs d'editer directement une fiche tout en creant le
-  meme historique detaille.
-
-Bilan final :
-
-- Service backend de demandes de modification ajoute avec validation stricte du
-  snapshot de fiche `Character`, calcul de diff champ par champ, approbation en
-  transaction Sequelize, refus avec commentaire et edition directe moderateur.
-- Routes protegees ajoutees : creation et suivi utilisateur sous
-  `/api/contributions/change-requests`, file de moderation, detail,
-  acceptation, refus et edition directe sous `/api/moderation`.
-- Les snapshots acceptent uniquement une allowlist de champs de fiche. Les
-  champs serveur, roles, historiques, relations et tags ne sont pas modifiables
-  via ce flux.
-- Frontend ajoute : page contribution depuis une fiche selectionnee, page pleine
-  de moderation separee du panneau public, comparaison des champs modifies,
-  acceptation, refus commente obligatoire et formulaire d'edition directe.
-- Les modifications de fiche existante faites par moderateur ou administrateur
-  depuis le formulaire de contribution sont appliquees directement avec
-  historique, sans passer par une demande en attente.
-- La fiche personnage affiche un bouton adapte au role : `Proposer` pour les
-  utilisateurs simples, `Modifier` pour moderateur ou administrateur.
-- L'historique de fiche est deplieable et affiche les champs modifies avec
-  libelles lisibles et anciennes/nouvelles valeurs.
-- La navigation des vues pleines a ete simplifiee : le retour au graphe passe
-  par la topbar globale, sans bouton `Retour au graphe` duplique dans le
-  contenu.
-- Creation de fiche ajoutee au flux de contribution : depuis une recherche sans
-  resultat, un utilisateur connecte peut proposer une fiche candidate, stockee
-  comme demande de creation et publiee uniquement apres validation moderateur.
-  Le backend bloque les doublons exacts nom/prenom et conserve le contexte de
-  recherche pour aider la moderation.
-
-Points reportes ou a surveiller :
-
-- Les tags ne sont pas encore modifiables par ce flux. Ils restent hors
-  perimetre de cette etape et devront etre ajoutes avec des validations dediees
-  pour eviter les incoherences et les suppressions implicites.
-- Les doublons exacts nom/prenom sont bloques cote serveur pour les creations,
-  mais les doublons approximatifs restent a traiter par l'interface et par la
-  moderation jusqu'a l'ajout d'une recherche de similarite plus fine.
-- Ajouter des tests d'integration service contre base quand l'environnement de
-  test pourra ecrire les fichiers temporaires Vitest/Vite.
-
-Point de controle :
-
-- Le workflow contribution -> moderation -> historique fonctionne.
-- Les refus demandent un commentaire.
-- Les pages moderation sont separees du panneau lateral public.
-- Les modifications de fiches existantes faites par moderateur ou
-  administrateur sont appliquees directement avec historique.
-- Les creations de fiches restent moderees et ne publient rien sans validation.
+- Demandes de creation et de modification avec snapshots valides, comparaison,
+  acceptation ou refus commente et historique detaille.
+- Utilisateurs simples soumis a moderation ; moderateurs et administrateurs
+  appliquent directement leurs modifications avec historique.
+- Pages pleines de contribution et moderation separees du panneau public.
+- Doublons exacts nom/prenom bloques lors des creations.
 
 ### Etape 7 - Profil utilisateur et photos securisees
 
 Statut : terminee le 2026-06-22.
 
-- Ajouter ou ajuster le modele utilisateur pour distinguer l'identite SSO du
-  nom d'affichage public.
-- Proposer le choix du nom d'affichage public a la premiere connexion lorsque le
-  compte vient d'etre cree ou que le nom public est encore derive du SSO.
-- Construire une page profil pleine dediee permettant de modifier le nom
-  d'affichage public.
-- Afficher dans le profil la liste des demandes et changements effectues par
+- Identite SSO privee separee du nom d'affichage public choisi par
   l'utilisateur.
-- Preparer la structure de rattachement multi-SSO sans implementer encore
-  Discord ni Twitch.
-- Ajouter le workflow photo personnage uniquement depuis une modification de
-  fiche existante : upload, recadrage rond, previsualisation et soumission.
-- Securiser fortement l'upload : taille maximale, formats autorises, validation
-  par signature, reencodage serveur, suppression EXIF, stockage temporaire,
-  nettoyage des fichiers orphelins, rate limit specifique et tests de refus.
-- Integrer la photo validee dans la fiche et dans les noeuds du graphe avec un
-  cadrage rond stable.
-
-Point de controle :
-
-- Aucun nom/prenom issu d'un fournisseur SSO n'est expose publiquement par
-  defaut.
-- Un utilisateur peut changer son nom d'affichage public depuis son profil.
-- Les photos ne peuvent pas etre proposees pendant la creation d'une fiche.
-- Une photo proposee par un utilisateur simple n'est publique qu'apres
-  validation moderateur.
-- Les fichiers invalides, trop volumineux, SVG ou non-images sont rejetes cote
-  serveur.
-
-Bilan final :
-
-- Le backend ne synchronise plus le nom d'affichage public depuis Google a
-  chaque connexion. Les nouveaux comptes recoivent un pseudonyme local et
-  doivent choisir explicitement leur nom public.
-- Une migration ajoute `display_name_chosen_at` et pseudonymise les comptes
-  existants qui n'ont pas encore de nom public confirme.
-- Une route protegee `/api/profile` permet de lire le profil et de modifier le
-  nom public avec validation serveur.
-- Le frontend ajoute une page pleine Profil, accessible depuis la topbar,
-  ouverte automatiquement quand l'utilisateur doit choisir son nom public.
-- Le profil affiche les demandes de contribution de l'utilisateur et prepare
-  l'emplacement des futurs rattachements SSO Google, Discord et Twitch.
-- L'etat live Twitch reste volontairement reporte a l'etape future dediee aux
-  SSO multiples et aux integrations de plateformes.
-- Le workflow photo de fiche existante est ajoute : recadrage rond cote
-  frontend, upload temporaire authentifie, validation MIME/signature, decodage
-  et reencodage WebP via `sharp`, stockage interne temporaire puis promotion en
-  fichier public uniquement apres validation moderateur ou modification directe.
-- Dans le graphe public, une photo validee remplace les initiales du noeud :
-  les initiales ne sont affichees que pour les personnages sans photo.
-- Les creations de fiche ne peuvent toujours pas porter de photo, afin de
-  limiter le spam de stockage.
-- Le nettoyage des photos temporaires orphelines est gere par un job dedie
-  `npm run photo:cleanup`, prevu pour etre lance periodiquement sur le VPS via
-  un service et un timer `systemd` dedies.
-- Des tests backend couvrent maintenant les principaux refus d'upload photo :
-  SVG, signature invalide, MIME incoherent, image illisible et payload trop
-  volumineux. Un test frontend verrouille aussi le comportement du graphe :
-  photo presente => aucune initiale affichee dans le noeud.
+- Profil complet avec contributions, comptes lies et export personnel.
+- Upload photo limite aux modifications de fiches existantes, avec recadrage,
+  validation MIME/signature, reencodage WebP, suppression des metadonnees et
+  moderation.
+- Nettoyage periodique des brouillons photo par timer `systemd`.
 
 ### Etape 8 - Administration
 
 Statut : terminee le 2026-06-22.
 
-- Construire les pages pleines d'administration.
-- Ajouter gestion des tags : creation, modification, suppression controlee.
-- Ajouter gestion des roles : promotion, retrait, bannissement.
-- Journaliser les actions sensibles.
-- Ajouter tests backend sur permissions, bannissements et actions admin.
-
-Plan propose :
-
-- Backend administration :
-  - ajouter un service admin dedie pour centraliser les changements de tags,
-    roles et bannissements ;
-  - exposer les routes protegees administrateur sous `/api/admin` :
-    `GET /users`, `PATCH /users/:id/role`, `POST /users/:id/ban`,
-    `DELETE /users/:id/ban`, `POST /tags`, `PATCH /tags/:id` et
-    `DELETE /tags/:id` ;
-  - valider toutes les charges utiles avec Zod et refuser explicitement les
-    roles, types de tags ou couleurs invalides ;
-  - empecher les actions dangereuses evidentes, par exemple supprimer un tag
-    encore rattache a des personnages sans strategie claire, ou retirer le
-    dernier administrateur actif.
-- Journalisation :
-  - creer un journal d'actions administratives distinct des historiques de
-    fiches personnage ;
-  - enregistrer l'acteur, la cible, le type d'action, les anciennes/nouvelles
-    valeurs utiles et la date ;
-  - relier les actions directes de moderation ou d'administration au profil de
-    l'utilisateur concerne quand c'est pertinent, afin de corriger le manque
-    identifie a la fin de l'etape 7.
-- Frontend administration :
-  - ajouter une page pleine `Administration`, accessible uniquement aux
-    administrateurs via la navigation globale ;
-  - separer les vues en sections compactes : utilisateurs, roles/bannissements,
-    tags et journal ;
-  - conserver le style data-app sobre, sans bouton redondant de retour au
-    graphe dans le contenu ;
-  - afficher les erreurs d'autorisation ou de validation sans exposer de detail
-    technique.
-- Tests et securite :
-  - tester les refus utilisateur simple/moderateur sur toutes les routes admin ;
-  - tester promotion, retrogradation, bannissement, levee de bannissement et
-    blocage du dernier administrateur ;
-  - tester creation, modification et suppression controlee des tags ;
-  - verifier que chaque action sensible produit une entree de journal.
-
-Point de controle :
-
-- Les actions admin sont impossibles sans role administrateur.
-- Les changements structurants sont traces.
-- Les suppressions dangereuses sont controlees ou bloquees si elles cassent des
-  donnees existantes.
-- Le profil utilisateur reste centre sur l'identite publique, les comptes lies
-  et les demandes envoyees, sans y dupliquer le journal global
-  d'administration.
-
-Bilan final :
-
-- Socle backend ajoute : service administration, routes protegees sous
-  `/api/admin`, gestion des tags, changement de role, bannissement, levee de
-  bannissement et tableau de bord admin.
-- Une table `admin_actions` est ajoutee pour journaliser les actions sensibles
-  avec acteur, cible, type d'action et details des changements.
-- Les suppressions de tags utilises sont bloquees et le retrait du dernier
-  administrateur est refuse.
-- Le frontend ajoute une page pleine `Administration`, visible depuis la
-  navigation globale uniquement pour les administrateurs, avec sections
-  utilisateurs, tags et journal.
-- Les erreurs admin cote frontend distinguent maintenant les cas courants de
-  validation, tag encore utilise, dernier administrateur et cible introuvable,
-  au lieu d'un message generique unique.
-- Des tests de routes admin et un test frontend de navigation administration
-  sont ajoutes. Le passage de verification a ete confirme une fois l'execution
-  des tests complete relancee hors sandbox lecture seule.
+- Gestion protegee des utilisateurs, roles, bannissements et tags.
+- Actions sensibles journalisees dans `admin_actions`.
+- Suppression des tags utilises et retrait du dernier administrateur bloques.
+- Erreurs metier admin traduites en messages frontend exploitables.
 
 ### Etape 9 - Import Notion
 
 Statut : terminee le 2026-06-27.
 
-- Creer un importeur page par page pour la source Notion communautaire.
-- Stocker les donnees brutes importees.
-- Permettre de relancer l'import pendant que la source Notion continue
-  d'evoluer, en mettant a jour les donnees brutes et les rapports sans publier
-  automatiquement.
-- Mapper les champs vers personnages, reseaux, police, anciens personnages,
-  tags, relations et photos.
-- Produire un rapport avant insertion : champs reconnus, champs manquants,
-  relations detectees, relations ambigues.
-- Ajouter des tests avec exemples figes.
-
-Plan propose :
-
-- Socle de stockage import :
-  - ajouter une table de lots d'import Notion pour tracer la source, la date,
-    l'etat du lot, le rapport global et l'utilisateur qui valide plus tard ;
-  - ajouter une table d'entrees brutes par page/personnage, avec URL ou
-    identifiant source stable Notion, contenu brut JSON/texte, hash de contenu,
-    date de derniere observation, statut de mapping et erreurs detectees ;
-  - conserver l'historique des versions importees ou, a minima, le dernier hash
-    valide avec les anciens/nouveaux contenus utiles au rapport de diff ;
-  - ne jamais ecrire directement dans `characters`, `streamers`, `tags` ou
-    `character_relationships` pendant la collecte ou le mapping.
-- Importeur Notion :
-  - commencer par un import manuel a partir de contenus exportes ou colles en
-    exemples figes, afin de confirmer la structure reelle avant d'ajouter une
-    dependance API Notion ;
-  - ajouter une commande de scraping de la page publique Notion qui recupere
-    l'URL source, parcourt les sous-pages accessibles et produit directement
-    les entrees brutes du rapport, car aucun export CSV fiable n'est disponible ;
-  - isoler le parseur dans un service dedie, sans logique de publication ;
-  - rendre la collecte rejouable et idempotente : une page deja importee est
-    mise a jour si son hash change, ignoree si elle est identique, et marquee
-    comme absente si elle n'apparait plus dans une source complete ;
-  - conserver le contenu brut complet pour permettre une relecture humaine et
-    un remapping sans reperdre la source.
-- Mapping :
-  - produire un `Character` candidat avec `dataSource: "notion"` et
-    `verificationStatus: "imported"` ou `"to_check"` selon la confiance du
-    champ ;
-  - mapper separement les streamers, liens publics, champs police,
-    anciens personnages, tags et relations RP autorisees ;
-  - lorsque le champ Notion `Streamer` est vide mais qu'un lien Twitch public
-    existe, reutiliser par defaut le handle Twitch comme nom public streamer
-    candidat afin d'eviter de perdre la majorite des rattachements medias ;
-  - traiter explicitement le champ Notion `V6` comme un candidat pour les
-    anciens personnages et, plus tard, comme source potentielle d'une relation
-    dediee `ancien personnage` non affichee dans le graphe public ;
-  - absorber aussi les champs relationnels Notion specifiques comme
-    `Couple relation`, `Est oncle/tante`, `Ex/Exs relation`, `Oncle relation`
-    et `Tante relation` en relations informatives hors graphe, ainsi que
-    `Père relation`, `Mère relation`, `Est parent` et les variantes
-    `Frères/Soeurs` quand elles correspondent a des relations deja connues ;
-  - persister ces relations informatives dans `character_relationships` avec
-    une regle explicite `visible en fiche, pas dans le graphe` afin d'eviter
-    une logique parallele entre import Notion et modele metier ;
-  - classer les relations non resolues ou ambigues dans le rapport au lieu de
-    creer des liens incertains ;
-  - ignorer ou signaler explicitement les donnees hors perimetre MVP, en
-    particulier les relations non RP ou non limitees au noyau familial/couple.
-- Rapport avant publication :
-  - generer un rapport lisible listant champs reconnus, champs inconnus,
-    champs manquants, doublons probables, tags a creer, streamers a rattacher,
-    relations resolues et relations ambigues ;
-  - afficher par defaut un resume terminal compact, avec option JSON complete
-    pour debug, afin d'eviter de noyer les centaines de fiches importees ;
-  - ajouter une commande de previsualisation du dernier lot importee sous forme
-    de tableau de candidats personnages, sans publication publique ;
-  - separer les entrees nouvelles, modifiees, inchangees, supprimees ou
-    absentes de la source, afin de suivre l'actualisation continue du Notion
-    pendant la preparation du site ;
-  - afficher clairement les erreurs de parsing et les decisions de mapping
-    automatiques, sans les masquer derriere un succes global ;
-  - prevoir une commande backend qui produit le rapport sans mutation des
-    donnees publiques.
-- Validation humaine :
-  - garder la publication hors automatisme pour cette etape : le rapport sert a
-    preparer une validation humaine et une future interface ou commande
-    d'application controlee ;
-  - privilegier un fonctionnement hybride : import technique par batch pour le
-    scraping, le diff et le rapport, puis application manuelle fiche par fiche
-    vers le modele public afin de limiter les doublons et les mauvais
-    rattachements ;
-  - permettre ensuite, fiche par fiche, un import explicite de la photo Notion
-    depuis l'interface admin, uniquement apres application de la fiche, en
-    telechargeant l'image cote backend puis en la reencodant dans le pipeline
-    photo securise local plutot qu'en conservant une URL distante ;
-  - l'application d'une fiche importee ne doit pas etre bloquee uniquement
-    parce que certaines relations pointent vers d'autres fiches Notion pas
-    encore appliquees ; ces relations doivent pouvoir etre completees au fur et
-    a mesure des applications ulterieures, sans creer de doublon symetrique ;
-  - si une insertion controlee est ajoutee dans l'etape, elle doit creer les
-    historiques necessaires et appliquer les memes contraintes de slug, tags,
-    streamers et relations que les flux moderes existants.
-- Tests et securite :
-  - ajouter des fixtures Notion anonymisees et figees dans les tests, sans
-    donnees personnelles reelles non justifiees ;
-  - tester le parsing nominal, les champs inconnus, les relations ambigues, les
-    doublons de nom, les statuts de verification et l'absence de publication
-    automatique ;
-- refuser toute photo distante non controlee ; l'import photo Notion, quand il
-  est declenche par un administrateur, doit rester borne aux domaines Notion
-  attendus, avec verification MIME/signature, limite de taille et reencodage
-  local via le pipeline photo securise deja utilise pour les contributions.
-
-Realisation actuelle :
-
-- Scraping Notion public batch par batch avec stockage des donnees brutes et
-  du snapshot mappe, sans publication automatique.
-- Interface admin de previsualisation des imports avec detail par fiche,
-  application manuelle, import manuel de photo apres application, tri
-  alphabetique stable, recherche par nom et suivi `a faire` / `appliquee`.
-- Mapping des reseaux sociaux base sur les URL reelles ciblees dans Notion,
-  et pas uniquement sur le texte visible.
-- Gestion des relations importees dans `character_relationships`, y compris des
-  relations informatives hors graphe comme `ancien personnage`, avec evitemment
-  des doublons symetriques deja connus.
-
-Validation de cloture :
-
-- Les tests backend figes couvrent le mapping d'import, le replay avec statuts
-  `new` / `updated` / `unchanged` / `missing`, le scraper Notion, les mentions
-  de pages dans les relations, les photos Notion securisees et les routes admin
-  de previsualisation/application/import photo.
-- La documentation operateur a ete alignee sur le workflow reel :
-  scrape -> revue admin -> application fiche par fiche -> import photo.
-
-Point de controle :
-
-- L'import ne publie rien sans validation humaine.
-- Les donnees incertaines sont marquees a verifier.
-- Les erreurs de parsing sont visibles et non silencieuses.
+- Scraping rejouable avec stockage brut, mapping et rapport sans publication
+  automatique.
+- Revue admin par fiche avec recherche, tri, suivi applique/non applique,
+  application controlee et import photo securise apres application.
+- Relations, streamers et liens publics mappes sans doublons symetriques ni
+  perte des URL cibles Notion.
+- Fixtures et tests couvrant le scraper, les mappings, les statuts de replay et
+  les routes d'administration.
 
 ### Etape 10 - Durcissement qualite et securite
 
 Statut : terminee le 2026-06-27.
 
-- Revue des validations d'entree, autorisations, rate limits, logs et gestion
-  d'erreurs.
-- Revue des risques XSS, injection SQL, fuite de secrets, enumeration abusive
-  et abus de formulaires.
-- Remplacer le store de session memoire par un store persistant, idealement
-  PostgreSQL ou equivalent, pour eviter la perte de session lors des
-  redemarrages backend et rapprocher le comportement local de la production.
-- Ajouter ou renforcer les tests sur les zones sensibles.
-- Faire un point de refactor : duplication, complexite, permissions, structure
-  frontend et lisibilite des services backend.
-
-Premiere passe realisee :
-
-- Store de session memoire remplace hors tests par un store persistant
-  PostgreSQL, pour eviter la perte de session lors des redemarrages backend.
-- Table `user_sessions` ajoutee au schema et a la pile de migrations, avec
-  expiration serveur et nettoyage periodique.
-- Configuration des sessions extraite dans un module dedie pour clarifier le
-  branchement applicatif et limiter le couplage avec la route OAuth.
-- Tests ajoutes sur le calcul d'expiration des sessions et validations relancees
-  sur les routes d'authentification.
-- Gestion des erreurs HTTP metier unifiee autour d'une erreur applicative
-  structuree, avec simplification des routes d'administration et reduction des
-  reponses 404/409 dupliquees.
-- Extraction de la logique Notion hors du service admin principal dans un
-  module dedie, avec branchement du service admin sur la connexion Sequelize
-  partagee du projet au lieu de recreer sa propre instance.
-- Decoupage du service `change-requests` entre schemas/validations, logique de
-  snapshot personnage et orchestration metier, afin de limiter le melange entre
-  validation HTTP, diff metier, persistance et application des relations.
-- Debut de simplification du back-office frontend avec extraction de sous-vues
-  et helpers dedies pour `NotionImportsView`, afin de limiter la densite du
-  composant principal sans changer le rendu ni les interactions existantes.
-- `ModerationView` a recu la meme passe de decoupage que la vue d'import
-  Notion, avec extraction des helpers de comparaison et des sous-composants
-  liste/detail afin d'alleger le composant principal tout en conservant le
-  workflow existant d'approbation, refus et edition directe moderateur.
-- `AdminView` a ete simplifie a son tour avec extraction des constantes et
-  messages partages, puis decoupage des panneaux utilisateurs, tags et journal
-  pour reduire la densite du composant principal sans changer les actions
-  d'administration deja exposees.
-- Le backend administration a recu une passe de mutualisation supplementaire :
-  extraction des types/serializers admin partages et du logging des actions
-  sensibles dans un module dedie, rebranche sur `admin.ts` et
-  `admin-notion-imports.ts` pour supprimer la duplication et alleger le service
-  principal.
-- `change-requests.ts` a recu une nouvelle extraction dediee aux resumes et au
-  rechargement des demandes, avec centralisation du type `ChangeRequestSummary`,
-  des includes de lecture et de la serialisation vers un module partage afin de
-  reduire la densite du service principal et clarifier son role
-  d'orchestration metier.
-- Une passe de robustesse supplementaire a aussi ete engagee sur le pipeline
-  Notion : le scraper fusionne maintenant mieux les proprietes texte repetees,
-  hydrate les blocs/mentions manquants de maniere iterative lors des sync batch,
-  et le mapping dedoublonne plus tot tags, relations et references photo pour
-  limiter les artefacts importes dans les rapports et applications admin.
-- La derniere poche dense de `change-requests.ts` a ete encore reduite avec
-  extraction des mutations d'approbation et d'edition directe vers un module
-  dedie, pour mieux separer validation, orchestration de service et application
-  effective des changements sur les fiches.
-- `notion-import.ts` a commence sa passe de decoupage avec extraction des
-  schemas d'entree dans `notion-import-schema.ts` et du mapping/rapport dans
-  `notion-import-mapping.ts`, tout en conservant la persistance et le plan
-  d'import dans le service principal pour limiter le risque de regression.
-- `notion-scraper.ts` a recu a son tour une extraction des types et helpers
-  purs vers `notion-scraper-shared.ts`, ce qui laisse dans le fichier principal
-  les appels reseau Notion, l'hydratation des dependances manquantes et
-  l'orchestration du scrape public.
-- `admin-notion-imports.ts` a ete decoupe a son tour entre un module partage
-  de types/serializers/parsing (`admin-notion-imports-shared.ts`) et un module
-  de persistance metier (`admin-notion-imports-persistence.ts`) pour alleguer
-  le service principal sans modifier les flux d'application de fiche et
-  d'import photo.
-- Le client Notion du scraper a ete durci avec un retry explicite sur `429`,
-  sur les reponses `5xx` et sur certaines erreurs reseau transitoires, plus
-  des tests dedies pour eviter une regression silencieuse sur le comportement
-  de reprise apres erreur.
-- La couverture backend sur l'import Notion ne repose plus seulement sur les
-  routes admin : des tests unitaires ciblent maintenant le service
-  `SequelizeAdminNotionImportService` sur des cas sensibles comme
-  l'ambiguite de rattachement de fiche, l'ambiguite de relations importees et
-  la regeneration du slug public quand un import modifie le nom public d'un
-  personnage.
-- Cette couverture a aussi ete etendue aux chemins photo sensibles :
-  refus d'import avant application de fiche, absence de photo exploitable,
-  rejet d'image invalide, suppression de l'ancienne photo apres succes et
-  nettoyage de la nouvelle photo si une transaction echoue ensuite.
-- Les erreurs metier Notion remontees au front admin ont ete mieux harmonisees
-  entre backend et frontend : la route admin distingue maintenant plus
-  clairement les cas `400`, `404` et `409` pour l'application/import photo,
-  et les helpers frontend couvrent aussi les codes metier jusque-la omis.
-- Cote frontend, la petite duplication restante sur les traductions
-  d'`ApiRequestError` a ete reduite avec un helper partage dedie, ce qui rend
-  les mappings d'erreurs admin et imports Notion plus coherents et plus simples
-  a etendre.
-
-Risques residuels et suites non bloquantes :
-
-- Les gros services Notion ont recu leur premiere vraie passe de decoupage.
-  Une seconde passe plus fine pourra etre faite plus tard si la zone rebouge,
-  mais ce n'est plus un prerequis de stabilisation.
-- Les appels reseau Notion sont mieux proteges contre les erreurs transitoires,
-  mais la source publique reste structurellement fragile a des changements
-  externes de format ou de politique de rate-limit.
-- Les tests backend couvrent mieux l'application/import photo Notion, mais ils
-  restent majoritairement bases sur mocks pour cette couche. Une couverture
-  d'integration plus profonde serait utile plus tard si l'environnement de test
-  de base devient plus simple a piloter.
-- Le frontend admin a maintenant des helpers d'erreurs plus coherents, mais une
-  mutualisation plus large pourra encore etre faite si d'autres espaces
-  proteges accumulent beaucoup de traductions metier.
-
-Point de controle :
-
-- Les risques residuels sont listes.
-- Les refactors necessaires avant mise en ligne sont identifies ou faits.
-- Les checks automatises passent.
+- Sessions persistantes PostgreSQL avec expiration et nettoyage.
+- Erreurs HTTP metier, validations et autorisations harmonisees.
+- Services d'administration, changement de fiches et import Notion decoupes en
+  modules plus lisibles.
+- Scraper Notion renforce contre les erreurs transitoires `429`, `5xx` et
+  reseau, avec couverture ciblee des chemins sensibles.
 
 ### Etape 11 - Preparation deploiement
 
 Statut : terminee le 2026-07-01.
 
-L'etape 12 a stabilise les besoins SSO, les sessions persistantes, le status
-live Twitch et la migration initiale unique. La preparation deploiement peut
-donc repartir sur une base plus fiable.
-
-Etat actuel :
-
-- Le deploiement cible utilise le sous-domaine `gta-rp.f1prediction.fr`, servi
-  par Caddy, afin de ne pas perturber le site existant sur `f1prediction.fr`.
-- La premiere configuration VPS est en place : backend `systemd`, Caddy sur le
-  sous-domaine, PostgreSQL Docker/local dedie et timer systemd de nettoyage des
-  brouillons photo.
-- Le durcissement minimal progresse aussi sur le VPS : `ufw` est actif et
-  `fail2ban` protege maintenant au moins `sshd` avec un jail dedie.
-- Les premieres sauvegardes automatisees sont maintenant posees sur le VPS via
-  `systemd` : un backup PostgreSQL nightly et un backup hebdomadaire des
-  uploads valides, avec rotation locale courte et premier run verifie.
-- Le backend tourne avec un Node.js isole du site existant, afin de ne pas
-  perturber l'environnement deja en production sur le VPS.
-- La base PostgreSQL dediee est creee dans le conteneur Docker existant, sans
-  exposer directement PostgreSQL au public.
-- Les variables de production backend sont centralisees dans le `.env` serveur
-  et les callbacks OAuth Google, Discord et Twitch pointent vers le sous-domaine
-  de production.
-- Le backend active `trust proxy` en production pour que les cookies de session
-  `Secure` fonctionnent correctement derriere Caddy pendant les flux OAuth.
-- Caddy route deja `/api/*` et `/uploads/*` vers le backend, puis sert le build
-  statique du frontend pour le reste des routes.
-- Le workflow OAuth a ete valide en production apres correction des cookies
-  `Secure` derriere proxy.
-- L'import Notion, l'application d'une fiche et l'import d'une photo Notion ont
-  ete valides sur le VPS.
-- Les roles de base existent en production et le premier administrateur reel a
-  ete promu manuellement.
-- Plusieurs corrections de production ont ete deployees et validees : roles
-  manquants, routing des uploads, regex de profil cote navigateur, validation
-  des anciens personnages importes dans les modifications directes.
-- Le runbook `DEPLOYMENT.md` documente deja une partie de la configuration
-  Caddy, des callbacks OAuth et du fonctionnement PostgreSQL Docker.
-- Une maintenance systeme documentee a aussi ete menee sur le VPS :
-  `full-upgrade`, reboot sur noyau `6.8.0-124-generic`, verification
-  post-reboot de `caddy`, du backend et des endpoints publics.
-- L'hygiene stockage est maintenant mieux cadree : nettoyage `journald`,
-  nettoyage cache APT et commandes de diagnostic ajoutees au runbook.
-- Une retention durable de `journald` est maintenant appliquee et versionnee :
-  plafond `500M`, conservation `30day`, `1G` libre minimum.
-- Une passe de verification ops non destructive a ete consignee le 2026-07-01 :
-  endpoints publics essentiels OK, services/timers actifs, backups locaux
-  presents, `ufw` et `fail2ban` actifs, PostgreSQL non expose publiquement et
-  disque autour de 18% d'utilisation.
-- Un script de monitoring minimal read-only est ajoute :
-  `scripts/check-production-ops.sh`. Il rejoue les controles publics et serveur
-  essentiels en attendant un dashboard plus complet.
-- Une passe de smoke tests automatisables a ete consignee le 2026-07-01 :
-  page publique, URL partageable de fiche, API fiche, graphe, historique,
-  photo publique, redirects OAuth Google/Discord/Twitch, routes protegees en
-  anonyme et absence d'erreur backend recente.
-- Une passe metier interactive a ete validee le 2026-07-01 : connexions
-  Google/Discord/Twitch, profil connecte, administration des tags et historique,
-  import Notion, application de fiche, import photo Notion, import photo manuel
-  et modification de fiche.
-- La decision supervision pre-utilisateurs est prise : Prometheus + Grafana,
-  node_exporter, blackbox_exporter, metriques backend custom et acces Grafana
-  protege par les sessions administrateur du site via Caddy `forward_auth`.
-- Une premiere implementation de supervision est versionnee :
-  - endpoint admin `GET /api/supervision/authorize` pour Caddy/Grafana ;
-  - endpoint Prometheus `GET /api/internal/metrics` protege par
-    `METRICS_TOKEN` ;
-  - metriques HTTP backend, metriques Node/process et compteurs metier ;
-  - stack Docker Compose sous `ops/monitoring/` ;
-  - dashboards Grafana `Vue d'ensemble`, `VPS`, `Application` et
-    `Donnees metier` ;
-  - script textfile node_exporter pour age/taille des backups et volumetrie
-    uploads ;
-  - services/timers systemd pour rafraichir les metriques textfile.
-- Cette supervision est deployee sur le VPS : stack Docker Compose active,
-  Grafana sain en local, Prometheus sain en local, targets `UP`, ports
-  monitoring bindes sur `127.0.0.1` uniquement et route Caddy `/supervision/*`
-  ajoutee avec `forward_auth`.
-- L'acces navigateur administrateur a ete valide le 2026-07-01. Les dashboards
-  provisionnes `GTA RP - Application`, `GTA RP - Donnees metier`,
-  `GTA RP - VPS` et `GTA RP - Vue d'ensemble` sont accessibles.
-- Une passe d'amelioration des dashboards a ajoute les visiteurs approximatifs,
-  les volumes de stockage et sauvegardes, les dates lisibles de backups/imports
-  et des libelles francais sur les statuts Notion et demandes de modification.
-
-Sujets ops a poursuivre apres cloture :
-
-- Ajouter plus tard une vraie cible de sauvegarde distante pour ne plus
-  dependre uniquement des backups locaux au VPS. Cette cible est reportee tant
-  qu'aucun stockage externe n'est disponible.
-- Utiliser en attendant le script local `scripts/fetch-latest-backups.sh` pour
-  recuperer manuellement la derniere sauvegarde PostgreSQL et/ou uploads depuis
-  le VPS vers une machine de travail.
-
-Point de controle :
-
-- Le site peut etre deploye sans secret en dur.
-- Les sauvegardes sont planifiees avant exposition publique.
-- Le serveur est durci avant trafic public.
+- Production sur `gta-rp.f1prediction.fr` avec Caddy, backend `systemd` et
+  PostgreSQL Docker non expose publiquement.
+- OAuth, uploads, import Notion et parcours metier principaux valides derriere
+  proxy avec cookies `Secure`.
+- VPS durci avec `ufw`, `fail2ban`, retention `journald` et maintenance systeme
+  documentee.
+- Sauvegardes PostgreSQL et uploads automatisees avec rotation, plus scripts de
+  verification et de recuperation locale.
+- Supervision Prometheus/Grafana deployee avec metriques systeme, application,
+  donnees metier, stockage et sauvegardes.
+- `DEPLOYMENT.md` reste la source de verite operationnelle detaillee.
 
 ### Etape 12 - SSO multiples et integrations plateformes
 
 Statut : terminee le 2026-06-30.
 
-Avancement actuel :
-
-- Le socle persistant `UserIdentity` est introduit pour preparer le
-  rattachement de plusieurs fournisseurs a un meme compte utilisateur.
-- La connexion Google continue de fonctionner et s'appuie desormais uniquement
-  sur ce socle, au meme titre que Discord et Twitch.
-- Le champ historique `users.google_id` est retire du schema cible : les
-  identifiants fournisseurs sont stockes exclusivement dans `user_identities`
-  sur une base neuve.
-- Les migrations de developpement sont consolidees en une migration initiale
-  unique pour repartir sur une base propre.
-- Le profil utilisateur expose maintenant les comptes lies connus, avec Google,
-  Discord et Twitch comme fournisseurs raccordables.
-- Le profil propose maintenant un point d'entree reel `Lier Google` lorsque le
-  compte Google n'est pas encore rattache.
-- Le callback OAuth Google gere desormais deux intentions distinctes :
-  connexion classique et rattachement d'identite Google a un compte deja
-  authentifie.
-- Le rattachement Google gere explicitement le cas de collision lorsqu'un
-  compte Google est deja lie a un autre utilisateur, avec retour d'erreur
-  dedie cote frontend.
-- Une premiere dissociation de compte lie est disponible cote profil, avec
-  protection explicite contre la suppression du dernier moyen de connexion.
-- La logique de rattachement Google a servi de base reutilisable pour les
-  integrations Discord puis Twitch.
-- La connexion et le rattachement Discord sont ajoutes cote backend via OAuth2
-  `identify email`, avec gestion de callback, collision d'identite deja liee et
-  reutilisation du socle `UserIdentity`.
-- La premiere integration Discord a ete validee en local avec une application
-  Discord configuree : le rattachement depuis le profil fonctionne.
-- Le profil propose maintenant `Lier Discord` lorsque ce fournisseur n'est pas
-  encore rattache.
-- L'entree de connexion frontend utilise maintenant un bouton `Connexion` qui
-  ouvre une popup Google/Discord/Twitch, afin de permettre une inscription ou
-  connexion initiale avec le fournisseur choisi sans encombrer la topbar.
-- La page profil affiche les comptes SSO comme une grille d'actions uniquement :
-  `Lier`, `Dissocier` ou fournisseur requis si c'est le dernier moyen de
-  connexion. Les dates de rattachement ou derniere utilisation ne sont pas
-  affichees dans ce profil utilisateur.
-- Les variables d'environnement Discord sont ajoutees avec validation
-  tout-ou-rien : `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` et
-  `DISCORD_CALLBACK_URL`.
-- La connexion et le rattachement Twitch sont ajoutes cote backend via OAuth2
-  `user:read:email`, avec routes de login, callback et rattachement sur le
-  meme socle `UserIdentity`.
-- Le rattachement Twitch depuis le profil a ete valide en local, ainsi que la
-  connexion de base via un compte Twitch deja rattache.
-- Le profil propose maintenant `Lier Twitch` lorsque ce fournisseur n'est pas
-  encore rattache.
-- Les variables d'environnement Twitch sont ajoutees avec validation
-  tout-ou-rien : `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` et
-  `TWITCH_CALLBACK_URL`.
-- Les builds, checks et tests cibles ont ete rejoues et corriges au fil des
-  integrations SSO, du status live Twitch, des icones de fournisseurs et des
-  derniers ajustements frontend.
-- Lors d'une connexion initiale via un fournisseur dont l'email correspond deja
-  a un utilisateur existant sans identite liee correspondante, le backend
-  refuse desormais toute fusion implicite et renvoie une erreur dediee afin que
-  l'utilisateur se reconnecte d'abord avec un fournisseur deja rattache avant
-  de lier le nouveau compte depuis son profil.
-- Le rattachement d'un fournisseur verifie maintenant strictement qu'un compte
-  deja lie du meme type pointe bien vers la meme identite distante ; si un
-  autre compte Google, Discord ou Twitch est deja lie au profil, le backend
-  bloque l'operation avec un retour d'erreur dedie.
-- L'etat live Twitch est maintenant expose cote backend avec un cache memoire
-  court et une degradation silencieuse en cas d'erreur Twitch ou d'absence de
-  configuration.
-- La fiche personnage affiche maintenant l'etat live Twitch uniquement sur le
-  lien Twitch public, via un indicateur discret lorsqu'un stream est en cours.
-- Aucun indicateur live n'est affiche lorsque la chaine Twitch est hors ligne
-  ou lorsque l'etat est inconnu.
-- Lorsque la fiche personnage ne reference pas de `streamer` lie mais possede
-  un lien Twitch direct dans ses reseaux publics, le status live Twitch est
-  maintenant calcule a partir de ce lien et l'indicateur rouge s'affiche bien
-  sur la fiche publique.
-- L'entree de connexion permet maintenant de choisir entre Google, Discord et
-  Twitch.
-- L'entree de connexion du header utilise des icones simples dediees par
-  fournisseur, avec libelle accessible conserve pour les lecteurs d'ecran.
-- Dans le profil, les actions SSO restent explicites avec texte visible
-  `Lier ...`, `Dissocier ...` ou fournisseur requis selon le cas.
-- Les validations ciblees ajoutees pour le status live Twitch sont
-  `backend npm test -- --run src/test/twitch-live.test.ts src/test/public-routes.test.ts`
-  et `web-client npm test -- --run src/App.test.tsx src/api.test.ts`.
-- L'import Notion prepare aussi mieux les medias : lorsqu'aucun champ
-  `Streamer` n'est renseigne mais qu'un lien Twitch public existe, le handle
-  Twitch est reutilise par defaut comme nom public streamer candidat.
-
-Point de controle :
-
-- Un compte peut etre retrouve via plusieurs fournisseurs sans creer de doublon
-  involontaire.
-- Les donnees personnelles SSO restent privees et separees du nom d'affichage
-  public.
-- Les secrets Discord et Twitch ne sont jamais envoyes au frontend.
-- L'etat live Twitch ne degrade pas l'affichage des fiches en cas d'erreur ou
-  de limite API.
+- `UserIdentity` centralise les comptes Google, Discord et Twitch sans fusion
+  implicite par email.
+- Connexion, rattachement, dissociation et collisions d'identite geres avec
+  protection du dernier moyen de connexion.
+- Profil equipe d'actions SSO explicites et entree de connexion multi-fournisseur.
+- Etat live Twitch calcule avec cache court et degradation silencieuse en cas
+  d'indisponibilite de l'API.
 
 ### Etape 13 - Ameliorations fonctionnelles et ergonomie avancee
 
-Statut : commencee le 2026-07-01. Lot A clos le 2026-07-02.
+Statut : terminee le 2026-07-10. Lots A a G termines.
 
-Cette etape sert de backlog structure pour les ameliorations non bloquantes a
-traiter apres la stabilisation du deploiement, des imports et des premiers
-usages reels. Les elements ci-dessous ne sont pas encore priorises entre eux.
-
-Plan d'implementation propose :
-
-1. Reprise de la fiche personnage et du formulaire d'edition
-   - remettre en ordre les champs pour ameliorer la lecture ;
-   - garder un ordre stable et lisible du formulaire, avec verification et
-     note de source regroupees en fin de parcours ;
-   - clarifier les blocs organisation, groupe, medias et relations ;
-   - preparer le support de plusieurs numeros de telephone par personnage,
-     sans casser moderation, import et affichage public.
-   - avancement 2026-07-02 : lot A considere comme termine ; fiche publique
-     reclarifiee, formulaire stabilise, bloc photo corrige et support des
-     plusieurs numeros actif cote schema initial + migration locale,
-     snapshots, API publique et edition.
-2. Ameliorations graphe et preferences locales
-   - enregistrer une vue par defaut regroupee par groupe ;
-   - ajouter des preferences locales d'affichage ;
-   - permettre d'afficher ou masquer les morts ;
-   - permettre de choisir les types de relations visibles ;
-   - prevoir plus tard des presets de visualisation, a discuter au moment du
-     lot D et pas avant.
-3. Aide a la completion et qualite des donnees
-   - ajouter une vue ou fenetre listant les fiches a completer ;
-   - mettre en avant les champs manquants, importes ou a verifier ;
-   - rendre cette vue exploitable par moderation et administration ;
-   - avancement 2026-07-02 : premiere tranche en cours, avec service backend
-     partage et panneau commun moderation / administration pour lister les
-     fiches a completer selon les champs manquants et les statuts a revoir.
-4. Pages publiques annexes
-   - ajouter une page information / contact / soutien ;
-   - rester sobre et coherente avec la navigation existante ;
-   - integrer le point de contact ;
-   - conserver Buy Me a Coffee uniquement dans le README pour l'instant ;
-   - avancement 2026-07-08 : implementation lancee avec une page publique
-     dediee, accessible depuis un bouton rond `?` en bas a droite du graphe,
-     et une URL partageable `?view=info`.
-5. Reprise du module streamer
-   - clarifier la distinction streamer / reseaux publics / plateformes ;
-   - mieux gerer le live Twitch, les fiches liees et l'absence de streamer
-     explicite ;
-   - permettre aussi de renseigner un lien Discord public pour un streamer ;
-   - eviter les zones grises entre donnees importees, editees et calculees.
-6. Reprise du module relations
-   - distinguer clairement relations visibles dans le graphe et relations
-     visibles uniquement dans la fiche ;
-   - poser une regle produit stable pour la visibilite par defaut dans le
-     graphe public ;
-   - mieux gerer anciennes identites/personnages et relations importees
-     ambigues ;
-   - preparer une interface de gestion plus lisible pour les relations
-     multiples.
-7. Gestion de la reglementation RGPD
-   - cadrer les donnees personnelles effectivement traitees par la plateforme
-     (comptes SSO, noms d'affichage, avatars, photos de personnage, journaux
-     d'administration et adresses IP si elles sont journalisees) ;
-   - verifier la minimisation des donnees conservees et la separation entre
-     identite SSO privee et profil public ;
-   - preparer les bases produit et techniques pour les droits d'acces,
-     rectification, suppression et export quand ils s'appliquent ;
-   - definir une politique de retention pour les sessions, logs, photos
-     temporaires, imports et sauvegardes ;
-   - prevoir les textes et points de contact necessaires : information
-     utilisateur, finalites, responsable de traitement et canal de demande.
-
-Ordre de travail recommande :
-
-- Lot A : fiche personnage + formulaire d'edition - termine
-- Lot B : relations + consolidation finale du multi-telephone
-- Lot C : completude des donnees
-- Lot D : graphe et preferences locales
-- Lot E : module streamer
-- Lot F : page publique information / contact / soutien - termine
-- Lot G : cadrage RGPD et hygiene des donnees personnelles - en cours
-
-Avancement 2026-07-08 :
-
-- lot F termine : page publique information/contact livree, accessible depuis
-  un bouton rond `?` en bas a droite du graphe et via l'URL partageable
-  `?view=info`. Le soutien financier reste volontairement hors produit pour
-  l'instant et limite au README ;
-- page publique de confidentialite integree au frontend public, sans bandeau
-  cookies ;
-- documentation projet enrichie avec une base RGPD/cookies et un registre
-  simplifie des traitements dans `PRIVACY.md`, reference depuis `README.md` et
-  complete par une procedure operationnelle dans `DEPLOYMENT.md` ;
-- choix retenu confirme : pas de bandeau cookies dans le perimetre actuel tant
-  qu'aucun traceur client non strictement necessaire n'est ajoute.
-- runbook de deploiement complete avec une procedure minimale de traitement des
-  demandes RGPD et les gardes-fous de suppression.
-- politique cible de conservation maintenant explicitee plus finement dans la
-  documentation : comptes et identites inactifs a revoir apres `24` mois,
-  demandes non appliquees `24` mois, historiques/admin `12` mois glissants,
-  imports editoriaux `12` mois, sans automatisation complete a ce stade.
-- premier outillage RGPD livre : export personnel synthétique dans le profil et
-  vue admin de support accessible depuis le panneau utilisateurs pour preparer
-  les reponses d'acces.
-- premiere action assistee livree : revocation des sessions d'un utilisateur
-  depuis le panneau RGPD admin, avec blocage explicite de l'auto-revocation.
-- dissociation assistee des identites SSO livree depuis le panneau RGPD admin,
-  avec blocage du dernier moyen de connexion et de l'auto-dissociation.
-- anonymisation assistee des comptes livree depuis le panneau RGPD admin :
-  retrait des moyens de connexion, revocation des sessions et remplacement des
-  donnees directement identifiantes, tout en conservant les references
-  necessaires aux historiques et a la moderation.
-- nettoyage UX/code effectue : panneau RGPD admin extrait dans un composant
-  dedie et confirmation d'anonymisation renforcee par saisie explicite de
-  `ANONYMISER`.
-- lisibilite admin renforcee : les comptes deja anonymises sont marques dans
-  la liste utilisateurs, et le flux RGPD admin est couvert par un test frontend
-  dedie en plus des tests backend admin/profil.
-
-Point doc Lot G au 2026-07-08 :
-
-- coherent : le perimetre cookies est aligne entre `PRIVACY.md`, `README.md`
-  et `DEPLOYMENT.md` : cookie de session strictement necessaire, preferences
-  locales via `localStorage`, pas de traceur client tiers et donc pas de
-  bandeau de consentement dans le perimetre actuel ;
-- coherent : la procedure de demandes RGPD est documentee cote runbook avec
-  export, revocation de sessions, dissociation SSO et anonymisation controlee ;
-- coherent : les durees deja automatisees sont documentees, notamment sessions,
-  brouillons photo, journaux systeme et sauvegardes ;
-- restant a decider/implementer plus tard : purge automatique des comptes
-  inactifs, demandes anciennes, historiques/admin actions et imports editoriaux.
-  La doc fixe une politique cible mais ne pretend pas encore que tout est
-  automatise.
-
-Contraintes de mise en oeuvre :
-
-- conserver la compatibilite avec l'import Notion, la moderation et
-  l'historique ;
-- privilegier des changements incrementaux, avec migrations et adaptation
-  frontend par sous-lot ;
-- ne pas empiler toute la logique dans un seul fichier : decouper les nouveaux
-  blocs UI et services des que la zone commence a grossir.
-
-Fiche personnage :
-
-- Remettre en ordre les champs de la fiche pour ameliorer la lecture et la
-  comparaison rapide.
-- Conserver un ordre explicite du formulaire d'edition : identite, statuts,
-  organisation, contact, photo, medias, parentes RP, puis note de source avec
-  verification.
-- Permettre de rattacher plusieurs numeros de telephone a une meme personne,
-  avec un affichage et une edition qui restent lisibles dans la fiche et le
-  workflow de moderation.
-- Etat 2026-07-01 : structure `phoneNumbers` en liste cote backend/frontend,
-  recherche publique compatible, fallback legacy prevu pour d'anciennes
-  snapshots importees, aucun besoin specifique detecte cote Notion a ce stade.
-- Requalifier les besoins historiquement lies a la police pour qu'ils restent
-  coherents avec le modele `entreprise / grade / matricule`, sans recreer de
-  champs morts.
-- Clarifier les zones organisation, groupe, medias et relations afin que les
-  informations importees et les informations editees restent faciles a relire.
-
-Graphe :
-
-- Enregistrer un affichage de graphe par defaut regroupe par groupe.
-- Ajouter un parametrage local de l'affichage : afficher ou masquer les morts,
-  choisir les types de relations visibles et conserver ces preferences cote
-  navigateur.
-- Etat 2026-07-05 : lot D demarre avec un premier socle frontend en place :
-  preferences locales persistantes, filtrage du graphe selon `showDeceased`
-  et types de relations visibles, plus panneau public compact `Affichage`.
-- Cette premiere tranche couvre maintenant :
-  - le masquage local des personnages decedes ;
-  - la visibilite locale de tous les types de relations geres, avec noyau
-    `parent`, `child`, `sibling`, `couple` actif par defaut et relations
-    secondaires masquées par defaut ;
-  - une disposition locale `Groupes` / `Libre`, avec regroupement spatial par
-    `groupName` actif par defaut.
-- La prochaine amelioration probable du lot D concerne surtout le raffinement
-  visuel du regroupement (lisibilite des grappes, eventuels reperes visuels de
-  groupe, ajustement fin du layout) plutot que le contrat fonctionnel de base.
-
-Donnees a completer :
-
-- Ajouter une fenetre ou une page listant les fiches a completer.
-- Permettre aux administrateurs et moderateurs d'identifier rapidement les
-  champs manquants, importes ou encore a verifier.
-- Etat 2026-07-05 : premiere tranche active avec service backend partage,
-  panneau commun moderation / administration, recherche, filtres rapides, tri
-  local et actions `Voir la fiche` / `Modifier`.
-- Le calcul backend de completude est desormais normalise pour mieux couvrir
-  les cas reels : chaines vides, tableaux vides, statut vital `unknown` et
-  incoherences d'organisation (`grade` / `matricule` sans `entreprise`).
-- L'absence de medias ne compte pas, a elle seule, comme une fiche incomplete
-  car tous les personnages n'ont pas vocation a etre relies a un streamer ou a
-  des liens publics.
-- Reste volontairement hors scope pour l'instant : automatisation de suivi
-  “en cours de traitement”, filtres experts supplementaires et orchestration
-  plus poussée du workflow de rattrapage.
-
-Pages publiques :
-
-- Ajouter une page d'information / contact / soutien, sobre et coherente avec
-  la navigation du site, incluant un point de contact et un lien Buy Me a
-  Coffee.
-
-Streamers :
-
-- Refonte du module streamer pour mieux gerer les plateformes, les liens
-  publics, le live Twitch, les fiches liees et les cas ou aucun streamer n'est
-  explicitement renseigne.
-- Ajouter la possibilite de renseigner un lien Discord public pour un streamer.
-- Decision produit 2026-07-06 :
-  - les liens medias ne sont jamais portes par une fiche personnage ;
-  - ils appartiennent toujours au `Streamer` rattache ;
-  - quand une fiche est rattachee a un streamer existant, elle recupere
-    automatiquement les liens de ce streamer ;
-  - plusieurs personnages peuvent etre rattaches au meme streamer ;
-  - si une fiche change de streamer, tous les liens affiches basculent vers
-    ceux du nouveau streamer ;
-  - si une fiche passe a `Aucun streamer`, tous les liens disparaissent ;
-  - les imports Notion et les creations de streamers doivent respecter ce
-    contrat en cours de refonte, sans recreer de liens propres a la fiche.
-- Etat 2026-07-06 : premier sous-lot realise.
-  - le bloc `Medias` accepte maintenant aussi un lien Discord public ;
-  - les types frontend/backend `socialLinks` couvrent desormais `discord` en
-    plus des plateformes deja prises en charge ;
-  - l'ordre d'affichage public des liens sociaux a ete etendu pour inserer
-    Discord parmi les plateformes prioritaires ;
-  - la creation ou le rattachement d'un streamer a partir d'une fiche ou d'un
-    import Notion n'engendre plus systematiquement un streamer "vide" :
-    quand des liens publics sont connus, ils sont aussi injectes dans la fiche
-    streamer et servent a deriver une `primaryPlatform` initiale.
-  - dans le formulaire d'edition, la saisie d'un nouveau streamer passe
-    maintenant par une action explicite `add`, qui revele le champ de nom
-    public sans creer le streamer avant validation de la fiche ; ce mode vide
-    aussi les champs streamer deja saisis pour repartir d'un etat propre ;
-  - depuis une recherche sans resultat, un moderateur ou administrateur ouvre
-    desormais une creation directe de fiche, tandis qu'un utilisateur simple
-    reste sur un flux de demande moderee.
-- Etat 2026-07-06 : second sous-lot realise.
-  - `Streamer` est maintenant la source de verite unique pour les liens
-    publics ; le schema initial et le modele `Character` ne portent plus de
-    colonne `socialLinks` persistante ;
-  - l'API publique, les snapshots d'edition, les imports Notion et les mises a
-    jour directes lisent ou ecrivent desormais ces liens uniquement via le
-    streamer rattache ;
-  - l'edition manuelle d'une fiche remplace explicitement les liens du streamer
-    selectionne, alors que l'import Notion conserve un mode d'enrichissement
-    progressif pour completer un streamer existant sans effacer ses autres
-    liens ;
-  - dans le formulaire d'edition, choisir un streamer existant recharge ses
-    liens, retirer le streamer les vide, et aucun champ media n'est editable
-    sans streamer selectionne ou creation de streamer en cours.
-- Etat 2026-07-06 : troisieme sous-lot realise.
-  - la fiche publique et le detail d'import Notion expliquent maintenant
-    explicitement que les liens affiches sont ceux du streamer rattache, pas
-    ceux de la fiche personnage ;
-  - les tests backend couvrent desormais les imports successifs de plusieurs
-    personnages vers un meme streamer public, avec enrichissement progressif
-    des liens sans recreation ni effacement accidentel.
-- Etat 2026-07-06 : quatrieme sous-lot realise.
-  - la previsualisation et le detail des imports Notion n'utilisent plus un
-    champ `twitch` isole ; ils exposent desormais `socialLinks`, comme le
-    reste du module streamer ;
-  - l'admin affiche un resume des plateformes detectees plutot qu'un seul
-    handle Twitch, ce qui aligne enfin l'aperçu d'import avec le modele reel
-    des liens publics.
-
-Relations :
-
-- Refonte du module relations pour distinguer clairement relations visibles
-  dans le graphe, relations visibles uniquement dans la fiche, anciennes
-  identites/personnages et relations importees ambigues.
-- Regle de visibilite par defaut retenue :
-  - visibles dans le graphe public par defaut : `parent`, `child`,
-    `sibling`, `couple` ;
-  - non visibles par defaut dans le graphe, mais visibles en fiche et
-    activables plus tard par preferences utilisateur : `previous_character`,
-    `ex_partner_reference`, `uncle_reference`, `aunt_reference` et plus
-    generalement les relations secondaires.
-- Preparer une interface de gestion plus lisible pour les relations multiples.
-- Le lot B doit preparer techniquement les futures preferences utilisateur du
-  lot D, sans encore implementer les presets de visualisation.
-- Tous les types de relations geres par le modele doivent pouvoir etre saisis
-  depuis la fiche personnage, y compris ceux qui ne sont pas visibles par
-  defaut dans le graphe public.
-- L'import Notion doit recuperer au maximum les relations disponibles dans la
-  source communautaire. Les types cites pour le lot B (`previous_character`,
-  `ex_partner_reference`, `uncle_reference`, `aunt_reference` ainsi que le
-  noyau familial/couple) sont consideres comme recuperables depuis Notion et
-  doivent etre preserves.
-- Le type intermediaire `couple_reference` est abandonne : `Couple relation`
-  dans Notion doit alimenter directement la relation geree `couple`.
-- Le champ `Est oncle/tante` reste reconnu dans le rapport d'import mais doit
-  remonter comme ambiguite tant qu'aucun type persistant explicite n'est
-  retenu pour lui.
-
-Plan detaille du lot B :
-
-1. Cadrage et contrat produit
-   - figer la liste des types de relations visibles par defaut dans le graphe ;
-   - figer la liste des types visibles seulement dans la fiche ;
-   - confirmer que tous les types geres restent saisissables dans la fiche ;
-   - verifier que cette regle est coherente entre donnees manuelles, moderation
-     et import Notion.
-2. Modele et API
-   - verifier que chaque type de relation porte une regle explicite de
-     visibilite fiche / graphe ;
-   - simplifier si besoin les serialisations backend pour eviter les deductions
-     cote frontend ;
-   - preparer une structure exploitable plus tard par les preferences locales
-     du lot D.
-3. Fiche publique personnage
-   - separer plus lisiblement les relations principales et secondaires ;
-   - eviter les doublons visuels et mieux presenter les relations importees ou
-     moins centrales.
-4. Edition et moderation
-   - rendre l'edition des relations plus lisible dans la fiche ;
-   - clarifier le comportement de suppression, ajout et modification ;
-   - verifier que les diffs de moderation et l'historique restent lisibles.
-5. Import et qualite des donnees
-   - verifier que les relations Notion se rangent dans la bonne categorie ;
-   - recuperer au maximum toutes les relations presentes dans la source Notion
-     quand elles correspondent a un type gere par le modele ;
-   - conserver un workflow tolerant aux relations partiellement resolues ;
-   - consolider au passage les derniers bords du multi-telephone si
-     necessaire, sans reouvrir le lot A.
-6. Validation
-   - ajouter ou adapter les tests backend et frontend ;
-   - mettre a jour la documentation une fois le lot B stabilise.
-
-Avancement actuel du lot B :
-
-- OK regles de visibilite clarifiees entre relations du graphe public et
-  relations secondaires visibles en fiche ;
-- OK edition unifiee des relations dans la fiche avec selecteur regroupe entre
-  relations principales et complementaires ;
-- OK affichage public clarifie entre relations principales et relations
-  complementaires, sans doublon visuel de libelle ;
-- OK diffs de moderation, historique public et profil utilisateur rendus plus
-  lisibles pour les relations, telephones et liens sociaux multilignes ;
-- OK suppression du type `couple_reference` au profit du type `couple` ;
-- OK import Notion aligne sur ce choix, avec `Couple relation` mappe vers
-  `couple` ;
-- OK `Est oncle/tante` remonte comme ambiguite d'import plutot que d'etre
-  perdu silencieusement ;
-- OK tests cibles ajoutes sur l'import Notion et le formatage frontend des
-  champs multilignes.
-
-Point de controle :
-
-- Les ameliorations sont priorisees avant implementation.
-- Les nouveaux champs restent compatibles avec le workflow d'import, de
-  contribution et de moderation.
-- Les preferences locales d'affichage ne modifient pas les donnees serveur.
+- Lot A : fiche et formulaire reorganises, organisation unifiee, photo corrigee
+  et multi-telephone pris en charge de bout en bout.
+- Lot B : relations principales et secondaires unifiees dans le modele,
+  l'edition, la fiche publique, les preferences et l'import Notion.
+- Lot C : vue de completude disponible en moderation et administration avec
+  recherche, tri, filtres simples et actions vers les fiches. Le workflow
+  collectif avance n'est pas retenu pour le moment.
+- Lot D : preferences locales du graphe, affichage des personnages decedes,
+  choix des relations, filtre Twitch live et dispositions `Entreprise`,
+  `Famille`, `Groupe` et `Libre`.
+- Lot E : `Streamer` source de verite unique pour les liens publics, partage
+  entre plusieurs personnages, creation differee et import Notion coherent.
+- Lot F : pages publiques information/contact et confidentialite accessibles
+  depuis le graphe, sans integration Buy Me a Coffee dans le produit.
+- Lot G : cadrage RGPD, registre et politique de confidentialite, export
+  personnel, revocation des sessions, dissociation SSO et anonymisation admin.
 
 ### Etape 14 - Migration vers TypeScript 7 et npm 12
 
@@ -1735,17 +633,108 @@ Point de controle :
 - Aucun changement fonctionnel ou de schema de donnees n'est introduit par
   cette etape technique.
 
-## Hypotheses
+### Etape 15 - Finalisation UX de l'application et du graphe
 
-- La page Notion communautaire est la source initiale, mais son accessibilite et
-  sa structure devront etre confirmees par tests de parsing.
-- Google OAuth reste disponible aux cotes de Discord OAuth et Twitch OAuth.
-- Le frontend demarre avec Vite, React et TypeScript.
-- Le developpement utilise Node.js `24.18.0` ou plus recent, en restant sur la
-  branche LTS plutot que sur la branche Current.
-- L'etat live Twitch est bien inclus dans cette etape 12 aux cotes des
-  integrations SSO, afin de reutiliser la configuration serveur Twitch et
-  d'eviter une integration API partielle et redondante.
-- Le VPS Hetzner heberge deja Caddy et un PostgreSQL accessible localement via
-  Docker. Le deploiement GTA-RP doit reutiliser cette approche sans perturber
-  le site existant `f1prediction.fr`.
+Statut : planifiee apres les stabilisations fonctionnelles et techniques des
+etapes 13 et 14.
+
+Cette etape regroupe les finitions visuelles et ergonomiques qui ne doivent pas
+ralentir les derniers lots fonctionnels. Elle ne doit pas modifier le contrat
+metier ni introduire de nouveau schema de donnees.
+
+Plan propose :
+
+1. Realiser un audit UX transversal sur ordinateur et mobile : navigation,
+   hierarchie visuelle, alignements, densite, formulaires, tableaux, panneaux,
+   modales, chargements, etats vides, erreurs et confirmations.
+2. Finaliser l'UX du graphe : lisibilite des presets `Entreprise`, `Famille`,
+   `Groupe` et `Libre`, separation des grappes, chevauchements, labels,
+   centrage sur une fiche partagee, zoom initial et comportement responsive.
+3. Harmoniser les panneaux publics autour du graphe : recherche, filtres,
+   preferences d'affichage et fiche personnage, avec des actions compactes et
+   coherentes qui preservent au maximum la surface du graphe.
+4. Revoir les parcours profil, contribution, moderation, administration et
+   import Notion afin d'unifier les espacements, controles, messages et actions
+   principales sans reduire la densite utile de ces interfaces.
+5. Effectuer une passe d'accessibilite : navigation clavier, focus visible,
+   libelles accessibles des boutons icones, contrastes, tailles de cibles et
+   comportement lorsque les animations sont reduites.
+6. Ajouter les tests frontend pertinents et une validation visuelle avec des
+   captures Playwright sur plusieurs tailles d'ecran, en portant une attention
+   particuliere aux debordements et aux chevauchements.
+7. Executer la validation complete backend/frontend et documenter les choix UX
+   stabilises avant de clore l'etape.
+
+Point de controle :
+
+- Le graphe reste l'element principal de la premiere vue publique.
+- Les dispositions du graphe sont lisibles avec une volumetrie proche de la
+  production, sur ordinateur comme sur mobile.
+- Aucun panneau, formulaire ou message ne provoque de debordement horizontal ou
+  de chevauchement incoherent.
+- Les parcours publics et authentifies restent fonctionnels au clavier et
+  conservent des contrastes suffisants.
+- Tous les checks, tests et builds existants restent verts.
+
+## Ameliorations possibles
+
+Ces sujets sont volontairement hors des etapes actuellement planifiees. Ils ne
+bloquent ni la cloture des etapes 1 a 13 ni les migrations et finitions UX des
+etapes 14 et 15.
+
+### Moderation et qualite des donnees
+
+- Ajouter dans la vue de completude un statut `en cours de traitement`, des
+  filtres experts et une orchestration collective du rattrapage si le volume ou
+  le nombre de moderateurs le justifie.
+- Detecter les doublons de personnages par similarite, en complement du blocage
+  exact nom/prenom deja applique a la creation.
+- Permettre eventuellement aux contributions de proposer des changements de
+  tags, avec des validations dediees pour eviter les suppressions implicites.
+- Introduire un type persistant explicite pour le champ Notion ambigu
+  `Est oncle/tante` uniquement si un besoin metier fiable permet de choisir la
+  direction et le type corrects.
+
+### Performance et graphe
+
+- Surveiller la volumetrie de `/api/characters/matches` et paginer ou indexer
+  davantage si les donnees ou le trafic augmentent fortement.
+- Reevaluer `Sigma.js` avec `Graphology` uniquement si Cytoscape.js devient une
+  limite mesurable sur des graphes proches de la volumetrie de production.
+
+### Import Notion et robustesse technique
+
+- Ajouter des tests d'integration plus profonds contre PostgreSQL et le pipeline
+  image reel si l'environnement de test devient plus simple a isoler.
+- Surveiller les changements externes de structure, d'URL d'image et de
+  politique de rate-limit Notion ; conserver les erreurs visibles et le
+  workflow de validation humaine.
+- Poursuivre le decoupage des services Notion ou la mutualisation des erreurs
+  frontend uniquement si ces zones recommencent a grossir.
+
+### Exploitation et conservation
+
+- Ajouter une cible de sauvegarde distante hors VPS lorsque le stockage externe
+  retenu sera disponible ; utiliser entre-temps le script de recuperation
+  locale documente dans `DEPLOYMENT.md`.
+- Ajouter une configuration Caddy multi-domaines uniquement si un second
+  domaine public devient necessaire.
+- Ajouter un alerting externe email ou Discord sur les signaux critiques de la
+  supervision lorsque le canal operationnel sera choisi.
+- Automatiser, apres validation des regles de conservation, la purge des comptes
+  inactifs, demandes anciennes, historiques d'administration et imports
+  editoriaux. Les durees cibles restent documentees dans `PRIVACY.md` et
+  `DEPLOYMENT.md`.
+
+## Hypotheses et contraintes persistantes
+
+- La page Notion communautaire reste une source externe non officielle dont la
+  structure, l'accessibilite et les limites peuvent changer sans preavis.
+- Google, Discord et Twitch restent dependants de leurs services OAuth et de
+  leurs limites d'API respectives.
+- Le developpement et la production restent sur Node.js `24.18.0` LTS tant
+  qu'une migration Node distincte n'a pas ete decidee.
+- Le deploiement GTA-RP partage le VPS avec `f1prediction.fr` et ne doit pas
+  perturber ses ports, services ou configuration Caddy.
+- Toute nouvelle collecte de donnees personnelles ou ajout de traceur client
+  doit declencher une nouvelle revue RGPD et cookies.
