@@ -735,6 +735,29 @@ describe("admin routes", () => {
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("accepts an empty description when creating or updating a tag", async () => {
+    const agent = request.agent(createFixtureApp());
+    await loginAs(agent, "administrator");
+
+    const creationResponse = await agent.post("/api/admin/tags").send({
+      name: "Quartier Sud",
+      type: "district",
+      colorHex: "#2f9bff",
+      description: "   "
+    });
+    const updateResponse = await agent.patch(`/api/admin/tags/${adminTag.id}`).send({
+      name: adminTag.name,
+      type: adminTag.type,
+      colorHex: adminTag.colorHex,
+      description: null
+    });
+
+    expect(creationResponse.status).toBe(201);
+    expect(creationResponse.body.description).toBeNull();
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.description).toBeNull();
+  });
+
   it("blocks deleting tags that are still used", async () => {
     const agent = request.agent(createFixtureApp());
     await loginAs(agent, "administrator");

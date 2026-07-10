@@ -19,7 +19,7 @@ const nullableText = (max: number) =>
     .string()
     .trim()
     .max(max)
-    .optional()
+    .nullish()
     .transform((value) => (value ? value : null));
 
 const tagInputSchema = z.object({
