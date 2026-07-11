@@ -165,11 +165,18 @@ Les commandes de base existent deja :
 - Installation frontend reproductible : `cd web-client && npm ci`
 - Tests backend : `cd backend && npm test`
 - Tests frontend : `cd web-client && npm test`
+- Couverture backend : `cd backend && npm run test:coverage`
+- Couverture frontend : `cd web-client && npm run test:coverage`
+- Integration PostgreSQL : `cd backend && npm run test:integration`
 - Developpement backend : `cd backend && npm run dev`
 - Developpement frontend : `cd web-client && npm run dev`
 - Reset backend sans seeds : `cd backend && npm run db:reset`
 - Reset backend avec seeds : `cd backend && npm run db:reset:seed`
 - Import Notion automatique complet : `cd backend && npm run notion:sync-all`
+
+Les tests d'integration PostgreSQL creent et suppriment leur propre base
+ephemere ; ils exigent une instance PostgreSQL joignable via `backend/.env` et
+refusent les noms de base qui ne correspondent pas au prefixe de test attendu.
 
 ## Deploiement
 

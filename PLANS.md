@@ -411,6 +411,13 @@ Familles de routes en place :
   fourre-tout, tout en gardant les abstractions proportionnees au besoin.
 - Prioriser les refactors qui reduisent un risque securite, clarifient les
   permissions ou simplifient la moderation.
+- La validation globale mesure la couverture V8 sur tous les fichiers source
+  TypeScript. Les seuils de non-regression partent des baselines du 2026-07-11 :
+  backend `60 %` de lignes et frontend `75 %`, avec des seuils renforces sur les
+  mutations et le service de demandes, l'upload photo, la moderation frontend
+  et les preferences et le cycle de vie Cytoscape du graphe. Une suite
+  d'integration PostgreSQL isolee valide aussi les migrations, contraintes et
+  rollbacks transactionnels contre le moteur reel.
 
 ## Tests attendus
 
@@ -716,8 +723,9 @@ etapes 14 et 15.
 
 ### Import Notion et robustesse technique
 
-- Ajouter des tests d'integration plus profonds contre PostgreSQL et le pipeline
-  image reel si l'environnement de test devient plus simple a isoler.
+- Etendre, si necessaire, les tests d'integration PostgreSQL maintenant en place
+  au pipeline image reel et aux parcours transactionnels qui presenteront un
+  risque metier mesurable.
 - Surveiller les changements externes de structure, d'URL d'image et de
   politique de rate-limit Notion ; conserver les erreurs visibles et le
   workflow de validation humaine.

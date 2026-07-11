@@ -1,6 +1,4 @@
 Mewtwo devcontainer update status
-Checked: 2026-07-10T13:48:42Z
+Checked: 2026-07-10T17:03:15Z
 
-Warnings:
-- debian:13.5-slim digest changed; rebuild the devcontainer when convenient
-- npm has a newer version: pinned 11.16.0, latest 12.0.0
+No update warnings.

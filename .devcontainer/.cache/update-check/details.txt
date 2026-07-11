@@ -1,10 +1,10 @@
 Mewtwo devcontainer update check details
-Checked: 2026-07-10T13:48:42Z
+Checked: 2026-07-10T17:03:15Z
 
-WARN: debian:13.5-slim digest changed; rebuild the devcontainer when convenient
-apt: metadata refresh failed; see /tmp/mewtwo-devcontainer-apt-update.log
+debian:13.5-slim digest unchanged: sha256:28de0877c2189802884ccd20f15ee41c203573bd87bb6b883f5f46362d24c5c2
+apt: no upgradable packages
 Node 24: pinned v24.18.0, latest v24.18.0
-WARN: npm has a newer version: pinned 11.16.0, latest 12.0.0
+npm: pinned 12.0.0, latest 12.0.0
 uv: pinned 0.11.28, latest 0.11.28
 Serena: pinned 1.5.3, latest 1.5.3
 RTK: pinned v0.43.0, latest v0.43.0

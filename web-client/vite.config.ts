@@ -6,6 +6,41 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: "./src/test/setup.ts"
+    setupFiles: "./src/test/setup.ts",
+    coverage: {
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/test/**", "src/**/*.test.{ts,tsx}"],
+      reporter: ["text", "json-summary", "html"],
+      thresholds: {
+        statements: 71,
+        branches: 60,
+        functions: 64,
+        lines: 71,
+        "src/components/CharacterPhotoUpload.tsx": {
+          statements: 93,
+          branches: 85,
+          functions: 94,
+          lines: 93
+        },
+        "src/components/GraphPreferencesPanel.tsx": {
+          statements: 75,
+          branches: 75,
+          functions: 70,
+          lines: 75
+        },
+        "src/components/ModerationView.tsx": {
+          statements: 80,
+          branches: 70,
+          functions: 75,
+          lines: 80
+        },
+        "src/graph/useCytoscapeGraph.ts": {
+          statements: 100,
+          branches: 90,
+          functions: 100,
+          lines: 100
+        }
+      }
+    }
   }
 });

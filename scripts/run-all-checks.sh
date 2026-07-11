@@ -23,12 +23,13 @@ run_npm_script() {
 }
 
 run_npm_script "backend" "check"
-run_npm_script "backend" "test"
+run_npm_script "backend" "test:coverage"
+run_npm_script "backend" "test:integration"
 run_npm_script "backend" "build"
 
 run_npm_script "web-client" "check"
-run_npm_script "web-client" "test"
+run_npm_script "web-client" "test:coverage"
 run_npm_script "web-client" "build"
 
 echo
-echo "Tous les checks, tests et builds backend/web-client sont passes."
+echo "Tous les checks, couvertures de tests et builds backend/web-client sont passes."

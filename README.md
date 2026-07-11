@@ -130,6 +130,8 @@ npm run lint
 npm run check
 npm run format
 npm test
+npm run test:coverage
+npm run test:integration
 npm run build
 ```
 
@@ -139,6 +141,7 @@ npm run lint
 npm run check
 npm run format
 npm test
+npm run test:coverage
 npm run build
 ```
 
@@ -151,6 +154,11 @@ docker compose up -d postgres
 Depuis le devcontainer, utiliser `DB_HOST=host.docker.internal` dans
 `backend/.env` si PostgreSQL tourne dans Docker sur le host. Depuis WSL hors
 devcontainer, `DB_HOST=localhost` suffit avec le port `5432` expose.
+
+La validation globale lance aussi les tests d'integration PostgreSQL. Ceux-ci
+creent une base ephemere au nom strictement reserve aux tests, appliquent puis
+annulent la migration initiale, et suppriment cette base a la fin du test.
+PostgreSQL doit donc etre joignable avec les identifiants de `backend/.env`.
 
 Commandes de base de donnees :
 
