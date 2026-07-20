@@ -417,20 +417,18 @@ export class SequelizeAdminService implements AdminService {
     }
 
     return sequelize.transaction(async (transaction) => {
-      const [user, defaultRole] = await Promise.all([
-        models.User.findByPk(userId, {
-          include: [
-            ...userInclude,
-            {
-              association: "identities",
-              attributes: ["id"],
-              required: false
-            }
-          ],
-          transaction
-        }),
-        models.Role.findOne({ where: { name: "user" }, transaction })
-      ]);
+      const user = await models.User.findByPk(userId, {
+        include: [
+          ...userInclude,
+          {
+            association: "identities",
+            attributes: ["id"],
+            required: false
+          }
+        ],
+        transaction
+      });
+      const defaultRole = await models.Role.findOne({ where: { name: "user" }, transaction });
 
       if (!user || !defaultRole) {
         return { status: "not_found" as const };
@@ -603,13 +601,11 @@ export class SequelizeAdminService implements AdminService {
     roleName: RoleName
   ): Promise<AdminUser | "last_admin" | null> {
     return sequelize.transaction(async (transaction) => {
-      const [user, nextRole] = await Promise.all([
-        models.User.findByPk(userId, {
-          include: userInclude,
-          transaction
-        }),
-        models.Role.findOne({ where: { name: roleName }, transaction })
-      ]);
+      const user = await models.User.findByPk(userId, {
+        include: userInclude,
+        transaction
+      });
+      const nextRole = await models.Role.findOne({ where: { name: roleName }, transaction });
 
       if (!user || !nextRole) {
         return null;
