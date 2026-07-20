@@ -36,8 +36,7 @@ type CharacterSnapshotFormProps = {
 const textValue = (value: string | null) => value ?? "";
 
 const nullableValue = (value: string) => {
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+  return value.length ? value : null;
 };
 
 const socialPlatforms = [
