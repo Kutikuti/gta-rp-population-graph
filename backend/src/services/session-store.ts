@@ -81,7 +81,7 @@ export const resolveSessionExpiry = (sessionData: SessionData, now: Date, ttlHou
   return new Date(now.getTime() + ttlHours * 60 * 60 * 1000);
 };
 
-class SequelizeSessionStore extends session.Store {
+export class SequelizeSessionStore extends session.Store {
   readonly #ttlHours: number;
   readonly #cleanupIntervalMs: number;
   readonly #sessionModel: typeof SessionRecord;

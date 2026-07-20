@@ -413,11 +413,17 @@ Familles de routes en place :
   permissions ou simplifient la moderation.
 - La validation globale mesure la couverture V8 sur tous les fichiers source
   TypeScript. Les seuils de non-regression partent des baselines du 2026-07-11 :
-  backend `60 %` de lignes et frontend `75 %`, avec des seuils renforces sur les
+  backend `66 %` de lignes et frontend `78 %`, avec des seuils renforces sur les
   mutations et le service de demandes, l'upload photo, la moderation frontend
-  et les preferences et le cycle de vie Cytoscape du graphe. Une suite
-  d'integration PostgreSQL isolee valide aussi les migrations, contraintes et
-  rollbacks transactionnels contre le moteur reel.
+  et sa liste de demandes, les sessions persistantes, les clients OAuth Google,
+  Discord et Twitch, le service d'authentification et ses rattachements SSO,
+  les routes de contribution, le formulaire complet d'edition de personnage et
+  la gestion administrative des tags, ainsi que les preferences et le cycle de
+  vie Cytoscape du graphe. Une suite d'integration PostgreSQL isolee valide
+  aussi les migrations, contraintes et rollbacks transactionnels contre le
+  moteur reel. Elle exerce directement les invariants administratifs sensibles :
+  protection du dernier administrateur, tags encore utilises, revocation de
+  sessions, deliaison d'identites SSO, anonymisation et journal d'audit.
 
 ## Tests attendus
 
@@ -731,6 +737,9 @@ etapes 14 et 15.
   workflow de validation humaine.
 - Poursuivre le decoupage des services Notion ou la mutualisation des erreurs
   frontend uniquement si ces zones recommencent a grossir.
+- Surveiller l'avertissement de compatibilite `pg` emis par le rollback de la
+  migration initiale dans l'implementation interne Sequelize de `dropTable`,
+  avant toute future montee majeure vers `pg` 9.
 
 ### Exploitation et conservation
 

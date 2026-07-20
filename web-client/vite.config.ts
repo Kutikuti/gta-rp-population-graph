@@ -12,10 +12,10 @@ export default defineConfig({
       exclude: ["src/test/**", "src/**/*.test.{ts,tsx}"],
       reporter: ["text", "json-summary", "html"],
       thresholds: {
-        statements: 71,
-        branches: 60,
-        functions: 64,
-        lines: 71,
+        statements: 78,
+        branches: 65,
+        functions: 72,
+        lines: 78,
         "src/components/CharacterPhotoUpload.tsx": {
           statements: 93,
           branches: 85,
@@ -33,6 +33,24 @@ export default defineConfig({
           branches: 70,
           functions: 75,
           lines: 80
+        },
+        "src/components/ModerationRequestList.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100
+        },
+        "src/components/CharacterSnapshotForm.tsx": {
+          statements: 80,
+          branches: 70,
+          functions: 75,
+          lines: 80
+        },
+        "src/components/AdminTagsPanel.tsx": {
+          statements: 100,
+          branches: 90,
+          functions: 100,
+          lines: 100
         },
         "src/graph/useCytoscapeGraph.ts": {
           statements: 100,

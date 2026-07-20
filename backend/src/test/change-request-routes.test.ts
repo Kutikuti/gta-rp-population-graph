@@ -1,5 +1,21 @@
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const routeMocks = vi.hoisted(() => ({
+  characterFindByPk: vi.fn(),
+  createCharacterPhotoDraft: vi.fn()
+}));
+
+vi.mock("../db/index.js", () => ({
+  models: {
+    Character: { findByPk: routeMocks.characterFindByPk }
+  }
+}));
+
+vi.mock("../services/character-photos.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../services/character-photos.js")>();
+  return { ...original, createCharacterPhotoDraft: routeMocks.createCharacterPhotoDraft };
+});
 
 import { createApp } from "../app.js";
 import type {
@@ -14,6 +30,7 @@ import type {
   ChangeRequestSummary,
   CharacterSnapshot
 } from "../services/change-requests.js";
+import { InvalidCharacterPhotoError } from "../services/character-photos.js";
 import type {
   DataCompletenessReport,
   DataCompletenessService
@@ -329,6 +346,51 @@ const createFixtureApp = (
 });
 
 describe("change request routes", () => {
+  beforeEach(() => {
+    routeMocks.characterFindByPk.mockReset();
+    routeMocks.createCharacterPhotoDraft.mockReset();
+    routeMocks.characterFindByPk.mockResolvedValue({ id: ids.character });
+    routeMocks.createCharacterPhotoDraft.mockResolvedValue({
+      token: "photo-draft-token",
+      previewUrl: "/uploads/drafts/photo-draft-token.webp"
+    });
+  });
+
+  it("keeps contribution routes private for anonymous visitors", async () => {
+    const { app } = createFixtureApp();
+
+    const sessionResponse = await request(app).get("/api/contributions/session");
+    const listResponse = await request(app).get("/api/contributions/change-requests");
+    const creationResponse = await request(app)
+      .post("/api/contributions/change-requests")
+      .send({ characterId: ids.character, proposedSnapshot: snapshot });
+
+    expect(sessionResponse.status).toBe(401);
+    expect(listResponse.status).toBe(401);
+    expect(creationResponse.status).toBe(401);
+    expect(sessionResponse.body.error.code).toBe("AUTHENTICATION_REQUIRED");
+  });
+
+  it("returns the contribution session and current user's requests", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+    await loginAs(agent, "user");
+
+    const sessionResponse = await agent.get("/api/contributions/session");
+    const listResponse = await agent.get("/api/contributions/change-requests");
+
+    expect(sessionResponse.status).toBe(200);
+    expect(sessionResponse.body).toMatchObject({
+      authenticated: true,
+      area: "contributions",
+      user: { id: ids.user, displayName: "User Example" }
+    });
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body).toEqual([
+      expect.objectContaining({ id: ids.request, userId: ids.user })
+    ]);
+  });
+
   it("creates a contribution request for an authenticated user", async () => {
     const { app, service } = createFixtureApp();
     const agent = request.agent(app);
@@ -349,6 +411,23 @@ describe("change request routes", () => {
     expect(service.lastCreatedBy).toBe(ids.user);
   });
 
+  it("returns a clear error when the edited character does not exist", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+    await loginAs(agent, "user");
+
+    const response = await agent.post("/api/contributions/change-requests").send({
+      characterId: "00000000-0000-4000-8000-000000000999",
+      proposedSnapshot: snapshot
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toEqual({
+      code: "CHARACTER_NOT_FOUND",
+      message: "Personnage introuvable."
+    });
+  });
+
   it("rejects oversized character photo drafts before processing the file", async () => {
     const { app } = createFixtureApp();
     const agent = request.agent(app);
@@ -362,6 +441,70 @@ describe("change request routes", () => {
 
     expect(response.status).toBe(413);
     expect(response.body.error.code).toBe("PAYLOAD_TOO_LARGE");
+  });
+
+  it("rejects photo drafts for missing characters", async () => {
+    routeMocks.characterFindByPk.mockResolvedValue(null);
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+    await loginAs(agent, "user");
+
+    const response = await agent
+      .post(`/api/contributions/characters/${ids.character}/photo-drafts`)
+      .set("Content-Type", "image/png")
+      .send(Buffer.from("image"));
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe("CHARACTER_NOT_FOUND");
+    expect(routeMocks.createCharacterPhotoDraft).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty and invalid character photo drafts", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+    await loginAs(agent, "user");
+
+    const emptyResponse = await agent
+      .post(`/api/contributions/characters/${ids.character}/photo-drafts`)
+      .set("Content-Type", "image/png")
+      .send(Buffer.alloc(0));
+    expect(emptyResponse.status).toBe(400);
+    expect(emptyResponse.body.error.code).toBe("EMPTY_PHOTO_UPLOAD");
+
+    routeMocks.createCharacterPhotoDraft.mockRejectedValue(
+      new InvalidCharacterPhotoError("Format d'image non autorisé.")
+    );
+    const invalidResponse = await agent
+      .post(`/api/contributions/characters/${ids.character}/photo-drafts`)
+      .set("Content-Type", "image/png")
+      .send(Buffer.from("invalid-image"));
+    expect(invalidResponse.status).toBe(400);
+    expect(invalidResponse.body.error).toEqual({
+      code: "INVALID_CHARACTER_PHOTO",
+      message: "Format d'image non autorisé."
+    });
+  });
+
+  it("creates a character photo draft with the authenticated owner", async () => {
+    const { app } = createFixtureApp();
+    const agent = request.agent(app);
+    await loginAs(agent, "user");
+
+    const response = await agent
+      .post(`/api/contributions/characters/${ids.character}/photo-drafts`)
+      .set("Content-Type", "image/png; charset=binary")
+      .send(Buffer.from("valid-image"));
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({
+      token: "photo-draft-token",
+      previewUrl: "/uploads/drafts/photo-draft-token.webp"
+    });
+    expect(routeMocks.createCharacterPhotoDraft).toHaveBeenCalledWith({
+      userId: ids.user,
+      buffer: expect.any(Buffer),
+      contentType: "image/png"
+    });
   });
 
   it("rejects invalid contribution snapshots", async () => {

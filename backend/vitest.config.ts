@@ -11,10 +11,10 @@ export default defineConfig({
       exclude: ["src/test/**", "src/**/*.test.ts"],
       reporter: ["text", "json-summary", "html"],
       thresholds: {
-        statements: 60,
-        branches: 47,
-        functions: 60,
-        lines: 60,
+        statements: 66,
+        branches: 55,
+        functions: 66,
+        lines: 66,
         "src/services/change-request-mutations.ts": {
           statements: 95,
           branches: 90,
@@ -25,6 +25,42 @@ export default defineConfig({
           statements: 85,
           branches: 65,
           functions: 90,
+          lines: 85
+        },
+        "src/services/session-store.ts": {
+          statements: 80,
+          branches: 80,
+          functions: 80,
+          lines: 80
+        },
+        "src/services/google-oauth.ts": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100
+        },
+        "src/services/discord-oauth.ts": {
+          statements: 100,
+          branches: 90,
+          functions: 100,
+          lines: 100
+        },
+        "src/services/twitch-oauth.ts": {
+          statements: 100,
+          branches: 85,
+          functions: 100,
+          lines: 100
+        },
+        "src/services/auth.ts": {
+          statements: 100,
+          branches: 85,
+          functions: 100,
+          lines: 100
+        },
+        "src/routes/contributions.ts": {
+          statements: 85,
+          branches: 70,
+          functions: 100,
           lines: 85
         }
       }
