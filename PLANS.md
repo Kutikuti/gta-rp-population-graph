@@ -664,7 +664,7 @@ Resultat :
 
 ### Etape 15 - Refactor et nettoyage transversal
 
-Statut : planifiee.
+Statut : en cours depuis le 2026-07-20.
 
 Cette etape restructure le code existant sans changement fonctionnel, visuel ou
 de schema. La generalisation a d'autres serveurs et sources d'import est
@@ -716,6 +716,21 @@ Point de controle :
   ne subsiste.
 - Les contrats frontend/backend ne divergent plus silencieusement.
 - Tous les checks, tests, integrations et builds restent verts.
+
+Avancement :
+
+- Baseline du 2026-07-20 verte avec `scripts/run-all-checks.sh` : 205 tests
+  backend, 8 tests d'integration PostgreSQL, 77 tests frontend, couvertures et
+  builds backend/frontend valides.
+- Un script d'audit structurel `scripts/audit-structure.sh` permet de lancer
+  Knip en mode rapport et Madge en detection de cycles sans ajouter de
+  dependance au repo pour l'instant.
+- Premier audit structurel : aucun cycle backend ou frontend detecte. Knip
+  remonte des exports inutilises ou trop largement exposes, notamment dans les
+  modeles Sequelize, `web-client/src/api.ts`, `backend/src/services/admin.ts`
+  et plusieurs helpers internes.
+- Le warning d'integration PostgreSQL lie a `pg@9` reste un point de vigilance
+  connu, sans regression bloquante actuelle.
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 
