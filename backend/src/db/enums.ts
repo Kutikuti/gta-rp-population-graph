@@ -36,7 +36,6 @@ export const relationshipTypes = [
   ...informativeRelationshipTypes
 ] as const;
 export type RelationshipType = (typeof relationshipTypes)[number];
-export const editableRelationshipTypes = relationshipTypes;
 
 export const relationshipDirections = ["directed", "symmetric"] as const;
 export type RelationshipDirection = (typeof relationshipDirections)[number];

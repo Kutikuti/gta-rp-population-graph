@@ -32,7 +32,7 @@ export const countImportBatch = (batch: AdminNotionImportBatch, key: string) =>
 
 export const jsonPreview = (value: unknown) => JSON.stringify(value, null, 2);
 
-export const snapshotString = (snapshot: Record<string, unknown>, key: string) =>
+const snapshotString = (snapshot: Record<string, unknown>, key: string) =>
   typeof snapshot[key] === "string" && snapshot[key].trim() ? snapshot[key].trim() : null;
 
 export const formatNotionLifeStatus = (value: string | null) =>

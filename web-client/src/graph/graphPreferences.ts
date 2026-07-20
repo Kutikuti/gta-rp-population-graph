@@ -1,8 +1,8 @@
 import type { PublicGraph } from "../api";
 import type { GraphLayoutMode } from "./graphLayout";
 
-export const supportedGraphRelationshipTypes = ["parent", "child", "sibling", "couple"] as const;
-export const optionalGraphRelationshipTypes = [
+const supportedGraphRelationshipTypes = ["parent", "child", "sibling", "couple"] as const;
+const optionalGraphRelationshipTypes = [
   "previous_character",
   "ex_partner_reference",
   "uncle_reference",

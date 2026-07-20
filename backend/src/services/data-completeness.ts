@@ -1,6 +1,6 @@
 import { models } from "../db/index.js";
 
-export type DataCompletenessItem = {
+type DataCompletenessItem = {
   id: string;
   publicSlug: string;
   fullName: string;

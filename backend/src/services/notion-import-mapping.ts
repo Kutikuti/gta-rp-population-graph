@@ -59,7 +59,7 @@ export type MappedNotionCharacter = {
   sourceNote: string;
 };
 
-export type NotionEntryMappingReport = {
+type NotionEntryMappingReport = {
   recognizedFields: string[];
   missingFields: string[];
   unknownFields: string[];

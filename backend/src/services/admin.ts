@@ -2,13 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Transaction } from "sequelize";
 
-import {
-  type AuthProvider,
-  type ChangeRequestStatus,
-  type RoleName,
-  roleNames,
-  tagTypes
-} from "../db/enums.js";
+import type { AuthProvider, ChangeRequestStatus, RoleName } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
 import {
   type AdminNotionImportApplyResult,
@@ -115,7 +109,6 @@ export type AdminUserAnonymizationResult =
     };
 
 export type {
-  AdminActionEntry,
   AdminDashboard,
   AdminTag,
   AdminUser,
@@ -737,6 +730,3 @@ export class SequelizeAdminService implements AdminService {
     return user ? serializeUser(user) : null;
   }
 }
-
-export const adminRoleNames = roleNames;
-export const adminTagTypes = tagTypes;

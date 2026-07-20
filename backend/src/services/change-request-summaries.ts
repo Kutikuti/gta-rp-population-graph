@@ -3,7 +3,7 @@ import { Op, type Transaction } from "sequelize";
 import type { changeRequestTypes } from "../db/enums.js";
 import { models } from "../db/index.js";
 import type { ChangeRequest, JsonObject } from "../db/models/index.js";
-import type { CharacterCreationContext, CharacterSnapshot } from "./change-request-schemas.js";
+import type { CharacterSnapshot } from "./change-request-schemas.js";
 
 export type ChangeRequestSummary = {
   id: string;
@@ -134,4 +134,4 @@ export const hasExactNameDuplicate = async (snapshot: CharacterSnapshot) => {
   return Boolean(duplicate);
 };
 
-export type { CharacterCreationContext, CharacterSnapshot };
+export type { CharacterSnapshot };

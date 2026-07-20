@@ -75,7 +75,7 @@ export const adminActionInclude = [
   { model: models.User, as: "targetUser", attributes: ["id", "displayName"] }
 ];
 
-export const isoDate = (value: Date | null) => (value ? value.toISOString() : null);
+const isoDate = (value: Date | null) => (value ? value.toISOString() : null);
 
 export const serializeUser = (user: User): AdminUser => {
   if (!user.role) {

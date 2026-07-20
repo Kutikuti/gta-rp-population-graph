@@ -11,7 +11,7 @@ const slugBase = (value: string) =>
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
 
-export const characterSlugFromName = (firstName: string, lastName: string) => {
+const characterSlugFromName = (firstName: string, lastName: string) => {
   const value = slugBase(`${firstName} ${lastName}`);
 
   return value || "personnage";

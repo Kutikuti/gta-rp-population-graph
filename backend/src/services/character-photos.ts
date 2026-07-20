@@ -27,7 +27,7 @@ const storageRoot = resolve(process.cwd(), env.PHOTO_STORAGE_DIR);
 const tmpDir = resolve(storageRoot, "tmp");
 const characterDir = resolve(storageRoot, "characters");
 
-export const characterPhotoPublicPath = (fileName: string) => `/uploads/characters/${fileName}`;
+const characterPhotoPublicPath = (fileName: string) => `/uploads/characters/${fileName}`;
 export const characterPhotoPublicDir = characterDir;
 export const characterPhotoDraftDir = tmpDir;
 export const characterPhotoDraftFilePattern =

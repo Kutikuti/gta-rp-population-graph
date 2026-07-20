@@ -1,9 +1,5 @@
 import type { RelationshipDirection, RelationshipType } from "../db/enums.js";
-import {
-  editableRelationshipTypes,
-  graphRelationshipTypes,
-  informativeRelationshipTypes
-} from "../db/enums.js";
+import { graphRelationshipTypes, relationshipTypes } from "../db/enums.js";
 
 type RelationshipDefinition = {
   label: string;
@@ -60,21 +56,13 @@ export const relationshipDefinitionByType: Record<RelationshipType, Relationship
 };
 
 const graphRelationshipTypeSet = new Set<RelationshipType>(graphRelationshipTypes);
-const editableRelationshipTypeSet = new Set<RelationshipType>(editableRelationshipTypes);
-const informativeRelationshipTypeSet = new Set<RelationshipType>(informativeRelationshipTypes);
-
+const relationshipTypeSet = new Set<RelationshipType>(relationshipTypes);
 export const isGraphRelationshipType = (
   value: RelationshipType
 ): value is (typeof graphRelationshipTypes)[number] => graphRelationshipTypeSet.has(value);
 
-export const isEditableRelationshipType = (
-  value: RelationshipType
-): value is (typeof editableRelationshipTypes)[number] => editableRelationshipTypeSet.has(value);
-
-export const isInformativeRelationshipType = (
-  value: RelationshipType
-): value is (typeof informativeRelationshipTypes)[number] =>
-  informativeRelationshipTypeSet.has(value);
+export const isEditableRelationshipType = (value: RelationshipType): value is RelationshipType =>
+  relationshipTypeSet.has(value);
 
 export const relationshipLabel = (type: RelationshipType) =>
   relationshipDefinitionByType[type].label;

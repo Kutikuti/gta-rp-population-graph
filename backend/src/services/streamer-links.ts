@@ -6,7 +6,7 @@ import type { SocialLinks, Streamer } from "../db/models/index.js";
 
 export type StreamerSyncMode = "merge" | "replace";
 
-export const streamerPlatformOrder = [
+const streamerPlatformOrder = [
   "twitch",
   "youtube",
   "discord",
@@ -78,7 +78,7 @@ export const resolvePrimaryPlatformForSync = (
   return nextPrimaryPlatform ?? currentPrimaryPlatform ?? null;
 };
 
-export const syncStreamerMetadata = async (input: {
+const syncStreamerMetadata = async (input: {
   streamer: Streamer;
   socialLinks: SocialLinks | null | undefined;
   mode?: StreamerSyncMode;

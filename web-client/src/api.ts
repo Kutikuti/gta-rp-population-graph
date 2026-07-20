@@ -2,9 +2,9 @@ export type LifeStatus = "alive" | "deceased" | "left" | "unknown";
 export type VerificationStatus = "verified" | "community" | "imported" | "to_check" | "disputed";
 export type RoleName = "user" | "moderator" | "administrator";
 export type ChangeRequestStatus = "pending" | "approved" | "rejected";
-export type ChangeRequestType = "update" | "create";
+type ChangeRequestType = "update" | "create";
 
-export type SocialLinks = Partial<
+type SocialLinks = Partial<
   Record<"twitch" | "kick" | "youtube" | "discord" | "instagram" | "tiktok", string>
 >;
 
@@ -25,7 +25,7 @@ export type PublicTag = {
   description: string | null;
 };
 
-export type PublicCharacterSummary = {
+type PublicCharacterSummary = {
   id: string;
   publicSlug: string;
   firstName: string;
@@ -78,13 +78,6 @@ export type PublicCharacterDetail = PublicCharacterSummary & {
     incoming: PublicRelationship[];
   };
   createdAt: string;
-};
-
-export type PublicCharacterList = {
-  items: PublicCharacterSummary[];
-  total: number;
-  limit: number;
-  offset: number;
 };
 
 export type PublicCharacterReference = {
@@ -201,7 +194,7 @@ export type CharacterFilters = {
   verificationStatus: "" | VerificationStatus;
 };
 
-export type JsonObject = Record<string, unknown>;
+type JsonObject = Record<string, unknown>;
 
 export type CharacterSnapshot = {
   firstName: string;
@@ -238,7 +231,7 @@ export type CharacterSnapshot = {
   sourceNote: string | null;
 };
 
-export type FieldChange = {
+type FieldChange = {
   old: unknown;
   new: unknown;
 };
@@ -338,7 +331,7 @@ export type AdminTag = {
   usageCount: number;
 };
 
-export type AdminActionEntry = {
+type AdminActionEntry = {
   id: string;
   actor: {
     id: string;
@@ -361,7 +354,7 @@ export type AdminDashboard = {
   actions: AdminActionEntry[];
 };
 
-export type DataCompletenessItem = {
+type DataCompletenessItem = {
   id: string;
   publicSlug: string;
   fullName: string;
@@ -454,7 +447,7 @@ export class ApiRequestError extends Error {
 }
 
 const env = import.meta.env as { readonly VITE_API_BASE_URL?: string };
-const API_BASE_URL = env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const API_BASE_URL = env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
 const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
 
@@ -606,13 +599,6 @@ const characterFilterParams = (filters: CharacterFilters) => {
   }
 
   return params;
-};
-
-export const listCharacters = (filters: CharacterFilters) => {
-  const params = characterFilterParams(filters);
-  params.set("limit", "100");
-
-  return fetchJson<PublicCharacterList>(`/api/characters?${params.toString()}`);
 };
 
 export const listCharacterDirectory = () =>

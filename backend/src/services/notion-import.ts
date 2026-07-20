@@ -5,18 +5,12 @@ import { models, sequelize } from "../db/index.js";
 import type { JsonObject, NotionImportBatch, NotionImportEntry } from "../db/models/index.js";
 import {
   hashNotionRawContent,
-  type MappedNotionCharacter,
   mapNotionPage,
-  type NotionEntryMappingReport,
   type NotionImportReport,
   type PlannedNotionImport,
   type PlannedNotionImportEntry
 } from "./notion-import-mapping.js";
-import {
-  type NotionImportInput,
-  type NotionPageInput,
-  notionImportInputSchema
-} from "./notion-import-schema.js";
+import { type NotionImportInput, notionImportInputSchema } from "./notion-import-schema.js";
 
 export type PreviousNotionImportEntry = {
   sourcePageId: string;
@@ -346,13 +340,5 @@ export const previewNotionImportEntry = (
   };
 };
 
-export type {
-  MappedNotionCharacter,
-  NotionEntryMappingReport,
-  NotionImportInput,
-  NotionImportReport,
-  NotionPageInput,
-  PlannedNotionImport,
-  PlannedNotionImportEntry
-};
-export { hashNotionRawContent, mapNotionPage, notionImportInputSchema };
+export type { NotionImportInput, NotionImportReport, PlannedNotionImport };
+export { hashNotionRawContent, mapNotionPage };

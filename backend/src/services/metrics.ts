@@ -9,7 +9,7 @@ import {
 } from "../db/enums.js";
 import { models } from "../db/index.js";
 
-export const metricsRegistry = new Registry();
+const metricsRegistry = new Registry();
 
 collectDefaultMetrics({
   register: metricsRegistry
@@ -150,7 +150,7 @@ export type MetricsService = {
   contentType: string;
 };
 
-export const collectBusinessMetrics = async () => {
+const collectBusinessMetrics = async () => {
   const [charactersCount, streamersCount, tagsCount, relationshipsCount] = await Promise.all([
     models.Character.count(),
     models.Streamer.count(),

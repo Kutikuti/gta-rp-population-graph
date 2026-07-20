@@ -469,15 +469,15 @@ describe("App", () => {
     expect(screen.getByRole("dialog", { name: "Choisir une connexion" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Continuer avec Google" })).toHaveAttribute(
       "href",
-      "http://localhost:4000/api/auth/google"
+      "/api/auth/google"
     );
     expect(screen.getByRole("link", { name: "Continuer avec Discord" })).toHaveAttribute(
       "href",
-      "http://localhost:4000/api/auth/discord"
+      "/api/auth/discord"
     );
     expect(screen.getByRole("link", { name: "Continuer avec Twitch" })).toHaveAttribute(
       "href",
-      "http://localhost:4000/api/auth/twitch"
+      "/api/auth/twitch"
     );
 
     await user.keyboard("{Escape}");
@@ -576,7 +576,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Google requis" })).toBeDisabled();
     expect(screen.getByRole("link", { name: "Lier Discord" })).toHaveAttribute(
       "href",
-      "http://localhost:4000/api/auth/discord/link"
+      "/api/auth/discord/link"
     );
     expect(screen.queryByText(/Lié le/)).not.toBeInTheDocument();
 
@@ -916,15 +916,15 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lier Google" })).toHaveAttribute(
       "href",
-      "http://localhost:4000/api/auth/google/link"
+      "/api/auth/google/link"
     );
     expect(screen.getByRole("link", { name: "Lier Discord" })).toHaveAttribute(
       "href",
-      "http://localhost:4000/api/auth/discord/link"
+      "/api/auth/discord/link"
     );
     expect(screen.getByRole("link", { name: "Lier Twitch" })).toHaveAttribute(
       "href",
-      "http://localhost:4000/api/auth/twitch/link"
+      "/api/auth/twitch/link"
     );
   });
 

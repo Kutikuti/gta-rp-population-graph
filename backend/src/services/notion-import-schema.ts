@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const notionPageSchema = z.object({
+const notionPageSchema = z.object({
   pageId: z.string().min(1),
   url: z.string().url().optional(),
   properties: z.record(z.string(), z.unknown()).default({})

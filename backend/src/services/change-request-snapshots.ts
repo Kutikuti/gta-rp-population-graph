@@ -1,6 +1,6 @@
 import { Op, type Transaction } from "sequelize";
 
-import { type DataSource, editableRelationshipTypes } from "../db/enums.js";
+import { type DataSource, relationshipTypes } from "../db/enums.js";
 import { models } from "../db/index.js";
 import type {
   Character,
@@ -21,7 +21,7 @@ import { resolveOrCreateStreamer } from "./streamer-links.js";
 
 type ChangeValue = string | boolean | JsonObject | JsonObject[] | SocialLinks | null;
 
-export type FieldChange = {
+type FieldChange = {
   old: ChangeValue;
   new: ChangeValue;
 };
@@ -30,7 +30,7 @@ export type ChangeDiff = Record<string, FieldChange>;
 
 const editableFields = Object.keys(characterSnapshotSchema.shape) as Array<keyof CharacterSnapshot>;
 
-export const normalizeRelationshipDrafts = (
+const normalizeRelationshipDrafts = (
   relationships: CharacterSnapshot["relationships"],
   currentCharacterId?: string
 ) => {
@@ -75,7 +75,7 @@ const mapRelationshipToDraft = (
   };
 };
 
-export const loadCharacterRelationshipDrafts = async (
+const loadCharacterRelationshipDrafts = async (
   characterId: string,
   transaction?: Transaction
 ): Promise<CharacterSnapshot["relationships"]> => {
@@ -83,7 +83,7 @@ export const loadCharacterRelationshipDrafts = async (
     attributes: ["sourceCharacterId", "targetCharacterId", "type", "direction"],
     where: {
       type: {
-        [Op.in]: editableRelationshipTypes
+        [Op.in]: relationshipTypes
       },
       [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
     },
@@ -207,7 +207,7 @@ const applyRelationships = async (
   await models.CharacterRelationship.destroy({
     where: {
       type: {
-        [Op.in]: editableRelationshipTypes
+        [Op.in]: relationshipTypes
       },
       [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
     },

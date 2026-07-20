@@ -230,7 +230,7 @@ export const importNotionImportBatchPhotos = async (
   };
 };
 
-export const resolveNotionImportAutomationActorUserId = async () => {
+const resolveNotionImportAutomationActorUserId = async () => {
   const user = await models.User.findOne({
     include: [
       {

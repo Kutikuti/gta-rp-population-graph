@@ -40,7 +40,7 @@ const textOrUuidWhere = (value: string, textColumn: "name" | "publicName"): Wher
   return { [Op.or]: conditions };
 };
 
-export type Pagination = {
+type Pagination = {
   limit: number;
   offset: number;
 };
@@ -99,7 +99,7 @@ export type PublicCharacterSummary = {
   updatedAt: string;
 };
 
-export type PublicRelationship = {
+type PublicRelationship = {
   id: string;
   sourceCharacterId: string;
   targetCharacterId: string;
@@ -152,7 +152,7 @@ export type PublicCharacterMatches = {
   total: number;
 };
 
-export type CytoscapeNode = {
+type CytoscapeNode = {
   data: {
     id: string;
     type: "character";
@@ -169,7 +169,7 @@ export type CytoscapeNode = {
   };
 };
 
-export type CytoscapeEdge = {
+type CytoscapeEdge = {
   data: {
     id: string;
     type: "relationship";

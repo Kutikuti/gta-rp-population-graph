@@ -16,7 +16,6 @@ import {
   type AdminNotionImportApplyResult,
   type AdminNotionImportBatch,
   type AdminNotionImportDetail,
-  type AdminNotionImportEntry,
   type AdminNotionImportPhotoResult,
   importCandidateFromEntry,
   serializeImportBatch,
@@ -531,6 +530,5 @@ export type {
   AdminNotionImportApplyResult,
   AdminNotionImportBatch,
   AdminNotionImportDetail,
-  AdminNotionImportEntry,
   AdminNotionImportPhotoResult
 };

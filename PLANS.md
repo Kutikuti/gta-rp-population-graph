@@ -729,6 +729,10 @@ Avancement :
   remonte des exports inutilises ou trop largement exposes, notamment dans les
   modeles Sequelize, `web-client/src/api.ts`, `backend/src/services/admin.ts`
   et plusieurs helpers internes.
+- Premiere passe de nettoyage : les exports internes evidents ont ete rendus
+  prives, le code mort confirme par TypeScript a ete supprime et les reexports
+  inutiles ont ete retires. Knip ne remonte plus d'export inutilise backend ou
+  frontend, et Madge ne detecte toujours aucun cycle.
 - Le warning d'integration PostgreSQL lie a `pg@9` reste un point de vigilance
   connu, sans regression bloquante actuelle.
 

@@ -21,7 +21,7 @@ const getRequestAddresses = (request: Request) =>
     .filter((value): value is string => Boolean(value))
     .map((value) => value.trim());
 
-export const isLoopbackRequest = (request: Request) =>
+const isLoopbackRequest = (request: Request) =>
   getRequestAddresses(request).some((address) => loopbackAddresses.has(address));
 
 export const shouldSkipDevelopmentRateLimit = (request: Request) =>

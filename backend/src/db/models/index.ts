@@ -114,7 +114,7 @@ export class AdminAction extends Model<
   declare targetUser?: NonAttribute<User | null>;
 }
 
-export class UserSession extends Model<
+class UserSession extends Model<
   InferAttributes<UserSession>,
   InferCreationAttributes<UserSession>
 > {
@@ -223,7 +223,7 @@ export class Tag extends Model<InferAttributes<Tag>, InferCreationAttributes<Tag
   declare updatedAt: CreationOptional<Date>;
 }
 
-export class CharacterTag extends Model<
+class CharacterTag extends Model<
   InferAttributes<CharacterTag>,
   InferCreationAttributes<CharacterTag>
 > {
@@ -275,7 +275,7 @@ export class ChangeRequest extends Model<
   declare reviewer?: NonAttribute<User | null>;
 }
 
-export class ChangeHistory extends Model<
+class ChangeHistory extends Model<
   InferAttributes<ChangeHistory>,
   InferCreationAttributes<ChangeHistory>
 > {

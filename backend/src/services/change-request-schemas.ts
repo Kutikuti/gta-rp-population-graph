@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { editableRelationshipTypes, lifeStatuses, verificationStatuses } from "../db/enums.js";
+import { lifeStatuses, relationshipTypes, verificationStatuses } from "../db/enums.js";
 import type { JsonObject, SocialLinks } from "../db/models/index.js";
 
 const emptyToNull = (value: string | null | undefined) => {
@@ -63,7 +63,7 @@ const previousCharactersSchema = z
 const relationshipDraftSchema = z
   .object({
     characterId: z.uuid(),
-    type: z.enum(editableRelationshipTypes)
+    type: z.enum(relationshipTypes)
   })
   .strict();
 
@@ -102,7 +102,7 @@ export const changeRequestCreateSchema = z.object({
   proposedSnapshot: characterSnapshotSchema
 });
 
-export const characterCreationContextSchema = z
+const characterCreationContextSchema = z
   .object({
     q: nullableText(200),
     company: nullableText(160),

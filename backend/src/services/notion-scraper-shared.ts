@@ -49,7 +49,7 @@ export type ScrapeOptions = {
   fetch?: FetchLike;
 };
 
-export const compact = <T>(values: Array<T | null | undefined>) =>
+const compact = <T>(values: Array<T | null | undefined>) =>
   values.filter((value): value is T => value !== null && value !== undefined);
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -103,7 +103,7 @@ export const extractNotionPageId = (url: string) => {
   )}-${id.slice(20)}`;
 };
 
-export const pageMentionIdFromAnnotations = (annotations: unknown[]) => {
+const pageMentionIdFromAnnotations = (annotations: unknown[]) => {
   for (const annotation of annotations) {
     if (!Array.isArray(annotation) || annotation[0] !== "p" || typeof annotation[1] !== "string") {
       continue;
@@ -158,7 +158,7 @@ const pageTitleFromRecordMap = (recordMap: NotionRecordMap, pageId: string) => {
   return block ? plainText(block.properties?.title, recordMap) : null;
 };
 
-export const plainText = (value: unknown, recordMap?: NotionRecordMap): string | null => {
+const plainText = (value: unknown, recordMap?: NotionRecordMap): string | null => {
   if (typeof value === "string") {
     return value.trim() || null;
   }
