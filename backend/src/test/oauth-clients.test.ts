@@ -136,35 +136,31 @@ describe("OAuth clients", () => {
     expect(secondState).not.toBe(firstState);
   });
 
-  it.each(fixtures)("builds the $name authorization URL", ({
-    client,
-    authorizationHost,
-    clientId
-  }) => {
-    const url = new URL(client.buildAuthorizationUrl("state-value"));
+  it.each(fixtures)(
+    "builds the $name authorization URL",
+    ({ client, authorizationHost, clientId }) => {
+      const url = new URL(client.buildAuthorizationUrl("state-value"));
 
-    expect(url.host).toBe(authorizationHost);
-    expect(url.searchParams.get("client_id")).toBe(clientId);
-    expect(url.searchParams.get("state")).toBe("state-value");
-    expect(url.searchParams.get("response_type")).toBe("code");
-  });
+      expect(url.host).toBe(authorizationHost);
+      expect(url.searchParams.get("client_id")).toBe(clientId);
+      expect(url.searchParams.get("state")).toBe("state-value");
+      expect(url.searchParams.get("response_type")).toBe("code");
+    }
+  );
 
-  it.each(fixtures)("exchanges a $name code for a normalized identity", async ({
-    client,
-    tokenUrl,
-    profileUrl,
-    profile,
-    expectedIdentity
-  }) => {
-    const fetchMock = vi.mocked(fetch);
-    fetchMock
-      .mockResolvedValueOnce(response({ access_token: "access-token" }))
-      .mockResolvedValueOnce(response(profile));
+  it.each(fixtures)(
+    "exchanges a $name code for a normalized identity",
+    async ({ client, tokenUrl, profileUrl, profile, expectedIdentity }) => {
+      const fetchMock = vi.mocked(fetch);
+      fetchMock
+        .mockResolvedValueOnce(response({ access_token: "access-token" }))
+        .mockResolvedValueOnce(response(profile));
 
-    await expect(client.exchangeCodeForProfile("oauth-code")).resolves.toEqual(expectedIdentity);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(tokenUrl);
-    expect(fetchMock.mock.calls[1]?.[0]).toBe(profileUrl);
-  });
+      await expect(client.exchangeCodeForProfile("oauth-code")).resolves.toEqual(expectedIdentity);
+      expect(fetchMock.mock.calls[0]?.[0]).toBe(tokenUrl);
+      expect(fetchMock.mock.calls[1]?.[0]).toBe(profileUrl);
+    }
+  );
 
   it.each(fixtures)("rejects a failed $name token exchange", async ({ client, exchangeError }) => {
     vi.mocked(fetch).mockResolvedValueOnce(response({}, false));
@@ -172,14 +168,16 @@ describe("OAuth clients", () => {
     await expect(client.exchangeCodeForProfile("oauth-code")).rejects.toBeInstanceOf(exchangeError);
   });
 
-  it.each(fixtures)("rejects a $name token without access token", async ({
-    client,
-    exchangeError
-  }) => {
-    vi.mocked(fetch).mockResolvedValueOnce(response({}));
+  it.each(fixtures)(
+    "rejects a $name token without access token",
+    async ({ client, exchangeError }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(response({}));
 
-    await expect(client.exchangeCodeForProfile("oauth-code")).rejects.toBeInstanceOf(exchangeError);
-  });
+      await expect(client.exchangeCodeForProfile("oauth-code")).rejects.toBeInstanceOf(
+        exchangeError
+      );
+    }
+  );
 
   it.each(fixtures)("rejects a failed $name profile request", async ({ client, exchangeError }) => {
     vi.mocked(fetch)

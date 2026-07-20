@@ -17,7 +17,7 @@ interactive.
 ## Prerequis serveur
 
 - VPS Ubuntu a jour.
-- Node.js `24.18.0` et npm `12.0.0` dans le prefixe applicatif isole
+- Node.js `24.18.0` et npm `12.0.1` dans le prefixe applicatif isole
   `/opt/node-gta-rp`. Ne pas modifier les installations Node.js utilisees par
   les autres applications du VPS.
 - PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
@@ -664,7 +664,7 @@ avec :
 Pour aligner uniquement npm sur la version du projet :
 
 ```bash
-sudo /opt/node-gta-rp/bin/npm install --global npm@12.0.0 --prefix /opt/node-gta-rp
+sudo /opt/node-gta-rp/bin/npm install --global npm@12.0.1 --prefix /opt/node-gta-rp
 /opt/node-gta-rp/bin/npm --version
 ```
 

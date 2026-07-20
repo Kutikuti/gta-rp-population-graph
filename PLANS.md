@@ -649,10 +649,11 @@ Point de controle :
 Avancement au 2026-07-10 :
 
 - TypeScript `7.0.2` est configure dans les deux applications et les lockfiles
-  ont ete regeneres avec npm `12.0.0`.
-- Les installations propres, `sharp`, `esbuild`, Vite, les 196 tests, les
-  checks Biome et les builds backend/frontend sont valides localement.
-- Le devcontainer est configure pour npm 12, l'extension TypeScript 7 et
+  ont ete regeneres avec npm `12.0.1`.
+- Les installations propres, `sharp`, `esbuild`, Vite, les 205 tests backend,
+  les 8 tests d'integration PostgreSQL, les 77 tests frontend, les checks Biome
+  et les builds backend/frontend sont valides localement.
+- Le devcontainer est configure pour npm `12.0.1`, l'extension TypeScript 7 et
   `tsgo`. Sa reconstruction reste necessaire pour remplacer l'outillage du
   conteneur deja ouvert.
 - L'alignement du prefixe `/opt/node-gta-rp` et les smoke tests VPS restent a
