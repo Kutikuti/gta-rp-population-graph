@@ -733,6 +733,11 @@ Avancement :
   prives, le code mort confirme par TypeScript a ete supprime et les reexports
   inutiles ont ete retires. Knip ne remonte plus d'export inutilise backend ou
   frontend, et Madge ne detecte toujours aucun cycle.
+- Les modeles Sequelize ont ete decoupes par domaine : classes, initialisation
+  et associations sont separees entre identite, personnages, imports Notion,
+  demandes de changement et helpers partages. `backend/src/db/models/index.ts`
+  reste le point d'entree compatible et ne fait plus que coordonner
+  l'initialisation et le registry.
 - Le warning d'integration PostgreSQL lie a `pg@9` reste un point de vigilance
   connu, sans regression bloquante actuelle.
 

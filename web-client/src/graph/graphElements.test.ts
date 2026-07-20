@@ -55,7 +55,7 @@ describe("toCytoscapeElements", () => {
 
     expect(toCytoscapeElements(graph)[0]?.data).toMatchObject({
       displayLabel: "",
-      photoUrl: "http://localhost:4000/uploads/characters/camille.webp"
+      photoUrl: "/uploads/characters/camille.webp"
     });
   });
 });
