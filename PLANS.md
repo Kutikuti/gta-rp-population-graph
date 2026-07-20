@@ -608,7 +608,7 @@ Statut : terminee le 2026-07-10. Lots A a G termines.
 
 ### Etape 14 - Migration vers TypeScript 7 et npm 12
 
-Statut : en cours depuis le 2026-07-10.
+Statut : terminee le 2026-07-20.
 
 Ces deux montees de version majeures doivent rester une passe technique dediee.
 Elles ne doivent pas etre melangees a un lot fonctionnel afin de pouvoir
@@ -646,23 +646,81 @@ Point de controle :
 - Aucun changement fonctionnel ou de schema de donnees n'est introduit par
   cette etape technique.
 
-Avancement au 2026-07-10 :
+Resultat :
 
 - TypeScript `7.0.2` est configure dans les deux applications et les lockfiles
   ont ete regeneres avec npm `12.0.1`.
 - Les installations propres, `sharp`, `esbuild`, Vite, les 205 tests backend,
   les 8 tests d'integration PostgreSQL, les 77 tests frontend, les checks Biome
   et les builds backend/frontend sont valides localement.
-- Le devcontainer est configure pour npm `12.0.1`, l'extension TypeScript 7 et
-  `tsgo`. Sa reconstruction reste necessaire pour remplacer l'outillage du
-  conteneur deja ouvert.
-- L'alignement du prefixe `/opt/node-gta-rp` et les smoke tests VPS restent a
-  executer avant de terminer l'etape.
+- Le devcontainer reconstruit utilise Node.js `24.18.0` et npm `12.0.1`.
+- Le prefixe VPS isole `/opt/node-gta-rp` pointe vers `/opt/node-v24.18.0`,
+  avec npm `12.0.1`.
+- Les builds backend/frontend, le controle des migrations en attente, le
+  redemarrage du backend et les smoke tests publics/SSH de production sont
+  valides sur le VPS.
+- L'ancien dossier `/opt/node-v24.16.0` a ete supprime apres verification que le
+  service backend tourne sur `/opt/node-v24.18.0/bin/node`.
 
-### Etape 15 - Finalisation UX de l'application et du graphe
+### Etape 15 - Refactor et nettoyage transversal
+
+Statut : planifiee.
+
+Cette etape restructure le code existant sans changement fonctionnel, visuel ou
+de schema. La generalisation a d'autres serveurs et sources d'import est
+volontairement reportee a l'etape 17 afin de ne pas melanger nettoyage interne
+et nouvelles abstractions produit.
+
+Plan propose, par ordre de priorite :
+
+1. Stabiliser une baseline reproductible apres l'etape 14 : commit dedie,
+   installations propres, checks, tests, couvertures, integration PostgreSQL et
+   builds. Ajouter des tests de caracterisation avant tout deplacement de logique
+   insuffisamment couverte.
+2. Installer les garde-fous de structure : detection des fichiers, exports et
+   dependances inutilises avec `Knip`, controle des cycles et des frontieres de
+   couches, puis revue obligatoire des modules de production depassant environ
+   400 lignes. Les migrations, fichiers generes et grosses fixtures restent des
+   exceptions explicites.
+3. Centraliser les contrats partages dans un package independant de React,
+   Express et Sequelize : DTO publics, enums, erreurs API et snapshots. Etudier
+   puis adopter npm workspaces uniquement si les installations et le deploiement
+   VPS restent simples et reproductibles.
+4. Decouper le backend par domaine : un fichier par modele Sequelize,
+   initialisation et associations separees, administration repartie entre
+   utilisateurs, RGPD, tags et dashboard, service public separe entre requetes,
+   graphe, historique et serializers, puis routes alignees sur ces domaines.
+   La migration initiale reste autonome et n'est pas decoupee pour une simple
+   contrainte de taille.
+5. Decouper le frontend : remplacer le fichier API central par des modules HTTP,
+   public, authentification, profil, moderation, administration et Notion ;
+   extraire les sections et la gestion d'etat du formulaire personnage ; reduire
+   les orchestrateurs `App`, profil et administration sans modifier leurs
+   parcours.
+6. Exploiter progressivement les controles utiles de TypeScript 7 :
+   `verbatimModuleSyntax`, `exactOptionalPropertyTypes`,
+   `noUncheckedSideEffectImports`, `noPropertyAccessFromIndexSignature` et
+   `erasableSyntaxOnly`. Utiliser `satisfies`, les unions discriminees et les
+   structures `readonly` lorsque cela clarifie effectivement les contrats.
+7. Supprimer le code et les dependances devenus inutiles, verifier les frontieres
+   public/prive et les autorisations, adapter les tests extraits, puis executer
+   la validation globale sans baisse des seuils de couverture.
+
+Point de controle :
+
+- Aucun changement fonctionnel, visuel, d'API publique ou de schema n'est
+  introduit par le refactor.
+- Les modules ont une responsabilite identifiable ; tout gros fichier restant
+  dispose d'une justification claire plutot que d'un decoupage artificiel.
+- Aucun export, fichier ou paquet inutilise et aucun nouveau cycle de dependance
+  ne subsiste.
+- Les contrats frontend/backend ne divergent plus silencieusement.
+- Tous les checks, tests, integrations et builds restent verts.
+
+### Etape 16 - Finalisation UX de l'application et du graphe
 
 Statut : planifiee apres les stabilisations fonctionnelles et techniques des
-etapes 13 et 14.
+etapes 13 a 15.
 
 Cette etape regroupe les finitions visuelles et ergonomiques qui ne doivent pas
 ralentir les derniers lots fonctionnels. Elle ne doit pas modifier le contrat
@@ -702,11 +760,52 @@ Point de controle :
   conservent des contrastes suffisants.
 - Tous les checks, tests et builds existants restent verts.
 
+### Etape 17 - Declinaison par serveur et sources d'import
+
+Statut : planifiee en dernier, apres le refactor transversal et la finalisation
+UX.
+
+Cette etape rend le projet reutilisable par d'autres communautes GTA-RP sans
+introduire une architecture multi-tenant. Chaque deploiement reste une instance
+autonome configuree pour un serveur donne ; Flashback devient un profil et un
+adaptateur fournis par le projet, pas une hypothese du coeur applicatif.
+
+Plan propose :
+
+1. Definir une configuration d'instance publique et typee : identifiant, nom du
+   serveur, marque, contact, depot, liens et preferences initiales. La servir par
+   l'API sans exposer de secret et retirer les valeurs compilees en dur du client.
+2. Deplacer les valeurs Flashback dans un profil d'instance selectionne par la
+   configuration, y compris l'URL Notion par defaut. Parametrer aussi les scripts
+   d'exploitation, le domaine et la supervision sans perdre le runbook reel du
+   deploiement actuel.
+3. Separer le scraper Notion generique du mapping Flashback V6 et introduire un
+   contrat d'adaptateur de source couvrant collecte, mapping, rapport et
+   application.
+4. Implementer l'adaptateur Flashback V6 avec les alias, relations et statuts
+   existants, tout en conservant le stockage brut, la validation humaine et les
+   protections contre les doublons dans le coeur commun.
+5. Ajouter un profil fictif et un adaptateur minimal de test prouvant qu'une
+   instance peut demarrer, afficher son identite et importer des donnees sans
+   aucune dependance implicite a Flashback.
+6. Documenter la creation d'une nouvelle instance et valider installation,
+   configuration, import, tests, build et deploiement sur les deux profils.
+
+Point de controle :
+
+- Le coeur metier ne contient plus de valeur ou de branche specifique a
+  Flashback ; ces choix sont concentres dans son profil ou son adaptateur.
+- Ajouter un serveur ou une source ne demande pas de modifier les services et
+  composants generiques.
+- Les secrets restent exclusivement cote serveur et hors Git.
+- L'instance Flashback conserve exactement son comportement actuel.
+- Tous les checks, tests, integrations et builds restent verts.
+
 ## Ameliorations possibles
 
 Ces sujets sont volontairement hors des etapes actuellement planifiees. Ils ne
-bloquent ni la cloture des etapes 1 a 13 ni les migrations et finitions UX des
-etapes 14 et 15.
+bloquent ni la cloture des etapes 1 a 13 ni les travaux planifies des etapes 14
+a 17.
 
 ### Moderation et qualite des donnees
 

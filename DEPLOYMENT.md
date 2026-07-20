@@ -653,31 +653,50 @@ npm run build
 ## Chaine Node.js isolee
 
 Le projet utilise `/opt/node-gta-rp` afin de ne pas modifier les versions
-Node.js et npm des autres applications du VPS. La version attendue se controle
-avec :
+Node.js et npm des autres applications du VPS. Le lien pointe actuellement vers
+`/opt/node-v24.18.0`.
+
+La version attendue se controle avec :
 
 ```bash
 /opt/node-gta-rp/bin/node --version
-/opt/node-gta-rp/bin/npm --version
+PATH=/opt/node-gta-rp/bin:$PATH /opt/node-gta-rp/bin/npm --version
 ```
 
-Pour aligner uniquement npm sur la version du projet :
+Resultat attendu :
+
+```text
+v24.18.0
+12.0.1
+```
+
+Pour installer une nouvelle version Node.js sans toucher aux autres
+applications :
 
 ```bash
-sudo /opt/node-gta-rp/bin/npm install --global npm@12.0.1 --prefix /opt/node-gta-rp
-/opt/node-gta-rp/bin/npm --version
+cd /tmp
+curl -fsSLO https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-x64.tar.xz
+curl -fsSLO https://nodejs.org/dist/v24.18.0/SHASUMS256.txt
+sha256sum -c --ignore-missing SHASUMS256.txt
+sudo rm -rf /opt/node-v24.18.0
+sudo mkdir -p /opt/node-v24.18.0
+sudo tar -xJf node-v24.18.0-linux-x64.tar.xz -C /opt/node-v24.18.0 --strip-components=1
+sudo chown -R root:root /opt/node-v24.18.0
+sudo env PATH=/opt/node-v24.18.0/bin:$PATH \
+  /opt/node-v24.18.0/bin/npm install --global npm@12.0.1 --prefix /opt/node-v24.18.0
+sudo ln -sfn /opt/node-v24.18.0 /opt/node-gta-rp
+sudo chown -h root:root /opt/node-gta-rp
 ```
 
-La mise a jour doit etre suivie d'un `npm ci` et d'un build dans le backend et
-le frontend. En cas de regression liee a npm 12, revenir sans changer Node.js :
+La mise a jour doit etre suivie d'un `npm ci`, d'un build backend/frontend, du
+controle des migrations en attente, du redemarrage du service et des smoke
+tests. Supprimer l'ancien dossier `/opt/node-vXX.YY.ZZ` seulement apres avoir
+verifie que le backend tourne bien sur le nouveau binaire avec :
 
 ```bash
-sudo /opt/node-gta-rp/bin/npm install --global npm@11.16.0 --prefix /opt/node-gta-rp
-/opt/node-gta-rp/bin/npm --version
+pid=$(systemctl show -p MainPID --value gta-rp-backend.service)
+readlink -f /proc/$pid/exe
 ```
-
-Les lockfiles restent au format v3 et peuvent ensuite etre reinstalles avec
-`npm ci`.
 
 ## Procedure de mise a jour reproductible
 
