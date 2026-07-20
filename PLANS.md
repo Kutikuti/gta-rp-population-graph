@@ -738,6 +738,15 @@ Avancement :
   demandes de changement et helpers partages. `backend/src/db/models/index.ts`
   reste le point d'entree compatible et ne fait plus que coordonner
   l'initialisation et le registry.
+- La gestion administrative des tags a ete extraite de
+  `backend/src/services/admin.ts` vers un service dedie, tout en conservant la
+  facade `AdminService` utilisee par les routes.
+- Les actions administratives utilisateur ont ete sorties de la facade
+  principale et reparties entre services dedies : export RGPD, sessions et
+  identites, droits d'acces, bans et tags.
+- Des tests de caracterisation ciblent les services admin extraits afin que la
+  couverture globale reste stable apres refactor. La validation globale
+  `scripts/run-all-checks.sh` reste verte apres cette salve.
 - Le warning d'integration PostgreSQL lie a `pg@9` reste un point de vigilance
   connu, sans regression bloquante actuelle.
 
