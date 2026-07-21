@@ -73,6 +73,9 @@ export function CharacterSheet({
   const streamersById = character.streamer
     ? new Map([[character.streamer.id, character.streamer.publicName]])
     : undefined;
+  const snapshotFormatOptions = streamersById
+    ? { streamersById, charactersById }
+    : { charactersById };
   const statusLabel =
     (character.lifeStatus === "deceased" || character.lifeStatus === "left") &&
     character.deathOrDepartureDate
@@ -267,10 +270,7 @@ export function CharacterSheet({
                           }
                         >
                           {isKnownSnapshotField(field)
-                            ? formatCharacterSnapshotValue(field, change.old, {
-                                streamersById,
-                                charactersById
-                              })
+                            ? formatCharacterSnapshotValue(field, change.old, snapshotFormatOptions)
                             : String(change.old ?? "Non renseigné")}
                         </span>
                         <span
@@ -281,10 +281,7 @@ export function CharacterSheet({
                           }
                         >
                           {isKnownSnapshotField(field)
-                            ? formatCharacterSnapshotValue(field, change.new, {
-                                streamersById,
-                                charactersById
-                              })
+                            ? formatCharacterSnapshotValue(field, change.new, snapshotFormatOptions)
                             : String(change.new ?? "Non renseigné")}
                         </span>
                       </div>

@@ -139,7 +139,7 @@ const oauthStateFromLocation = (location: string | undefined) => {
 
 const loginAs = async (agent: ReturnType<typeof request.agent>, code: keyof typeof usersByCode) => {
   const startResponse = await agent.get("/api/auth/google");
-  const state = oauthStateFromLocation(startResponse.headers.location);
+  const state = oauthStateFromLocation(startResponse.headers["location"]);
 
   await agent.get("/api/auth/google/callback").query({ code, state });
 };
@@ -250,7 +250,7 @@ describe("authorization routes", () => {
     const response = await request(app).get("/api/supervision/authorize");
 
     expect(response.status).toBe(302);
-    expect(response.headers.location).toBe("/?login=required&redirect=/supervision/");
+    expect(response.headers["location"]).toBe("/?login=required&redirect=/supervision/");
   });
 
   it("rejects a simple user from supervision", async () => {
@@ -295,6 +295,6 @@ describe("authorization routes", () => {
     const response = await agent.get("/api/supervision/authorize");
 
     expect(response.status).toBe(302);
-    expect(response.headers.location).toBe("/?login=required&redirect=/supervision/");
+    expect(response.headers["location"]).toBe("/?login=required&redirect=/supervision/");
   });
 });

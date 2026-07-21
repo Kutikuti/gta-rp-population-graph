@@ -133,6 +133,12 @@ export function ContributionView({
   }, [onError, session]);
 
   useEffect(() => {
+    if (!session?.authenticated) {
+      setStreamers([]);
+      setCharacterOptions([]);
+      return;
+    }
+
     let isActive = true;
 
     Promise.all([listStreamers(), listCharacterDirectory()])
@@ -151,7 +157,7 @@ export function ContributionView({
     return () => {
       isActive = false;
     };
-  }, [onError]);
+  }, [onError, session]);
 
   const submit = async () => {
     if (!snapshot || (!character && !creationContext)) {

@@ -25,4 +25,4 @@ const isLoopbackRequest = (request: Request) =>
   getRequestAddresses(request).some((address) => loopbackAddresses.has(address));
 
 export const shouldSkipDevelopmentRateLimit = (request: Request) =>
-  process.env.NODE_ENV !== "production" && isLoopbackRequest(request);
+  process.env["NODE_ENV"] !== "production" && isLoopbackRequest(request);

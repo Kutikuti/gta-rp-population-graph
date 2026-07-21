@@ -86,14 +86,14 @@ const characterIncludes = (
     model: Streamer,
     as: "streamer",
     required: Boolean(filters?.streamer),
-    where: filters?.streamer ? textOrUuidWhere(filters.streamer, "publicName") : undefined
+    ...(filters?.streamer ? { where: textOrUuidWhere(filters.streamer, "publicName") } : {})
   },
   {
     model: Tag,
     as: "tags",
     through: { attributes: [] },
     required: Boolean(filters?.tag),
-    where: filters?.tag ? textOrUuidWhere(filters.tag, "name") : undefined
+    ...(filters?.tag ? { where: textOrUuidWhere(filters.tag, "name") } : {})
   }
 ];
 
@@ -149,10 +149,11 @@ const characterOrder: Order = [
 
 export class SequelizePublicDataService implements PublicDataService {
   readonly #graph = new SequelizePublicGraphService();
+  private readonly twitchLiveStatusService: TwitchLiveStatusService;
 
-  constructor(
-    private readonly twitchLiveStatusService: TwitchLiveStatusService = new TwitchLiveStatusService()
-  ) {}
+  constructor(twitchLiveStatusService: TwitchLiveStatusService = new TwitchLiveStatusService()) {
+    this.twitchLiveStatusService = twitchLiveStatusService;
+  }
 
   private async loadTwitchStatuses(
     characters: Character[]

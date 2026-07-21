@@ -38,7 +38,7 @@ export const generateUniqueCharacterSlug = async (
         [Op.iLike]: `${baseSlug}%`
       }
     },
-    transaction
+    ...(transaction ? { transaction } : {})
   });
 
   const usedSlugs = new Set(existing.map((character) => character.publicSlug));

@@ -102,6 +102,9 @@ function ProfileRequestItem({
               request.proposedStreamerName && request.proposedSnapshot.streamerId
                 ? new Map([[request.proposedSnapshot.streamerId, request.proposedStreamerName]])
                 : undefined;
+            const snapshotFormatOptions = requestStreamerMap
+              ? { streamersById: requestStreamerMap, charactersById: characterNames }
+              : { charactersById: characterNames };
 
             return (
               <div key={field} className="profile-request-change">
@@ -113,10 +116,7 @@ function ProfileRequestItem({
                       : "profile-request-value"
                   }
                 >
-                  {formatCharacterSnapshotValue(field, value, {
-                    streamersById: requestStreamerMap,
-                    charactersById: characterNames
-                  })}
+                  {formatCharacterSnapshotValue(field, value, snapshotFormatOptions)}
                 </strong>
               </div>
             );

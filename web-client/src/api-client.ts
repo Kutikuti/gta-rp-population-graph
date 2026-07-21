@@ -83,7 +83,7 @@ export const sendJson = async <T>(
 ): Promise<T> =>
   fetchJson<T>(path, {
     method,
-    body: body ? JSON.stringify(body) : undefined
+    ...(body ? { body: JSON.stringify(body) } : {})
   });
 
 export const deleteJson = async <T>(path: string): Promise<T | null> => {

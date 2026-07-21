@@ -37,8 +37,11 @@ const baseUser: AuthenticatedUser = {
 
 class FixtureAuthService implements AuthService {
   private currentUser: AuthenticatedUser = baseUser;
+  private readonly bannedGoogleIds: Set<string>;
 
-  constructor(private readonly bannedGoogleIds = new Set<string>()) {}
+  constructor(bannedGoogleIds = new Set<string>()) {
+    this.bannedGoogleIds = bannedGoogleIds;
+  }
 
   async getSessionUser(userId: string) {
     return userId === this.currentUser.id ? this.currentUser : null;
@@ -277,7 +280,7 @@ describe("auth API", () => {
     const startResponse = await agent.get("/api/auth/google");
 
     expect(startResponse.status).toBe(302);
-    const location = startResponse.headers.location;
+    const location = startResponse.headers["location"];
     expect(location).toContain("https://accounts.example.test/oauth");
 
     const state = oauthStateFromLocation(location);
@@ -287,7 +290,7 @@ describe("auth API", () => {
       .query({ code: "ok", state });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=success");
+    expect(callbackResponse.headers["location"]).toBe("http://localhost:5173/?auth=success");
 
     const sessionResponse = await agent.get("/api/auth/session");
 
@@ -314,7 +317,7 @@ describe("auth API", () => {
     const startResponse = await agent.get("/api/auth/discord");
 
     expect(startResponse.status).toBe(302);
-    const location = startResponse.headers.location;
+    const location = startResponse.headers["location"];
     expect(location).toContain("https://discord.example.test/oauth");
 
     const state = oauthStateFromLocation(location);
@@ -324,7 +327,7 @@ describe("auth API", () => {
       .query({ code: "ok", state });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=success");
+    expect(callbackResponse.headers["location"]).toBe("http://localhost:5173/?auth=success");
 
     const sessionResponse = await agent.get("/api/auth/session");
 
@@ -351,7 +354,7 @@ describe("auth API", () => {
     const startResponse = await agent.get("/api/auth/twitch");
 
     expect(startResponse.status).toBe(302);
-    const location = startResponse.headers.location;
+    const location = startResponse.headers["location"];
     expect(location).toContain("https://twitch.example.test/oauth");
 
     const state = oauthStateFromLocation(location);
@@ -361,7 +364,7 @@ describe("auth API", () => {
       .query({ code: "ok", state });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=success");
+    expect(callbackResponse.headers["location"]).toBe("http://localhost:5173/?auth=success");
 
     const sessionResponse = await agent.get("/api/auth/session");
 
@@ -391,7 +394,7 @@ describe("auth API", () => {
       .query({ code: "ok", state: "wrong-state" });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe(
+    expect(callbackResponse.headers["location"]).toBe(
       "http://localhost:5173/?auth_error=invalid_state"
     );
   });
@@ -404,14 +407,14 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startResponse = await agent.get("/api/auth/google");
-    const state = oauthStateFromLocation(startResponse.headers.location);
+    const state = oauthStateFromLocation(startResponse.headers["location"]);
 
     const callbackResponse = await agent
       .get("/api/auth/google/callback")
       .query({ code: "banned", state });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth_error=banned");
+    expect(callbackResponse.headers["location"]).toBe("http://localhost:5173/?auth_error=banned");
 
     const sessionResponse = await agent.get("/api/auth/session");
 
@@ -426,14 +429,14 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startResponse = await agent.get("/api/auth/google");
-    const state = oauthStateFromLocation(startResponse.headers.location);
+    const state = oauthStateFromLocation(startResponse.headers["location"]);
 
     const callbackResponse = await agent
       .get("/api/auth/google/callback")
       .query({ code: "existing-account", state });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe(
+    expect(callbackResponse.headers["location"]).toBe(
       "http://localhost:5173/?auth_error=identity_email_in_use"
     );
 
@@ -450,7 +453,7 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startResponse = await agent.get("/api/auth/google");
-    const state = oauthStateFromLocation(startResponse.headers.location);
+    const state = oauthStateFromLocation(startResponse.headers["location"]);
     await agent.get("/api/auth/google/callback").query({ code: "ok", state });
 
     const logoutResponse = await agent.post("/api/auth/logout");
@@ -470,19 +473,21 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startLogin = await agent.get("/api/auth/google");
-    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    const loginState = oauthStateFromLocation(startLogin.headers["location"]);
     await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
 
     const startLinkResponse = await agent.get("/api/auth/google/link");
     expect(startLinkResponse.status).toBe(302);
 
-    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const linkState = oauthStateFromLocation(startLinkResponse.headers["location"]);
     const callbackResponse = await agent
       .get("/api/auth/google/callback")
       .query({ code: "ok", state: linkState });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=identity_linked");
+    expect(callbackResponse.headers["location"]).toBe(
+      "http://localhost:5173/?auth=identity_linked"
+    );
 
     const sessionResponse = await agent.get("/api/auth/session");
 
@@ -503,20 +508,22 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startLogin = await agent.get("/api/auth/google");
-    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    const loginState = oauthStateFromLocation(startLogin.headers["location"]);
     await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
 
     const startLinkResponse = await agent.get("/api/auth/discord/link");
     expect(startLinkResponse.status).toBe(302);
-    expect(startLinkResponse.headers.location).toContain("https://discord.example.test/oauth");
+    expect(startLinkResponse.headers["location"]).toContain("https://discord.example.test/oauth");
 
-    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const linkState = oauthStateFromLocation(startLinkResponse.headers["location"]);
     const callbackResponse = await agent
       .get("/api/auth/discord/callback")
       .query({ code: "ok", state: linkState });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=identity_linked");
+    expect(callbackResponse.headers["location"]).toBe(
+      "http://localhost:5173/?auth=identity_linked"
+    );
 
     const sessionResponse = await agent.get("/api/auth/session");
 
@@ -537,20 +544,22 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startLogin = await agent.get("/api/auth/google");
-    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    const loginState = oauthStateFromLocation(startLogin.headers["location"]);
     await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
 
     const startLinkResponse = await agent.get("/api/auth/twitch/link");
     expect(startLinkResponse.status).toBe(302);
-    expect(startLinkResponse.headers.location).toContain("https://twitch.example.test/oauth");
+    expect(startLinkResponse.headers["location"]).toContain("https://twitch.example.test/oauth");
 
-    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const linkState = oauthStateFromLocation(startLinkResponse.headers["location"]);
     const callbackResponse = await agent
       .get("/api/auth/twitch/callback")
       .query({ code: "ok", state: linkState });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe("http://localhost:5173/?auth=identity_linked");
+    expect(callbackResponse.headers["location"]).toBe(
+      "http://localhost:5173/?auth=identity_linked"
+    );
 
     const sessionResponse = await agent.get("/api/auth/session");
 
@@ -570,18 +579,18 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startLogin = await agent.get("/api/auth/google");
-    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    const loginState = oauthStateFromLocation(startLogin.headers["location"]);
     await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
 
     const startLinkResponse = await agent.get("/api/auth/google/link");
-    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const linkState = oauthStateFromLocation(startLinkResponse.headers["location"]);
 
     const callbackResponse = await agent
       .get("/api/auth/google/callback")
       .query({ code: "in-use", state: linkState });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe(
+    expect(callbackResponse.headers["location"]).toBe(
       "http://localhost:5173/?auth_error=identity_in_use"
     );
   });
@@ -594,18 +603,18 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startLogin = await agent.get("/api/auth/google");
-    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    const loginState = oauthStateFromLocation(startLogin.headers["location"]);
     await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
 
     const startLinkResponse = await agent.get("/api/auth/google/link");
-    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const linkState = oauthStateFromLocation(startLinkResponse.headers["location"]);
 
     const callbackResponse = await agent
       .get("/api/auth/google/callback")
       .query({ code: "different-linked", state: linkState });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe(
+    expect(callbackResponse.headers["location"]).toBe(
       "http://localhost:5173/?auth_error=different_identity_already_linked"
     );
   });
@@ -618,11 +627,11 @@ describe("auth API", () => {
     const agent = request.agent(app);
 
     const startLogin = await agent.get("/api/auth/google");
-    const loginState = oauthStateFromLocation(startLogin.headers.location);
+    const loginState = oauthStateFromLocation(startLogin.headers["location"]);
     await agent.get("/api/auth/google/callback").query({ code: "ok", state: loginState });
 
     const startLinkResponse = await agent.get("/api/auth/google/link");
-    const linkState = oauthStateFromLocation(startLinkResponse.headers.location);
+    const linkState = oauthStateFromLocation(startLinkResponse.headers["location"]);
     await agent.post("/api/auth/logout");
 
     const callbackResponse = await agent
@@ -630,7 +639,7 @@ describe("auth API", () => {
       .query({ code: "ok", state: linkState });
 
     expect(callbackResponse.status).toBe(302);
-    expect(callbackResponse.headers.location).toBe(
+    expect(callbackResponse.headers["location"]).toBe(
       "http://localhost:5173/?auth_error=invalid_state"
     );
   });

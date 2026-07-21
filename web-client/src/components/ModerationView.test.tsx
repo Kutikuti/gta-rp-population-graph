@@ -197,7 +197,8 @@ describe("ModerationView", () => {
     expect(screen.getByText("Accès réservé aux modérateurs.")).toBeInTheDocument();
     expect(apiMocks.listModerationChangeRequests).not.toHaveBeenCalled();
     expect(apiMocks.getModerationDataCompleteness).not.toHaveBeenCalled();
-    await waitFor(() => expect(apiMocks.listStreamers).toHaveBeenCalledOnce());
+    expect(apiMocks.listStreamers).not.toHaveBeenCalled();
+    expect(apiMocks.listCharacterDirectory).not.toHaveBeenCalled();
   });
 
   it("loads pending requests, detail data and completeness actions", async () => {

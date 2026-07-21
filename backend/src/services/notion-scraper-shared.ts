@@ -155,7 +155,7 @@ const linkUrlFromAnnotations = (annotations: unknown[]) => {
 
 const pageTitleFromRecordMap = (recordMap: NotionRecordMap, pageId: string) => {
   const block = unwrapRecordValue<NotionBlockValue>(recordMap.block?.[pageId]);
-  return block ? plainText(block.properties?.title, recordMap) : null;
+  return block ? plainText(block.properties?.["title"], recordMap) : null;
 };
 
 const plainText = (value: unknown, recordMap?: NotionRecordMap): string | null => {
@@ -223,7 +223,7 @@ const linkUrl = (value: unknown): string | null => {
 };
 
 export const pageTitle = (block: NotionBlockValue, recordMap?: NotionRecordMap) =>
-  plainText(block.properties?.title, recordMap) ?? "Sans titre";
+  plainText(block.properties?.["title"], recordMap) ?? "Sans titre";
 
 export const splitTitleName = (title: string) => {
   const clean = title.trim().replace(/\s+/g, " ");
@@ -368,7 +368,7 @@ export const textBlocks = (recordMap: NotionRecordMap) =>
       return [];
     }
 
-    return compact([plainText(block.properties?.title, recordMap)]);
+    return compact([plainText(block.properties?.["title"], recordMap)]);
   });
 
 export const notionPageUrl = (sourceUrl: string, pageId: string) => {
@@ -559,15 +559,15 @@ export const propertiesFromPageBlock = (
   properties["Titre Notion"] = title;
 
   if (photoReferences.length > 0) {
-    properties.Photo = photoReferences;
+    properties["Photo"] = photoReferences;
   }
 
-  if (!properties.Prenom && fallbackName.firstName) {
-    properties.Prenom = fallbackName.firstName;
+  if (!properties["Prenom"] && fallbackName.firstName) {
+    properties["Prenom"] = fallbackName.firstName;
   }
 
-  if (!properties.Nom && fallbackName.lastName) {
-    properties.Nom = fallbackName.lastName;
+  if (!properties["Nom"] && fallbackName.lastName) {
+    properties["Nom"] = fallbackName.lastName;
   }
 
   return properties;

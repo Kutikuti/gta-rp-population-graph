@@ -33,7 +33,7 @@ export const requestInclude = [
 const isoDate = (value: Date | null) => (value ? value.toISOString() : null);
 
 const extractProposedStreamerId = (request: ChangeRequest) => {
-  const streamerId = request.proposedSnapshot.streamerId;
+  const streamerId = request.proposedSnapshot["streamerId"];
 
   return typeof streamerId === "string" && streamerId ? streamerId : null;
 };
@@ -73,11 +73,11 @@ const serializeChangeRequest = (
   characterName: request.character
     ? `${request.character.firstName} ${request.character.lastName}`
     : request.requestType === "create"
-      ? `${String(request.proposedSnapshot.firstName)} ${String(request.proposedSnapshot.lastName)}`
+      ? `${String(request.proposedSnapshot["firstName"])} ${String(request.proposedSnapshot["lastName"])}`
       : null,
   proposedStreamerName: (() => {
     const streamerId = extractProposedStreamerId(request);
-    const streamerName = request.proposedSnapshot.streamerName;
+    const streamerName = request.proposedSnapshot["streamerName"];
 
     if (typeof streamerName === "string" && streamerName.trim()) {
       return streamerName;
@@ -107,7 +107,7 @@ export const serializeChangeRequests = async (requests: ChangeRequest[]) => {
 export const reloadChangeRequestSummary = async (id: string, transaction?: Transaction) => {
   const request = await models.ChangeRequest.findByPk(id, {
     include: requestInclude,
-    transaction
+    ...(transaction ? { transaction } : {})
   });
 
   if (!request) {

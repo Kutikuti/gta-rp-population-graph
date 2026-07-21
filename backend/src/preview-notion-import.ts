@@ -46,9 +46,9 @@ try {
     console.log(`Source: ${output.sourceName}`);
     console.log(`Statut batch: ${output.status}`);
     console.log(
-      `Entrees: new=${totals.new ?? 0}, updated=${totals.updated ?? 0}, unchanged=${
-        totals.unchanged ?? 0
-      }, missing=${totals.missing ?? 0}, failed=${totals.failed ?? 0}`
+      `Entrees: new=${totals["new"] ?? 0}, updated=${totals["updated"] ?? 0}, unchanged=${
+        totals["unchanged"] ?? 0
+      }, missing=${totals["missing"] ?? 0}, failed=${totals["failed"] ?? 0}`
     );
     console.log(`Candidats affiches: ${output.candidates.length}/${output.totalCandidates}`);
     console.table(

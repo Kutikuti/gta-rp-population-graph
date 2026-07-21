@@ -133,8 +133,8 @@ export const resolveOrCreateStreamer = async (input: {
     await syncStreamerMetadata({
       streamer,
       socialLinks: input.socialLinks,
-      mode: input.syncMode,
-      transaction: input.transaction
+      transaction: input.transaction,
+      ...(input.syncMode ? { mode: input.syncMode } : {})
     });
 
     return streamer.id;
@@ -157,8 +157,8 @@ export const resolveOrCreateStreamer = async (input: {
     await syncStreamerMetadata({
       streamer: existing,
       socialLinks: input.socialLinks,
-      mode: input.syncMode,
-      transaction: input.transaction
+      transaction: input.transaction,
+      ...(input.syncMode ? { mode: input.syncMode } : {})
     });
 
     return existing.id;

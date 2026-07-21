@@ -116,6 +116,12 @@ export function ModerationView({
   }, [onError, session]);
 
   useEffect(() => {
+    if (!canModerate(session)) {
+      setStreamers([]);
+      setCharacterOptions([]);
+      return;
+    }
+
     let isActive = true;
 
     Promise.all([listStreamers(), listCharacterDirectory()])
@@ -134,7 +140,7 @@ export function ModerationView({
     return () => {
       isActive = false;
     };
-  }, [onError]);
+  }, [onError, session]);
 
   const streamerNames = useMemo(
     () => new Map(streamers.map((streamer) => [streamer.id, streamer.publicName] as const)),

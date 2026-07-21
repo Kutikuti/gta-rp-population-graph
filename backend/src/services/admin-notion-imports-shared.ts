@@ -5,6 +5,7 @@ import type {
   NotionImportBatch,
   NotionImportEntry
 } from "../db/models/index.js";
+import type { CharacterSnapshot } from "./change-request-schemas.js";
 import { type NotionImportPreviewItem, previewNotionImportEntry } from "./notion-import.js";
 
 export type AdminNotionImportBatch = {
@@ -67,6 +68,13 @@ export type ImportEntryCandidate = {
   tags: string[];
   relationships: ImportRelationshipDraft[];
   photoReferences: string[];
+};
+
+type ImportEntrySnapshot = Partial<CharacterSnapshot> & {
+  phoneNumber?: unknown;
+  streamerPublicName?: unknown;
+  tags?: unknown;
+  photoReferences?: unknown;
 };
 
 const relationshipTypes = new Set<RelationshipType>([
@@ -168,7 +176,7 @@ export const serializeImportEntry = (entry: NotionImportEntry): AdminNotionImpor
 });
 
 export const importCandidateFromEntry = (entry: NotionImportEntry): ImportEntryCandidate | null => {
-  const snapshot = entry.mappedSnapshot as Record<string, unknown>;
+  const snapshot = entry.mappedSnapshot as ImportEntrySnapshot;
   const firstName = stringValue(snapshot.firstName);
   const lastName = stringValue(snapshot.lastName);
   const verificationStatus = stringValue(snapshot.verificationStatus) as VerificationStatus | null;
@@ -184,8 +192,9 @@ export const importCandidateFromEntry = (entry: NotionImportEntry): ImportEntryC
           return [];
         }
 
-        const type = stringValue((item as Record<string, unknown>).type);
-        const targetName = stringValue((item as Record<string, unknown>).target);
+        const relation = item as { type?: unknown; target?: unknown };
+        const type = stringValue(relation.type);
+        const targetName = stringValue(relation.target);
 
         if (!type || !targetName || !relationshipTypes.has(type as RelationshipType)) {
           return [];

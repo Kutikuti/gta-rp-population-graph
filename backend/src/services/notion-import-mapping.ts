@@ -352,8 +352,8 @@ const unknownFieldNames = (properties: Record<string, unknown>) =>
 
 const ambiguousRelationships = (relationships: JsonObject[]) =>
   relationships.filter((relationship) => {
-    const type = stringValue(relationship.type);
-    const target = stringValue(relationship.target) ?? stringValue(relationship.name);
+    const type = stringValue(relationship["type"]);
+    const target = stringValue(relationship["target"]) ?? stringValue(relationship["name"]);
     return (
       !type ||
       !target ||
@@ -393,8 +393,8 @@ const dedupeRelationships = (relationships: JsonObject[]) => {
   const seen = new Set<string>();
 
   return relationships.filter((relationship) => {
-    const type = stringValue(relationship.type) ?? "";
-    const target = stringValue(relationship.target) ?? stringValue(relationship.name) ?? "";
+    const type = stringValue(relationship["type"]) ?? "";
+    const target = stringValue(relationship["target"]) ?? stringValue(relationship["name"]) ?? "";
     const key = `${type.toLowerCase()}::${target.toLowerCase()}`;
 
     if (!type || !target || seen.has(key)) {

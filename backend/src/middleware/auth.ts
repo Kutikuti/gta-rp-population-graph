@@ -41,7 +41,7 @@ export const loadCurrentUser =
 
       if (!user || user.isBanned) {
         request.currentUser = null;
-        request.session.userId = undefined;
+        delete request.session.userId;
         clearSessionCookie(response);
         next();
         return;

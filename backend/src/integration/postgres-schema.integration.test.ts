@@ -65,7 +65,7 @@ describe("initial PostgreSQL schema", () => {
       port: env.DB_PORT,
       logging: false,
       pool: { max: 1, min: 0, idle: 1_000 },
-      dialectOptions: env.DB_SSL ? { ssl: { rejectUnauthorized: false } } : undefined
+      ...(env.DB_SSL ? { dialectOptions: { ssl: { rejectUnauthorized: false } } } : {})
     });
     await up(migrationParams());
   });

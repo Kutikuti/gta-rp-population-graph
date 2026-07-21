@@ -12,7 +12,7 @@ const envPaths = [
 ];
 const envPath = envPaths.find((candidate) => existsSync(candidate));
 
-dotenv.config({ path: envPath, quiet: true });
+dotenv.config(envPath ? { path: envPath, quiet: true } : { quiet: true });
 
 const booleanFromString = z
   .string()

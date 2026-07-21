@@ -193,7 +193,7 @@ const oauthStateFromLocation = (location: string | undefined) => {
 
 const loginAs = async (agent: ReturnType<typeof request.agent>, code: keyof typeof usersByCode) => {
   const startResponse = await agent.get("/api/auth/google");
-  const state = oauthStateFromLocation(startResponse.headers.location);
+  const state = oauthStateFromLocation(startResponse.headers["location"]);
 
   await agent.get("/api/auth/google/callback").query({ code, state });
 };

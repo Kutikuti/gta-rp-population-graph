@@ -114,7 +114,7 @@ describe("SequelizeAdminService with PostgreSQL", () => {
       logging: false,
       pool: { max: 1, min: 0, idle: 1_000 },
       define: { underscored: true, timestamps: true },
-      dialectOptions: env.DB_SSL ? { ssl: { rejectUnauthorized: false } } : undefined
+      ...(env.DB_SSL ? { dialectOptions: { ssl: { rejectUnauthorized: false } } } : {})
     });
     await up(migrationParams());
 

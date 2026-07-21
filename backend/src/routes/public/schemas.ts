@@ -31,6 +31,18 @@ const historyQuerySchema = paginationSchema.extend({
   characterId: z.uuid().optional()
 });
 
+const stripUndefinedProperties = <T extends Record<string, unknown>>(value: T) => {
+  const output: Record<string, unknown> = {};
+
+  for (const [key, fieldValue] of Object.entries(value)) {
+    if (fieldValue !== undefined) {
+      output[key] = fieldValue;
+    }
+  }
+
+  return output;
+};
+
 export const idParamSchema = z.object({
   id: z
     .string()
@@ -41,10 +53,10 @@ export const idParamSchema = z.object({
 });
 
 export const parseCharacterFilters = (query: unknown): CharacterListFilters =>
-  charactersQuerySchema.parse(query);
+  stripUndefinedProperties(charactersQuerySchema.parse(query)) as CharacterListFilters;
 
 export const parseCharacterMatchFilters = (query: unknown): CharacterMatchFilters =>
-  characterMatchesQuerySchema.parse(query);
+  stripUndefinedProperties(characterMatchesQuerySchema.parse(query)) as CharacterMatchFilters;
 
 export const parseHistoryFilters = (query: unknown): HistoryFilters =>
-  historyQuerySchema.parse(query);
+  stripUndefinedProperties(historyQuerySchema.parse(query)) as HistoryFilters;

@@ -142,7 +142,7 @@ export const applyNotionImportBatchEntries = async (
         pageId,
         code: result.code,
         message: result.message,
-        details: result.details
+        ...(result.details === undefined ? {} : { details: result.details })
       });
     }
 
@@ -216,7 +216,7 @@ export const importNotionImportBatchPhotos = async (
       pageId: entry.pageId,
       code: result.code,
       message: result.message,
-      details: result.details
+      ...(result.details === undefined ? {} : { details: result.details })
     });
   }
 

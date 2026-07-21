@@ -155,9 +155,9 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
     status?: ChangeRequestSummary["status"]
   ): Promise<ChangeRequestSummary[]> {
     const requests = await models.ChangeRequest.findAll({
-      where: status ? { status } : undefined,
       include: requestInclude,
-      order: [["createdAt", "DESC"]]
+      order: [["createdAt", "DESC"]],
+      ...(status ? { where: { status } } : {})
     });
 
     return serializeChangeRequests(requests);

@@ -50,9 +50,9 @@ const redirectToClient = (searchParams: Record<string, string>) => {
 };
 
 const clearOauthSessionState = (request: express.Request) => {
-  request.session.oauthState = undefined;
-  request.session.oauthIntent = undefined;
-  request.session.oauthLinkUserId = undefined;
+  delete request.session.oauthState;
+  delete request.session.oauthIntent;
+  delete request.session.oauthLinkUserId;
 };
 
 type OauthClient = {
@@ -101,7 +101,7 @@ export const createAuthRouter = ({
     await regenerateSession(request);
     request.session.oauthState = state;
     request.session.oauthIntent = "login";
-    request.session.oauthLinkUserId = undefined;
+    delete request.session.oauthLinkUserId;
     response.redirect(302, client.buildAuthorizationUrl(state));
   };
 

@@ -307,11 +307,11 @@ export const previewNotionImportEntry = (
 ): NotionImportPreviewItem => {
   const snapshot = entry.mappedSnapshot;
   const socialLinks = snapshotStringRecord(snapshot, "socialLinks");
-  const tags = Array.isArray(snapshot.tags)
-    ? snapshot.tags.filter((tag): tag is string => typeof tag === "string").join(", ")
+  const tags = Array.isArray(snapshot["tags"])
+    ? snapshot["tags"].filter((tag): tag is string => typeof tag === "string").join(", ")
     : "";
-  const photoReferences = Array.isArray(snapshot.photoReferences)
-    ? snapshot.photoReferences.filter(
+  const photoReferences = Array.isArray(snapshot["photoReferences"])
+    ? snapshot["photoReferences"].filter(
         (reference): reference is string => typeof reference === "string"
       )
     : [];

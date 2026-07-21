@@ -8,16 +8,18 @@ export const createSequelize = () =>
     host: env.DB_HOST,
     port: env.DB_PORT,
     logging: false,
-    dialectOptions: env.DB_SSL
-      ? {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false
-          }
-        }
-      : undefined,
     define: {
       underscored: true,
       timestamps: true
-    }
+    },
+    ...(env.DB_SSL
+      ? {
+          dialectOptions: {
+            ssl: {
+              require: true,
+              rejectUnauthorized: false
+            }
+          }
+        }
+      : {})
   });

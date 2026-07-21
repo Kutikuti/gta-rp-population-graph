@@ -48,7 +48,7 @@ describe("internal metrics routes", () => {
 
     const response = await request(app)
       .get("/api/internal/metrics")
-      .set("Authorization", `Bearer ${process.env.METRICS_TOKEN}`);
+      .set("Authorization", `Bearer ${process.env["METRICS_TOKEN"]}`);
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("text/plain");

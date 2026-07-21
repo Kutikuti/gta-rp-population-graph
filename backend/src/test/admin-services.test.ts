@@ -298,4 +298,93 @@ describe("SequelizeAdminUserService", () => {
 
     expect(db.models.AdminAction.create).toHaveBeenCalledTimes(2);
   });
+
+  it("refuses to unlink the last identity from a user account", async () => {
+    const { SequelizeAdminUserService } = await import("../services/admin-users.js");
+    db.models.User.findByPk.mockResolvedValue(
+      createUser({
+        identities: [{ id: "google-id", provider: "google" }]
+      })
+    );
+
+    await expect(
+      new SequelizeAdminUserService().unlinkUserIdentity("actor-id", "user-id", "google")
+    ).resolves.toEqual({
+      status: "last_identity"
+    });
+    expect(db.models.UserIdentity.destroy).not.toHaveBeenCalled();
+    expect(db.models.AdminAction.create).not.toHaveBeenCalled();
+  });
+
+  it("protects the last administrator before anonymizing an account", async () => {
+    const { SequelizeAdminUserService } = await import("../services/admin-users.js");
+    db.models.User.findByPk.mockResolvedValue(
+      createUser({
+        role: { id: "administrator-role", name: "administrator" },
+        identities: [{ id: "google-id" }]
+      })
+    );
+    db.models.Role.findOne.mockResolvedValue({ id: "user-role", name: "user" });
+    db.models.User.count.mockResolvedValue(1);
+
+    await expect(
+      new SequelizeAdminUserService().anonymizeUserAccount("actor-id", "admin-id")
+    ).resolves.toEqual({
+      status: "last_admin"
+    });
+    expect(db.models.UserIdentity.destroy).not.toHaveBeenCalled();
+    expect(db.models.UserSession.destroy).not.toHaveBeenCalled();
+    expect(db.models.AdminAction.create).not.toHaveBeenCalled();
+  });
+
+  it("anonymizes a user account, revokes sessions and records an audit entry", async () => {
+    const { SequelizeAdminUserService } = await import("../services/admin-users.js");
+    const user = createUser({
+      identities: [{ id: "google-id" }],
+      update: vi.fn().mockResolvedValue(undefined)
+    });
+    db.models.User.findByPk.mockResolvedValueOnce(user).mockResolvedValueOnce(
+      createUser({
+        email: "deleted-user@deleted.local",
+        displayName: "Utilisateur supprimé",
+        role: { id: "user-role", name: "user" }
+      })
+    );
+    db.models.Role.findOne.mockResolvedValue({ id: "user-role", name: "user" });
+    db.models.UserIdentity.destroy.mockResolvedValue(1);
+    db.models.UserSession.destroy.mockResolvedValue(2);
+
+    await expect(
+      new SequelizeAdminUserService().anonymizeUserAccount("actor-id", "user-id")
+    ).resolves.toMatchObject({
+      status: "anonymized",
+      revokedSessions: 2,
+      unlinkedIdentities: 1,
+      user: {
+        displayName: "Utilisateur supprimé",
+        role: { name: "user" }
+      }
+    });
+
+    expect(user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: expect.stringMatching(/^deleted-.+@deleted\.local$/),
+        displayName: "Utilisateur supprimé",
+        avatarUrl: null,
+        roleId: "user-role",
+        lastLoginAt: null
+      }),
+      { transaction: db.transaction }
+    );
+    expect(db.models.AdminAction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "user.account.anonymize",
+        changes: {
+          unlinkedIdentities: 1,
+          revokedSessions: 2
+        }
+      }),
+      { transaction: db.transaction }
+    );
+  });
 });

@@ -17,7 +17,7 @@ try {
   const service = new SequelizeNotionImportAutomationService();
   const result = await service.run({
     sourceUrl,
-    actorUserId
+    ...(actorUserId ? { actorUserId } : {})
   });
 
   if (jsonOutput) {

@@ -257,16 +257,16 @@ export const scrapePublicNotionPage = async (
     const fallbackName = splitTitleName(title);
     const photoReferences = pagePhotoReferences(recordMap, pageBlock);
 
-    if (!properties.Prenom && fallbackName.firstName) {
-      properties.Prenom = fallbackName.firstName;
+    if (!properties["Prenom"] && fallbackName.firstName) {
+      properties["Prenom"] = fallbackName.firstName;
     }
 
-    if (!properties.Nom && fallbackName.lastName) {
-      properties.Nom = fallbackName.lastName;
+    if (!properties["Nom"] && fallbackName.lastName) {
+      properties["Nom"] = fallbackName.lastName;
     }
 
     if (photoReferences.length > 0) {
-      properties.Photo = photoReferences;
+      properties["Photo"] = photoReferences;
     }
 
     pages.push({
@@ -286,16 +286,16 @@ export const scrapePublicNotionPage = async (
     const fallbackName = splitTitleName(title);
     const photoReferences = rootBlock ? pagePhotoReferences(rootRecordMap, rootBlock) : [];
 
-    if (!properties.Prenom && fallbackName.firstName) {
-      properties.Prenom = fallbackName.firstName;
+    if (!properties["Prenom"] && fallbackName.firstName) {
+      properties["Prenom"] = fallbackName.firstName;
     }
 
-    if (!properties.Nom && fallbackName.lastName) {
-      properties.Nom = fallbackName.lastName;
+    if (!properties["Nom"] && fallbackName.lastName) {
+      properties["Nom"] = fallbackName.lastName;
     }
 
     if (photoReferences.length > 0) {
-      properties.Photo = photoReferences;
+      properties["Photo"] = photoReferences;
     }
 
     pages.push({

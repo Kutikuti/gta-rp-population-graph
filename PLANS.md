@@ -719,7 +719,7 @@ Point de controle :
 
 Avancement :
 
-- Baseline du 2026-07-20 verte avec `scripts/run-all-checks.sh` : 214 tests
+- Baseline du 2026-07-20 verte avec `scripts/run-all-checks.sh` : 217 tests
   backend, 8 tests d'integration PostgreSQL, 83 tests frontend, couvertures et
   builds backend/frontend valides.
 - Un script d'audit structurel `scripts/audit-structure.sh` permet de lancer
@@ -776,6 +776,20 @@ Avancement :
 - La vue de contribution a ete legerement clarifiee en extrayant le panneau
   lateral `Mes demandes`, sans deplacer le flux metier de soumission ni l'upload
   photo.
+- Les vues contribution et moderation ne chargent plus les donnees de formulaire
+  inutiles lorsque l'utilisateur n'a pas le droit d'acceder au parcours.
+- Les controles TypeScript 7 `verbatimModuleSyntax`,
+  `exactOptionalPropertyTypes`, `noUncheckedSideEffectImports`,
+  `noPropertyAccessFromIndexSignature` et `erasableSyntaxOnly` sont actives
+  cote backend et frontend. Les appels passant des options facultatives
+  n'envoient plus explicitement `undefined`, les acces aux index signatures sont
+  explicites et les dernieres syntaxes non effacables ont ete retirees.
+- La regle Biome `complexity/useLiteralKeys` est desactivee car elle entre en
+  conflit avec `noPropertyAccessFromIndexSignature` sur les index signatures
+  assumees (`process.env`, headers HTTP et donnees JSON dynamiques).
+- Les tests du service admin utilisateur couvrent maintenant les chemins RGPD
+  sensibles : refus de dissocier la derniere identite, protection du dernier
+  administrateur et anonymisation complete avec revocation des sessions et audit.
 - Le warning d'integration PostgreSQL lie a `pg@9` reste un point de vigilance
   connu, sans regression bloquante actuelle.
 

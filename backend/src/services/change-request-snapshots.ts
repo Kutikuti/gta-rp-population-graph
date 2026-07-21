@@ -87,7 +87,7 @@ const loadCharacterRelationshipDrafts = async (
       },
       [Op.or]: [{ sourceCharacterId: characterId }, { targetCharacterId: characterId }]
     },
-    transaction
+    ...(transaction ? { transaction } : {})
   });
 
   return normalizeRelationshipDrafts(
@@ -103,7 +103,7 @@ export const characterToSnapshot = async (
   const streamer = character.streamerId
     ? await models.Streamer.findByPk(character.streamerId, {
         attributes: ["socialLinks"],
-        transaction
+        ...(transaction ? { transaction } : {})
       })
     : null;
 
