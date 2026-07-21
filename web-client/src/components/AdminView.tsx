@@ -1,35 +1,9 @@
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-
-import {
-  type AdminDashboard,
-  type AdminTagInput,
-  type AdminUser,
-  type AdminUserPersonalDataExport,
-  type AuthSession,
-  anonymizeAdminUserAccount,
-  banAdminUser,
-  createAdminTag,
-  type DataCompletenessReport,
-  deleteAdminTag,
-  getAdminDashboard,
-  getAdminDataCompleteness,
-  getAdminUserPersonalData,
-  revokeAdminUserBan,
-  revokeAdminUserSessions,
-  unlinkAdminUserIdentity,
-  updateAdminTag,
-  updateAdminUserRole
-} from "../api";
+import type { AuthSession } from "../api";
+import { useAdminViewState } from "../hooks/useAdminViewState";
 import { AdminActionsPanel } from "./AdminActionsPanel";
 import { AdminAnonymizationDialog } from "./AdminAnonymizationDialog";
 import { AdminTagsPanel } from "./AdminTagsPanel";
 import { AdminUsersPanel } from "./AdminUsersPanel";
-import {
-  adminErrorMessage,
-  emptyTagInput,
-  normalizeTagInput,
-  tagInputFromTag
-} from "./admin-shared";
 import { DataCompletenessPanel } from "./DataCompletenessPanel";
 
 type AdminViewProps = {
@@ -39,54 +13,8 @@ type AdminViewProps = {
 };
 
 export function AdminView({ session, onEditCharacter, onError }: AdminViewProps) {
-  const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
-  const [tagInput, setTagInput] = useState<AdminTagInput>(emptyTagInput);
-  const [editingTagId, setEditingTagId] = useState<string | null>(null);
-  const [banReasons, setBanReasons] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCompletenessLoading, setIsCompletenessLoading] = useState(false);
-  const [isPersonalDataLoading, setIsPersonalDataLoading] = useState(false);
-  const [completenessReport, setCompletenessReport] = useState<DataCompletenessReport | null>(null);
-  const [personalDataExport, setPersonalDataExport] = useState<AdminUserPersonalDataExport | null>(
-    null
-  );
-  const [anonymizationCandidate, setAnonymizationCandidate] = useState<AdminUser | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
-
   const canAdmin = session?.authenticated && session.user.role.name === "administrator";
-  const editingTag = useMemo(
-    () => dashboard?.tags.find((tag) => tag.id === editingTagId) ?? null,
-    [dashboard, editingTagId]
-  );
-
-  const loadDashboard = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      setDashboard(await getAdminDashboard());
-    } catch {
-      onError("L'administration n'a pas pu être chargée.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [onError]);
-
-  const loadCompleteness = useCallback(async () => {
-    setIsCompletenessLoading(true);
-    try {
-      setCompletenessReport(await getAdminDataCompleteness());
-    } catch {
-      onError("La vue de complétude n'a pas pu être chargée.");
-    } finally {
-      setIsCompletenessLoading(false);
-    }
-  }, [onError]);
-
-  useEffect(() => {
-    if (canAdmin) {
-      void loadDashboard();
-      void loadCompleteness();
-    }
-  }, [canAdmin, loadCompleteness, loadDashboard]);
+  const adminState = useAdminViewState({ canAdmin: Boolean(canAdmin), onError });
 
   if (!session?.authenticated) {
     return (
@@ -114,81 +42,6 @@ export function AdminView({ session, onEditCharacter, onError }: AdminViewProps)
     );
   }
 
-  const runAction = async (action: () => Promise<unknown>, message: string) => {
-    try {
-      await action();
-      await Promise.all([loadDashboard(), loadCompleteness()]);
-      setFeedback(message);
-    } catch (error) {
-      onError(adminErrorMessage(error));
-    }
-  };
-
-  const loadPersonalDataExport = async (user: AdminUser) => {
-    setIsPersonalDataLoading(true);
-
-    try {
-      setPersonalDataExport(await getAdminUserPersonalData(user.id));
-    } catch {
-      onError("Les données RGPD de cet utilisateur n'ont pas pu être chargées.");
-    } finally {
-      setIsPersonalDataLoading(false);
-    }
-  };
-
-  const revokeUserSessions = async (user: AdminUser) => {
-    try {
-      const result = await revokeAdminUserSessions(user.id);
-      setFeedback(
-        result ? `${result.revokedCount} session(s) révoquée(s).` : "Sessions révoquées."
-      );
-      await loadPersonalDataExport(user);
-    } catch (error) {
-      onError(adminErrorMessage(error));
-    }
-  };
-
-  const unlinkUserIdentity = async (user: AdminUser, provider: "google" | "discord" | "twitch") => {
-    try {
-      await unlinkAdminUserIdentity(user.id, provider);
-      setFeedback("Compte lié dissocié.");
-      await loadPersonalDataExport(user);
-    } catch (error) {
-      onError(adminErrorMessage(error));
-    }
-  };
-
-  const anonymizeUserAccount = async (user: AdminUser) => {
-    try {
-      const result = await anonymizeAdminUserAccount(user.id);
-      setFeedback(
-        result
-          ? `Compte anonymisé. ${result.unlinkedIdentities} identité(s) dissociée(s), ${result.revokedSessions} session(s) révoquée(s).`
-          : "Compte anonymisé."
-      );
-      setAnonymizationCandidate(null);
-      await Promise.all([loadDashboard(), loadPersonalDataExport(user)]);
-    } catch (error) {
-      onError(adminErrorMessage(error));
-    }
-  };
-
-  const submitTag = async (event: FormEvent) => {
-    event.preventDefault();
-    const input = normalizeTagInput(tagInput);
-
-    await runAction(
-      () => (editingTag ? updateAdminTag(editingTag.id, input) : createAdminTag(input)),
-      editingTag ? "Tag modifié." : "Tag créé."
-    );
-    setTagInput(emptyTagInput);
-    setEditingTagId(null);
-  };
-
-  const users = dashboard?.users ?? [];
-  const tags = dashboard?.tags ?? [];
-  const actions = dashboard?.actions ?? [];
-
   return (
     <section className="full-page-view" aria-labelledby="admin-title">
       <div className="full-page-header">
@@ -196,90 +49,72 @@ export function AdminView({ session, onEditCharacter, onError }: AdminViewProps)
           <p className="eyebrow">Administration</p>
           <h2 id="admin-title">Contrôle des données et accès</h2>
         </div>
-        {feedback ? <p className="auth-feedback auth-feedback-success">{feedback}</p> : null}
+        {adminState.feedback ? (
+          <p className="auth-feedback auth-feedback-success">{adminState.feedback}</p>
+        ) : null}
       </div>
 
       <div className="admin-page-content">
         <DataCompletenessPanel
-          isLoading={isCompletenessLoading}
+          isLoading={adminState.isCompletenessLoading}
           onEditCharacter={onEditCharacter}
-          report={completenessReport}
+          report={adminState.completenessReport}
           title="Fiches à compléter"
         />
 
         <div className="admin-layout">
           <AdminUsersPanel
-            banReasons={banReasons}
-            isLoading={isLoading}
-            isPersonalDataLoading={isPersonalDataLoading}
-            personalDataExport={personalDataExport}
-            users={users}
-            onBanReasonChange={(userId, value) => {
-              setBanReasons((current) => ({
-                ...current,
-                [userId]: value
-              }));
-            }}
-            onBanUser={(user) => {
-              const reason = banReasons[user.id]?.trim();
-
-              if (!reason) {
-                onError("Un motif de bannissement est requis.");
-                return;
-              }
-
-              void runAction(() => banAdminUser(user.id, reason), "Utilisateur banni.");
-            }}
+            banReasons={adminState.banReasons}
+            isLoading={adminState.isLoading}
+            isPersonalDataLoading={adminState.isPersonalDataLoading}
+            personalDataExport={adminState.personalDataExport}
+            users={adminState.users}
+            onBanReasonChange={adminState.updateBanReason}
+            onBanUser={adminState.banUser}
             onLoadPersonalData={(user) => {
-              void loadPersonalDataExport(user);
+              void adminState.loadPersonalDataExport(user);
             }}
             onRevokeSessions={(user) => {
-              void revokeUserSessions(user);
+              void adminState.revokeUserSessions(user);
             }}
             onUnlinkIdentity={(user, provider) => {
-              void unlinkUserIdentity(user, provider);
+              void adminState.unlinkUserIdentity(user, provider);
             }}
             onAnonymizeUser={(user) => {
-              setAnonymizationCandidate(user);
+              adminState.setAnonymizationCandidate(user);
             }}
             onRevokeBan={(user) => {
-              void runAction(() => revokeAdminUserBan(user.id), "Bannissement levé.");
+              adminState.revokeBan(user.id);
             }}
             onUpdateRole={(user, roleName) => {
-              void runAction(() => updateAdminUserRole(user.id, roleName), "Rôle mis à jour.");
+              adminState.updateUserRole(user.id, roleName);
             }}
           />
 
           <AdminTagsPanel
-            editingTag={editingTag}
-            tagInput={tagInput}
-            tags={tags}
-            onCancelEdit={() => {
-              setEditingTagId(null);
-              setTagInput(emptyTagInput);
-            }}
+            editingTag={adminState.editingTag}
+            tagInput={adminState.tagInput}
+            tags={adminState.tags}
+            onCancelEdit={adminState.cancelTagEdit}
             onDeleteTag={(tag) => {
-              void runAction(() => deleteAdminTag(tag.id), "Tag supprimé.");
+              adminState.deleteTag(tag.id);
             }}
-            onEditTag={(tag) => {
-              setEditingTagId(tag.id);
-              setTagInput(tagInputFromTag(tag));
-            }}
-            onSubmit={submitTag}
-            onTagInputChange={setTagInput}
+            onEditTag={adminState.editTag}
+            onSubmit={adminState.submitTag}
+            onTagInputChange={adminState.setTagInput}
           />
 
-          <AdminActionsPanel actions={actions} />
+          <AdminActionsPanel actions={adminState.actions} />
         </div>
       </div>
-      {anonymizationCandidate ? (
+      {adminState.anonymizationCandidate ? (
         <AdminAnonymizationDialog
-          user={anonymizationCandidate}
+          user={adminState.anonymizationCandidate}
           onCancel={() => {
-            setAnonymizationCandidate(null);
+            adminState.setAnonymizationCandidate(null);
           }}
           onConfirm={(user) => {
-            void anonymizeUserAccount(user);
+            void adminState.anonymizeUserAccount(user);
           }}
         />
       ) : null}

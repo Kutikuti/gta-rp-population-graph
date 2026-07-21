@@ -719,8 +719,8 @@ Point de controle :
 
 Avancement :
 
-- Baseline du 2026-07-20 verte avec `scripts/run-all-checks.sh` : 205 tests
-  backend, 8 tests d'integration PostgreSQL, 77 tests frontend, couvertures et
+- Baseline du 2026-07-20 verte avec `scripts/run-all-checks.sh` : 214 tests
+  backend, 8 tests d'integration PostgreSQL, 83 tests frontend, couvertures et
   builds backend/frontend valides.
 - Un script d'audit structurel `scripts/audit-structure.sh` permet de lancer
   Knip en mode rapport et Madge en detection de cycles sans ajouter de
@@ -747,6 +747,35 @@ Avancement :
 - Des tests de caracterisation ciblent les services admin extraits afin que la
   couverture globale reste stable apres refactor. La validation globale
   `scripts/run-all-checks.sh` reste verte apres cette salve.
+- Les contrats et serializers publics ont ete extraits de
+  `backend/src/services/public-data.ts` vers un module dedie afin de separer la
+  serialisation des requetes Sequelize publiques. Les checks, tests et builds
+  backend/frontend restent verts ; les tests d'integration PostgreSQL exigent
+  toujours une base joignable dans l'environnement courant.
+- La construction du graphe public a ete extraite vers un service dedie afin de
+  separer la generation Cytoscape, la deduplication des relations et les
+  requetes de consultation de fiches.
+- Le fichier frontend `web-client/src/api.ts` a ete allege en separant les
+  contrats TypeScript (`api-types.ts`) et la couche HTTP commune
+  (`api-client.ts`), tout en conservant la facade d'exports existante pour les
+  composants.
+- Le formulaire d'edition de fiche a ete allege en extrayant les blocs
+  `Contact` / `Relations` et `Medias` vers des composants dedies. Les tests
+  couvrent les champs restants du formulaire parent ainsi que les composants
+  extraits, sans baisse des seuils de couverture.
+- La vue d'exploration publique a ete extraite de `web-client/src/App.tsx` vers
+  `ExploreView`, afin de separer la composition recherche/graphe/fiche de
+  l'orchestration globale des vues.
+- La page profil a ete decoupee en sections dediees pour l'identite publique,
+  les comptes lies/export RGPD et les demandes utilisateur. Des tests dedies
+  couvrent ces sections en complement des parcours `App`.
+- La page administration a ete allegee en extrayant la logique de chargement,
+  actions utilisateur, tags, export RGPD et rafraichissement dans
+  `useAdminViewState`. `AdminView` redevient une composition de panneaux avec
+  les controles d'acces visibles.
+- La vue de contribution a ete legerement clarifiee en extrayant le panneau
+  lateral `Mes demandes`, sans deplacer le flux metier de soumission ni l'upload
+  photo.
 - Le warning d'integration PostgreSQL lie a `pg@9` reste un point de vigilance
   connu, sans regression bloquante actuelle.
 

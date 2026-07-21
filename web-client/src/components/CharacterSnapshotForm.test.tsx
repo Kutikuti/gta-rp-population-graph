@@ -47,11 +47,23 @@ const streamers: PublicStreamer[] = [
 function FormHarness({
   initialSnapshot = baseSnapshot,
   characterOptions = [],
-  currentCharacterId = null
+  currentCharacterId = null,
+  canUploadPhoto = false,
+  submitLabel = "Modifier",
+  isSubmitting = false,
+  onCancel = () => {},
+  onSubmit = () => {},
+  onPhotoUpload = vi.fn(async () => {})
 }: {
   initialSnapshot?: CharacterSnapshot;
   characterOptions?: PublicCharacterReference[];
   currentCharacterId?: string | null;
+  canUploadPhoto?: boolean;
+  submitLabel?: string;
+  isSubmitting?: boolean;
+  onCancel?: () => void;
+  onSubmit?: () => void;
+  onPhotoUpload?: (image: Blob) => Promise<void>;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
 
@@ -61,19 +73,83 @@ function FormHarness({
       characterOptions={characterOptions}
       currentCharacterId={currentCharacterId}
       streamers={streamers}
-      submitLabel="Modifier"
-      isSubmitting={false}
-      canUploadPhoto={false}
+      submitLabel={submitLabel}
+      isSubmitting={isSubmitting}
+      canUploadPhoto={canUploadPhoto}
       isPhotoUploading={false}
-      onCancel={() => {}}
+      onCancel={onCancel}
       onChange={setSnapshot}
-      onPhotoUpload={vi.fn(async () => {})}
-      onSubmit={() => {}}
+      onPhotoUpload={onPhotoUpload}
+      onSubmit={onSubmit}
     />
   );
 }
 
 describe("CharacterSnapshotForm", () => {
+  it("edits identity, status, organization and source fields", async () => {
+    const user = userEvent.setup();
+
+    render(<FormHarness />);
+
+    await user.clear(screen.getByLabelText("Prénom"));
+    await user.type(screen.getByLabelText("Prénom"), "Julien");
+    await user.type(screen.getByLabelText("Surnom"), "Jules");
+    await user.type(screen.getByLabelText("Date de naissance"), "1990-04-12");
+    await user.selectOptions(screen.getByLabelText("Statut vital"), "deceased");
+    await user.type(screen.getByLabelText("Date décès ou départ"), "2026-01-05");
+    await user.type(screen.getByLabelText("Entreprise"), "BCSO");
+    await user.type(screen.getByLabelText("Grade"), "Deputy");
+    await user.type(screen.getByLabelText("Matricule"), "42");
+    await user.type(screen.getByLabelText("Groupe"), "Nord");
+    await user.type(screen.getByLabelText("Quartier"), "Paleto");
+    await user.selectOptions(screen.getByLabelText("Vérification"), "verified");
+    await user.type(screen.getByLabelText("Note de source"), "Information verifiee.");
+
+    expect(screen.getByLabelText("Prénom")).toHaveValue("Julien");
+    expect(screen.getByLabelText("Surnom")).toHaveValue("Jules");
+    expect(screen.getByLabelText("Date de naissance")).toHaveValue("1990-04-12");
+    expect(screen.getByLabelText("Statut vital")).toHaveValue("deceased");
+    expect(screen.getByLabelText("Date décès ou départ")).toHaveValue("2026-01-05");
+    expect(screen.getByLabelText("Entreprise")).toHaveValue("BCSO");
+    expect(screen.getByLabelText("Grade")).toHaveValue("Deputy");
+    expect(screen.getByLabelText("Matricule")).toHaveValue("42");
+    expect(screen.getByLabelText("Groupe")).toHaveValue("Nord");
+    expect(screen.getByLabelText("Quartier")).toHaveValue("Paleto");
+    expect(screen.getByLabelText("Vérification")).toHaveValue("verified");
+    expect(screen.getByLabelText("Note de source")).toHaveValue("Information verifiee.");
+  });
+
+  it("renders photo upload when allowed and wires form actions", async () => {
+    const user = userEvent.setup();
+    const onCancel = vi.fn();
+    const onSubmit = vi.fn();
+
+    render(
+      <FormHarness
+        canUploadPhoto
+        initialSnapshot={{ ...baseSnapshot, photoUrl: "/uploads/camille.webp" }}
+        onCancel={onCancel}
+        onSubmit={onSubmit}
+        submitLabel="Appliquer la modification"
+      />
+    );
+
+    expect(screen.getByText("Importer une photo")).toBeInTheDocument();
+    expect(screen.getByText("Choisir un fichier")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    await user.click(screen.getByRole("button", { name: "Appliquer la modification" }));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the submitting state on the submit button", () => {
+    render(<FormHarness isSubmitting />);
+
+    expect(screen.getByRole("button", { name: "Envoi..." })).toBeDisabled();
+  });
+
   it("loads the selected streamer's links into the media fields", async () => {
     const user = userEvent.setup();
 

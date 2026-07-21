@@ -225,7 +225,7 @@ describe("SequelizeAdminUserExportService", () => {
       })
     );
     db.models.UserSession.findAll.mockResolvedValue([
-      { expiresAt: new Date("2026-07-21T10:00:00.000Z") },
+      { expiresAt: new Date("2999-07-21T10:00:00.000Z") },
       { expiresAt: new Date("2000-01-01T10:00:00.000Z") }
     ]);
     db.models.ChangeRequest.findAll.mockResolvedValue([

@@ -5,14 +5,12 @@ import "./App.css";
 import { AdminView } from "./components/AdminView";
 import { AppHeader } from "./components/AppHeader";
 import { ContributionView } from "./components/ContributionView";
-import { DetailsSidebar } from "./components/DetailsSidebar";
-import { GraphPanel } from "./components/GraphPanel";
+import { ExploreView } from "./components/ExploreView";
 import { ModerationView } from "./components/ModerationView";
 import { NotionImportsView } from "./components/NotionImportsView";
 import { PrivacyView } from "./components/PrivacyView";
 import { ProfileView } from "./components/ProfileView";
 import { PublicInfoView } from "./components/PublicInfoView";
-import { SearchSidebar } from "./components/SearchSidebar";
 import { initialFilters } from "./constants";
 import { filterGraphForPreferences } from "./graph/graphPreferences";
 import { useAuthSession } from "./hooks/useAuthSession";
@@ -225,80 +223,68 @@ function App() {
         />
 
         {activeView === "explore" ? (
-          <div
-            className={`app-grid ${isSearchOpen ? "has-search" : ""} ${selectedId ? "has-details" : ""}`}
-          >
-            <SearchSidebar
-              canSuggestCreation={
-                Boolean(authSession?.authenticated) && isSearchActive && searchTotal === 0
+          <ExploreView
+            canEditDirectly={Boolean(canEditDirectly)}
+            canSuggestCreation={
+              Boolean(authSession?.authenticated) && isSearchActive && searchTotal === 0
+            }
+            creationActionLabel={creationActionLabel}
+            error={error}
+            filters={filters}
+            graph={filteredGraph}
+            graphPreferences={graphPreferences}
+            history={history}
+            isBootLoading={isBootLoading}
+            isDetailLoading={isDetailLoading}
+            isGraphPreferencesOpen={isGraphPreferencesOpen}
+            isSearchActive={isSearchActive}
+            isSearchOpen={isSearchOpen}
+            matchingIds={matchingIds}
+            resultSummary={searchResultSummary}
+            selectedCharacter={selectedCharacter}
+            selectedId={selectedId}
+            tags={tags}
+            onCloseDetails={closeDetails}
+            onContribute={() => {
+              setCreationContext(null);
+              setActiveView("contribution");
+            }}
+            onGraphPreferencesChange={setGraphPreferences}
+            onInfoOpen={() => {
+              setActiveView("information");
+            }}
+            onPreferencesClose={() => {
+              setIsGraphPreferencesOpen(false);
+            }}
+            onPreferencesOpen={() => {
+              setIsGraphPreferencesOpen(true);
+            }}
+            onResetFilters={resetFilters}
+            onSearchChange={updateFilter}
+            onSearchClose={() => {
+              setIsSearchOpen(false);
+            }}
+            onSearchOpen={() => {
+              setIsSearchOpen(true);
+            }}
+            onSelect={handleSelect}
+            onShare={async () => {
+              if (!selectedId) {
+                return;
               }
-              creationActionLabel={creationActionLabel}
-              filters={filters}
-              isOpen={isSearchOpen}
-              resultSummary={searchResultSummary}
-              tags={tags}
-              onChange={updateFilter}
-              onClose={() => {
-                setIsSearchOpen(false);
-              }}
-              onOpen={() => {
-                setIsSearchOpen(true);
-              }}
-              onReset={resetFilters}
-              onSuggestCreation={openCharacterCreation}
-            />
 
-            <GraphPanel
-              graph={filteredGraph}
-              matchingIds={matchingIds}
-              isSearchActive={isSearchActive}
-              selectedId={selectedId}
-              isLoading={isBootLoading}
-              error={error}
-              graphPreferences={graphPreferences}
-              isPreferencesOpen={isGraphPreferencesOpen}
-              onGraphPreferencesChange={setGraphPreferences}
-              onInfoOpen={() => {
-                setActiveView("information");
-              }}
-              onPreferencesClose={() => {
-                setIsGraphPreferencesOpen(false);
-              }}
-              onPreferencesOpen={() => {
-                setIsGraphPreferencesOpen(true);
-              }}
-              onSelect={handleSelect}
-            />
+              const url = new URL(window.location.href);
+              url.searchParams.set("character", selectedCharacter?.publicSlug ?? selectedId);
 
-            {selectedId ? (
-              <DetailsSidebar
-                canEditDirectly={Boolean(canEditDirectly)}
-                character={selectedCharacter}
-                history={history}
-                isLoading={isDetailLoading}
-                onClose={closeDetails}
-                onContribute={() => {
-                  setCreationContext(null);
-                  setActiveView("contribution");
-                }}
-                onShare={async () => {
-                  if (!selectedId) {
-                    return;
-                  }
-
-                  const url = new URL(window.location.href);
-                  url.searchParams.set("character", selectedCharacter?.publicSlug ?? selectedId);
-
-                  try {
-                    await navigator.clipboard.writeText(url.toString());
-                    setToast({ tone: "success", message: "Lien de la fiche copié." });
-                  } catch {
-                    setError("Le lien n'a pas pu être copié.");
-                  }
-                }}
-              />
-            ) : null}
-          </div>
+              try {
+                await navigator.clipboard.writeText(url.toString());
+                setToast({ tone: "success", message: "Lien de la fiche copié." });
+              } catch {
+                setError("Le lien n'a pas pu être copié.");
+              }
+            }}
+            onSuggestCreation={openCharacterCreation}
+          />
         ) : null}
 
         {activeView === "contribution" ? (

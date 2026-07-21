@@ -18,8 +18,8 @@ import {
   type PublicStreamer,
   uploadCharacterPhotoDraft
 } from "../api";
-import { formatDate } from "../utils/format";
 import { CharacterSnapshotForm } from "./CharacterSnapshotForm";
+import { ContributionRequestsPanel } from "./ContributionRequestsPanel";
 import { EmptyBlock, LoadingBlock } from "./StateBlock";
 
 type ContributionViewProps = {
@@ -30,12 +30,6 @@ type ContributionViewProps = {
   onDataChanged: () => Promise<void>;
   onError: (message: string) => void;
   onSubmitted: (message: string, closeContribution: boolean) => void;
-};
-
-const statusLabels: Record<ChangeRequestSummary["status"], string> = {
-  pending: "En attente",
-  approved: "Acceptée",
-  rejected: "Refusée"
 };
 
 const canEditDirectly = (session: AuthSession | null) =>
@@ -273,24 +267,7 @@ export function ContributionView({
             {feedback ? <p className="inline-feedback success-text">{feedback}</p> : null}
           </div>
 
-          <aside className="work-panel side-work-panel">
-            <h3>Mes demandes</h3>
-            {isLoadingRequests ? <LoadingBlock label="Chargement des demandes..." /> : null}
-            {!isLoadingRequests && requests.length ? (
-              <div className="request-list">
-                {requests.map((request) => (
-                  <div key={request.id} className="request-row">
-                    <strong>{request.characterName ?? "Personnage supprimé"}</strong>
-                    <span>{statusLabels[request.status]}</span>
-                    <small>{formatDate(request.createdAt)}</small>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {!isLoadingRequests && !requests.length ? (
-              <span className="muted-text">Aucune demande enregistrée.</span>
-            ) : null}
-          </aside>
+          <ContributionRequestsPanel isLoading={isLoadingRequests} requests={requests} />
         </div>
       )}
     </section>
