@@ -893,24 +893,26 @@ export const down = async ({ context }: MigrationParams<MigrationContext>) => {
   const { queryInterface } = context;
 
   await queryInterface.sequelize.transaction(async (transaction) => {
-    await queryInterface.dropTable("notion_import_entries", { transaction });
-    await queryInterface.dropTable("notion_import_batches", { transaction });
-    await queryInterface.dropTable("admin_actions", { transaction });
-    await queryInterface.dropTable("change_histories", { transaction });
-    await queryInterface.dropTable("change_requests", { transaction });
-    await queryInterface.dropTable("character_relationships", { transaction });
-    await queryInterface.dropTable("character_tags", { transaction });
-    await queryInterface.dropTable("tags", { transaction });
-    await queryInterface.dropTable("characters", { transaction });
-    await queryInterface.dropTable("streamers", { transaction });
-    await queryInterface.dropTable("bans", { transaction });
-    await queryInterface.dropTable("user_identities", { transaction });
-    await queryInterface.dropTable("user_sessions", { transaction });
-    await queryInterface.dropTable("users", { transaction });
-    await queryInterface.dropTable("roles", { transaction });
-
     await queryInterface.sequelize.query(
       `
+      DROP TABLE IF EXISTS
+        notion_import_entries,
+        notion_import_batches,
+        admin_actions,
+        change_histories,
+        change_requests,
+        character_relationships,
+        character_tags,
+        tags,
+        characters,
+        streamers,
+        bans,
+        user_identities,
+        user_sessions,
+        users,
+        roles
+      CASCADE;
+
       DROP TYPE IF EXISTS enum_roles_name;
       DROP TYPE IF EXISTS enum_streamers_verification_status;
       DROP TYPE IF EXISTS enum_characters_life_status;
