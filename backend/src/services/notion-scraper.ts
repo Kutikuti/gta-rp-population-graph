@@ -1,3 +1,4 @@
+import { ApiError } from "../middleware/api-error.js";
 import {
   blockValues,
   childPageIds,
@@ -29,6 +30,21 @@ import {
 
 const isRetryableFetchError = (error: unknown) =>
   error instanceof TypeError || (error instanceof Error && error.name === "AbortError");
+
+const notionRequestFailedError = (input: {
+  failureMessage: string;
+  upstreamStatus: number;
+  url: string;
+}) =>
+  new ApiError({
+    status: 502,
+    code: "NOTION_REQUEST_FAILED",
+    message: `${input.failureMessage}: HTTP ${input.upstreamStatus}`,
+    details: {
+      upstreamStatus: input.upstreamStatus,
+      endpoint: input.url
+    }
+  });
 
 const requestNotionRecordMap = async (input: {
   url: string;
@@ -72,7 +88,11 @@ const requestNotionRecordMap = async (input: {
   }
 
   if (!response.ok) {
-    throw new Error(`${input.failureMessage}: HTTP ${response.status}`);
+    throw notionRequestFailedError({
+      failureMessage: input.failureMessage,
+      upstreamStatus: response.status,
+      url: input.url
+    });
   }
 
   const payload = (await response.json()) as { recordMap?: NotionRecordMap };

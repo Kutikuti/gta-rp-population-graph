@@ -3,6 +3,7 @@ import { Op, type Transaction } from "sequelize";
 import type { VerificationStatus } from "../db/enums.js";
 import { models } from "../db/index.js";
 import type { SocialLinks, Streamer } from "../db/models/index.js";
+import { notFoundError } from "../middleware/api-error.js";
 
 export type StreamerSyncMode = "merge" | "replace";
 
@@ -127,7 +128,9 @@ export const resolveOrCreateStreamer = async (input: {
     });
 
     if (!streamer) {
-      throw new Error(`Streamer ${input.streamerId} is missing.`);
+      throw notFoundError("STREAMER_NOT_FOUND", "Streamer introuvable.", {
+        streamerId: input.streamerId
+      });
     }
 
     await syncStreamerMetadata({

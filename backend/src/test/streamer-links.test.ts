@@ -146,4 +146,22 @@ describe("streamer-links", () => {
     expect(mockState.streamerCreate).not.toHaveBeenCalled();
     expect(existingStreamer.update).not.toHaveBeenCalled();
   });
+
+  it("reports a dedicated error when a selected streamer is missing", async () => {
+    const transaction = {} as never;
+    mockState.streamerFindByPk.mockResolvedValue(null);
+
+    await expect(
+      resolveOrCreateStreamer({
+        streamerId: "missing-streamer",
+        socialLinks: null,
+        verificationStatus: "community",
+        transaction
+      })
+    ).rejects.toMatchObject({
+      status: 404,
+      code: "STREAMER_NOT_FOUND",
+      details: { streamerId: "missing-streamer" }
+    });
+  });
 });

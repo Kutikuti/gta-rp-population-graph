@@ -1,3 +1,4 @@
+import { badRequestError } from "../middleware/api-error.js";
 import type { NotionImportInput, NotionPageInput } from "./notion-import-schema.js";
 import { pagePhotoReferences } from "./notion-scraper-photos.js";
 import type {
@@ -51,7 +52,13 @@ export const extractNotionPageId = (url: string) => {
   const match = lastPathSegment.replaceAll("-", "").match(/([0-9a-f]{32})$/i);
 
   if (!match) {
-    throw new Error("URL Notion invalide: aucun identifiant de page trouve.");
+    throw badRequestError(
+      "NOTION_PAGE_ID_MISSING",
+      "URL Notion invalide: aucun identifiant de page trouve.",
+      {
+        url
+      }
+    );
   }
 
   const id = match[0].toLowerCase();

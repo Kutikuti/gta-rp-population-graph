@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 
 import type { AuthProvider, RoleName } from "../db/enums.js";
+import { internalServerError } from "../middleware/api-error.js";
 import type { AuthenticatedUser, PersonalDataExport } from "./auth-types.js";
 
 type SessionUserRecord = {
@@ -41,7 +42,9 @@ export const activeBanWhere = () => ({
 
 export const serializeAuthenticatedUser = (user: SessionUserRecord): AuthenticatedUser => {
   if (!user.role) {
-    throw new Error(`User ${user.id} is missing its role.`);
+    throw internalServerError("AUTH_USER_ROLE_MISSING", "Le role utilisateur n'a pas ete charge.", {
+      userId: user.id
+    });
   }
 
   return {
@@ -67,7 +70,9 @@ export const serializeAuthenticatedUser = (user: SessionUserRecord): Authenticat
 
 export const serializePersonalDataExport = (user: PersonalDataUserRecord): PersonalDataExport => {
   if (!user.role) {
-    throw new Error(`User ${user.id} is missing its role.`);
+    throw internalServerError("AUTH_USER_ROLE_MISSING", "Le role utilisateur n'a pas ete charge.", {
+      userId: user.id
+    });
   }
 
   return {

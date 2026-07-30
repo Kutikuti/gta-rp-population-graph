@@ -3,6 +3,7 @@ import { Op, type Transaction } from "sequelize";
 import type { RoleName, TagType } from "../db/enums.js";
 import { models } from "../db/index.js";
 import type { AdminAction, JsonObject, Tag, User } from "../db/models/index.js";
+import { internalServerError } from "../middleware/api-error.js";
 
 export type AdminUser = {
   id: string;
@@ -79,7 +80,13 @@ const isoDate = (value: Date | null) => (value ? value.toISOString() : null);
 
 export const serializeUser = (user: User): AdminUser => {
   if (!user.role) {
-    throw new Error(`User ${user.id} is missing its role.`);
+    throw internalServerError(
+      "ADMIN_USER_ROLE_MISSING",
+      "Le role utilisateur n'a pas ete charge.",
+      {
+        userId: user.id
+      }
+    );
   }
 
   return {

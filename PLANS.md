@@ -851,6 +851,18 @@ Avancement :
   codes API dedies pour les cas techniques attendus :
   `NOTION_IMPORT_BATCH_NOT_FOUND`, `NOTION_IMPORT_AUTOMATION_ACTOR_MISSING` et
   `NOTION_IMPORT_ENTRY_RELOAD_FAILED`.
+- La serialisation des fiches publiques remonte maintenant
+  `PUBLIC_RELATIONSHIP_CHARACTER_MISSING` lorsqu'une relation chargee n'a pas
+  son personnage lie, avec les identifiants necessaires au diagnostic.
+- Les erreurs techniques encore exposees cote auth, administration, streamers
+  et scraper Notion ont ete structurees avec des codes API dedies :
+  `AUTH_USER_ROLE_MISSING`, `ADMIN_USER_ROLE_MISSING`,
+  `AUTH_DEFAULT_ROLE_MISSING`, `AUTH_ADMIN_ROLE_MISSING`, `STREAMER_NOT_FOUND`,
+  `NOTION_PAGE_ID_MISSING` et `NOTION_REQUEST_FAILED`.
+- Le dernier invariant brut des services/routes a ete converti en erreur API
+  dediee `CHANGE_REQUEST_RELATIONSHIP_TYPE_NOT_EDITABLE`. La recherche ne
+  remonte plus de `throw new Error` dans `backend/src/services`,
+  `backend/src/routes` et `backend/src/middleware`.
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 

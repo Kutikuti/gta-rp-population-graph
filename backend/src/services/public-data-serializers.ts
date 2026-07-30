@@ -14,6 +14,7 @@ import type {
   Streamer,
   Tag
 } from "../db/models/index.js";
+import { internalServerError } from "../middleware/api-error.js";
 import {
   relationshipGraphVisible,
   relationshipLabel,
@@ -216,7 +217,16 @@ const serializeRelationship = (
   currentCharacterId: string
 ): PublicRelationship => {
   if (!relatedCharacter) {
-    throw new Error(`Relationship ${relationship.id} is missing its related character.`);
+    throw internalServerError(
+      "PUBLIC_RELATIONSHIP_CHARACTER_MISSING",
+      "Une relation publique pointe vers une fiche personnage non chargee.",
+      {
+        relationshipId: relationship.id,
+        currentCharacterId,
+        sourceCharacterId: relationship.sourceCharacterId,
+        targetCharacterId: relationship.targetCharacterId
+      }
+    );
   }
 
   const type = relationshipTypeForCharacterView(

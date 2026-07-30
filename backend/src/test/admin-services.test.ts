@@ -89,6 +89,20 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+describe("admin shared serializers", () => {
+  it("reports a dedicated error when an admin user misses its loaded role", async () => {
+    const { serializeUser } = await import("../services/admin-shared.js");
+
+    expect(() => serializeUser(createUser({ role: null }) as never)).toThrowError(
+      expect.objectContaining({
+        status: 500,
+        code: "ADMIN_USER_ROLE_MISSING",
+        details: { userId: "user-id" }
+      })
+    );
+  });
+});
+
 describe("SequelizeAdminTagService", () => {
   it("lists tags with their usage count", async () => {
     const { SequelizeAdminTagService } = await import("../services/admin-tags.js");

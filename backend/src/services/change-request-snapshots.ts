@@ -8,7 +8,7 @@ import type {
   JsonObject,
   SocialLinks
 } from "../db/models/index.js";
-import { badRequestError } from "../middleware/api-error.js";
+import { badRequestError, internalServerError } from "../middleware/api-error.js";
 import { type CharacterSnapshot, characterSnapshotSchema } from "./change-request-schemas.js";
 import { promoteCharacterPhotoIfPending } from "./character-photos.js";
 import {
@@ -64,7 +64,17 @@ const mapRelationshipToDraft = (
       : relationship.type;
 
   if (!isEditableRelationshipType(type)) {
-    throw new Error(`Relationship type ${type} is not editable in character snapshots.`);
+    throw internalServerError(
+      "CHANGE_REQUEST_RELATIONSHIP_TYPE_NOT_EDITABLE",
+      "Une relation persistante utilise un type non editable dans les snapshots de fiche.",
+      {
+        relationshipId: relationship.id,
+        type,
+        sourceCharacterId: relationship.sourceCharacterId,
+        targetCharacterId: relationship.targetCharacterId,
+        currentCharacterId
+      }
+    );
   }
 
   return {
@@ -81,7 +91,7 @@ const loadCharacterRelationshipDrafts = async (
   transaction?: Transaction
 ): Promise<CharacterSnapshot["relationships"]> => {
   const relationships = await models.CharacterRelationship.findAll({
-    attributes: ["sourceCharacterId", "targetCharacterId", "type", "direction"],
+    attributes: ["id", "sourceCharacterId", "targetCharacterId", "type", "direction"],
     where: {
       type: {
         [Op.in]: relationshipTypes

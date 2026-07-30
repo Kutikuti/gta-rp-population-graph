@@ -194,16 +194,20 @@ describe("SequelizeAuthService", () => {
   it("fails explicitly when a required role is missing", async () => {
     mockState.roleFindOne.mockResolvedValue(null);
 
-    await expect(new SequelizeAuthService().authenticateIdentity(identity)).rejects.toThrow(
-      'Role "user" is missing from the database.'
-    );
+    await expect(new SequelizeAuthService().authenticateIdentity(identity)).rejects.toMatchObject({
+      status: 500,
+      code: "AUTH_DEFAULT_ROLE_MISSING",
+      details: { role: "user" }
+    });
 
     mockState.roleFindOne.mockImplementation(async ({ where }: { where: { name: string } }) =>
       where.name === "user" ? { id: "role-user", name: "user" } : null
     );
-    await expect(new SequelizeAuthService().authenticateIdentity(identity)).rejects.toThrow(
-      'Role "administrator" is missing from the database.'
-    );
+    await expect(new SequelizeAuthService().authenticateIdentity(identity)).rejects.toMatchObject({
+      status: 500,
+      code: "AUTH_ADMIN_ROLE_MISSING",
+      details: { role: "administrator" }
+    });
   });
 
   it("links a new provider identity to the current user", async () => {
@@ -395,9 +399,11 @@ describe("SequelizeAuthService", () => {
       role: null
     });
 
-    await expect(new SequelizeAuthService().getSessionUser("user-1")).rejects.toThrow(
-      "User user-1 is missing its role."
-    );
+    await expect(new SequelizeAuthService().getSessionUser("user-1")).rejects.toMatchObject({
+      status: 500,
+      code: "AUTH_USER_ROLE_MISSING",
+      details: { userId: "user-1" }
+    });
 
     mockState.userFindByPk.mockResolvedValueOnce(null);
     await expect(new SequelizeAuthService().getSessionUser("missing")).resolves.toBeNull();

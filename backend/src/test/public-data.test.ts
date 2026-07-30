@@ -130,4 +130,63 @@ describe("SequelizePublicDataService", () => {
       }
     ]);
   });
+
+  it("reports a dedicated error when a public relationship misses its related character", async () => {
+    vi.spyOn(models.Character, "findOne").mockResolvedValue({
+      id: "desmond",
+      publicSlug: "desmond-campbell",
+      firstName: "Desmond",
+      lastName: "Campbell",
+      nickname: null,
+      birthDate: null,
+      lifeStatus: "alive",
+      deathOrDepartureDate: null,
+      photoUrl: null,
+      companyName: null,
+      companyRank: null,
+      companyBadgeNumber: null,
+      phoneNumbers: [],
+      groupName: null,
+      district: null,
+      isRpDeath: false,
+      previousCharacters: null,
+      verificationStatus: "community",
+      dataSource: "notion",
+      sourceNote: null,
+      createdAt: new Date("2026-07-07T00:00:00.000Z"),
+      updatedAt: new Date("2026-07-07T00:00:00.000Z"),
+      streamer: null,
+      tags: [],
+      outgoingRelationships: [
+        {
+          id: "rel-missing",
+          sourceCharacterId: "desmond",
+          targetCharacterId: "missing-character",
+          type: "parent",
+          direction: "directed",
+          label: "Parent",
+          description: null,
+          source: "notion",
+          verificationStatus: "imported",
+          targetCharacter: undefined
+        }
+      ],
+      incomingRelationships: []
+    } as never);
+
+    const service = new SequelizePublicDataService({
+      getStatusForSocialLinks: vi.fn().mockResolvedValue("unknown")
+    } as never);
+
+    await expect(service.getCharacter("desmond-campbell")).rejects.toMatchObject({
+      status: 500,
+      code: "PUBLIC_RELATIONSHIP_CHARACTER_MISSING",
+      details: {
+        relationshipId: "rel-missing",
+        currentCharacterId: "desmond",
+        sourceCharacterId: "desmond",
+        targetCharacterId: "missing-character"
+      }
+    });
+  });
 });

@@ -21,6 +21,39 @@ describe("notion scraper", () => {
     ).toBe("34407fc3-2f6c-8096-8f3b-dedadec5253c");
   });
 
+  it("reports a dedicated error when the Notion URL does not contain a page id", () => {
+    expect(() => extractNotionPageId("https://www.notion.so/not-a-page")).toThrowError(
+      expect.objectContaining({
+        status: 400,
+        code: "NOTION_PAGE_ID_MISSING",
+        details: { url: "https://www.notion.so/not-a-page" }
+      })
+    );
+  });
+
+  it("reports a dedicated error when Notion refuses a request", async () => {
+    const fetchMock = async () =>
+      new Response("Forbidden", {
+        status: 403
+      });
+
+    await expect(
+      scrapePublicNotionPage(
+        "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+        { fetch: fetchMock }
+      )
+    ).rejects.toMatchObject({
+      status: 502,
+      code: "NOTION_REQUEST_FAILED",
+      message:
+        "Notion a refuse le chargement de la page 34407fc3-2f6c-8096-8f3b-dedadec5253c: HTTP 403",
+      details: {
+        upstreamStatus: 403,
+        endpoint: "https://www.notion.so/api/v3/loadPageChunk"
+      }
+    });
+  });
+
   it("loads child pages and converts text properties to import input", async () => {
     const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
     const characterId = "11111111-2222-4333-8444-555555555555";

@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 
 import type { AuthProvider } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
+import { internalServerError } from "../middleware/api-error.js";
 import {
   activeBanWhere,
   serializeAuthenticatedUser,
@@ -69,11 +70,19 @@ export class SequelizeAuthService implements AuthService {
     ]);
 
     if (!defaultRole) {
-      throw new Error('Role "user" is missing from the database.');
+      throw internalServerError(
+        "AUTH_DEFAULT_ROLE_MISSING",
+        "Le role utilisateur par defaut est absent.",
+        {
+          role: "user"
+        }
+      );
     }
 
     if (!administratorRole) {
-      throw new Error('Role "administrator" is missing from the database.');
+      throw internalServerError("AUTH_ADMIN_ROLE_MISSING", "Le role administrateur est absent.", {
+        role: "administrator"
+      });
     }
 
     const now = new Date();
