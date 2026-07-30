@@ -794,6 +794,20 @@ Avancement :
   publique ont ete extraits dans `backend/src/services/public-data-queries.ts`.
   `public-data.ts` garde l'orchestration des parcours publics et descend sous
   les 250 lignes.
+- Le mapping d'import Notion a ete allege en isolant les alias de champs dans
+  `notion-import-fields.ts` et les conversions de valeurs dans
+  `notion-import-values.ts`. `notion-import-mapping.ts` garde la logique de
+  mapping metier et descend sous les 400 lignes.
+- L'import photo des fiches Notion appliquees a ete sorti de
+  `admin-notion-imports.ts` vers `admin-notion-imports-photo.ts`, afin de
+  separer le suivi des batches et l'ecriture securisee des photos de
+  personnages.
+- Le scraper Notion a ete clarifie en isolant les types de record map dans
+  `notion-scraper-types.ts` et la detection des references photo dans
+  `notion-scraper-photos.ts`. `notion-scraper-shared.ts` reste legerement au
+  dessus de 400 lignes, mais il porte encore des helpers couples de parsing
+  texte/proprietes Notion ; un decoupage supplementaire devra cibler ces
+  responsabilites plutot qu'une extraction artificielle.
 - La regle Biome `complexity/useLiteralKeys` est desactivee car elle entre en
   conflit avec `noPropertyAccessFromIndexSignature` sur les index signatures
   assumees (`process.env`, headers HTTP et donnees JSON dynamiques).

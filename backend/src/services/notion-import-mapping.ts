@@ -1,12 +1,16 @@
 import { createHash } from "node:crypto";
 
-import { z } from "zod";
-
 import type { NotionImportEntryStatus } from "../db/enums.js";
 import type { JsonObject } from "../db/models/index.js";
+import { fieldAliases, recognizedFieldNames, unknownFieldNames } from "./notion-import-fields.js";
 import type { NotionPageInput } from "./notion-import-schema.js";
-
-const stringList = z.union([z.string(), z.array(z.string())]).optional();
+import {
+  booleanValue,
+  dateValue,
+  listValue,
+  stringValue,
+  uniqueStrings
+} from "./notion-import-values.js";
 
 const twitchHandleFromUrl = (value: string | null) => {
   if (!value) {
@@ -103,117 +107,12 @@ export type PlannedNotionImport = {
   report: NotionImportReport;
 };
 
-const fieldAliases = {
-  firstName: ["prenom", "prénom", "firstName", "first_name", "first name"],
-  lastName: ["nom", "lastName", "last_name", "last name"],
-  nickname: ["surnom", "nickname", "alias"],
-  lifeStatus: ["statut", "statut vital", "lifeStatus", "life_status"],
-  deathOrDepartureDate: [
-    "date",
-    "date de mort",
-    "date de mort rp",
-    "date de décès",
-    "date de deces",
-    "date de départ",
-    "date de depart",
-    "deathOrDepartureDate",
-    "death_or_departure_date"
-  ],
-  phoneNumber: ["telephone", "téléphone", "phone", "phoneNumber", "phone_number"],
-  streamerPublicName: ["streamer", "streameur", "streamerPublicName"],
-  companyName: ["métier/entreprise", "metier/entreprise", "entreprise", "businessName"],
-  companyRank: ["grade", "poste", "rang", "companyRank", "businessRank"],
-  companyBadgeNumber: ["matricule", "companyBadgeNumber", "businessBadgeNumber"],
-  groupName: ["groupes", "groupe", "groupName"],
-  district: ["quartier", "district"],
-  twitch: ["twitch"],
-  kick: ["kick"],
-  youtube: ["youtube", "youTube"],
-  discord: ["discord"],
-  instagram: ["instagram"],
-  tiktok: ["tiktok", "tikTok"],
-  previousCharacters: [
-    "anciens personnages",
-    "previousCharacters",
-    "previous_characters",
-    "v1",
-    "v2",
-    "v3",
-    "v4",
-    "v5"
-  ],
-  legacyCharacterLinks: ["v6"],
-  parentRelationships: ["père relation", "pere relation", "mère relation", "mere relation"],
-  parentIndicator: ["est parent"],
-  siblingRelationships: [
-    "frères/soeurs relation",
-    "freres/soeurs relation",
-    "frères/soeurs relations",
-    "freres/soeurs relations",
-    "frères/sœurs relation",
-    "freres/sœurs relation",
-    "frères/sœurs relations",
-    "freres/sœurs relations"
-  ],
-  informativeCoupleRelationships: ["couple relation"],
-  informativeAuntOrUncleRelationships: ["est oncle/tante"],
-  informativeExRelationships: ["ex/exs relation"],
-  informativeUncleRelationships: ["oncle relation"],
-  informativeAuntRelationships: ["tante relation"],
-  familyName: ["famille"],
-  tags: ["tags", "tag"],
-  relationships: ["relations", "relationships", "parentes rp", "parentés rp"],
-  photoReferences: ["photo", "image", "avatar", "photoUrl", "photo_url"]
-} as const;
-
-const allAliases = new Set(
-  Object.values(fieldAliases)
-    .flat()
-    .map((value) => value.toLowerCase())
-);
-const technicalImportFields = new Set(["titre notion"]);
-
 const normalizeKey = (value: string) => value.trim().toLowerCase();
-const uniqueStrings = (values: string[]) => [...new Set(values)];
-
-const stringValue = (value: unknown): string | null => {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
-
-const booleanValue = (value: unknown): boolean | null => {
-  const normalized = stringValue(value)?.toLowerCase();
-
-  if (normalized === "yes" || normalized === "oui" || normalized === "true") {
-    return true;
-  }
-
-  if (normalized === "no" || normalized === "non" || normalized === "false") {
-    return false;
-  }
-
-  return null;
-};
 
 const findValue = (properties: Record<string, unknown>, aliases: readonly string[]) => {
   const entries = Object.entries(properties);
   const aliasSet = new Set(aliases.map(normalizeKey));
   return entries.find(([key]) => aliasSet.has(normalizeKey(key)))?.[1];
-};
-
-const listValue = (value: unknown): string[] => {
-  const parsed = stringList.safeParse(value);
-
-  if (!parsed.success || parsed.data === undefined) {
-    return [];
-  }
-
-  const values = Array.isArray(parsed.data) ? parsed.data : parsed.data.split(",");
-  return uniqueStrings(values.map((item) => item.trim()).filter(Boolean));
 };
 
 const withoutEmptyNotionValues = (values: string[]) =>
@@ -287,38 +186,6 @@ const mapLifeStatus = (value: unknown): MappedNotionCharacter["lifeStatus"] => {
   return "unknown";
 };
 
-const dateValue = (value: unknown): string | null => {
-  const raw = stringValue(value);
-
-  if (!raw || raw === "‣") {
-    return null;
-  }
-
-  const isoDate = raw.match(/\b\d{4}-\d{2}-\d{2}\b/u)?.[0];
-
-  if (isoDate) {
-    return isoDate;
-  }
-
-  const frenchDate = raw.match(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b/u);
-
-  if (!frenchDate) {
-    return null;
-  }
-
-  const [, day, month, year] = frenchDate;
-
-  if (!day || !month || !year) {
-    return null;
-  }
-
-  const paddedDay = day.padStart(2, "0");
-  const paddedMonth = month.padStart(2, "0");
-  const fullYear = year.length === 2 ? `20${year}` : year;
-
-  return `${fullYear}-${paddedMonth}-${paddedDay}`;
-};
-
 const stableJson = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(stableJson).join(",")}]`;
@@ -336,19 +203,6 @@ const stableJson = (value: unknown): string => {
 
 export const hashNotionRawContent = (value: JsonObject) =>
   createHash("sha256").update(stableJson(value)).digest("hex");
-
-const recognizedFieldNames = (properties: Record<string, unknown>) =>
-  Object.keys(properties)
-    .filter((key) => allAliases.has(normalizeKey(key)))
-    .sort();
-
-const unknownFieldNames = (properties: Record<string, unknown>) =>
-  Object.keys(properties)
-    .filter((key) => {
-      const normalizedKey = normalizeKey(key);
-      return !allAliases.has(normalizedKey) && !technicalImportFields.has(normalizedKey);
-    })
-    .sort();
 
 const ambiguousRelationships = (relationships: JsonObject[]) =>
   relationships.filter((relationship) => {
