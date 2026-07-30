@@ -170,6 +170,9 @@ export function ModerationDetailPanel({
                 isPhotoUploading={false}
                 onCancel={onResetEditSnapshot}
                 onChange={onChangeEditSnapshot}
+                onPhotoRemove={() => {
+                  onChangeEditSnapshot({ ...editSnapshot, photoUrl: null });
+                }}
                 onPhotoUpload={async () => undefined}
                 onSubmit={onSubmitDirectEdit}
               />

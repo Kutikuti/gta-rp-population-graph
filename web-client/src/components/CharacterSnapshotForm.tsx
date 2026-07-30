@@ -22,6 +22,7 @@ type CharacterSnapshotFormProps = {
   isPhotoUploading: boolean;
   onCancel: () => void;
   onChange: (snapshot: CharacterSnapshot) => void;
+  onPhotoRemove: () => void;
   onPhotoUpload: (image: Blob) => Promise<void>;
   onSubmit: () => void;
 };
@@ -62,6 +63,7 @@ export function CharacterSnapshotForm({
   isPhotoUploading,
   onCancel,
   onChange,
+  onPhotoRemove,
   onPhotoUpload,
   onSubmit
 }: CharacterSnapshotFormProps) {
@@ -221,6 +223,7 @@ export function CharacterSnapshotForm({
                 }
                 isUploading={isPhotoUploading}
                 mode={isDirectPhotoMode ? "direct" : "request"}
+                onRemove={onPhotoRemove}
                 onUpload={onPhotoUpload}
               />
             </div>

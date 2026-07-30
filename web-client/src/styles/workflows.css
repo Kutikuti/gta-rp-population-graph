@@ -1222,6 +1222,23 @@
   justify-content: center;
 }
 
+.photo-remove-button {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  justify-self: start;
+  display: inline-grid;
+  place-items: center;
+}
+
+.photo-remove-button img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .photo-upload-feedback {
   margin: 0;
   color: #7fd7ad;

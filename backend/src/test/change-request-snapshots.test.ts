@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockState = vi.hoisted(() => ({
   characterFindAll: vi.fn(),
   relationshipFindAll: vi.fn(),
   relationshipBulkCreate: vi.fn(),
   relationshipDestroy: vi.fn(),
-  resolveOrCreateStreamer: vi.fn()
+  resolveOrCreateStreamer: vi.fn(),
+  deleteStoredCharacterPhoto: vi.fn(),
+  promoteCharacterPhotoIfPending: vi.fn()
 }));
 
 vi.mock("../db/index.js", () => ({
@@ -27,6 +29,11 @@ vi.mock("../services/streamer-links.js", () => ({
 
 vi.mock("../services/character-slug.js", () => ({
   generateUniqueCharacterSlug: vi.fn()
+}));
+
+vi.mock("../services/character-photos.js", () => ({
+  deleteStoredCharacterPhoto: mockState.deleteStoredCharacterPhoto,
+  promoteCharacterPhotoIfPending: mockState.promoteCharacterPhotoIfPending
 }));
 
 import type { Character } from "../db/models/index.js";
@@ -66,6 +73,16 @@ const character = {
 } as unknown as Character;
 
 describe("change request snapshots", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockState.relationshipDestroy.mockResolvedValue(0);
+    mockState.relationshipBulkCreate.mockResolvedValue([]);
+    mockState.resolveOrCreateStreamer.mockResolvedValue(null);
+    mockState.promoteCharacterPhotoIfPending.mockImplementation(
+      async (photoUrl: string | null) => photoUrl
+    );
+  });
+
   it("reports missing related characters with a dedicated API error", async () => {
     mockState.resolveOrCreateStreamer.mockResolvedValue(null);
     mockState.characterFindAll.mockResolvedValue([]);
@@ -104,6 +121,29 @@ describe("change request snapshots", () => {
           currentCharacterId: "character-1"
         }
       }
+    );
+  });
+
+  it("cleans the previous stored photo when a validated snapshot removes it", async () => {
+    const characterWithPhoto = {
+      ...character,
+      photoUrl: "/uploads/characters/previous.webp",
+      update: vi.fn()
+    } as unknown as Character;
+    const snapshotWithoutPhoto: CharacterSnapshot = {
+      ...snapshot,
+      relationships: [],
+      photoUrl: null
+    };
+
+    await applySnapshot(characterWithPhoto, snapshotWithoutPhoto, "moderation", {} as never);
+
+    expect(characterWithPhoto.update).toHaveBeenCalledWith(
+      expect.objectContaining({ photoUrl: null }),
+      expect.any(Object)
+    );
+    expect(mockState.deleteStoredCharacterPhoto).toHaveBeenCalledWith(
+      "/uploads/characters/previous.webp"
     );
   });
 });

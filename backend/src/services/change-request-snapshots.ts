@@ -10,7 +10,7 @@ import type {
 } from "../db/models/index.js";
 import { badRequestError, internalServerError } from "../middleware/api-error.js";
 import { type CharacterSnapshot, characterSnapshotSchema } from "./change-request-schemas.js";
-import { promoteCharacterPhotoIfPending } from "./character-photos.js";
+import { deleteStoredCharacterPhoto, promoteCharacterPhotoIfPending } from "./character-photos.js";
 import {
   invertRelationshipType,
   isEditableRelationshipType,
@@ -260,6 +260,7 @@ export const applySnapshot = async (
   const streamerId = await resolveStreamerId(snapshot, transaction);
   const shouldRefreshPublicSlug =
     snapshot.firstName !== character.firstName || snapshot.lastName !== character.lastName;
+  const previousPhotoUrl = character.photoUrl;
   const publicSlug = shouldRefreshPublicSlug
     ? await generateUniqueCharacterSlug(
         snapshot.firstName,
@@ -296,6 +297,10 @@ export const applySnapshot = async (
   );
 
   await applyRelationships(character.id, snapshot, source, transaction);
+
+  if (previousPhotoUrl !== snapshot.photoUrl) {
+    await deleteStoredCharacterPhoto(previousPhotoUrl);
+  }
 };
 
 export const prepareSnapshotForWrite = async (

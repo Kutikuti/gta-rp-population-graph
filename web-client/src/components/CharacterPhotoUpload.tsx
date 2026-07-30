@@ -1,9 +1,12 @@
 import { type ChangeEvent, useEffect, useId, useMemo, useState } from "react";
 
+import trashIconUrl from "../assets/misc/trash.svg";
+
 type CharacterPhotoUploadProps = {
   currentPhotoUrl: string | null;
   isUploading: boolean;
   mode: "request" | "direct";
+  onRemove: () => void;
   onUpload: (image: Blob) => Promise<void>;
 };
 
@@ -42,12 +45,14 @@ export function CharacterPhotoUpload({
   currentPhotoUrl,
   isUploading,
   mode,
+  onRemove,
   onUpload
 }: CharacterPhotoUploadProps) {
   const fileInputId = useId();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [removedCurrentPhotoUrl, setRemovedCurrentPhotoUrl] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -81,6 +86,7 @@ export function CharacterPhotoUpload({
     setFileName(file.name);
     setFileUrl(URL.createObjectURL(file));
     setFeedback(null);
+    setRemovedCurrentPhotoUrl(null);
     resetCropControls();
   };
 
@@ -106,6 +112,24 @@ export function CharacterPhotoUpload({
       setFeedback("La photo n'a pas pu être préparée.");
     });
   };
+
+  const handleRemove = () => {
+    if (fileUrl) {
+      URL.revokeObjectURL(fileUrl);
+    }
+
+    setFileUrl(null);
+    setFileName(null);
+    setRemovedCurrentPhotoUrl(currentPhotoUrl);
+    resetCropControls();
+    onRemove();
+    setFeedback(
+      mode === "direct" ? "Photo retirée de la modification." : "Photo retirée de la demande."
+    );
+  };
+
+  const displayedCurrentPhotoUrl =
+    currentPhotoUrl === removedCurrentPhotoUrl ? null : currentPhotoUrl;
 
   const uploadCroppedPhoto = async () => {
     if (!fileUrl) {
@@ -145,8 +169,8 @@ export function CharacterPhotoUpload({
       <div className="photo-preview-mask" aria-hidden="true">
         {fileUrl ? (
           <img src={fileUrl} alt="" style={previewStyle} />
-        ) : currentPhotoUrl ? (
-          <img src={currentPhotoUrl} alt="" />
+        ) : displayedCurrentPhotoUrl ? (
+          <img src={displayedCurrentPhotoUrl} alt="" />
         ) : (
           <span>Photo</span>
         )}
@@ -220,6 +244,19 @@ export function CharacterPhotoUpload({
               {isUploading ? "Préparation..." : "Utiliser cette photo"}
             </button>
           </div>
+        ) : null}
+
+        {displayedCurrentPhotoUrl && !fileUrl ? (
+          <button
+            type="button"
+            className="ghost-button danger-action photo-remove-button"
+            aria-label="Supprimer la photo"
+            title="Supprimer la photo"
+            disabled={isUploading}
+            onClick={handleRemove}
+          >
+            <img src={trashIconUrl} alt="" aria-hidden="true" />
+          </button>
         ) : null}
 
         {feedback ? <p className="photo-upload-feedback">{feedback}</p> : null}

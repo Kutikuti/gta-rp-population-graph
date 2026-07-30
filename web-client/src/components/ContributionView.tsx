@@ -222,6 +222,10 @@ export function ContributionView({
     }
   };
 
+  const removePhoto = () => {
+    setSnapshot((current) => (current ? { ...current, photoUrl: null } : current));
+  };
+
   return (
     <section className="full-page-view" aria-labelledby="contribution-title">
       <div className="full-page-header">
@@ -267,6 +271,7 @@ export function ContributionView({
                 onSubmitted("", true);
               }}
               onChange={setSnapshot}
+              onPhotoRemove={removePhoto}
               onPhotoUpload={uploadPhoto}
               onSubmit={submit}
             />

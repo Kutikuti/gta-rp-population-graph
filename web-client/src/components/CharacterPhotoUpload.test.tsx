@@ -45,11 +45,13 @@ describe("CharacterPhotoUpload", () => {
   });
 
   it("shows the current photo until a new file is selected", () => {
+    const onRemove = vi.fn();
     const { container } = render(
       <CharacterPhotoUpload
         currentPhotoUrl="/uploads/current.webp"
         isUploading={false}
         mode="request"
+        onRemove={onRemove}
         onUpload={vi.fn(async () => undefined)}
       />
     );
@@ -59,6 +61,28 @@ describe("CharacterPhotoUpload", () => {
       "/uploads/current.webp"
     );
     expect(screen.getByText("Aucun fichier choisi")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Supprimer la photo" })).toBeInTheDocument();
+    expect(onRemove).not.toHaveBeenCalled();
+  });
+
+  it("removes the current photo from the pending snapshot", async () => {
+    const user = userEvent.setup();
+    const onRemove = vi.fn();
+    const { container } = render(
+      <CharacterPhotoUpload
+        currentPhotoUrl="/uploads/current.webp"
+        isUploading={false}
+        mode="direct"
+        onRemove={onRemove}
+        onUpload={vi.fn(async () => undefined)}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Supprimer la photo" }));
+
+    expect(onRemove).toHaveBeenCalledOnce();
+    expect(container.querySelector(".photo-preview-mask img")).not.toBeInTheDocument();
+    expect(await screen.findByText("Photo retirée de la modification.")).toBeInTheDocument();
   });
 
   it("rejects files larger than two megabytes before creating a preview", async () => {
@@ -68,6 +92,7 @@ describe("CharacterPhotoUpload", () => {
         currentPhotoUrl={null}
         isUploading={false}
         mode="request"
+        onRemove={vi.fn()}
         onUpload={vi.fn(async () => undefined)}
       />
     );
@@ -93,6 +118,7 @@ describe("CharacterPhotoUpload", () => {
         currentPhotoUrl={null}
         isUploading={false}
         mode="request"
+        onRemove={vi.fn()}
         onUpload={vi.fn(async () => undefined)}
       />
     );
@@ -135,6 +161,7 @@ describe("CharacterPhotoUpload", () => {
         currentPhotoUrl={null}
         isUploading={false}
         mode={mode}
+        onRemove={vi.fn()}
         onUpload={onUpload}
       />
     );
@@ -166,6 +193,7 @@ describe("CharacterPhotoUpload", () => {
         currentPhotoUrl={null}
         isUploading={false}
         mode="request"
+        onRemove={vi.fn()}
         onUpload={onUpload}
       />
     );
@@ -177,7 +205,13 @@ describe("CharacterPhotoUpload", () => {
     expect(onUpload).not.toHaveBeenCalled();
 
     rerender(
-      <CharacterPhotoUpload currentPhotoUrl={null} isUploading mode="request" onUpload={onUpload} />
+      <CharacterPhotoUpload
+        currentPhotoUrl={null}
+        isUploading
+        mode="request"
+        onRemove={vi.fn()}
+        onUpload={onUpload}
+      />
     );
     expect(screen.getByRole("button", { name: "Préparation..." })).toBeDisabled();
   });

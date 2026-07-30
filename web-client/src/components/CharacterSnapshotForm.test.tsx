@@ -79,6 +79,9 @@ function FormHarness({
       isPhotoUploading={false}
       onCancel={onCancel}
       onChange={setSnapshot}
+      onPhotoRemove={() => {
+        setSnapshot((current) => ({ ...current, photoUrl: null }));
+      }}
       onPhotoUpload={onPhotoUpload}
       onSubmit={onSubmit}
     />
