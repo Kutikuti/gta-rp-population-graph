@@ -790,14 +790,19 @@ Avancement :
 - Des usages cibles de `satisfies` securisent maintenant les mappings de
   statuts, labels de snapshots, definitions de relations et labels de
   completude sans elargir les refactors.
+- Les filtres, inclusions Sequelize et criteres d'historique de la consultation
+  publique ont ete extraits dans `backend/src/services/public-data-queries.ts`.
+  `public-data.ts` garde l'orchestration des parcours publics et descend sous
+  les 250 lignes.
 - La regle Biome `complexity/useLiteralKeys` est desactivee car elle entre en
   conflit avec `noPropertyAccessFromIndexSignature` sur les index signatures
   assumees (`process.env`, headers HTTP et donnees JSON dynamiques).
 - Les tests du service admin utilisateur couvrent maintenant les chemins RGPD
   sensibles : refus de dissocier la derniere identite, protection du dernier
   administrateur et anonymisation complete avec revocation des sessions et audit.
-- Le warning d'integration PostgreSQL lie a `pg@9` reste un point de vigilance
-  connu, sans regression bloquante actuelle.
+- Le warning d'integration PostgreSQL lie a `pg@9` a ete corrige dans le `down`
+  de la migration initiale en remplacant les suppressions Sequelize successives
+  par un `DROP TABLE IF EXISTS ... CASCADE` unique.
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 

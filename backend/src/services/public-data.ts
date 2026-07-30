@@ -1,8 +1,15 @@
-import { cast, col, type Includeable, Op, type Order, type WhereOptions, where } from "sequelize";
 import type { LifeStatus, VerificationStatus } from "../db/enums.js";
 import { models } from "../db/index.js";
-import { Character, CharacterRelationship, Streamer, Tag } from "../db/models/index.js";
+import { Character } from "../db/models/index.js";
 import { SequelizePublicGraphService } from "./public-data-graph.js";
+import {
+  characterDetailIncludes,
+  characterIncludes,
+  characterOrder,
+  characterWhere,
+  historyWhere,
+  isUuid
+} from "./public-data-queries.js";
 import {
   fullName,
   isoDate,
@@ -32,20 +39,6 @@ export type {
   PublicStreamer,
   PublicTag
 } from "./public-data-serializers.js";
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-const isUuid = (value: string) => uuidPattern.test(value);
-
-const textOrUuidWhere = (value: string, textColumn: "name" | "publicName"): WhereOptions => {
-  const conditions: WhereOptions[] = [{ [textColumn]: { [Op.iLike]: `%${value}%` } }];
-
-  if (isUuid(value)) {
-    conditions.unshift({ id: value });
-  }
-
-  return { [Op.or]: conditions };
-};
 
 type Pagination = {
   limit: number;
@@ -79,73 +72,8 @@ export type PublicDataService = {
   listHistory(filters: HistoryFilters): Promise<PublicHistoryEntry[]>;
 };
 
-const characterIncludes = (
-  filters?: Pick<CharacterListFilters, "tag" | "streamer">
-): Includeable[] => [
-  {
-    model: Streamer,
-    as: "streamer",
-    required: Boolean(filters?.streamer),
-    ...(filters?.streamer ? { where: textOrUuidWhere(filters.streamer, "publicName") } : {})
-  },
-  {
-    model: Tag,
-    as: "tags",
-    through: { attributes: [] },
-    required: Boolean(filters?.tag),
-    ...(filters?.tag ? { where: textOrUuidWhere(filters.tag, "name") } : {})
-  }
-];
-
-const searchWhere = (q: string): WhereOptions => {
-  const like = `%${q}%`;
-
-  return {
-    [Op.or]: [
-      { firstName: { [Op.iLike]: like } },
-      { lastName: { [Op.iLike]: like } },
-      { nickname: { [Op.iLike]: like } },
-      where(cast(col("Character.phone_numbers"), "text"), { [Op.iLike]: like }),
-      { companyName: { [Op.iLike]: like } },
-      { companyRank: { [Op.iLike]: like } },
-      { companyBadgeNumber: { [Op.iLike]: like } },
-      { groupName: { [Op.iLike]: like } },
-      { district: { [Op.iLike]: like } }
-    ]
-  };
-};
-
-const characterWhere = (
-  filters: Pick<CharacterListFilters, "company" | "lifeStatus" | "q" | "verificationStatus">
-): WhereOptions => {
-  const where: WhereOptions = {};
-
-  if (filters.q) {
-    Object.assign(where, searchWhere(filters.q));
-  }
-
-  if (filters.lifeStatus) {
-    Object.assign(where, { lifeStatus: filters.lifeStatus });
-  }
-
-  if (filters.company) {
-    Object.assign(where, { companyName: { [Op.iLike]: `%${filters.company}%` } });
-  }
-
-  if (filters.verificationStatus) {
-    Object.assign(where, { verificationStatus: filters.verificationStatus });
-  }
-
-  return where;
-};
-
 const applyPagination = <T>(items: T[], pagination: Pagination) =>
   items.slice(pagination.offset, pagination.offset + pagination.limit);
-
-const characterOrder: Order = [
-  ["lastName", "ASC"],
-  ["firstName", "ASC"]
-];
 
 export class SequelizePublicDataService implements PublicDataService {
   readonly #graph = new SequelizePublicGraphService();
@@ -268,19 +196,7 @@ export class SequelizePublicDataService implements PublicDataService {
   async getCharacter(identifier: string): Promise<PublicCharacterDetail | null> {
     const character = await models.Character.findOne({
       where: isUuid(identifier) ? { id: identifier } : { publicSlug: identifier },
-      include: [
-        ...characterIncludes(),
-        {
-          model: CharacterRelationship,
-          as: "outgoingRelationships",
-          include: [{ model: Character, as: "targetCharacter" }]
-        },
-        {
-          model: CharacterRelationship,
-          as: "incomingRelationships",
-          include: [{ model: Character, as: "sourceCharacter" }]
-        }
-      ]
+      include: characterDetailIncludes()
     });
 
     if (!character) {
@@ -314,14 +230,8 @@ export class SequelizePublicDataService implements PublicDataService {
   }
 
   async listHistory(filters: HistoryFilters): Promise<PublicHistoryEntry[]> {
-    const where: WhereOptions = {};
-
-    if (filters.characterId) {
-      Object.assign(where, { characterId: filters.characterId });
-    }
-
     const entries = await models.ChangeHistory.findAll({
-      where,
+      where: historyWhere(filters.characterId),
       include: [{ model: Character, as: "character" }],
       limit: filters.limit,
       offset: filters.offset,
