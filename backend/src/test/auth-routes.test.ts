@@ -2,6 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import { createApp } from "../app.js";
+import { env } from "../config/env.js";
 import type {
   AuthenticatedUser,
   AuthResult,
@@ -459,6 +460,14 @@ describe("auth API", () => {
     const logoutResponse = await agent.post("/api/auth/logout");
 
     expect(logoutResponse.status).toBe(204);
+    const setCookieHeader = logoutResponse.headers["set-cookie"];
+    const clearedCookie = Array.isArray(setCookieHeader)
+      ? setCookieHeader.join("; ")
+      : (setCookieHeader ?? "");
+    expect(clearedCookie).toContain(`${env.SESSION_COOKIE_NAME}=`);
+    expect(clearedCookie).toContain("Expires=Thu, 01 Jan 1970 00:00:00 GMT");
+    expect(clearedCookie).toContain("HttpOnly");
+    expect(clearedCookie).toContain("SameSite=Lax");
 
     const sessionResponse = await agent.get("/api/auth/session");
 

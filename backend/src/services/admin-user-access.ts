@@ -19,7 +19,7 @@ export class SequelizeAdminUserAccessService {
   ): Promise<AdminUser | "last_admin" | null> {
     return sequelize.transaction(async (transaction) => {
       const user = await models.User.findByPk(userId, {
-        include: userInclude,
+        include: userInclude(),
         transaction
       });
       const nextRole = await models.Role.findOne({ where: { name: roleName }, transaction });
@@ -101,7 +101,7 @@ export class SequelizeAdminUserAccessService {
 
       const [count] = await models.Ban.update(
         { revokedAt: new Date() },
-        { where: { userId, ...activeBanWhere }, transaction }
+        { where: { userId, ...activeBanWhere() }, transaction }
       );
 
       if (count === 0) {
@@ -126,7 +126,7 @@ export class SequelizeAdminUserAccessService {
 
   private async reloadUser(userId: string, transaction: Transaction) {
     const user = await models.User.findByPk(userId, {
-      include: userInclude,
+      include: userInclude(),
       transaction
     });
 

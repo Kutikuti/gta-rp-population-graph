@@ -2,6 +2,7 @@ import type { Request, RequestHandler, Response } from "express";
 import "express-session";
 
 import { env } from "../config/env.js";
+import { sessionCookieOptions } from "../config/session.js";
 import type { AuthenticatedUser, AuthService } from "../services/auth.js";
 
 declare module "express-session" {
@@ -21,8 +22,21 @@ declare global {
   }
 }
 
-const clearSessionCookie = (response: Response) => {
-  response.clearCookie(env.SESSION_COOKIE_NAME);
+export const clearSessionCookie = (response: Response) => {
+  response.cookie(env.SESSION_COOKIE_NAME, "", {
+    ...sessionCookieOptions,
+    expires: new Date(0),
+    path: "/"
+  });
+};
+
+const sendAuthenticationRequired = (response: Response) => {
+  response.status(401).json({
+    error: {
+      code: "AUTHENTICATION_REQUIRED",
+      message: "Authentification requise."
+    }
+  });
 };
 
 export const loadCurrentUser =
@@ -56,12 +70,7 @@ export const loadCurrentUser =
 
 export const requireAuthenticatedUser: RequestHandler = (request, response, next) => {
   if (!request.currentUser) {
-    response.status(401).json({
-      error: {
-        code: "AUTHENTICATION_REQUIRED",
-        message: "Authentification requise."
-      }
-    });
+    sendAuthenticationRequired(response);
     return;
   }
 
@@ -72,12 +81,7 @@ export const requireRole =
   (allowedRoles: AuthenticatedUser["role"]["name"][]): RequestHandler =>
   (request, response, next) => {
     if (!request.currentUser) {
-      response.status(401).json({
-        error: {
-          code: "AUTHENTICATION_REQUIRED",
-          message: "Authentification requise."
-        }
-      });
+      sendAuthenticationRequired(response);
       return;
     }
 

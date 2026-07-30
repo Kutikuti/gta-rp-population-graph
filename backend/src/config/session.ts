@@ -11,15 +11,17 @@ const persistentStore =
         cleanupIntervalMinutes: env.SESSION_CLEANUP_INTERVAL_MINUTES
       });
 
+export const sessionCookieOptions = {
+  httpOnly: true,
+  sameSite: env.SESSION_COOKIE_SAME_SITE,
+  secure: env.NODE_ENV === "production" && env.SESSION_COOKIE_SECURE
+};
+
 export const sessionMiddleware = session({
   secret: env.SESSION_SECRET,
   name: env.SESSION_COOKIE_NAME,
   resave: false,
   saveUninitialized: false,
   store: persistentStore,
-  cookie: {
-    httpOnly: true,
-    sameSite: env.SESSION_COOKIE_SAME_SITE,
-    secure: env.NODE_ENV === "production" && env.SESSION_COOKIE_SECURE
-  }
+  cookie: sessionCookieOptions
 });

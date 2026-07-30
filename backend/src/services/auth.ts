@@ -2,147 +2,30 @@ import { randomUUID } from "node:crypto";
 
 import { Op } from "sequelize";
 
-import type { AuthProvider, RoleName } from "../db/enums.js";
+import type { AuthProvider } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
+import {
+  activeBanWhere,
+  serializeAuthenticatedUser,
+  serializePersonalDataExport
+} from "./auth-serializers.js";
+import type {
+  AuthenticatedUser,
+  AuthResult,
+  AuthService,
+  ExternalIdentity,
+  LinkIdentityResult,
+  PersonalDataExport
+} from "./auth-types.js";
 
-export type AuthenticatedUser = {
-  id: string;
-  email: string;
-  displayName: string;
-  mustChooseDisplayName: boolean;
-  avatarUrl: string | null;
-  role: {
-    id: string;
-    name: RoleName;
-  };
-  isBanned: boolean;
-  linkedIdentities: Array<{
-    id: string;
-    provider: AuthProvider;
-    connectedAt: string;
-    lastUsedAt: string | null;
-    canUnlink: boolean;
-  }>;
-};
-
-export type ExternalIdentity = {
-  provider: AuthProvider;
-  providerUserId: string;
-  email: string;
-  displayName: string;
-  avatarUrl: string | null;
-};
-
-export type AuthResult =
-  | {
-      status: "authenticated";
-      user: AuthenticatedUser;
-    }
-  | {
-      status: "banned";
-      user: AuthenticatedUser;
-    }
-  | {
-      status: "email_in_use";
-    };
-
-export type LinkIdentityResult =
-  | {
-      status: "linked";
-      user: AuthenticatedUser;
-    }
-  | {
-      status: "already_linked";
-      user: AuthenticatedUser;
-    }
-  | {
-      status: "linked_to_other_user";
-    }
-  | {
-      status: "different_identity_already_linked";
-    };
-
-export interface AuthService {
-  getSessionUser(userId: string): Promise<AuthenticatedUser | null>;
-  authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult>;
-  linkIdentity(userId: string, identity: ExternalIdentity): Promise<LinkIdentityResult | null>;
-  updateDisplayName(userId: string, displayName: string): Promise<AuthenticatedUser | null>;
-  exportPersonalData?(userId: string): Promise<PersonalDataExport | null>;
-  unlinkIdentity(
-    userId: string,
-    provider: AuthProvider
-  ): Promise<AuthenticatedUser | "last_identity" | null>;
-}
-
-export type PersonalDataExport = {
-  exportedAt: string;
-  account: {
-    id: string;
-    email: string;
-    displayName: string;
-    displayNameChosenAt: string | null;
-    avatarUrl: string | null;
-    role: RoleName;
-    isBanned: boolean;
-    lastLoginAt: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-  linkedIdentities: Array<{
-    id: string;
-    provider: AuthProvider;
-    providerEmail: string | null;
-    providerDisplayName: string | null;
-    providerAvatarUrl: string | null;
-    connectedAt: string;
-    lastUsedAt: string | null;
-  }>;
-};
-
-const activeBanWhere = {
-  revokedAt: null,
-  [Op.or]: [{ expiresAt: null }, { expiresAt: { [Op.gt]: new Date() } }]
-};
-
-const serializeAuthenticatedUser = (user: {
-  id: string;
-  email: string;
-  displayName: string;
-  displayNameChosenAt: Date | null;
-  avatarUrl: string | null;
-  role?: { id: string; name: RoleName } | null;
-  bans?: Array<{ id: string }>;
-  identities?: Array<{
-    id: string;
-    provider: AuthProvider;
-    createdAt: Date;
-    lastUsedAt: Date | null;
-  }>;
-}): AuthenticatedUser => {
-  if (!user.role) {
-    throw new Error(`User ${user.id} is missing its role.`);
-  }
-
-  return {
-    id: user.id,
-    email: user.email,
-    displayName: user.displayName,
-    mustChooseDisplayName: !user.displayNameChosenAt,
-    avatarUrl: user.avatarUrl,
-    role: {
-      id: user.role.id,
-      name: user.role.name
-    },
-    isBanned: Boolean(user.bans?.length),
-    linkedIdentities: (user.identities ?? []).map((identity) => ({
-      id: identity.id,
-      provider: identity.provider,
-      connectedAt: identity.createdAt.toISOString(),
-      lastUsedAt: identity.lastUsedAt ? identity.lastUsedAt.toISOString() : null,
-      canUnlink: (user.identities?.length ?? 0) > 1
-    }))
-  };
-};
+export type {
+  AuthenticatedUser,
+  AuthResult,
+  AuthService,
+  ExternalIdentity,
+  LinkIdentityResult,
+  PersonalDataExport
+} from "./auth-types.js";
 
 const createDefaultDisplayName = () => `Utilisateur ${randomUUID().slice(0, 8)}`;
 const seedEmailSuffix = ".seed@example.test";
@@ -156,7 +39,7 @@ export class SequelizeAuthService implements AuthService {
           association: "bans",
           attributes: ["id"],
           required: false,
-          where: activeBanWhere
+          where: activeBanWhere()
         },
         {
           association: "identities",
@@ -423,7 +306,7 @@ export class SequelizeAuthService implements AuthService {
           association: "bans",
           attributes: ["id"],
           required: false,
-          where: activeBanWhere
+          where: activeBanWhere()
         },
         {
           association: "identities",
@@ -446,32 +329,7 @@ export class SequelizeAuthService implements AuthService {
       return null;
     }
 
-    return {
-      exportedAt: new Date().toISOString(),
-      account: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        displayNameChosenAt: user.displayNameChosenAt
-          ? user.displayNameChosenAt.toISOString()
-          : null,
-        avatarUrl: user.avatarUrl,
-        role: user.role.name,
-        isBanned: Boolean(user.bans?.length),
-        lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString()
-      },
-      linkedIdentities: (user.identities ?? []).map((identity) => ({
-        id: identity.id,
-        provider: identity.provider,
-        providerEmail: identity.providerEmail,
-        providerDisplayName: identity.providerDisplayName,
-        providerAvatarUrl: identity.providerAvatarUrl,
-        connectedAt: identity.createdAt.toISOString(),
-        lastUsedAt: identity.lastUsedAt ? identity.lastUsedAt.toISOString() : null
-      }))
-    };
+    return serializePersonalDataExport(user);
   }
 
   async unlinkIdentity(

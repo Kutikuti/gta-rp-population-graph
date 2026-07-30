@@ -89,7 +89,7 @@ export class SequelizeAdminService implements AdminService {
   async getDashboard(): Promise<AdminDashboard> {
     const [users, tags, actions] = await Promise.all([
       models.User.findAll({
-        include: userInclude,
+        include: userInclude(),
         order: [["createdAt", "DESC"]]
       }),
       this.#tags.listTagsWithUsage(),

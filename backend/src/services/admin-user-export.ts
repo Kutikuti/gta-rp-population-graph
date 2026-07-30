@@ -45,7 +45,7 @@ export class SequelizeAdminUserExportService {
         models.User.findByPk(userId, {
           include: [
             { model: models.Role, as: "role" },
-            { model: models.Ban, as: "bans", required: false, where: activeBanWhere },
+            { model: models.Ban, as: "bans", required: false, where: activeBanWhere() },
             {
               association: "identities",
               attributes: [

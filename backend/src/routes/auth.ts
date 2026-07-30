@@ -2,7 +2,12 @@ import type express from "express";
 import { Router } from "express";
 
 import { env } from "../config/env.js";
-import { destroySession, regenerateSession, requireAuthenticatedUser } from "../middleware/auth.js";
+import {
+  clearSessionCookie,
+  destroySession,
+  regenerateSession,
+  requireAuthenticatedUser
+} from "../middleware/auth.js";
 import type { AuthService, ExternalIdentity } from "../services/auth.js";
 import {
   type DiscordOauthClient,
@@ -60,6 +65,8 @@ type OauthClient = {
   exchangeCodeForProfile(code: string): Promise<ExternalIdentity>;
 };
 
+type OauthLinkIntent = "link_google" | "link_discord" | "link_twitch";
+
 const oauthErrorCode = (error: unknown) => {
   if (
     error instanceof GoogleOauthDisabledError ||
@@ -92,6 +99,25 @@ export const createAuthRouter = ({
 }: AuthRouterDependencies) => {
   const router = Router();
 
+  const withOauthRedirect =
+    (
+      handler: (request: express.Request, response: express.Response) => Promise<void> | void
+    ): express.RequestHandler =>
+    async (request, response, next) => {
+      try {
+        await handler(request, response);
+      } catch (error) {
+        const errorCode = oauthErrorCode(error);
+
+        if (errorCode) {
+          response.redirect(302, redirectToClient({ auth_error: errorCode }));
+          return;
+        }
+
+        next(error);
+      }
+    };
+
   const startOauthLogin = async (
     request: express.Request,
     response: express.Response,
@@ -109,7 +135,7 @@ export const createAuthRouter = ({
     request: express.Request,
     response: express.Response,
     client: OauthClient,
-    intent: "link_google" | "link_discord" | "link_twitch"
+    intent: OauthLinkIntent
   ) => {
     if (!request.currentUser) {
       throw new Error("Authenticated route reached without current user.");
@@ -126,7 +152,7 @@ export const createAuthRouter = ({
     request: express.Request,
     response: express.Response,
     client: OauthClient,
-    linkIntent: "link_google" | "link_discord" | "link_twitch"
+    linkIntent: OauthLinkIntent
   ) => {
     const { code, state, error } = request.query;
 
@@ -198,7 +224,7 @@ export const createAuthRouter = ({
 
     if (result.status === "banned") {
       await destroySession(request);
-      response.clearCookie(env.SESSION_COOKIE_NAME);
+      clearSessionCookie(response);
       response.redirect(302, redirectToClient({ auth_error: "banned" }));
       return;
     }
@@ -213,149 +239,60 @@ export const createAuthRouter = ({
     response.redirect(302, redirectToClient({ auth: "success" }));
   };
 
+  const registerOauthProvider = ({
+    path,
+    client,
+    linkIntent
+  }: {
+    path: string;
+    client: OauthClient;
+    linkIntent: OauthLinkIntent;
+  }) => {
+    router.get(
+      `/${path}`,
+      withOauthRedirect((request, response) => startOauthLogin(request, response, client))
+    );
+
+    router.get(
+      `/${path}/link`,
+      requireAuthenticatedUser,
+      withOauthRedirect((request, response) =>
+        startOauthLink(request, response, client, linkIntent)
+      )
+    );
+
+    router.get(
+      `/${path}/callback`,
+      withOauthRedirect((request, response) =>
+        handleOauthCallback(request, response, client, linkIntent)
+      )
+    );
+  };
+
   router.get("/session", (request, response) => {
     response.json(sessionPayload(request));
   });
 
-  router.get("/google", async (request, response, next) => {
-    try {
-      await startOauthLogin(request, response, googleOauthClient);
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
+  registerOauthProvider({
+    path: "google",
+    client: googleOauthClient,
+    linkIntent: "link_google"
   });
-
-  router.get("/google/link", requireAuthenticatedUser, async (request, response, next) => {
-    try {
-      startOauthLink(request, response, googleOauthClient, "link_google");
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
+  registerOauthProvider({
+    path: "discord",
+    client: discordOauthClient,
+    linkIntent: "link_discord"
   });
-
-  router.get("/google/callback", async (request, response, next) => {
-    try {
-      await handleOauthCallback(request, response, googleOauthClient, "link_google");
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
-  });
-
-  router.get("/discord", async (request, response, next) => {
-    try {
-      await startOauthLogin(request, response, discordOauthClient);
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
-  });
-
-  router.get("/discord/link", requireAuthenticatedUser, async (request, response, next) => {
-    try {
-      startOauthLink(request, response, discordOauthClient, "link_discord");
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
-  });
-
-  router.get("/discord/callback", async (request, response, next) => {
-    try {
-      await handleOauthCallback(request, response, discordOauthClient, "link_discord");
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
-  });
-
-  router.get("/twitch", async (request, response, next) => {
-    try {
-      await startOauthLogin(request, response, twitchOauthClient);
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
-  });
-
-  router.get("/twitch/link", requireAuthenticatedUser, async (request, response, next) => {
-    try {
-      startOauthLink(request, response, twitchOauthClient, "link_twitch");
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
-  });
-
-  router.get("/twitch/callback", async (request, response, next) => {
-    try {
-      await handleOauthCallback(request, response, twitchOauthClient, "link_twitch");
-    } catch (error) {
-      const errorCode = oauthErrorCode(error);
-
-      if (errorCode) {
-        response.redirect(302, redirectToClient({ auth_error: errorCode }));
-        return;
-      }
-
-      next(error);
-    }
+  registerOauthProvider({
+    path: "twitch",
+    client: twitchOauthClient,
+    linkIntent: "link_twitch"
   });
 
   router.post("/logout", async (request, response, next) => {
     try {
       await destroySession(request);
-      response.clearCookie(env.SESSION_COOKIE_NAME);
+      clearSessionCookie(response);
       response.status(204).send();
     } catch (error) {
       next(error);

@@ -194,7 +194,7 @@ export class SequelizeAdminUserService {
     return sequelize.transaction(async (transaction) => {
       const user = await models.User.findByPk(userId, {
         include: [
-          ...userInclude,
+          ...userInclude(),
           {
             association: "identities",
             attributes: ["id"],
@@ -290,7 +290,7 @@ export class SequelizeAdminUserService {
 
   private async reloadUser(userId: string, transaction: Transaction) {
     const user = await models.User.findByPk(userId, {
-      include: userInclude,
+      include: userInclude(),
       transaction
     });
 

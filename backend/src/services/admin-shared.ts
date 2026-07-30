@@ -60,14 +60,14 @@ export type BanInput = {
   reason: string;
 };
 
-export const activeBanWhere = {
+export const activeBanWhere = () => ({
   revokedAt: null,
   [Op.or]: [{ expiresAt: null }, { expiresAt: { [Op.gt]: new Date() } }]
-};
+});
 
-export const userInclude = [
+export const userInclude = () => [
   { model: models.Role, as: "role" },
-  { model: models.Ban, as: "bans", required: false, where: activeBanWhere }
+  { model: models.Ban, as: "bans", required: false, where: activeBanWhere() }
 ];
 
 export const adminActionInclude = [

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { authProviders } from "../db/enums.js";
 import { requireAuthenticatedUser } from "../middleware/auth.js";
-import type { AuthService } from "../services/auth.js";
+import type { AuthenticatedUser, AuthService } from "../services/auth.js";
 
 const displayNameSchema = z.object({
   displayName: z
@@ -18,6 +18,14 @@ const identityParamsSchema = z.object({
   provider: z.enum(authProviders)
 });
 
+const currentAuthenticatedUser = (request: { currentUser: AuthenticatedUser | null }) => {
+  if (!request.currentUser) {
+    throw new Error("Authenticated route reached without current user.");
+  }
+
+  return request.currentUser;
+};
+
 export const createProfileRouter = (authService: AuthService) => {
   const router = Router();
 
@@ -29,15 +37,18 @@ export const createProfileRouter = (authService: AuthService) => {
 
   router.get("/personal-data", requireAuthenticatedUser, async (request, response, next) => {
     try {
-      if (!request.currentUser) {
-        throw new Error("Authenticated route reached without current user.");
-      }
-
       if (!authService.exportPersonalData) {
-        throw new Error("Profile personal data export is not available on this auth service.");
+        response.status(501).json({
+          error: {
+            code: "PERSONAL_DATA_EXPORT_UNAVAILABLE",
+            message: "L'export des donnees personnelles n'est pas disponible."
+          }
+        });
+        return;
       }
 
-      const exportPayload = await authService.exportPersonalData(request.currentUser.id);
+      const user = currentAuthenticatedUser(request);
+      const exportPayload = await authService.exportPersonalData(user.id);
 
       if (!exportPayload) {
         response.status(404).json({
@@ -57,12 +68,9 @@ export const createProfileRouter = (authService: AuthService) => {
 
   router.patch("/display-name", requireAuthenticatedUser, async (request, response, next) => {
     try {
-      if (!request.currentUser) {
-        throw new Error("Authenticated route reached without current user.");
-      }
-
+      const currentUser = currentAuthenticatedUser(request);
       const payload = displayNameSchema.parse(request.body);
-      const user = await authService.updateDisplayName(request.currentUser.id, payload.displayName);
+      const user = await authService.updateDisplayName(currentUser.id, payload.displayName);
 
       if (!user) {
         response.status(404).json({
@@ -85,12 +93,9 @@ export const createProfileRouter = (authService: AuthService) => {
     requireAuthenticatedUser,
     async (request, response, next) => {
       try {
-        if (!request.currentUser) {
-          throw new Error("Authenticated route reached without current user.");
-        }
-
+        const currentUser = currentAuthenticatedUser(request);
         const params = identityParamsSchema.parse(request.params);
-        const result = await authService.unlinkIdentity(request.currentUser.id, params.provider);
+        const result = await authService.unlinkIdentity(currentUser.id, params.provider);
 
         if (!result) {
           response.status(404).json({

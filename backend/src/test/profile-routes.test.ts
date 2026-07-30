@@ -165,6 +165,32 @@ class FixtureAuthService implements AuthService {
   }
 }
 
+class FixtureAuthServiceWithoutPersonalDataExport implements AuthService {
+  async getSessionUser(userId: string) {
+    return userId === singleIdentityUser.id ? singleIdentityUser : null;
+  }
+
+  async authenticateIdentity(identity: ExternalIdentity): Promise<AuthResult> {
+    if (identity.providerUserId !== "solo") {
+      throw new Error(`Unknown fixture identity ${identity.providerUserId}.`);
+    }
+
+    return { status: "authenticated", user: singleIdentityUser };
+  }
+
+  async linkIdentity() {
+    return null;
+  }
+
+  async updateDisplayName() {
+    return null;
+  }
+
+  async unlinkIdentity() {
+    return null;
+  }
+}
+
 class FixtureGoogleOauthClient implements GoogleOauthClient {
   buildAuthorizationUrl(state: string) {
     return `https://accounts.example.test/oauth?state=${encodeURIComponent(state)}`;
@@ -236,6 +262,21 @@ describe("profile API", () => {
       expect.objectContaining({ provider: "discord", providerEmail: null })
     ]);
     expect(typeof response.body.exportedAt).toBe("string");
+  });
+
+  it("returns an explicit error when personal data export is unavailable", async () => {
+    const app = createApp({
+      authService: new FixtureAuthServiceWithoutPersonalDataExport(),
+      googleOauthClient: new FixtureGoogleOauthClient()
+    });
+    const agent = request.agent(app);
+
+    await loginAs(agent, "solo");
+
+    const response = await agent.get("/api/profile/personal-data");
+
+    expect(response.status).toBe(501);
+    expect(response.body.error.code).toBe("PERSONAL_DATA_EXPORT_UNAVAILABLE");
   });
 
   it("dissociates one identity when another login provider remains", async () => {

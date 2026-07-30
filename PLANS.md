@@ -817,6 +817,24 @@ Avancement :
 - Le warning d'integration PostgreSQL lie a `pg@9` a ete corrige dans le `down`
   de la migration initiale en remplacant les suppressions Sequelize successives
   par un `DROP TABLE IF EXISTS ... CASCADE` unique.
+- La passe auth a extrait les contrats et serialiseurs dans
+  `auth-types.ts` et `auth-serializers.ts`, tout en conservant
+  `services/auth.ts` comme facade compatible. `auth.ts` descend sous les 400
+  lignes et les tests existants restent alignes sur les imports publics.
+- Le filtre de bans actifs est maintenant reconstruit a chaque requete cote
+  auth et administration, afin qu'un ban expire ne reste pas considere actif
+  jusqu'au redemarrage du backend. Un test de service couvre explicitement
+  l'utilisation de l'heure courante.
+- Les routes OAuth Google, Discord et Twitch utilisent maintenant un enregistreur
+  commun pour les parcours login, rattachement et callback. Les chemins et
+  redirections restent identiques, tandis que `routes/auth.ts` descend sous les
+  300 lignes.
+- La route profil renvoie maintenant une erreur explicite lorsque l'export RGPD
+  utilisateur n'est pas disponible sur le service injecte, et partage un helper
+  local pour l'utilisateur authentifie courant.
+- La suppression du cookie de session utilise le meme socle d'options que sa
+  creation (`httpOnly`, `sameSite`, `secure` selon l'environnement), avec un
+  test de logout couvrant les attributs essentiels du cookie expire.
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 

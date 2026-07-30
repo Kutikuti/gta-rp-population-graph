@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockState = vi.hoisted(() => ({
@@ -66,6 +67,7 @@ const authenticatedUser = (roleName: "administrator" | "user"): AuthenticatedUse
 
 describe("SequelizeAuthService", () => {
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
 
     mockState.transaction.mockImplementation(async (callback: () => Promise<void>) => callback());
@@ -358,6 +360,29 @@ describe("SequelizeAuthService", () => {
         }
       ]
     });
+  });
+
+  it("builds the active ban filter with the current request time", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-30T12:00:00.000Z"));
+    mockState.userFindByPk.mockResolvedValueOnce(null);
+
+    await expect(new SequelizeAuthService().getSessionUser("user-1")).resolves.toBeNull();
+
+    const findOptions = mockState.userFindByPk.mock.calls[0]?.[1] as
+      | {
+          include?: Array<{ association?: string; where?: Record<PropertyKey, unknown> }>;
+        }
+      | undefined;
+    const banInclude = findOptions?.include?.find((entry) => entry.association === "bans");
+    const banWindow = banInclude?.where?.[Op.or] as
+      | Array<{ expiresAt: null } | { expiresAt: Record<PropertyKey, Date> }>
+      | undefined;
+    const expiringBanFilter = banWindow?.find(
+      (entry): entry is { expiresAt: Record<PropertyKey, Date> } => entry.expiresAt !== null
+    );
+
+    expect(expiringBanFilter?.expiresAt[Op.gt]).toEqual(new Date("2026-07-30T12:00:00.000Z"));
   });
 
   it("rejects session users without a loaded role", async () => {
