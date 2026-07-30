@@ -839,6 +839,18 @@ Avancement :
   au lieu de lever des `Error` generiques lorsque l'utilisateur courant est
   absent. Ces cas retombent donc sur une reponse API `401
   AUTHENTICATION_REQUIRED` explicite plutot que sur un `500` generique.
+- Les demandes de changement remontent un code API dedie
+  `CHANGE_REQUEST_RELOAD_FAILED` lorsqu'une demande creee ou approuvee ne peut
+  pas etre rechargee depuis la base. Cela evite de confondre ce cas technique
+  avec un faux `CHARACTER_NOT_FOUND` ou un `500` sans contexte exploitable.
+- Les snapshots de fiche remontent maintenant `RELATED_CHARACTER_NOT_FOUND`
+  lorsqu'une relation pointe vers un personnage introuvable, avec les
+  identifiants manquants dans les details. Les relations existantes ne sont pas
+  supprimees avant cette validation.
+- Les imports Notion cote administration et automation remontent maintenant des
+  codes API dedies pour les cas techniques attendus :
+  `NOTION_IMPORT_BATCH_NOT_FOUND`, `NOTION_IMPORT_AUTOMATION_ACTOR_MISSING` et
+  `NOTION_IMPORT_ENTRY_RELOAD_FAILED`.
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 

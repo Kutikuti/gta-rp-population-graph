@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 
 import { models, sequelize } from "../db/index.js";
 import type { Character, JsonObject } from "../db/models/index.js";
+import { internalServerError } from "../middleware/api-error.js";
 import {
   loadCharacterTags,
   refreshAppliedBatchRelationships,
@@ -355,7 +356,16 @@ export class SequelizeAdminNotionImportService {
       const reloadedEntry = await models.NotionImportEntry.findByPk(entry.id, { transaction });
 
       if (!reloadedEntry) {
-        throw new Error(`Notion import entry ${entry.id} could not be reloaded after apply.`);
+        throw internalServerError(
+          "NOTION_IMPORT_ENTRY_RELOAD_FAILED",
+          "L'entrée d'import Notion n'a pas pu etre rechargee apres application.",
+          {
+            entryId: entry.id,
+            batchId: input.batchId,
+            pageId: input.pageId,
+            characterId: character.id
+          }
+        );
       }
 
       return {

@@ -8,6 +8,7 @@ import type {
   JsonObject,
   SocialLinks
 } from "../db/models/index.js";
+import { badRequestError } from "../middleware/api-error.js";
 import { type CharacterSnapshot, characterSnapshotSchema } from "./change-request-schemas.js";
 import { promoteCharacterPhotoIfPending } from "./character-photos.js";
 import {
@@ -199,8 +200,15 @@ const applyRelationships = async (
       transaction
     });
 
-    if (existingCharacters.length !== relationshipIds.length) {
-      throw new Error("A related character is missing.");
+    const existingCharacterIds = new Set(existingCharacters.map((character) => character.id));
+    const missingCharacterIds = relationshipIds.filter((id) => !existingCharacterIds.has(id));
+
+    if (missingCharacterIds.length > 0) {
+      throw badRequestError(
+        "RELATED_CHARACTER_NOT_FOUND",
+        "Une ou plusieurs relations pointent vers un personnage introuvable.",
+        { missingCharacterIds }
+      );
     }
   }
 

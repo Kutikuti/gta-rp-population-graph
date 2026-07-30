@@ -30,3 +30,6 @@ export const unauthorizedError = (code: string, message: string, details?: JsonO
 
 export const conflictError = (code: string, message: string, details?: JsonObject | null) =>
   new ApiError({ status: 409, code, message, ...(details === undefined ? {} : { details }) });
+
+export const internalServerError = (code: string, message: string, details?: JsonObject | null) =>
+  new ApiError({ status: 500, code, message, ...(details === undefined ? {} : { details }) });

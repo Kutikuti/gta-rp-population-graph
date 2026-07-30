@@ -159,6 +159,24 @@ describe("SequelizeChangeRequestService", () => {
     );
   });
 
+  it("reports a dedicated error when an update request cannot be reloaded after creation", async () => {
+    const service = new SequelizeChangeRequestService();
+    mockState.characterFindByPk.mockResolvedValue({ id: "character-1" });
+    mockState.changeRequestCreate.mockResolvedValue({ id: "request-1" });
+    mockState.reloadChangeRequestSummary.mockResolvedValue(null);
+
+    await expect(
+      service.createChangeRequest({
+        userId: "user-1",
+        characterId: "character-1",
+        proposedSnapshot: snapshot
+      })
+    ).rejects.toMatchObject({
+      status: 500,
+      code: "CHANGE_REQUEST_RELOAD_FAILED"
+    });
+  });
+
   it("rejects photos and exact duplicates on character creation requests", async () => {
     const service = new SequelizeChangeRequestService();
 
@@ -200,6 +218,23 @@ describe("SequelizeChangeRequestService", () => {
     );
   });
 
+  it("reports a dedicated error when a creation request cannot be reloaded", async () => {
+    const service = new SequelizeChangeRequestService();
+    mockState.changeRequestCreate.mockResolvedValue({ id: "request-1" });
+    mockState.reloadChangeRequestSummary.mockResolvedValue(null);
+
+    await expect(
+      service.createCharacterCreationRequest({
+        userId: "user-1",
+        proposedSnapshot: snapshot,
+        searchContext: creationContext
+      })
+    ).rejects.toMatchObject({
+      status: 500,
+      code: "CHANGE_REQUEST_RELOAD_FAILED"
+    });
+  });
+
   it("serializes user and moderation request lists with the expected filters", async () => {
     const service = new SequelizeChangeRequestService();
     const rows = [{ id: "request-1" }];
@@ -238,6 +273,24 @@ describe("SequelizeChangeRequestService", () => {
     ).resolves.toEqual({
       request: { id: "request-1" },
       changes: { firstName: {} }
+    });
+  });
+
+  it("reports a dedicated error when an approved request cannot be reloaded", async () => {
+    const service = new SequelizeChangeRequestService();
+    mockState.changeRequestFindByPk.mockResolvedValue({
+      id: "request-1",
+      status: "pending",
+      proposedSnapshot: snapshot
+    });
+    mockState.approvePendingChangeRequest.mockResolvedValue({ changes: { firstName: {} } });
+    mockState.reloadChangeRequestSummary.mockResolvedValue(null);
+
+    await expect(
+      service.approveChangeRequest({ id: "request-1", moderatorId: "moderator-1" })
+    ).rejects.toMatchObject({
+      status: 500,
+      code: "CHANGE_REQUEST_RELOAD_FAILED"
     });
   });
 

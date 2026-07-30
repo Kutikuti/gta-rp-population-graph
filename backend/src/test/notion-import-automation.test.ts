@@ -1,9 +1,27 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const mockState = vi.hoisted(() => ({
+  userFindOne: vi.fn(),
+  sequelizeLiteral: vi.fn((value: string) => value)
+}));
+
+vi.mock("../db/index.js", () => ({
+  models: {
+    Role: {},
+    User: {
+      findOne: mockState.userFindOne
+    }
+  },
+  sequelize: {
+    literal: mockState.sequelizeLiteral
+  }
+}));
 
 import type { AdminService } from "../services/admin.js";
 import {
   applyNotionImportBatchEntries,
-  importNotionImportBatchPhotos
+  importNotionImportBatchPhotos,
+  resolveNotionImportAutomationActorUserId
 } from "../services/notion-import-automation.js";
 
 const detail = {
@@ -173,6 +191,50 @@ describe("notion import automation", () => {
       skipped: 1,
       invalid: 0,
       notFound: 0
+    });
+  });
+
+  it("reports a dedicated error when the import batch is missing", async () => {
+    const adminService = {
+      async getNotionImportDetail() {
+        return null;
+      },
+      async applyNotionImportEntry() {
+        return { status: "not_found" as const };
+      },
+      async importNotionImportEntryPhoto() {
+        return { status: "not_found" as const };
+      }
+    };
+    const deps = {
+      adminService: adminService as Pick<
+        AdminService,
+        "applyNotionImportEntry" | "getNotionImportDetail" | "importNotionImportEntryPhoto"
+      >
+    };
+
+    await expect(
+      applyNotionImportBatchEntries(deps, { actorUserId: "admin-1", batchId: "missing-batch" })
+    ).rejects.toMatchObject({
+      status: 404,
+      code: "NOTION_IMPORT_BATCH_NOT_FOUND",
+      details: { batchId: "missing-batch" }
+    });
+    await expect(
+      importNotionImportBatchPhotos(deps, { actorUserId: "admin-1", batchId: "missing-batch" })
+    ).rejects.toMatchObject({
+      status: 404,
+      code: "NOTION_IMPORT_BATCH_NOT_FOUND",
+      details: { batchId: "missing-batch" }
+    });
+  });
+
+  it("reports a dedicated error when no moderator can sign automatic imports", async () => {
+    mockState.userFindOne.mockResolvedValue(null);
+
+    await expect(resolveNotionImportAutomationActorUserId()).rejects.toMatchObject({
+      status: 409,
+      code: "NOTION_IMPORT_AUTOMATION_ACTOR_MISSING"
     });
   });
 });

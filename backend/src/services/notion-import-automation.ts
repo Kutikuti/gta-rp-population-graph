@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 
 import { models, sequelize } from "../db/index.js";
 import type { JsonObject } from "../db/models/index.js";
+import { conflictError, notFoundError } from "../middleware/api-error.js";
 import { type AdminService, SequelizeAdminService } from "./admin.js";
 import { SequelizeNotionImportService } from "./notion-import.js";
 import { scrapePublicNotionPage } from "./notion-scraper.js";
@@ -71,7 +72,9 @@ export const applyNotionImportBatchEntries = async (
   const detail = await deps.adminService.getNotionImportDetail(input.batchId);
 
   if (!detail) {
-    throw new Error(`Batch Notion introuvable: ${input.batchId}`);
+    throw notFoundError("NOTION_IMPORT_BATCH_NOT_FOUND", "Lot d'import Notion introuvable.", {
+      batchId: input.batchId
+    });
   }
 
   const remainingPageIds = new Set(
@@ -174,7 +177,9 @@ export const importNotionImportBatchPhotos = async (
   const detail = await deps.adminService.getNotionImportDetail(input.batchId);
 
   if (!detail) {
-    throw new Error(`Batch Notion introuvable: ${input.batchId}`);
+    throw notFoundError("NOTION_IMPORT_BATCH_NOT_FOUND", "Lot d'import Notion introuvable.", {
+      batchId: input.batchId
+    });
   }
 
   const appliedEntries = detail.entries.filter((entry) => Boolean(entry.appliedCharacterId));
@@ -230,7 +235,7 @@ export const importNotionImportBatchPhotos = async (
   };
 };
 
-const resolveNotionImportAutomationActorUserId = async () => {
+export const resolveNotionImportAutomationActorUserId = async () => {
   const user = await models.User.findOne({
     include: [
       {
@@ -250,7 +255,8 @@ const resolveNotionImportAutomationActorUserId = async () => {
   });
 
   if (!user) {
-    throw new Error(
+    throw conflictError(
+      "NOTION_IMPORT_AUTOMATION_ACTOR_MISSING",
       "Aucun utilisateur administrateur ou moderateur n'est disponible pour signer l'import automatique."
     );
   }

@@ -323,6 +323,61 @@ describe("admin notion import service", () => {
     });
   });
 
+  it("reports a dedicated error when an applied entry cannot be reloaded", async () => {
+    const characterUpdate = vi.fn().mockResolvedValue(undefined);
+    const entryUpdate = vi.fn().mockResolvedValue(undefined);
+    const existingCharacter = {
+      id: "character-1",
+      firstName: "Ada",
+      lastName: "Lovelace",
+      nickname: null,
+      lifeStatus: "alive",
+      deathOrDepartureDate: null,
+      phoneNumbers: [],
+      companyName: null,
+      companyRank: null,
+      companyBadgeNumber: null,
+      groupName: null,
+      district: null,
+      isRpDeath: false,
+      previousCharacters: null,
+      verificationStatus: "to_check",
+      sourceNote: null,
+      publicSlug: "ada-lovelace",
+      update: characterUpdate
+    };
+
+    mockState.notionImportEntryFindOne.mockResolvedValue({
+      ...notionEntryBase,
+      appliedCharacterId: existingCharacter.id,
+      update: entryUpdate
+    });
+    mockState.characterFindByPk.mockResolvedValue(existingCharacter);
+    mockState.resolveRelationshipTargets.mockResolvedValue({
+      resolved: [],
+      unresolved: [],
+      ambiguous: []
+    });
+    mockState.notionImportEntryFindByPk.mockResolvedValue(null);
+
+    await expect(
+      service.applyNotionImportEntry({
+        actorUserId: "admin-1",
+        batchId: "batch-1",
+        pageId: "page-ada"
+      })
+    ).rejects.toMatchObject({
+      status: 500,
+      code: "NOTION_IMPORT_ENTRY_RELOAD_FAILED",
+      details: {
+        entryId: "entry-1",
+        batchId: "batch-1",
+        pageId: "page-ada",
+        characterId: "character-1"
+      }
+    });
+  });
+
   it("blocks notion photo import while the entry is not yet applied", async () => {
     mockState.notionImportEntryFindOne.mockResolvedValue({
       ...notionEntryBase,

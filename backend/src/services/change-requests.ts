@@ -1,5 +1,8 @@
+import type { Transaction } from "sequelize";
+
 import { models, sequelize } from "../db/index.js";
 import type { JsonObject } from "../db/models/index.js";
+import { internalServerError } from "../middleware/api-error.js";
 import {
   applyDirectCharacterCreation,
   applyDirectCharacterEdit,
@@ -35,6 +38,20 @@ export {
 } from "./change-request-schemas.js";
 export type { ChangeDiff } from "./change-request-snapshots.js";
 export type { ChangeRequestSummary } from "./change-request-summaries.js";
+
+const reloadRequiredChangeRequestSummary = async (requestId: string, transaction?: Transaction) => {
+  const summary = await reloadChangeRequestSummary(requestId, transaction);
+
+  if (!summary) {
+    throw internalServerError(
+      "CHANGE_REQUEST_RELOAD_FAILED",
+      "La demande n'a pas pu etre rechargee apres enregistrement.",
+      { requestId }
+    );
+  }
+
+  return summary;
+};
 
 export interface ChangeRequestService {
   createChangeRequest(input: {
@@ -102,7 +119,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       resolvedAt: null
     });
 
-    return reloadChangeRequestSummary(request.id);
+    return reloadRequiredChangeRequestSummary(request.id);
   }
 
   async createCharacterCreationRequest(input: {
@@ -132,13 +149,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
       resolvedAt: null
     });
 
-    const summary = await reloadChangeRequestSummary(request.id);
-
-    if (!summary) {
-      throw new Error(`Change request ${request.id} could not be reloaded after creation.`);
-    }
-
-    return summary;
+    return reloadRequiredChangeRequestSummary(request.id);
   }
 
   async listUserChangeRequests(userId: string): Promise<ChangeRequestSummary[]> {
@@ -194,11 +205,7 @@ export class SequelizeChangeRequestService implements ChangeRequestService {
         return null;
       }
 
-      const summary = await reloadChangeRequestSummary(request.id, transaction);
-
-      if (!summary) {
-        throw new Error(`Change request ${request.id} could not be reloaded after approval.`);
-      }
+      const summary = await reloadRequiredChangeRequestSummary(request.id, transaction);
 
       return { request: summary, changes: approval.changes };
     });
