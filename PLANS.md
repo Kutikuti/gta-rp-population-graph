@@ -664,205 +664,48 @@ Resultat :
 
 ### Etape 15 - Refactor et nettoyage transversal
 
-Statut : en cours depuis le 2026-07-20.
+Statut : terminee le 2026-07-30.
 
-Cette etape restructure le code existant sans changement fonctionnel, visuel ou
-de schema. La generalisation a d'autres serveurs et sources d'import est
-volontairement reportee a l'etape 17 afin de ne pas melanger nettoyage interne
-et nouvelles abstractions produit.
+Cette etape a restructure le code existant sans changement fonctionnel, visuel
+ou de schema. La generalisation a d'autres serveurs et sources d'import reste
+reportee a l'etape 17 afin de ne pas melanger nettoyage interne et nouvelles
+abstractions produit.
 
-Plan propose, par ordre de priorite :
+Bilan :
 
-1. Stabiliser une baseline reproductible apres l'etape 14 : commit dedie,
-   installations propres, checks, tests, couvertures, integration PostgreSQL et
-   builds. Ajouter des tests de caracterisation avant tout deplacement de logique
-   insuffisamment couverte.
-2. Installer les garde-fous de structure : detection des fichiers, exports et
-   dependances inutilises avec `Knip`, controle des cycles et des frontieres de
-   couches, puis revue obligatoire des modules de production depassant environ
-   400 lignes. Les migrations, fichiers generes et grosses fixtures restent des
-   exceptions explicites.
-3. Centraliser les contrats partages dans un package independant de React,
-   Express et Sequelize : DTO publics, enums, erreurs API et snapshots. Etudier
-   puis adopter npm workspaces uniquement si les installations et le deploiement
-   VPS restent simples et reproductibles.
-4. Decouper le backend par domaine : un fichier par modele Sequelize,
-   initialisation et associations separees, administration repartie entre
-   utilisateurs, RGPD, tags et dashboard, service public separe entre requetes,
-   graphe, historique et serializers, puis routes alignees sur ces domaines.
-   La migration initiale reste autonome et n'est pas decoupee pour une simple
-   contrainte de taille.
-5. Decouper le frontend : remplacer le fichier API central par des modules HTTP,
-   public, authentification, profil, moderation, administration et Notion ;
-   extraire les sections et la gestion d'etat du formulaire personnage ; reduire
-   les orchestrateurs `App`, profil et administration sans modifier leurs
-   parcours.
-6. Exploiter progressivement les controles utiles de TypeScript 7 :
-   `verbatimModuleSyntax`, `exactOptionalPropertyTypes`,
-   `noUncheckedSideEffectImports`, `noPropertyAccessFromIndexSignature` et
-   `erasableSyntaxOnly`. Utiliser `satisfies`, les unions discriminees et les
-   structures `readonly` lorsque cela clarifie effectivement les contrats.
-7. Supprimer le code et les dependances devenus inutiles, verifier les frontieres
-   public/prive et les autorisations, adapter les tests extraits, puis executer
-   la validation globale sans baisse des seuils de couverture.
-
-Point de controle :
-
-- Aucun changement fonctionnel, visuel, d'API publique ou de schema n'est
-  introduit par le refactor.
-- Les modules ont une responsabilite identifiable ; tout gros fichier restant
-  dispose d'une justification claire plutot que d'un decoupage artificiel.
-- Aucun export, fichier ou paquet inutilise et aucun nouveau cycle de dependance
-  ne subsiste.
-- Les contrats frontend/backend ne divergent plus silencieusement.
-- Tous les checks, tests, integrations et builds restent verts.
-
-Avancement :
-
-- Baseline du 2026-07-20 verte avec `scripts/run-all-checks.sh` : 217 tests
-  backend, 8 tests d'integration PostgreSQL, 83 tests frontend, couvertures et
-  builds backend/frontend valides.
-- Un script d'audit structurel `scripts/audit-structure.sh` permet de lancer
-  Knip en mode rapport et Madge en detection de cycles sans ajouter de
-  dependance au repo pour l'instant.
-- Premier audit structurel : aucun cycle backend ou frontend detecte. Knip
-  remonte des exports inutilises ou trop largement exposes, notamment dans les
-  modeles Sequelize, `web-client/src/api.ts`, `backend/src/services/admin.ts`
-  et plusieurs helpers internes.
-- Premiere passe de nettoyage : les exports internes evidents ont ete rendus
-  prives, le code mort confirme par TypeScript a ete supprime et les reexports
-  inutiles ont ete retires. Knip ne remonte plus d'export inutilise backend ou
-  frontend, et Madge ne detecte toujours aucun cycle.
-- Les modeles Sequelize ont ete decoupes par domaine : classes, initialisation
-  et associations sont separees entre identite, personnages, imports Notion,
-  demandes de changement et helpers partages. `backend/src/db/models/index.ts`
-  reste le point d'entree compatible et ne fait plus que coordonner
-  l'initialisation et le registry.
-- La gestion administrative des tags a ete extraite de
-  `backend/src/services/admin.ts` vers un service dedie, tout en conservant la
-  facade `AdminService` utilisee par les routes.
-- Les actions administratives utilisateur ont ete sorties de la facade
-  principale et reparties entre services dedies : export RGPD, sessions et
-  identites, droits d'acces, bans et tags.
-- Des tests de caracterisation ciblent les services admin extraits afin que la
-  couverture globale reste stable apres refactor. La validation globale
-  `scripts/run-all-checks.sh` reste verte apres cette salve.
-- Les contrats et serializers publics ont ete extraits de
-  `backend/src/services/public-data.ts` vers un module dedie afin de separer la
-  serialisation des requetes Sequelize publiques. Les checks, tests et builds
-  backend/frontend restent verts ; les tests d'integration PostgreSQL exigent
-  toujours une base joignable dans l'environnement courant.
-- La construction du graphe public a ete extraite vers un service dedie afin de
-  separer la generation Cytoscape, la deduplication des relations et les
-  requetes de consultation de fiches.
-- Le fichier frontend `web-client/src/api.ts` a ete allege en separant les
-  contrats TypeScript (`api-types.ts`) et la couche HTTP commune
-  (`api-client.ts`), tout en conservant la facade d'exports existante pour les
-  composants.
-- Le formulaire d'edition de fiche a ete allege en extrayant les blocs
-  `Contact` / `Relations` et `Medias` vers des composants dedies. Les tests
-  couvrent les champs restants du formulaire parent ainsi que les composants
-  extraits, sans baisse des seuils de couverture.
-- La vue d'exploration publique a ete extraite de `web-client/src/App.tsx` vers
-  `ExploreView`, afin de separer la composition recherche/graphe/fiche de
-  l'orchestration globale des vues.
-- La page profil a ete decoupee en sections dediees pour l'identite publique,
-  les comptes lies/export RGPD et les demandes utilisateur. Des tests dedies
-  couvrent ces sections en complement des parcours `App`.
-- La page administration a ete allegee en extrayant la logique de chargement,
-  actions utilisateur, tags, export RGPD et rafraichissement dans
-  `useAdminViewState`. `AdminView` redevient une composition de panneaux avec
-  les controles d'acces visibles.
-- La vue de contribution a ete legerement clarifiee en extrayant le panneau
-  lateral `Mes demandes`, sans deplacer le flux metier de soumission ni l'upload
-  photo.
-- Les vues contribution et moderation ne chargent plus les donnees de formulaire
-  inutiles lorsque l'utilisateur n'a pas le droit d'acceder au parcours.
-- Les controles TypeScript 7 `verbatimModuleSyntax`,
-  `exactOptionalPropertyTypes`, `noUncheckedSideEffectImports`,
-  `noPropertyAccessFromIndexSignature`, `isolatedModules`,
-  `noImplicitReturns` et `erasableSyntaxOnly` sont actives cote backend et
-  frontend. `noImplicitOverride`, `noFallthroughCasesInSwitch`,
-  `noUnusedLocals` et `noUnusedParameters` restent egalement actifs sur les
-  projets concernes. Les appels passant des options facultatives n'envoient
-  plus explicitement `undefined`, les acces aux index signatures sont explicites
-  et les dernieres syntaxes non effacables ont ete retirees.
-- Des usages cibles de `satisfies` securisent maintenant les mappings de
-  statuts, labels de snapshots, definitions de relations et labels de
-  completude sans elargir les refactors.
-- Les filtres, inclusions Sequelize et criteres d'historique de la consultation
-  publique ont ete extraits dans `backend/src/services/public-data-queries.ts`.
-  `public-data.ts` garde l'orchestration des parcours publics et descend sous
+- Baseline finale verte avec `scripts/run-all-checks.sh` : checks backend et
+  frontend, 232 tests backend, 8 tests d'integration PostgreSQL, 83 tests
+  frontend, couvertures et builds backend/frontend.
+- Audit structurel disponible via `scripts/audit-structure.sh` : Knip ne
+  remonte plus d'exports ou dependances inutilises, et Madge ne detecte aucun
+  cycle backend ou frontend.
+- Backend decoupe par domaines : modeles Sequelize, administration utilisateurs
+  et tags, RGPD, consultation publique, graphe, demandes de changement, imports
+  Notion, photos et helpers de scraping.
+- Frontend allege : couche API separee entre client HTTP et contrats, vue
+  d'exploration extraite de `App`, sections profil/admin/contribution et blocs
+  du formulaire personnage decoupes.
+- TypeScript 7 exploite avec controles stricts utiles :
+  `verbatimModuleSyntax`, `exactOptionalPropertyTypes`,
+  `noUncheckedSideEffectImports`, `noPropertyAccessFromIndexSignature`,
+  `isolatedModules`, `noImplicitReturns` et `erasableSyntaxOnly`, avec usages
+  cibles de `satisfies` sur les mappings metier.
+- Les erreurs techniques exposees par les routes et services ont ete
+  structurees avec des codes API dedies. La recherche ne remonte plus de
+  `throw new Error` dans `backend/src/services`, `backend/src/routes` et
+  `backend/src/middleware`.
+- Le scraper Notion est separe entre types, photos, record-map, texte,
+  orchestration et façade partagee. `notion-scraper-shared.ts` est passe sous
   les 250 lignes.
-- Le mapping d'import Notion a ete allege en isolant les alias de champs dans
-  `notion-import-fields.ts` et les conversions de valeurs dans
-  `notion-import-values.ts`. `notion-import-mapping.ts` garde la logique de
-  mapping metier et descend sous les 400 lignes.
-- L'import photo des fiches Notion appliquees a ete sorti de
-  `admin-notion-imports.ts` vers `admin-notion-imports-photo.ts`, afin de
-  separer le suivi des batches et l'ecriture securisee des photos de
-  personnages.
-- Le scraper Notion a ete clarifie en isolant les types de record map dans
-  `notion-scraper-types.ts` et la detection des references photo dans
-  `notion-scraper-photos.ts`. `notion-scraper-shared.ts` reste legerement au
-  dessus de 400 lignes, mais il porte encore des helpers couples de parsing
-  texte/proprietes Notion ; un decoupage supplementaire devra cibler ces
-  responsabilites plutot qu'une extraction artificielle.
-- La regle Biome `complexity/useLiteralKeys` est desactivee car elle entre en
-  conflit avec `noPropertyAccessFromIndexSignature` sur les index signatures
-  assumees (`process.env`, headers HTTP et donnees JSON dynamiques).
-- Les tests du service admin utilisateur couvrent maintenant les chemins RGPD
-  sensibles : refus de dissocier la derniere identite, protection du dernier
-  administrateur et anonymisation complete avec revocation des sessions et audit.
-- Le warning d'integration PostgreSQL lie a `pg@9` a ete corrige dans le `down`
-  de la migration initiale en remplacant les suppressions Sequelize successives
-  par un `DROP TABLE IF EXISTS ... CASCADE` unique.
-- La passe auth a extrait les contrats et serialiseurs dans
-  `auth-types.ts` et `auth-serializers.ts`, tout en conservant
-  `services/auth.ts` comme facade compatible. `auth.ts` descend sous les 400
-  lignes et les tests existants restent alignes sur les imports publics.
-- Le filtre de bans actifs est maintenant reconstruit a chaque requete cote
-  auth et administration, afin qu'un ban expire ne reste pas considere actif
-  jusqu'au redemarrage du backend. Un test de service couvre explicitement
-  l'utilisation de l'heure courante.
-- Les routes OAuth Google, Discord et Twitch utilisent maintenant un enregistreur
-  commun pour les parcours login, rattachement et callback. Les chemins et
-  redirections restent identiques, tandis que `routes/auth.ts` descend sous les
-  300 lignes.
-- La route profil renvoie maintenant une erreur explicite lorsque l'export RGPD
-  utilisateur n'est pas disponible sur le service injecte, et partage un helper
-  local pour l'utilisateur authentifie courant.
-- La suppression du cookie de session utilise le meme socle d'options que sa
-  creation (`httpOnly`, `sameSite`, `secure` selon l'environnement), avec un
-  test de logout couvrant les attributs essentiels du cookie expire.
-- Les routes protegees utilisent maintenant le helper `currentAuthenticatedUser`
-  au lieu de lever des `Error` generiques lorsque l'utilisateur courant est
-  absent. Ces cas retombent donc sur une reponse API `401
-  AUTHENTICATION_REQUIRED` explicite plutot que sur un `500` generique.
-- Les demandes de changement remontent un code API dedie
-  `CHANGE_REQUEST_RELOAD_FAILED` lorsqu'une demande creee ou approuvee ne peut
-  pas etre rechargee depuis la base. Cela evite de confondre ce cas technique
-  avec un faux `CHARACTER_NOT_FOUND` ou un `500` sans contexte exploitable.
-- Les snapshots de fiche remontent maintenant `RELATED_CHARACTER_NOT_FOUND`
-  lorsqu'une relation pointe vers un personnage introuvable, avec les
-  identifiants manquants dans les details. Les relations existantes ne sont pas
-  supprimees avant cette validation.
-- Les imports Notion cote administration et automation remontent maintenant des
-  codes API dedies pour les cas techniques attendus :
-  `NOTION_IMPORT_BATCH_NOT_FOUND`, `NOTION_IMPORT_AUTOMATION_ACTOR_MISSING` et
-  `NOTION_IMPORT_ENTRY_RELOAD_FAILED`.
-- La serialisation des fiches publiques remonte maintenant
-  `PUBLIC_RELATIONSHIP_CHARACTER_MISSING` lorsqu'une relation chargee n'a pas
-  son personnage lie, avec les identifiants necessaires au diagnostic.
-- Les erreurs techniques encore exposees cote auth, administration, streamers
-  et scraper Notion ont ete structurees avec des codes API dedies :
-  `AUTH_USER_ROLE_MISSING`, `ADMIN_USER_ROLE_MISSING`,
-  `AUTH_DEFAULT_ROLE_MISSING`, `AUTH_ADMIN_ROLE_MISSING`, `STREAMER_NOT_FOUND`,
-  `NOTION_PAGE_ID_MISSING` et `NOTION_REQUEST_FAILED`.
-- Le dernier invariant brut des services/routes a ete converti en erreur API
-  dediee `CHANGE_REQUEST_RELATIONSHIP_TYPE_NOT_EDITABLE`. La recherche ne
-  remonte plus de `throw new Error` dans `backend/src/services`,
-  `backend/src/routes` et `backend/src/middleware`.
+
+Limites assumees :
+
+- `web-client/src/api-types.ts` reste un fichier de contrats volontairement plat
+  et un peu long ; il pourra etre deplace vers un package partage lors d'une
+  future etape si les workspaces npm sont adoptes.
+- La migration initiale reste autonome meme si elle depasse largement 400
+  lignes, car son decoupage n'apporterait pas de clarte operationnelle pour le
+  moment.
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 
