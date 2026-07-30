@@ -17,7 +17,7 @@ interactive.
 ## Prerequis serveur
 
 - VPS Ubuntu a jour.
-- Node.js `24.18.0` et npm `12.0.1` dans le prefixe applicatif isole
+- Node.js `24.18.1` et npm `12.0.2` dans le prefixe applicatif isole
   `/opt/node-gta-rp`. Ne pas modifier les installations Node.js utilisees par
   les autres applications du VPS.
 - PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
@@ -295,6 +295,44 @@ Passe non destructive executee depuis l'environnement de travail :
 
 Point a garder en tete : le port `5000` reste ouvert pour le site historique ou
 un usage existant du VPS. Ne pas le fermer sans verifier l'autre application.
+
+## Etat operationnel de reference du 2026-07-30
+
+Deploiement applique depuis l'environnement de travail apres cloture de l'etape
+15 :
+
+- synchronisation du code vers
+  `/var/www/gta-rp-population-graph/current` avec la procedure `rsync`
+  documentee ;
+- `npm ci` et builds backend/frontend executes sur le VPS avec
+  `/opt/node-gta-rp` ;
+- un decalage d'ancien schema `characters` a d'abord ete detecte sur la base
+  VPS ; comme aucune donnee de production n'etait a conserver, la base a
+  finalement ete remise a zero ;
+- le backup intermediaire
+  `gta_rp_population_graph_20260730T172504Z.dump` a ete supprime a la demande ;
+- `npm run db:reset` a valide la migration initiale condensee :
+  `down --all`, puis `up` sur `001-initial-schema.ts` ;
+- `npm run db:migrate:executed` retourne `['001-initial-schema.ts']` et
+  `npm run db:migrate:pending` retourne `[]` ;
+- la base repart vide cote donnees metier : `characters=0`, `users=0`,
+  `roles=3` ;
+- les uploads personnages et brouillons photo ont ete nettoyes pour eviter des
+  fichiers orphelins ;
+- `gta-rp-backend.service` redemarre et actif.
+
+Validation apres reset :
+
+- `https://gta-rp.f1prediction.fr/` repond `HTTP 200`.
+- `https://gta-rp.f1prediction.fr/api/health` repond `{"status":"ok",...}`.
+- `https://gta-rp.f1prediction.fr/api/auth/session` repond
+  `{"authenticated":false}` hors session active.
+- `https://gta-rp.f1prediction.fr/api/characters?limit=1` renvoie une liste
+  vide valide.
+- `https://gta-rp.f1prediction.fr/api/graph` renvoie un graphe vide valide.
+- `https://gta-rp.f1prediction.fr/api/auth/google` repond `HTTP 302` vers
+  Google.
+- `scripts/check-production-ops.sh --all` passe entierement.
 
 ## Check ops reproductible
 
@@ -654,7 +692,7 @@ npm run build
 
 Le projet utilise `/opt/node-gta-rp` afin de ne pas modifier les versions
 Node.js et npm des autres applications du VPS. Le lien pointe actuellement vers
-`/opt/node-v24.18.0`.
+`/opt/node-v24.18.1`.
 
 La version attendue se controle avec :
 
@@ -666,8 +704,8 @@ PATH=/opt/node-gta-rp/bin:$PATH /opt/node-gta-rp/bin/npm --version
 Resultat attendu :
 
 ```text
-v24.18.0
-12.0.1
+v24.18.1
+12.0.2
 ```
 
 Pour installer une nouvelle version Node.js sans toucher aux autres
@@ -675,16 +713,16 @@ applications :
 
 ```bash
 cd /tmp
-curl -fsSLO https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-x64.tar.xz
-curl -fsSLO https://nodejs.org/dist/v24.18.0/SHASUMS256.txt
+curl -fsSLO https://nodejs.org/dist/v24.18.1/node-v24.18.1-linux-x64.tar.xz
+curl -fsSLO https://nodejs.org/dist/v24.18.1/SHASUMS256.txt
 sha256sum -c --ignore-missing SHASUMS256.txt
-sudo rm -rf /opt/node-v24.18.0
-sudo mkdir -p /opt/node-v24.18.0
-sudo tar -xJf node-v24.18.0-linux-x64.tar.xz -C /opt/node-v24.18.0 --strip-components=1
-sudo chown -R root:root /opt/node-v24.18.0
-sudo env PATH=/opt/node-v24.18.0/bin:$PATH \
-  /opt/node-v24.18.0/bin/npm install --global npm@12.0.1 --prefix /opt/node-v24.18.0
-sudo ln -sfn /opt/node-v24.18.0 /opt/node-gta-rp
+sudo rm -rf /opt/node-v24.18.1
+sudo mkdir -p /opt/node-v24.18.1
+sudo tar -xJf node-v24.18.1-linux-x64.tar.xz -C /opt/node-v24.18.1 --strip-components=1
+sudo chown -R root:root /opt/node-v24.18.1
+sudo env PATH=/opt/node-v24.18.1/bin:$PATH \
+  /opt/node-v24.18.1/bin/npm install --global npm@12.0.2 --prefix /opt/node-v24.18.1
+sudo ln -sfn /opt/node-v24.18.1 /opt/node-gta-rp
 sudo chown -h root:root /opt/node-gta-rp
 ```
 

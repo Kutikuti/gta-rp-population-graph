@@ -649,18 +649,18 @@ Point de controle :
 Resultat :
 
 - TypeScript `7.0.2` est configure dans les deux applications et les lockfiles
-  ont ete regeneres avec npm `12.0.1`.
+  ont ete regeneres avec npm `12.0.2`.
 - Les installations propres, `sharp`, `esbuild`, Vite, les 205 tests backend,
   les 8 tests d'integration PostgreSQL, les 77 tests frontend, les checks Biome
   et les builds backend/frontend sont valides localement.
-- Le devcontainer reconstruit utilise Node.js `24.18.0` et npm `12.0.1`.
-- Le prefixe VPS isole `/opt/node-gta-rp` pointe vers `/opt/node-v24.18.0`,
-  avec npm `12.0.1`.
+- Le devcontainer reconstruit utilise Node.js `24.18.1` et npm `12.0.2`.
+- Le prefixe VPS isole `/opt/node-gta-rp` pointe vers `/opt/node-v24.18.1`,
+  avec npm `12.0.2`.
 - Les builds backend/frontend, le controle des migrations en attente, le
   redemarrage du backend et les smoke tests publics/SSH de production sont
   valides sur le VPS.
 - L'ancien dossier `/opt/node-v24.16.0` a ete supprime apres verification que le
-  service backend tourne sur `/opt/node-v24.18.0/bin/node`.
+  service backend tourne sur `/opt/node-v24.18.1/bin/node`.
 
 ### Etape 15 - Refactor et nettoyage transversal
 
@@ -851,7 +851,7 @@ a 17.
   structure, l'accessibilite et les limites peuvent changer sans preavis.
 - Google, Discord et Twitch restent dependants de leurs services OAuth et de
   leurs limites d'API respectives.
-- Le developpement et la production restent sur Node.js `24.18.0` LTS tant
+- Le developpement et la production restent sur Node.js `24.18.1` LTS tant
   qu'une migration Node distincte n'a pas ete decidee.
 - Le deploiement GTA-RP partage le VPS avec `f1prediction.fr` et ne doit pas
   perturber ses ports, services ou configuration Caddy.
