@@ -26,3 +26,8 @@ const isLoopbackRequest = (request: Request) =>
 
 export const shouldSkipDevelopmentRateLimit = (request: Request) =>
   process.env["NODE_ENV"] !== "production" && isLoopbackRequest(request);
+
+export const shouldSkipGlobalRateLimit = (request: Request) =>
+  shouldSkipDevelopmentRateLimit(request) ||
+  request.path === "/api/health" ||
+  request.path.startsWith("/uploads/characters/");
