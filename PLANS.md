@@ -780,10 +780,16 @@ Avancement :
   inutiles lorsque l'utilisateur n'a pas le droit d'acceder au parcours.
 - Les controles TypeScript 7 `verbatimModuleSyntax`,
   `exactOptionalPropertyTypes`, `noUncheckedSideEffectImports`,
-  `noPropertyAccessFromIndexSignature` et `erasableSyntaxOnly` sont actives
-  cote backend et frontend. Les appels passant des options facultatives
-  n'envoient plus explicitement `undefined`, les acces aux index signatures sont
-  explicites et les dernieres syntaxes non effacables ont ete retirees.
+  `noPropertyAccessFromIndexSignature`, `isolatedModules`,
+  `noImplicitReturns` et `erasableSyntaxOnly` sont actives cote backend et
+  frontend. `noImplicitOverride`, `noFallthroughCasesInSwitch`,
+  `noUnusedLocals` et `noUnusedParameters` restent egalement actifs sur les
+  projets concernes. Les appels passant des options facultatives n'envoient
+  plus explicitement `undefined`, les acces aux index signatures sont explicites
+  et les dernieres syntaxes non effacables ont ete retirees.
+- Des usages cibles de `satisfies` securisent maintenant les mappings de
+  statuts, labels de snapshots, definitions de relations et labels de
+  completude sans elargir les refactors.
 - La regle Biome `complexity/useLiteralKeys` est desactivee car elle entre en
   conflit avec `noPropertyAccessFromIndexSignature` sur les index signatures
   assumees (`process.env`, headers HTTP et donnees JSON dynamiques).

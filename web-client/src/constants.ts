@@ -15,7 +15,7 @@ export const lifeStatusLabels: Record<LifeStatus, string> = {
   deceased: "Décédé",
   left: "Parti",
   unknown: "Inconnu"
-};
+} satisfies Record<LifeStatus, string>;
 
 export const verificationLabels: Record<VerificationStatus, string> = {
   verified: "Vérifié",
@@ -23,7 +23,7 @@ export const verificationLabels: Record<VerificationStatus, string> = {
   imported: "Importé",
   to_check: "À vérifier",
   disputed: "Contesté"
-};
+} satisfies Record<VerificationStatus, string>;
 
 export const relationLabels: Record<string, string> = {
   parent: "Parent",
@@ -83,7 +83,7 @@ export const characterSnapshotFieldLabels: Record<keyof CharacterSnapshot, strin
   previousCharacters: "Anciens personnages",
   verificationStatus: "Vérification",
   sourceNote: "Note de source"
-};
+} satisfies Record<keyof CharacterSnapshot, string>;
 
 export const isActiveFilters = (filters: CharacterFilters) =>
   Boolean(

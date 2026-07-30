@@ -18,7 +18,7 @@ const socialPlatformLabels: Record<string, string> = {
   youtube: "YouTube",
   instagram: "Instagram",
   tiktok: "TikTok"
-};
+} satisfies Record<string, string>;
 
 export const isExpandedCharacterSnapshotField = (field: keyof CharacterSnapshot): boolean =>
   expandedSnapshotFields.has(field);

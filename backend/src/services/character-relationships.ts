@@ -8,7 +8,7 @@ type RelationshipDefinition = {
   inverseType?: RelationshipType;
 };
 
-export const relationshipDefinitionByType: Record<RelationshipType, RelationshipDefinition> = {
+export const relationshipDefinitionByType = {
   // Core graph relationships: explicit RP links that are intended to structure the public graph.
   parent: {
     label: "Parent",
@@ -53,7 +53,7 @@ export const relationshipDefinitionByType: Record<RelationshipType, Relationship
     direction: "directed",
     graphVisible: false
   }
-};
+} satisfies Record<RelationshipType, RelationshipDefinition>;
 
 const graphRelationshipTypeSet = new Set<RelationshipType>(graphRelationshipTypes);
 const relationshipTypeSet = new Set<RelationshipType>(relationshipTypes);
@@ -73,8 +73,11 @@ export const relationshipDirection = (type: RelationshipType) =>
 export const relationshipGraphVisible = (type: RelationshipType) =>
   relationshipDefinitionByType[type].graphVisible;
 
-export const invertRelationshipType = (type: RelationshipType) =>
-  relationshipDefinitionByType[type].inverseType ?? type;
+export const invertRelationshipType = (type: RelationshipType) => {
+  const definition: RelationshipDefinition = relationshipDefinitionByType[type];
+
+  return definition.inverseType ?? type;
+};
 
 export const relationshipTypeForCharacterView = (
   type: RelationshipType,

@@ -38,7 +38,7 @@ const completenessLabels = {
   phoneNumbers: "Téléphone",
   photoUrl: "Photo",
   sourceNote: "Note de source"
-} as const;
+} as const satisfies Record<string, string>;
 
 const fullName = (character: { firstName: string; lastName: string }) =>
   `${character.firstName} ${character.lastName}`.trim();
