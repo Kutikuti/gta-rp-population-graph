@@ -45,7 +45,17 @@
     "source=mewtwo-npm-cache,target=/home/vscode/.npm,type=volume",
     "source=mewtwo-codex-home,target=/home/vscode/.codex,type=volume"
   ],
+  "forwardPorts": [4000, 5173],
   "name": "mewtwo-dev",
+  "portsAttributes": {
+    "4000": {
+      "label": "GTA-RP API"
+    },
+    "5173": {
+      "label": "GTA-RP web-client",
+      "onAutoForward": "openBrowser"
+    }
+  },
   "postAttachCommand": "bash .devcontainer/scripts/show-update-status.sh || true",
   "postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
   "postStartCommand": "bash .devcontainer/scripts/check-container-updates.sh || true",
