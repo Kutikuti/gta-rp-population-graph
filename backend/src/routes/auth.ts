@@ -4,6 +4,7 @@ import { Router } from "express";
 import { env } from "../config/env.js";
 import {
   clearSessionCookie,
+  currentAuthenticatedUser,
   destroySession,
   regenerateSession,
   requireAuthenticatedUser
@@ -137,14 +138,12 @@ export const createAuthRouter = ({
     client: OauthClient,
     intent: OauthLinkIntent
   ) => {
-    if (!request.currentUser) {
-      throw new Error("Authenticated route reached without current user.");
-    }
+    const currentUser = currentAuthenticatedUser(request);
 
     const state = createOauthState();
     request.session.oauthState = state;
     request.session.oauthIntent = intent;
-    request.session.oauthLinkUserId = request.currentUser.id;
+    request.session.oauthLinkUserId = currentUser.id;
     response.redirect(302, client.buildAuthorizationUrl(state));
   };
 

@@ -835,6 +835,10 @@ Avancement :
 - La suppression du cookie de session utilise le meme socle d'options que sa
   creation (`httpOnly`, `sameSite`, `secure` selon l'environnement), avec un
   test de logout couvrant les attributs essentiels du cookie expire.
+- Les routes protegees utilisent maintenant le helper `currentAuthenticatedUser`
+  au lieu de lever des `Error` generiques lorsque l'utilisateur courant est
+  absent. Ces cas retombent donc sur une reponse API `401
+  AUTHENTICATION_REQUIRED` explicite plutot que sur un `500` generique.
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 

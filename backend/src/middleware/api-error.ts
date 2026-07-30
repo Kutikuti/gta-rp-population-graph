@@ -25,5 +25,8 @@ export const notFoundError = (code: string, message: string, details?: JsonObjec
 export const badRequestError = (code: string, message: string, details?: JsonObject | null) =>
   new ApiError({ status: 400, code, message, ...(details === undefined ? {} : { details }) });
 
+export const unauthorizedError = (code: string, message: string, details?: JsonObject | null) =>
+  new ApiError({ status: 401, code, message, ...(details === undefined ? {} : { details }) });
+
 export const conflictError = (code: string, message: string, details?: JsonObject | null) =>
   new ApiError({ status: 409, code, message, ...(details === undefined ? {} : { details }) });

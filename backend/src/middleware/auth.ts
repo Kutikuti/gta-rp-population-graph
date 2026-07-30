@@ -4,6 +4,7 @@ import "express-session";
 import { env } from "../config/env.js";
 import { sessionCookieOptions } from "../config/session.js";
 import type { AuthenticatedUser, AuthService } from "../services/auth.js";
+import { unauthorizedError } from "./api-error.js";
 
 declare module "express-session" {
   interface SessionData {
@@ -75,6 +76,14 @@ export const requireAuthenticatedUser: RequestHandler = (request, response, next
   }
 
   next();
+};
+
+export const currentAuthenticatedUser = (request: Request) => {
+  if (!request.currentUser) {
+    throw unauthorizedError("AUTHENTICATION_REQUIRED", "Authentification requise.");
+  }
+
+  return request.currentUser;
 };
 
 export const requireRole =

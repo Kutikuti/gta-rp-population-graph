@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 
-import { requireRole } from "../middleware/auth.js";
+import { currentAuthenticatedUser, requireRole } from "../middleware/auth.js";
 import {
   type ChangeRequestService,
   directCharacterEditSchema,
@@ -86,14 +86,12 @@ export const createModerationRouter = (
     requireRole(["moderator", "administrator"]),
     async (request, response, next) => {
       try {
-        if (!request.currentUser) {
-          throw new Error("Moderation route reached without current user.");
-        }
+        const currentUser = currentAuthenticatedUser(request);
 
         const { id } = idParamSchema.parse(request.params);
         const result = await changeRequestService.approveChangeRequest({
           id,
-          moderatorId: request.currentUser.id
+          moderatorId: currentUser.id
         });
 
         if (!result) {
@@ -118,15 +116,13 @@ export const createModerationRouter = (
     requireRole(["moderator", "administrator"]),
     async (request, response, next) => {
       try {
-        if (!request.currentUser) {
-          throw new Error("Moderation route reached without current user.");
-        }
+        const currentUser = currentAuthenticatedUser(request);
 
         const { id } = idParamSchema.parse(request.params);
         const payload = rejectChangeRequestSchema.parse(request.body);
         const changeRequest = await changeRequestService.rejectChangeRequest({
           id,
-          moderatorId: request.currentUser.id,
+          moderatorId: currentUser.id,
           comment: payload.comment
         });
 
@@ -152,15 +148,13 @@ export const createModerationRouter = (
     requireRole(["moderator", "administrator"]),
     async (request, response, next) => {
       try {
-        if (!request.currentUser) {
-          throw new Error("Moderation route reached without current user.");
-        }
+        const currentUser = currentAuthenticatedUser(request);
 
         const { id } = idParamSchema.parse(request.params);
         const payload = directCharacterEditSchema.parse(request.body);
         const result = await changeRequestService.editCharacterDirectly({
           characterId: id,
-          moderatorId: request.currentUser.id,
+          moderatorId: currentUser.id,
           snapshot: payload.snapshot
         });
 
@@ -186,13 +180,11 @@ export const createModerationRouter = (
     requireRole(["moderator", "administrator"]),
     async (request, response, next) => {
       try {
-        if (!request.currentUser) {
-          throw new Error("Moderation route reached without current user.");
-        }
+        const currentUser = currentAuthenticatedUser(request);
 
         const payload = directCharacterEditSchema.parse(request.body);
         const result = await changeRequestService.createCharacterDirectly({
-          moderatorId: request.currentUser.id,
+          moderatorId: currentUser.id,
           snapshot: payload.snapshot
         });
 

@@ -2,8 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { authProviders } from "../db/enums.js";
-import { requireAuthenticatedUser } from "../middleware/auth.js";
-import type { AuthenticatedUser, AuthService } from "../services/auth.js";
+import { currentAuthenticatedUser, requireAuthenticatedUser } from "../middleware/auth.js";
+import type { AuthService } from "../services/auth.js";
 
 const displayNameSchema = z.object({
   displayName: z
@@ -17,14 +17,6 @@ const displayNameSchema = z.object({
 const identityParamsSchema = z.object({
   provider: z.enum(authProviders)
 });
-
-const currentAuthenticatedUser = (request: { currentUser: AuthenticatedUser | null }) => {
-  if (!request.currentUser) {
-    throw new Error("Authenticated route reached without current user.");
-  }
-
-  return request.currentUser;
-};
 
 export const createProfileRouter = (authService: AuthService) => {
   const router = Router();

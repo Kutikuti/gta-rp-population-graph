@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { env } from "../config/env.js";
 import { models } from "../db/index.js";
-import { requireAuthenticatedUser } from "../middleware/auth.js";
+import { currentAuthenticatedUser, requireAuthenticatedUser } from "../middleware/auth.js";
 import { shouldSkipDevelopmentRateLimit } from "../middleware/rate-limit.js";
 import {
   type ChangeRequestService,
@@ -46,11 +46,9 @@ export const createContributionsRouter = (changeRequestService: ChangeRequestSer
 
   router.get("/change-requests", requireAuthenticatedUser, async (request, response, next) => {
     try {
-      if (!request.currentUser) {
-        throw new Error("Authenticated route reached without current user.");
-      }
+      const currentUser = currentAuthenticatedUser(request);
 
-      response.json(await changeRequestService.listUserChangeRequests(request.currentUser.id));
+      response.json(await changeRequestService.listUserChangeRequests(currentUser.id));
     } catch (error) {
       next(error);
     }
@@ -58,13 +56,11 @@ export const createContributionsRouter = (changeRequestService: ChangeRequestSer
 
   router.post("/change-requests", requireAuthenticatedUser, async (request, response, next) => {
     try {
-      if (!request.currentUser) {
-        throw new Error("Authenticated route reached without current user.");
-      }
+      const currentUser = currentAuthenticatedUser(request);
 
       const payload = changeRequestCreateSchema.parse(request.body);
       const changeRequest = await changeRequestService.createChangeRequest({
-        userId: request.currentUser.id,
+        userId: currentUser.id,
         characterId: payload.characterId,
         proposedSnapshot: payload.proposedSnapshot
       });
@@ -92,9 +88,7 @@ export const createContributionsRouter = (changeRequestService: ChangeRequestSer
     photoUploadBody,
     async (request, response, next) => {
       try {
-        if (!request.currentUser) {
-          throw new Error("Authenticated route reached without current user.");
-        }
+        const currentUser = currentAuthenticatedUser(request);
 
         const { id } = idParamSchema.parse(request.params);
         const character = await models.Character.findByPk(id, {
@@ -126,7 +120,7 @@ export const createContributionsRouter = (changeRequestService: ChangeRequestSer
           ?.trim();
 
         const draft = await createCharacterPhotoDraft({
-          userId: request.currentUser.id,
+          userId: currentUser.id,
           buffer: request.body,
           contentType: contentType ?? ""
         });
@@ -153,13 +147,11 @@ export const createContributionsRouter = (changeRequestService: ChangeRequestSer
     requireAuthenticatedUser,
     async (request, response, next) => {
       try {
-        if (!request.currentUser) {
-          throw new Error("Authenticated route reached without current user.");
-        }
+        const currentUser = currentAuthenticatedUser(request);
 
         const payload = characterCreationRequestSchema.parse(request.body);
         const changeRequest = await changeRequestService.createCharacterCreationRequest({
-          userId: request.currentUser.id,
+          userId: currentUser.id,
           proposedSnapshot: payload.proposedSnapshot,
           searchContext: payload.searchContext
         });
