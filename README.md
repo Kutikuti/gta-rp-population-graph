@@ -91,6 +91,10 @@ La production de travail s'appuie maintenant sur le sous-domaine
 `gta-rp.f1prediction.fr`, avec backend `systemd`, frontend statique derriere
 Caddy, base PostgreSQL locale via Docker, sauvegardes automatisees et
 durcissement minimal du VPS (`ufw`, `fail2ban`, nettoyage photo, backups).
+L'exploitation VPS utilise une organisation par releases sous
+`/var/www/gta-rp-population-graph/releases`, un lien `current` atomique, une
+configuration partagee sous `shared/config/backend.env` et une supervision
+mutualisee avec les autres applications sous `/var/www/platform-ops`.
 
 ## Lancement local
 

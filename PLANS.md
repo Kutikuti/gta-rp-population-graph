@@ -654,8 +654,8 @@ Resultat :
   les 8 tests d'integration PostgreSQL, les 77 tests frontend, les checks Biome
   et les builds backend/frontend sont valides localement.
 - Le devcontainer reconstruit utilise Node.js `24.18.1` et npm `12.0.2`.
-- Le prefixe VPS isole `/opt/node-gta-rp` pointe vers `/opt/node-v24.18.1`,
-  avec npm `12.0.2`.
+- Le runtime VPS commun `/opt/node-apps` pointe vers `/opt/node-v24.18.1`,
+  avec npm `12.0.2`, et `/opt/node-gta-rp` reste un lien de compatibilite.
 - Les builds backend/frontend, le controle des migrations en attente, le
   redemarrage du backend et les smoke tests publics/SSH de production sont
   valides sur le VPS.

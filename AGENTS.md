@@ -187,9 +187,16 @@ Le deploiement VPS est operationnel sur `gta-rp.f1prediction.fr` avec :
 - Frontend servi en statique derriere Caddy.
 - Caddy responsable du reverse proxy, du TLS automatique et de la coexistence
   avec le site historique.
-- Variables d'environnement separees hors Git.
-- Sauvegardes, nettoyage photo et metriques textfile planifies par `systemd`.
-- Supervision Prometheus/Grafana protegee par la session administrateur.
+- Organisation par releases sous `/var/www/gta-rp-population-graph/releases`,
+  avec `current` comme lien symbolique active atomiquement.
+- Variables d'environnement separees hors Git sous
+  `/var/www/gta-rp-population-graph/shared/config/backend.env`.
+- Runtime Node.js mutualise avec les autres applications via
+  `/opt/node-apps`, avec `/opt/node-gta-rp` conserve comme lien de
+  compatibilite.
+- Sauvegardes et nettoyage photo planifies par `systemd`.
+- Supervision Prometheus/Grafana mutualisee sous `/var/www/platform-ops`,
+  protegee par la session administrateur.
 
 Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
 `DEPLOYMENT.md`.

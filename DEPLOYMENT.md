@@ -17,9 +17,10 @@ interactive.
 ## Prerequis serveur
 
 - VPS Ubuntu a jour.
-- Node.js `24.18.1` et npm `12.0.2` dans le prefixe applicatif isole
-  `/opt/node-gta-rp`. Ne pas modifier les installations Node.js utilisees par
-  les autres applications du VPS.
+- Node.js `24.18.1` et npm `12.0.2` via le runtime mutualise
+  `/opt/node-apps`, reference par compatibilite depuis `/opt/node-gta-rp`.
+  Toute montee de version doit etre coordonnee avec les autres applications qui
+  utilisent ce runtime commun.
 - PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
 - Caddy pour le reverse proxy, TLS automatique et les domaines.
 - Process manager pour l'API Node.js : service `systemd` sur le VPS actuel.
@@ -113,16 +114,53 @@ par Caddy : l'API expose uniquement les fichiers valides sous
 
 Sur le VPS actuel :
 
-- racine applicative : `/var/www/gta-rp-population-graph/current`
+- racine applicative : `/var/www/gta-rp-population-graph`
+- release active : `/var/www/gta-rp-population-graph/current`
 - backend : `/var/www/gta-rp-population-graph/current/backend`
 - frontend build : `/var/www/gta-rp-population-graph/current/web-client/dist`
 - stockage partage : `/var/www/gta-rp-population-graph/shared`
+- configuration partagee : `/var/www/gta-rp-population-graph/shared/config`
 - uploads valides : `/var/www/gta-rp-population-graph/shared/storage/uploads/characters`
 - brouillons photo : `/var/www/gta-rp-population-graph/shared/storage/uploads/tmp`
 - backups PostgreSQL : `/var/www/gta-rp-population-graph/shared/backups/postgres`
 - backups uploads : `/var/www/gta-rp-population-graph/shared/backups/uploads`
 - logs applicatifs complementaires : `/var/www/gta-rp-population-graph/shared/logs`
-- fichier d'environnement backend : `/var/www/gta-rp-population-graph/current/backend/.env`
+- fichier d'environnement backend :
+  `/var/www/gta-rp-population-graph/shared/config/backend.env`
+- compatibilite historique :
+  `/var/www/gta-rp-population-graph/current/backend/.env` pointe vers
+  `/var/www/gta-rp-population-graph/shared/config/backend.env`
+
+Organisation active :
+
+```text
+/var/www/gta-rp-population-graph/
+├── current -> releases/20260731T151800Z-baseline
+├── releases/
+│   └── 20260731T151800Z-baseline/
+└── shared/
+    ├── backups/
+    ├── config/
+    │   └── backend.env
+    ├── logs/
+    └── storage/
+```
+
+`current` est un lien symbolique. Une nouvelle version doit etre preparee dans
+`releases/<horodatage>`, puis activee atomiquement. La commande commune de
+bascule ou de rollback est :
+
+```bash
+/var/www/platform-ops/scripts/activate-release.sh gta-rp <release>
+```
+
+Le fichier d'environnement backend reste hors release, avec les permissions
+`600 codex-deploy:codex-deploy`. Le service `gta-rp-backend.service` le charge
+directement via :
+
+```ini
+EnvironmentFile=/var/www/gta-rp-population-graph/shared/config/backend.env
+```
 
 Les logs principaux passent aujourd'hui par `journalctl` car le backend et les
 jobs systeme sont geres par `systemd`.
@@ -137,6 +175,14 @@ sudo journalctl -u gta-rp-postgres-backup.service -n 50 --no-pager
 sudo journalctl -u gta-rp-uploads-backup.service -n 50 --no-pager
 sudo systemctl status caddy --no-pager
 sudo journalctl -u caddy -n 100 --no-pager
+/var/www/platform-ops/scripts/check-platform.sh
+sudo systemctl status platform-health-check.timer --no-pager
+sudo systemctl status platform-postgres-restore-test.timer --no-pager
+sudo docker compose \
+  --env-file /var/www/platform-ops/monitoring/.env \
+  -p monitoring \
+  -f /var/www/platform-ops/monitoring/compose/docker-compose.yml \
+  ps
 ```
 
 ## Cadre RGPD et cookies
@@ -296,6 +342,40 @@ Passe non destructive executee depuis l'environnement de travail :
 Point a garder en tete : le port `5000` reste ouvert pour le site historique ou
 un usage existant du VPS. Ne pas le fermer sans verifier l'autre application.
 
+## Etat operationnel de reference du 2026-07-31
+
+Migration d'exploitation mutualisee appliquee sur le VPS :
+
+- `current` pointe maintenant vers une release horodatee sous
+  `/var/www/gta-rp-population-graph/releases/`.
+- La release de reference apres bascule est
+  `20260731T151800Z-baseline`.
+- Le runtime Node.js est mutualise :
+  `/opt/node-apps -> /opt/node-v24.18.1` et
+  `/opt/node-gta-rp -> /opt/node-apps`.
+- L'ancien runtime Node `24.18.0` a ete supprime.
+- Le fichier backend d'environnement est stocke hors release sous
+  `/var/www/gta-rp-population-graph/shared/config/backend.env`.
+- Le lien historique `current/backend/.env` pointe vers ce fichier partage.
+- La supervision est geree par la plateforme sous
+  `/var/www/platform-ops/monitoring/`.
+- L'ancien timer `gta-rp-monitoring-textfile.timer` a ete remplace par
+  `platform-ops-textfile.timer`.
+- Le controle de sante mutualise `platform-health-check.timer` verifie GTA,
+  F1, Caddy, les timers de backup et les endpoints publics.
+- Le test de restauration PostgreSQL mutualise
+  `platform-postgres-restore-test.timer` restaure regulierement les derniers
+  dumps GTA et F1 dans des bases temporaires.
+
+Etat valide apres migration :
+
+- backend GTA actif ;
+- site public `HTTP 200` ;
+- cible Prometheus GTA `UP` ;
+- backups presents ;
+- dernier dump GTA restaure avec succes, avec `16` tables verifiees ;
+- aucune unite `systemd` en echec.
+
 ## Etat operationnel de reference du 2026-07-30
 
 Deploiement applique depuis l'environnement de travail apres cloture de l'etape
@@ -357,10 +437,37 @@ Actions appliquees :
   afin que les prochains deploiements conservent le mode `100755`.
 - `scripts/check-production-ops.sh --all` repasse entierement.
 
+Note apres mutualisation : le service `gta-rp-monitoring-textfile.service` et
+son timer ont ensuite ete retires du VPS. Leur role est repris par
+`platform-ops-textfile.service` et `platform-ops-textfile.timer`, geres depuis
+`/var/www/platform-ops`.
+
 ## Check ops reproductible
 
-Le depot fournit un script de controle read-only pour rejouer les verifications
-ops essentielles en complement des dashboards Grafana :
+Le controle de plateforme mutualise est la reference d'exploitation actuelle :
+
+```bash
+/var/www/platform-ops/scripts/check-platform.sh
+```
+
+Il est lance toutes les cinq minutes par :
+
+- `platform-health-check.timer`
+- `platform-health-check.service`
+
+Commandes utiles :
+
+```bash
+sudo systemctl status platform-health-check.timer --no-pager
+sudo systemctl start platform-health-check.service
+sudo journalctl -u platform-health-check.service -n 50 --no-pager
+```
+
+Le script verifie notamment Caddy, le backend GTA, le backend et le worker F1,
+les timers de backup et les endpoints publics GTA/F1.
+
+Le depot conserve aussi un script de controle read-only GTA, utile depuis un
+poste de travail pour rejouer les verifications ops essentielles :
 
 ```bash
 scripts/check-production-ops.sh
@@ -388,6 +495,7 @@ Le script accepte les memes variables d'environnement SSH que le script de
 recuperation de sauvegarde : `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_KEY` et
 `REMOTE_BACKUP_ROOT`. Il ne remplace pas les smoke tests metier interactifs,
 mais sert de controle ops rapide apres maintenance, deploiement ou incident.
+Sur le VPS, preferer le controle mutualise `check-platform.sh`.
 
 ## Hygiene stockage
 
@@ -499,118 +607,73 @@ stocke localement comme n'importe quelle photo approuvee.
 
 ## Supervision Prometheus + Grafana
 
-La supervision pre-utilisateurs retenue est auto-hebergee sur le meme VPS :
+La supervision est maintenant mutualisee avec les autres applications du VPS.
+Elle n'est plus stockee dans l'arborescence GTA, mais sous :
 
-- Prometheus collecte les metriques.
-- Grafana affiche les dashboards.
-- `node_exporter` expose les metriques systeme VPS et les metriques textfile.
-- `blackbox_exporter` sonde le site public en HTTP/TLS.
-- Le backend expose `GET /api/internal/metrics`, en format Prometheus, protege
-  par `METRICS_TOKEN`.
-- Grafana est accessible uniquement via
-  `https://gta-rp.f1prediction.fr/supervision/`.
-- L'endpoint `GET /api/supervision/authorize`, utilise par Caddy
-  `forward_auth`, est volontairement exclu du rate limit API global. Grafana
-  declenche beaucoup de requetes rapprochées pour charger dashboards, panneaux
-  et assets ; sans cette exemption, l'admin atteint vite la limite
-  `Too many requests`.
-- Les metriques visiteurs sont des estimations operationnelles, pas un outil
-  d'analytics nominatif : le backend compte en memoire des empreintes
-  IP+navigateur hachees, sans exposer ni stocker les IP ou user-agents en base.
-  Le total repart a zero au redemarrage de l'API ; le compteur journalier suit
-  la journee UTC courante.
-- Prometheus, Grafana, node_exporter et blackbox_exporter restent bindes sur
-  `127.0.0.1` et ne doivent pas etre exposes publiquement.
-- Les conteneurs monitoring utilisent `network_mode: host` sur ce VPS afin de
-  scraper le backend local et les exporters sans ouvrir de ports publics.
-
-Fichiers versionnes :
-
-- stack Compose : `ops/monitoring/docker-compose.yml`
-- Prometheus : `ops/monitoring/prometheus/prometheus.yml`
-- blackbox : `ops/monitoring/blackbox/blackbox.yml`
-- provisioning Grafana : `ops/monitoring/grafana/provisioning/`
-- dashboards Grafana : `ops/monitoring/grafana/dashboards/`
-- metriques textfile : `scripts/write-monitoring-textfile-metrics.sh`
-- timer textfile :
-  `ops/systemd/gta-rp-monitoring-textfile.service`
-  et `ops/systemd/gta-rp-monitoring-textfile.timer`
-
-Creation des dossiers partages sur le VPS :
-
-```bash
-sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/prometheus
-sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/grafana
-sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/node-exporter-textfile
-sudo mkdir -p /var/www/gta-rp-population-graph/shared/monitoring/secrets
-sudo chown codex-deploy:codex-deploy /var/www/gta-rp-population-graph/shared/monitoring
-sudo chown 65534:65534 /var/www/gta-rp-population-graph/shared/monitoring/prometheus
-sudo chown 472:472 /var/www/gta-rp-population-graph/shared/monitoring/grafana
-sudo chown codex-deploy:codex-deploy /var/www/gta-rp-population-graph/shared/monitoring/node-exporter-textfile
-sudo chown codex-deploy:codex-deploy /var/www/gta-rp-population-graph/shared/monitoring/secrets
+```text
+/var/www/platform-ops/monitoring/
+├── .env
+├── compose/
+└── data/
+    ├── grafana/
+    ├── prometheus/
+    ├── node-exporter-textfile/
+    └── secrets/
 ```
 
-Generer les secrets hors Git :
+Prometheus supervise actuellement GTA et F1. Les conteneurs sont geres avec
+Docker Compose v2 :
 
 ```bash
-openssl rand -base64 48
-openssl rand -base64 48
-```
-
-Utiliser la premiere valeur comme `METRICS_TOKEN` dans :
-
-- `/var/www/gta-rp-population-graph/current/backend/.env`
-- `/var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token`
-
-Le fichier Prometheus doit contenir uniquement le token brut, sans prefixe
-`Bearer` :
-
-```bash
-printf '%s' '<METRICS_TOKEN>' > /var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
-sudo chown 65534:65534 /var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
-sudo chmod 400 /var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
-```
-
-Utiliser la deuxieme valeur comme mot de passe admin local Grafana, dans un
-fichier d'environnement non versionne :
-
-```bash
-cat >/var/www/gta-rp-population-graph/shared/monitoring/.env <<'EOF'
-GRAFANA_ADMIN_USER=local-admin
-GRAFANA_ADMIN_PASSWORD=<GRAFANA_ADMIN_PASSWORD>
-MONITORING_SHARED_DIR=/var/www/gta-rp-population-graph/shared/monitoring
-METRICS_TOKEN_FILE=/var/www/gta-rp-population-graph/shared/monitoring/secrets/metrics_token
-EOF
-chmod 600 /var/www/gta-rp-population-graph/shared/monitoring/.env
-```
-
-Lancer la stack :
-
-```bash
-cd /var/www/gta-rp-population-graph/current/ops/monitoring
+cd /var/www/platform-ops/monitoring
 sudo docker compose \
-  --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env config
+  --env-file .env \
+  -p monitoring \
+  -f compose/docker-compose.yml \
+  up -d
+```
+
+Conteneurs attendus :
+
+- `monitoring-prometheus-1`
+- `monitoring-grafana-1`
+- `monitoring-node-exporter-1`
+- `monitoring-blackbox-exporter-1`
+
+Les volumes persistants sont sous `/var/www/platform-ops`. Prometheus, Grafana,
+node_exporter et blackbox_exporter restent bindes localement et ne doivent pas
+etre exposes directement sur Internet.
+
+Le backend GTA expose toujours `GET /api/internal/metrics`, en format
+Prometheus, protege par `METRICS_TOKEN`. Les metriques visiteurs sont des
+estimations operationnelles, pas un outil d'analytics nominatif : le backend
+compte en memoire des empreintes IP+navigateur hachees, sans exposer ni stocker
+les IP ou user-agents en base.
+
+Grafana est accessible uniquement via
+`https://gta-rp.f1prediction.fr/supervision/`. L'endpoint
+`GET /api/supervision/authorize`, utilise par Caddy `forward_auth`, est
+volontairement exclu du rate limit API global.
+
+L'ancien timer `gta-rp-monitoring-textfile.timer` et son service ont ete
+supprimes. Les metriques textfile mutualisees sont maintenant produites par :
+
+- `platform-ops-textfile.timer`
+- `platform-ops-textfile.service`
+
+Verifier la stack :
+
+```bash
 sudo docker compose \
-  --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env up -d
-sudo docker compose \
-  --env-file /var/www/gta-rp-population-graph/shared/monitoring/.env ps
+  --env-file /var/www/platform-ops/monitoring/.env \
+  -p monitoring \
+  -f /var/www/platform-ops/monitoring/compose/docker-compose.yml \
+  ps
 ```
 
 Le plugin `docker compose` v2 est la commande de reference sur le VPS. Ne pas
 reintroduire l'ancien binaire `docker-compose` v1 dans les nouvelles
 procedures.
-
-Installer le timer des metriques textfile :
-
-```bash
-cd /var/www/gta-rp-population-graph/current
-sudo install -Dm755 scripts/write-monitoring-textfile-metrics.sh /var/www/gta-rp-population-graph/current/scripts/write-monitoring-textfile-metrics.sh
-sudo install -Dm644 ops/systemd/gta-rp-monitoring-textfile.service /etc/systemd/system/gta-rp-monitoring-textfile.service
-sudo install -Dm644 ops/systemd/gta-rp-monitoring-textfile.timer /etc/systemd/system/gta-rp-monitoring-textfile.timer
-sudo systemctl daemon-reload
-sudo systemctl enable --now gta-rp-monitoring-textfile.timer
-sudo systemctl start gta-rp-monitoring-textfile.service
-```
 
 Modifier Caddy en ajoutant le `handle /supervision/*` du bloc exemple ci-dessus
 avant le `handle` statique frontend, puis valider et recharger :
@@ -627,7 +690,7 @@ Verifications :
 curl -fsS http://127.0.0.1:9090/-/healthy
 curl -I https://gta-rp.f1prediction.fr/supervision/
 ss -lnt | grep -E '127\.0\.0\.1:(3001|9090|9100|9115)'
-scripts/check-production-ops.sh
+/var/www/platform-ops/scripts/check-platform.sh
 ```
 
 Dans Grafana, verifier les dashboards provisionnes :
@@ -637,8 +700,7 @@ Dans Grafana, verifier les dashboards provisionnes :
 - `GTA RP - Application`
 - `GTA RP - Donnees metier`
 
-Prometheus doit afficher les targets `prometheus`, `node`, `gta-rp-backend`,
-`blackbox-http` et `blackbox-redirects` en etat `UP`.
+Prometheus doit afficher les targets GTA et F1 attendues en etat `UP`.
 
 ## Creation de la base
 
@@ -711,15 +773,25 @@ npm test
 npm run build
 ```
 
-## Chaine Node.js isolee
+## Runtime Node.js mutualise
 
-Le projet utilise `/opt/node-gta-rp` afin de ne pas modifier les versions
-Node.js et npm des autres applications du VPS. Le lien pointe actuellement vers
-`/opt/node-v24.18.1`.
+GTA et F1 partagent le meme runtime Node.js applicatif :
+
+```text
+/opt/node-apps -> /opt/node-v24.18.1
+/opt/node-gta-rp -> /opt/node-apps
+```
+
+Le chemin `/opt/node-gta-rp` est conserve pour compatibilite avec les services
+et scripts GTA. Il ne doit plus etre traite comme un runtime independant :
+toute mise a jour de `/opt/node-apps` impacte les applications qui le
+partagent.
 
 La version attendue se controle avec :
 
 ```bash
+/opt/node-apps/bin/node --version
+/opt/node-apps/bin/npm --version
 /opt/node-gta-rp/bin/node --version
 PATH=/opt/node-gta-rp/bin:$PATH /opt/node-gta-rp/bin/npm --version
 ```
@@ -731,8 +803,8 @@ v24.18.1
 12.0.2
 ```
 
-Pour installer une nouvelle version Node.js sans toucher aux autres
-applications :
+Pour installer une nouvelle version Node.js, coordonner d'abord la validation
+GTA et F1, puis mettre a jour le runtime commun :
 
 ```bash
 cd /tmp
@@ -745,44 +817,57 @@ sudo tar -xJf node-v24.18.1-linux-x64.tar.xz -C /opt/node-v24.18.1 --strip-compo
 sudo chown -R root:root /opt/node-v24.18.1
 sudo env PATH=/opt/node-v24.18.1/bin:$PATH \
   /opt/node-v24.18.1/bin/npm install --global npm@12.0.2 --prefix /opt/node-v24.18.1
-sudo ln -sfn /opt/node-v24.18.1 /opt/node-gta-rp
+sudo ln -sfn /opt/node-v24.18.1 /opt/node-apps
+sudo ln -sfn /opt/node-apps /opt/node-gta-rp
+sudo chown -h root:root /opt/node-apps
 sudo chown -h root:root /opt/node-gta-rp
 ```
 
-La mise a jour doit etre suivie d'un `npm ci`, d'un build backend/frontend, du
-controle des migrations en attente, du redemarrage du service et des smoke
-tests. Supprimer l'ancien dossier `/opt/node-vXX.YY.ZZ` seulement apres avoir
-verifie que le backend tourne bien sur le nouveau binaire avec :
+La mise a jour doit etre suivie d'un `npm ci`, d'un build backend/frontend GTA,
+des validations equivalentes cote F1, du controle des migrations en attente, du
+redemarrage des services concernes et des smoke tests. Supprimer l'ancien
+dossier `/opt/node-vXX.YY.ZZ` seulement apres avoir verifie que les services
+tournent bien sur le nouveau binaire avec :
 
 ```bash
 pid=$(systemctl show -p MainPID --value gta-rp-backend.service)
 readlink -f /proc/$pid/exe
 ```
 
+L'ancien runtime Node `24.18.0` a ete supprime apres mutualisation.
+
 ## Procedure de mise a jour reproductible
 
 Sur le VPS actuel, le dossier de production `current` n'est pas un checkout
-Git. La mise a jour doit donc se faire par synchronisation de fichiers depuis
-une machine de travail ou un environnement de build maitrise.
+Git et pointe vers une release immutable. La mise a jour doit donc preparer un
+nouveau dossier `releases/<horodatage>`, y synchroniser le code valide, puis
+activer cette release avec le script de bascule atomique.
 
 Sequence recommandee :
 
 1. Sur la machine source, verifier l'etat du code et lancer les validations.
-2. Synchroniser le depot vers le serveur sans ecraser le stockage partage.
-3. Reinstaller les dependances si necessaire.
-4. Rebuilder backend et frontend sur le VPS.
-5. Verifier l'etat des migrations.
-6. Lancer un backup PostgreSQL avant toute migration si une migration est
+2. Creer une nouvelle release horodatee sur le serveur.
+3. Synchroniser le depot vers cette release sans ecraser le stockage partage.
+4. Reinstaller les dependances si necessaire.
+5. Rebuilder backend et frontend sur le VPS.
+6. Verifier l'etat des migrations.
+7. Lancer un backup PostgreSQL avant toute migration si une migration est
    attendue.
-7. Appliquer les migrations si besoin.
-8. Redemarrer le backend.
-9. Executer les smoke tests publics.
+8. Appliquer les migrations si besoin.
+9. Activer la release avec `activate-release.sh`.
+10. Redemarrer le backend si le script de bascule ne l'a pas deja fait.
+11. Executer les smoke tests publics.
 
 Exemple depuis la machine source :
 
 ```bash
 cd /workspaces/gta-rp-population-graph
 ./scripts/run-all-checks.sh
+
+release=20260731T151800Z-exemple
+ssh -i .secrets/codex_gta_rp_deploy \
+  codex-deploy@65.109.171.143 \
+  "mkdir -p /var/www/gta-rp-population-graph/releases/$release"
 
 rsync -avz --delete \
   --exclude '.git' \
@@ -801,27 +886,30 @@ rsync -avz --delete \
   --exclude 'backend/storage' \
   -e "ssh -i .secrets/codex_gta_rp_deploy" \
   /workspaces/gta-rp-population-graph/ \
-  codex-deploy@65.109.171.143:/var/www/gta-rp-population-graph/current/
+  codex-deploy@65.109.171.143:/var/www/gta-rp-population-graph/releases/$release/
 ```
 
 Puis sur le VPS :
 
 ```bash
-cd /var/www/gta-rp-population-graph/current/backend
+release=20260731T151800Z-exemple
+cd /var/www/gta-rp-population-graph/releases/$release/backend
+ln -sfn /var/www/gta-rp-population-graph/shared/config/backend.env .env
 npm ci
 npm run build
 npm run db:migrate:pending
 
-cd /var/www/gta-rp-population-graph/current/web-client
+cd /var/www/gta-rp-population-graph/releases/$release/web-client
 npm ci
 npm run build
 
-cd /var/www/gta-rp-population-graph/current/backend
+cd /var/www/gta-rp-population-graph/releases/$release/backend
 if npm run db:migrate:pending | rg -qv '\[\]'; then
   sudo systemctl start gta-rp-postgres-backup.service
   npm run db:migrate
 fi
 
+/var/www/platform-ops/scripts/activate-release.sh gta-rp "$release"
 sudo systemctl restart gta-rp-backend.service
 curl -sS https://gta-rp.f1prediction.fr/api/health
 ```
@@ -1130,6 +1218,23 @@ Verification periodique de restauration :
   production
 - Uploads : verifier qu'une archive peut etre extraite proprement
 
+Sur le VPS actuel, le test PostgreSQL est automatise et mutualise avec F1 :
+
+- `platform-postgres-restore-test.timer`
+- `platform-postgres-restore-test.service`
+
+Il restaure reellement les derniers dumps GTA et F1 dans des bases temporaires,
+puis supprime ces bases meme en cas d'echec. Le dernier test GTA consigne a
+restaure `16` tables avec succes.
+
+Commandes utiles :
+
+```bash
+sudo systemctl status platform-postgres-restore-test.timer --no-pager
+sudo systemctl start platform-postgres-restore-test.service
+sudo journalctl -u platform-postgres-restore-test.service -n 50 --no-pager
+```
+
 Commandes de restauration PostgreSQL vers une base temporaire :
 
 ```bash
@@ -1247,8 +1352,10 @@ uploads hebdomadaire deja presentes sur le VPS.
 - [x] Firewall verifie.
 - [x] Retention durable `journald` configuree.
 - [x] `METRICS_TOKEN` fort genere hors Git.
-- [x] Stack Prometheus + Grafana lancee sur le VPS.
-- [x] Timer `gta-rp-monitoring-textfile.timer` configure et actif.
+- [x] Stack Prometheus + Grafana mutualisee lancee sur le VPS.
+- [x] Timer `platform-ops-textfile.timer` configure et actif.
+- [x] Timer `platform-health-check.timer` configure et actif.
+- [x] Timer `platform-postgres-restore-test.timer` configure et actif.
 - [x] Route Caddy `/supervision/*` ajoutee avec `forward_auth`.
 - [x] Grafana accessible avec une session administrateur du site.
 - [x] Prometheus targets `UP`.
