@@ -334,6 +334,29 @@ Validation apres reset :
   Google.
 - `scripts/check-production-ops.sh --all` passe entierement.
 
+## Correction operations du 2026-07-31
+
+Un incident `status=203/EXEC` a ete corrige sur les taches systemd suivantes :
+
+- `gta-rp-monitoring-textfile.service` : le script
+  `scripts/write-monitoring-textfile-metrics.sh` n'etait pas executable sur le
+  VPS et le timer echouait toutes les cinq minutes avant execution.
+- `gta-rp-uploads-backup.service` : ancien etat d'echec similaire, relancee
+  manuellement pour confirmer le bon fonctionnement apres correction du mode.
+
+Actions appliquees :
+
+- `chmod +x` sur les scripts concernes cote VPS.
+- `systemctl reset-failed` puis demarrage manuel des deux services.
+- Nouveau backup uploads cree :
+  `shared/backups/uploads/weekly/characters_20260731T145714Z.tar.gz`.
+- Fichier de metriques textfile regenere :
+  `shared/monitoring/node-exporter-textfile/gta_rp_ops.prom`.
+- Le bit executable est enregistre dans le depot Git pour
+  `scripts/write-monitoring-textfile-metrics.sh` et `scripts/backup-uploads.sh`
+  afin que les prochains deploiements conservent le mode `100755`.
+- `scripts/check-production-ops.sh --all` repasse entierement.
+
 ## Check ops reproductible
 
 Le depot fournit un script de controle read-only pour rejouer les verifications

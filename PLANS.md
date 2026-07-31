@@ -806,6 +806,9 @@ a 17.
   exact nom/prenom deja applique a la creation.
 - Permettre eventuellement aux contributions de proposer des changements de
   tags, avec des validations dediees pour eviter les suppressions implicites.
+- Ajouter la possibilite d'archiver une fiche par un moderateur ou un
+  administrateur, avec une liste dediee des fiches archivees et une restauration
+  reservee aux administrateurs.
 - Introduire un type persistant explicite pour le champ Notion ambigu
   `Est oncle/tante` uniquement si un besoin metier fiable permet de choisir la
   direction et le type corrects.
