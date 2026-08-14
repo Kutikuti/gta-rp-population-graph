@@ -641,8 +641,9 @@ Point de controle :
 - Les installations reproductibles et les scripts autorises fonctionnent sous
   npm 12 sans relacher les protections du devcontainer.
 - Tous les checks et tests existants restent verts.
-- Node.js 24.18 LTS reste la version d'execution cible tant qu'une migration
-  Node distincte n'a pas ete decidee et validee.
+- Node.js 24 LTS reste la version d'execution cible ; le devcontainer suit la
+  derniere version 24.x validee, tandis que la production demande une migration
+  VPS distincte.
 - Aucun changement fonctionnel ou de schema de donnees n'est introduit par
   cette etape technique.
 
@@ -653,7 +654,7 @@ Resultat :
 - Les installations propres, `sharp`, `esbuild`, Vite, les 205 tests backend,
   les 8 tests d'integration PostgreSQL, les 77 tests frontend, les checks Biome
   et les builds backend/frontend sont valides localement.
-- Le devcontainer reconstruit utilise Node.js `24.18.1` et npm `12.0.2`.
+- Le devcontainer reconstruit utilise Node.js `24.19.0` et npm `12.0.2`.
 - Le runtime VPS commun `/opt/node-apps` pointe vers `/opt/node-v24.18.1`,
   avec npm `12.0.2`, et `/opt/node-gta-rp` reste un lien de compatibilite.
 - Les builds backend/frontend, le controle des migrations en attente, le
@@ -854,8 +855,9 @@ a 17.
   structure, l'accessibilite et les limites peuvent changer sans preavis.
 - Google, Discord et Twitch restent dependants de leurs services OAuth et de
   leurs limites d'API respectives.
-- Le developpement et la production restent sur Node.js `24.18.1` LTS tant
-  qu'une migration Node distincte n'a pas ete decidee.
+- Le developpement local cible Node.js `24.19.0` LTS. La production conserve sa
+  version documentee dans `DEPLOYMENT.md` tant qu'une migration VPS distincte
+  n'a pas ete decidee.
 - Le deploiement GTA-RP partage le VPS avec `f1prediction.fr` et ne doit pas
   perturber ses ports, services ou configuration Caddy.
 - Toute nouvelle collecte de donnees personnelles ou ajout de traceur client
