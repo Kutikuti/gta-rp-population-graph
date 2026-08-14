@@ -4,6 +4,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+NODE_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/.node-version")"
+LOCAL_NODE_DIR="$ROOT_DIR/.tools/node-v${NODE_VERSION}"
+
+if [[ -x "$LOCAL_NODE_DIR/bin/node" ]]; then
+  export PATH="$LOCAL_NODE_DIR/bin:$PATH"
+  export NPM_CONFIG_PREFIX="$LOCAL_NODE_DIR"
+fi
 
 run_step() {
   local label="$1"

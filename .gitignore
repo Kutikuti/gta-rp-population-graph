@@ -8,5 +8,6 @@ web-client/.env
 backend/storage/
 .secrets/
 .backups/
+.tools/
 
 .devcontainer/.cache/update-check/
