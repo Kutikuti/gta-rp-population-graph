@@ -751,10 +751,53 @@ Point de controle :
   conservent des contrastes suffisants.
 - Tous les checks, tests et builds existants restent verts.
 
-### Etape 17 - Declinaison par serveur et sources d'import
+### Etape 17 - Audit securite pre-ouverture
 
-Statut : planifiee en dernier, apres le refactor transversal et la finalisation
-UX.
+Statut : planifiee apres la finalisation UX de l'etape 16.
+
+Cette etape doit verifier que les retouches UX et les derniers flux publics ou
+authentifies n'ont pas fragilise la securite avant l'arrivee des premiers
+utilisateurs. Elle se concentre sur les surfaces exposees en production :
+authentification, roles, contributions, moderation, imports, photos,
+administration, supervision et exploitation VPS.
+
+Plan propose :
+
+1. Repasser toutes les routes publiques, authentifiees, moderateur et
+   administrateur avec une matrice claire des droits attendus, y compris le cas
+   utilisateur banni.
+2. Verifier les protections d'entrees : schemas, limites de taille, validations
+   serveur, echappement des contenus affiches et absence de confiance dans le
+   frontend.
+3. Auditer le pipeline photo : types MIME, signatures fichiers, reencodage,
+   chemins de stockage, exposition publique, quotas, nettoyage et moderation.
+4. Controler les flux OAuth et session : callbacks, cookies, expiration, liaison
+   et dissociation des comptes, blocage de la suppression du dernier moyen de
+   connexion.
+5. Verifier les imports Notion : URLs distantes, telechargement photo, absence
+   de publication automatique non voulue, historique et donnees brutes.
+6. Revoir la configuration production : Caddy, TLS, ports exposes, systemd,
+   PostgreSQL Docker non public, sauvegardes, permissions fichiers, secrets hors
+   Git et supervision protegee.
+7. Lancer les audits et checks disponibles, documenter les risques residuels et
+   corriger les failles bloquantes avant ouverture.
+
+Point de controle :
+
+- Aucun endpoint d'ecriture n'est accessible sans authentification et role
+  attendu.
+- Les utilisateurs bannis sont bloques sur toutes les actions sensibles.
+- Les uploads et imports distants ne peuvent pas servir de vecteur de fichier
+  dangereux ou de chemin arbitraire.
+- Les secrets ne sont pas presents dans le depot ni exposes par les logs ou
+  endpoints publics.
+- Le VPS n'expose publiquement que les ports strictement necessaires.
+- Les checks, tests et builds restent verts apres corrections.
+
+### Etape 18 - Declinaison par serveur et sources d'import
+
+Statut : planifiee en dernier, apres le refactor transversal, la finalisation
+UX et l'audit securite.
 
 Cette etape rend le projet reutilisable par d'autres communautes GTA-RP sans
 introduire une architecture multi-tenant. Chaque deploiement reste une instance
@@ -796,7 +839,16 @@ Point de controle :
 
 Ces sujets sont volontairement hors des etapes actuellement planifiees. Ils ne
 bloquent ni la cloture des etapes 1 a 13 ni les travaux planifies des etapes 14
-a 17.
+a 18.
+
+### Consultation et evenements recents
+
+- Ajouter un encart ou une page compacte listant les derniers evenements issus
+  des fiches et de l'historique valide : derniers deces, changements de groupe,
+  changements d'entreprise, nouvelles fiches, changements de streamer et autres
+  modifications utiles a suivre. L'affichage devra rester sobre, filtrable si
+  le volume augmente, et ne pas exposer d'informations privees ou incertaines
+  comme des faits verifies.
 
 ### Moderation et qualite des donnees
 
@@ -840,6 +892,9 @@ a 17.
 - Ajouter une cible de sauvegarde distante hors VPS lorsque le stockage externe
   retenu sera disponible ; utiliser entre-temps le script de recuperation
   locale documente dans `DEPLOYMENT.md`.
+- Etudier une bascule rapide vers Cloudflare si le trafic du lancement devient
+  important : DNS proxy, cache des assets statiques, protection DDoS/WAF
+  minimale, preservation des vrais IP cote backend/Caddy et impacts RGPD/cookies.
 - Ajouter une configuration Caddy multi-domaines uniquement si un second
   domaine public devient necessaire.
 - Ajouter un alerting externe email ou Discord sur les signaux critiques de la
