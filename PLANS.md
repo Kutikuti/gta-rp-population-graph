@@ -654,7 +654,7 @@ Resultat :
 - Les installations propres, `sharp`, `esbuild`, Vite, les 205 tests backend,
   les 8 tests d'integration PostgreSQL, les 77 tests frontend, les checks Biome
   et les builds backend/frontend sont valides localement.
-- Le devcontainer reconstruit utilise Node.js `24.19.0` et npm `12.0.2`.
+- Le devcontainer reconstruit utilise Node.js `24.20.0` et npm `12.0.2`.
 - Le runtime VPS commun `/opt/node-apps` pointe vers `/opt/node-v24.18.1`,
   avec npm `12.0.2`, et `/opt/node-gta-rp` reste un lien de compatibilite.
 - Les builds backend/frontend, le controle des migrations en attente, le
@@ -663,13 +663,27 @@ Resultat :
 - L'ancien dossier `/opt/node-v24.16.0` a ete supprime apres verification que le
   service backend tourne sur `/opt/node-v24.18.1/bin/node`.
 
+Maintenance de dependances du `2026-09-04` :
+
+- la cible locale et devcontainer est passee a Node.js `24.20.0`, avec npm
+  `12.0.2` ; le runtime VPS `24.18.1` reste documente comme etat a migrer de
+  maniere coordonnee avec F1 ;
+- les dependances mineures backend et frontend ont ete actualisees, y compris
+  Biome `2.5.12`, Vite `8.2.2`, React `19.2.8`, Vitest `4.1.11`, `pg 8.23.0`,
+  `sharp 0.35.4`, Zod `4.5.4` et `express-rate-limit 8.7.0` ;
+- les lockfiles sont valides par `npm ci` sous Node.js `24.20.0` et npm
+  `12.0.2`, sans vulnerabilite remontee par `npm audit` ;
+- les checks, couvertures, tests unitaires et builds passent avec `234` tests
+  backend et `84` tests frontend. Les integrations PostgreSQL restent a
+  rejouer lorsque PostgreSQL local est joignable.
+
 ### Etape 15 - Refactor et nettoyage transversal
 
 Statut : terminee le 2026-07-30.
 
 Cette etape a restructure le code existant sans changement fonctionnel, visuel
 ou de schema. La generalisation a d'autres serveurs et sources d'import reste
-reportee a l'etape 17 afin de ne pas melanger nettoyage interne et nouvelles
+reportee a l'etape 18 afin de ne pas melanger nettoyage interne et nouvelles
 abstractions produit.
 
 Bilan :
@@ -910,7 +924,7 @@ a 18.
   structure, l'accessibilite et les limites peuvent changer sans preavis.
 - Google, Discord et Twitch restent dependants de leurs services OAuth et de
   leurs limites d'API respectives.
-- Le developpement local cible Node.js `24.19.0` LTS. La production conserve sa
+- Le developpement local cible Node.js `24.20.0` LTS. La production conserve sa
   version documentee dans `DEPLOYMENT.md` tant qu'une migration VPS distincte
   n'a pas ete decidee.
 - Le deploiement GTA-RP partage le VPS avec `f1prediction.fr` et ne doit pas

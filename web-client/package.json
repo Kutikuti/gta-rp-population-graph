@@ -15,26 +15,26 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^6.0.3",
-    "cytoscape": "^3.34.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "vite": "^8.1.5"
+    "@vitejs/plugin-react": "^6.1.1",
+    "cytoscape": "^3.34.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vite": "^8.2.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.4",
+    "@biomejs/biome": "2.5.12",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "^24.13.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitest/coverage-v8": "^4.1.11",
     "jsdom": "^29.1.1",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "engines": {
-    "node": ">=24.19.0"
+    "node": ">=24.20.0"
   }
 }

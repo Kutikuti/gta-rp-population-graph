@@ -59,10 +59,13 @@ procedure minimale RGPD sont documentees dans [PRIVACY.md](PRIVACY.md).
 
 ## Etat actuel
 
-Les etapes 1 a 13 du plan sont terminees. Le backend/frontend, PostgreSQL, les
+Les etapes 1 a 15 du plan sont terminees. Le backend/frontend, PostgreSQL, les
 routes publiques, le multi-SSO Google/Discord/Twitch, la contribution moderee,
 la moderation, l'administration, le profil utilisateur, la conformite RGPD
 minimale et les photos securisees sont en place.
+
+La prochaine etape planifiee est l'etape 16, consacree a la finalisation UX de
+l'application et du graphe avant un audit securite pre-ouverture.
 
 La fiche publique et les formulaires de modification supportent maintenant :
 
@@ -98,7 +101,7 @@ mutualisee avec les autres applications sous `/var/www/platform-ops`.
 
 ## Lancement local
 
-Chaine d'outillage de reference : Node.js `24.19.0`, npm `12.0.2` et
+Chaine d'outillage de reference : Node.js `24.20.0`, npm `12.0.2` et
 TypeScript `7.0.2`. Les fichiers `.nvmrc` et `.node-version` sont fournis pour
 les gestionnaires de versions Node.js. Le devcontainer installe aussi
 l'extension officielle TypeScript 7 et utilise `tsgo` pour les diagnostics de

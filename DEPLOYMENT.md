@@ -17,10 +17,11 @@ interactive.
 ## Prerequis serveur
 
 - VPS Ubuntu a jour.
-- Node.js `24.18.1` et npm `12.0.2` via le runtime mutualise
+- Le runtime VPS connu est Node.js `24.18.1` et npm `12.0.2` via
   `/opt/node-apps`, reference par compatibilite depuis `/opt/node-gta-rp`.
-  Toute montee de version doit etre coordonnee avec les autres applications qui
-  utilisent ce runtime commun.
+  Le depot courant exige Node.js `24.20.0` ou plus : mettre a jour ce runtime
+  partage avant de deployer cette version, en coordonnant la validation avec
+  les autres applications qui l'utilisent.
 - PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
 - Caddy pour le reverse proxy, TLS automatique et les domaines.
 - Process manager pour l'API Node.js : service `systemd` sur le VPS actuel.
@@ -775,14 +776,16 @@ npm run build
 
 ## Runtime Node.js mutualise
 
-GTA et F1 partagent le meme runtime Node.js applicatif :
+GTA et F1 partagent le meme runtime Node.js applicatif. Le dernier etat VPS
+confirme utilise encore :
 
 ```text
 /opt/node-apps -> /opt/node-v24.18.1
 /opt/node-gta-rp -> /opt/node-apps
 ```
 
-Le chemin `/opt/node-gta-rp` est conserve pour compatibilite avec les services
+Le depot courant requiert Node.js `24.20.0` ou plus. Le chemin
+`/opt/node-gta-rp` est conserve pour compatibilite avec les services
 et scripts GTA. Il ne doit plus etre traite comme un runtime independant :
 toute mise a jour de `/opt/node-apps` impacte les applications qui le
 partagent.
@@ -796,28 +799,30 @@ La version attendue se controle avec :
 PATH=/opt/node-gta-rp/bin:$PATH /opt/node-gta-rp/bin/npm --version
 ```
 
-Resultat attendu :
+Resultat attendu apres mise a jour coordonnee :
 
 ```text
-v24.18.1
+v24.20.0
 12.0.2
 ```
 
-Pour installer une nouvelle version Node.js, coordonner d'abord la validation
-GTA et F1, puis mettre a jour le runtime commun :
+Pour installer cette version ou une version superieure de Node.js, coordonner
+d'abord la validation GTA et F1, puis mettre a jour le runtime commun. Le
+nouveau runtime est installe dans un repertoire distinct ; ne supprimer aucun
+runtime existant avant la validation complete :
 
 ```bash
+NODE_VERSION=24.20.0
 cd /tmp
-curl -fsSLO https://nodejs.org/dist/v24.18.1/node-v24.18.1-linux-x64.tar.xz
-curl -fsSLO https://nodejs.org/dist/v24.18.1/SHASUMS256.txt
+curl -fsSLO https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz
+curl -fsSLO https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt
 sha256sum -c --ignore-missing SHASUMS256.txt
-sudo rm -rf /opt/node-v24.18.1
-sudo mkdir -p /opt/node-v24.18.1
-sudo tar -xJf node-v24.18.1-linux-x64.tar.xz -C /opt/node-v24.18.1 --strip-components=1
-sudo chown -R root:root /opt/node-v24.18.1
-sudo env PATH=/opt/node-v24.18.1/bin:$PATH \
-  /opt/node-v24.18.1/bin/npm install --global npm@12.0.2 --prefix /opt/node-v24.18.1
-sudo ln -sfn /opt/node-v24.18.1 /opt/node-apps
+sudo mkdir -p /opt/node-v${NODE_VERSION}
+sudo tar -xJf node-v${NODE_VERSION}-linux-x64.tar.xz -C /opt/node-v${NODE_VERSION} --strip-components=1
+sudo chown -R root:root /opt/node-v${NODE_VERSION}
+sudo env PATH=/opt/node-v${NODE_VERSION}/bin:$PATH \
+  /opt/node-v${NODE_VERSION}/bin/npm install --global npm@12.0.2 --prefix /opt/node-v${NODE_VERSION}
+sudo ln -sfn /opt/node-v${NODE_VERSION} /opt/node-apps
 sudo ln -sfn /opt/node-apps /opt/node-gta-rp
 sudo chown -h root:root /opt/node-apps
 sudo chown -h root:root /opt/node-gta-rp
@@ -1067,34 +1072,30 @@ Avant toute migration de production :
 3. Verifier que la commande de restauration est connue et testee sur un
    environnement non production.
 
-Le dossier `current` du VPS n'est pas un checkout Git. Le rollback applicatif
-doit donc repartir d'un checkout source positionne sur le commit ou tag stable
-precedent, puis reutiliser la procedure `rsync` de deploiement.
+Le dossier `current` du VPS n'est pas un checkout Git : il pointe vers une
+release deja preparee. Le rollback applicatif consiste donc d'abord a reactiver
+atomiquement une release connue comme stable.
 
 Rollback applicatif minimal :
 
-1. Positionner la machine source sur le tag ou commit applicatif precedent.
-2. Relancer les checks et synchroniser ce contenu vers `current`.
-3. Reinstaller les dependances avec `npm ci`.
-4. Relancer les builds backend et frontend.
-5. Redemarrer le service backend.
-6. Restaurer la base seulement si la migration appliquee n'est pas compatible
+1. Identifier une release precedente validee dans `releases/`.
+2. Reactiver cette release avec `activate-release.sh`.
+3. Redemarrer le service backend et verifier le healthcheck.
+4. Restaurer la base seulement si la migration appliquee n'est pas compatible
    avec l'ancien code.
 
-Sur le VPS apres resynchronisation :
+Sur le VPS :
 
 ```bash
-cd /var/www/gta-rp-population-graph/current/backend
-npm ci
-npm run build
-
-cd /var/www/gta-rp-population-graph/current/web-client
-npm ci
-npm run build
-
+release=<release-precedente-validee>
+/var/www/platform-ops/scripts/activate-release.sh gta-rp "$release"
 sudo systemctl restart gta-rp-backend.service
 curl -sS https://gta-rp.f1prediction.fr/api/health
 ```
+
+Si aucune release precedente exploitable n'est disponible, reconstruire une
+nouvelle release depuis le commit ou tag stable precedent avec la procedure de
+mise a jour reproductible, puis l'activer de la meme maniere.
 
 Si une restauration de base est necessaire, toujours :
 

@@ -146,7 +146,7 @@ Principes :
 ## Environnement
 
 - Developpement local sur Windows avec WSL Ubuntu et devcontainer recommande.
-- Node.js `24.19.0` LTS est la version de reference actuelle.
+- Node.js `24.20.0` LTS est la version de reference actuelle.
 - npm `12.0.2` est la version de reference pour les installations
   reproductibles et TypeScript `7.0.2` pour les builds backend/frontend.
 - Le devcontainer active l'extension officielle TypeScript 7 et `tsgo` afin
