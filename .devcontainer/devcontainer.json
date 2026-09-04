@@ -2,7 +2,7 @@
   "build": {
     "context": "..",
     "dockerfile": "Dockerfile",
-    "options": ["--pull"]
+    "options": ["--pull", "--no-cache"]
   },
   "containerEnv": {
     "DEVCONTAINER_UPDATE_CHECK_TTL_SECONDS": "86400",

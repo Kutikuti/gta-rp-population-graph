@@ -164,7 +164,7 @@ check_apt_upgrades() {
   count="$(printf '%s\n' "$upgradable" | sed '/^$/d' | wc -l | tr -d '[:space:]')"
 
   if [ "$count" -gt 0 ]; then
-    add_warning "apt has $count upgradable package(s); rebuild the devcontainer instead of running apt upgrade"
+    add_warning "apt has $count upgradable package(s); rebuild the devcontainer without build cache instead of running apt upgrade"
     add_detail "apt upgradable packages:"
     while IFS= read -r line; do
       [ -n "$line" ] && add_detail "  $line"
