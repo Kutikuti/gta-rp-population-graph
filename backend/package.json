@@ -26,6 +26,7 @@
     "notion:preview": "tsx src/preview-notion-import.ts",
     "notion:scrape-report": "tsx src/scrape-notion.ts",
     "notion:sync-all": "tsx src/sync-notion.ts",
+    "notion:sync-photos": "tsx src/sync-notion.ts --photos-only",
     "photo:cleanup": "tsx src/cleanup-photo-drafts.ts"
   },
   "dependencies": {

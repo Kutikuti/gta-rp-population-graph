@@ -215,6 +215,7 @@ cd backend
 | `npm run notion:import-report` | Importe un JSON de travail. |
 | `npm run notion:preview` | Previsualise un batch importe. |
 | `npm run notion:sync-all` | Applique la source Notion complete. |
+| `npm run notion:sync-photos -- --batch-id=<uuid>` | Reprend uniquement les photos manquantes d'un lot deja applique. |
 | `npm run photo:cleanup` | Nettoie les brouillons de photos expires. |
 
 Exemples utiles :
@@ -302,6 +303,15 @@ Lancer la synchronisation automatique complete sur la source par defaut :
 ```bash
 cd backend
 npm run notion:sync-all
+```
+
+Pour reprendre seulement les photos manquantes d'un lot deja applique, sans
+recreer les fiches, leur historique ou les photos deja presentes, utiliser son
+identifiant de lot :
+
+```bash
+cd backend
+npm run notion:sync-photos -- --batch-id=<uuid>
 ```
 
 Cette commande applique les fiches et tente d'importer les photos. Elle est

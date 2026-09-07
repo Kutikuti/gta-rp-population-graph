@@ -1,12 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
 const mockState = vi.hoisted(() => ({
+  characterFindAll: vi.fn(),
   userFindOne: vi.fn(),
   sequelizeLiteral: vi.fn((value: string) => value)
 }));
 
 vi.mock("../db/index.js", () => ({
   models: {
+    Character: {
+      findAll: mockState.characterFindAll
+    },
     Role: {},
     User: {
       findOne: mockState.userFindOne
@@ -191,6 +195,47 @@ describe("notion import automation", () => {
       skipped: 1,
       invalid: 0,
       notFound: 0
+    });
+  });
+
+  it("skips photos already present when resuming a batch", async () => {
+    mockState.characterFindAll.mockResolvedValue([{ id: "char-a" }]);
+    const importNotionImportEntryPhoto = vi.fn(async () => ({ status: "not_found" as const }));
+    const adminService = {
+      async getNotionImportDetail() {
+        return {
+          ...detail,
+          entries: [
+            { ...detail.entries[0], appliedCharacterId: "char-a" },
+            { ...detail.entries[1], appliedCharacterId: "char-b" }
+          ]
+        };
+      },
+      async applyNotionImportEntry() {
+        return { status: "not_found" as const };
+      },
+      importNotionImportEntryPhoto
+    };
+
+    await importNotionImportBatchPhotos(
+      {
+        adminService: adminService as Pick<
+          AdminService,
+          "applyNotionImportEntry" | "getNotionImportDetail" | "importNotionImportEntryPhoto"
+        >
+      },
+      {
+        actorUserId: "admin-1",
+        batchId: "batch-1",
+        skipExistingPhotos: true
+      }
+    );
+
+    expect(importNotionImportEntryPhoto).toHaveBeenCalledTimes(1);
+    expect(importNotionImportEntryPhoto).toHaveBeenCalledWith({
+      actorUserId: "admin-1",
+      batchId: "batch-1",
+      pageId: "page-b"
     });
   });
 

@@ -42,6 +42,7 @@ export type NotionImportAutomationSummary = {
     attempted: number;
     imported: number;
     skipped: number;
+    alreadyPresent: number;
     invalid: number;
     notFound: number;
     invalidEntries: Array<{
@@ -172,6 +173,7 @@ export const importNotionImportBatchPhotos = async (
   input: {
     actorUserId: string;
     batchId: string;
+    skipExistingPhotos?: boolean;
   }
 ) => {
   const detail = await deps.adminService.getNotionImportDetail(input.batchId);
@@ -183,6 +185,28 @@ export const importNotionImportBatchPhotos = async (
   }
 
   const appliedEntries = detail.entries.filter((entry) => Boolean(entry.appliedCharacterId));
+  const existingPhotoCharacterIds = new Set<string>();
+
+  if (input.skipExistingPhotos) {
+    const characterIds = appliedEntries.flatMap((entry) =>
+      entry.appliedCharacterId ? [entry.appliedCharacterId] : []
+    );
+    const charactersWithPhotos = await models.Character.findAll({
+      where: {
+        id: { [Op.in]: characterIds },
+        photoUrl: { [Op.not]: null }
+      },
+      attributes: ["id"]
+    });
+
+    for (const character of charactersWithPhotos) {
+      existingPhotoCharacterIds.add(character.id);
+    }
+  }
+
+  const entriesToImport = appliedEntries.filter(
+    (entry) => !entry.appliedCharacterId || !existingPhotoCharacterIds.has(entry.appliedCharacterId)
+  );
   const invalidEntries: Array<{
     pageId: string;
     code: string;
@@ -194,7 +218,7 @@ export const importNotionImportBatchPhotos = async (
   let invalid = 0;
   let notFound = 0;
 
-  for (const entry of appliedEntries) {
+  for (const entry of entriesToImport) {
     const result = await deps.adminService.importNotionImportEntryPhoto({
       actorUserId: input.actorUserId,
       batchId: input.batchId,
@@ -226,9 +250,10 @@ export const importNotionImportBatchPhotos = async (
   }
 
   return {
-    attempted: appliedEntries.length,
+    attempted: entriesToImport.length,
     imported,
     skipped,
+    alreadyPresent: appliedEntries.length - entriesToImport.length,
     invalid,
     notFound,
     invalidEntries

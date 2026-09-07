@@ -30,7 +30,8 @@ try {
       { adminService: new SequelizeAdminService() },
       {
         actorUserId: resolvedActorUserId,
-        batchId
+        batchId,
+        skipExistingPhotos: true
       }
     );
     const result = { batchId, actorUserId: resolvedActorUserId, photos };
