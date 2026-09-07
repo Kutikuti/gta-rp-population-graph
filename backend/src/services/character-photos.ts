@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import sharp, { type Metadata } from "sharp";
 
 import { env } from "../config/env.js";
+import { notionUserAgent } from "./notion-http.js";
 
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -242,7 +243,8 @@ export const importCharacterPhotoFromRemoteUrl = async (
     method: "GET",
     redirect: "follow",
     headers: {
-      accept: "image/jpeg,image/png,image/webp"
+      accept: "image/jpeg,image/png,image/webp",
+      "user-agent": notionUserAgent
     }
   });
 

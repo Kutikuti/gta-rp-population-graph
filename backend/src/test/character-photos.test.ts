@@ -74,19 +74,27 @@ describe("character photo validation", () => {
       .png()
       .toBuffer();
 
+    let requestInit: RequestInit | undefined;
     const photoUrl = await importCharacterPhotoFromRemoteUrl({
       url: "https://www.notion.so/image/test.png",
-      fetchImpl: async () =>
-        new Response(png, {
+      fetchImpl: async (_url, init) => {
+        requestInit = init;
+
+        return new Response(png, {
           status: 200,
           headers: {
             "content-type": "image/png",
             "content-length": String(png.byteLength)
           }
-        })
+        });
+      }
     });
 
     expect(photoUrl).toMatch(/^\/uploads\/characters\/[0-9a-f-]+\.webp$/u);
+    expect(requestInit?.headers).toMatchObject({
+      accept: "image/jpeg,image/png,image/webp",
+      "user-agent": "GTA-RP-Population-Graph/1.0 (+https://gta-rp.f1prediction.fr)"
+    });
   });
 
   it("rejects remote photos outside the Notion allowlist", async () => {

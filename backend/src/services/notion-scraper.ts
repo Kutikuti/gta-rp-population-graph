@@ -1,4 +1,5 @@
 import { ApiError } from "../middleware/api-error.js";
+import { notionUserAgent } from "./notion-http.js";
 import {
   blockValues,
   childPageIds,
@@ -30,8 +31,6 @@ import {
 
 const isRetryableFetchError = (error: unknown) =>
   error instanceof TypeError || (error instanceof Error && error.name === "AbortError");
-
-const notionUserAgent = "GTA-RP-Population-Graph/1.0 (+https://gta-rp.f1prediction.fr)";
 
 const notionRequestFailedError = (input: {
   failureMessage: string;
