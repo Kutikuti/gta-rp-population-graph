@@ -31,6 +31,8 @@ import {
 const isRetryableFetchError = (error: unknown) =>
   error instanceof TypeError || (error instanceof Error && error.name === "AbortError");
 
+const notionUserAgent = "GTA-RP-Population-Graph/1.0 (+https://gta-rp.f1prediction.fr)";
+
 const notionRequestFailedError = (input: {
   failureMessage: string;
   upstreamStatus: number;
@@ -59,7 +61,8 @@ const requestNotionRecordMap = async (input: {
     response = await input.fetchImpl(input.url, {
       method: "POST",
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
+        "user-agent": notionUserAgent
       },
       body: JSON.stringify(input.body)
     });

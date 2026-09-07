@@ -32,10 +32,14 @@ describe("notion scraper", () => {
   });
 
   it("reports a dedicated error when Notion refuses a request", async () => {
-    const fetchMock = async () =>
-      new Response("Forbidden", {
+    let requestInit: RequestInit | undefined;
+    const fetchMock = async (_url: string, init?: RequestInit) => {
+      requestInit = init;
+
+      return new Response("Forbidden", {
         status: 403
       });
+    };
 
     await expect(
       scrapePublicNotionPage(
@@ -51,6 +55,10 @@ describe("notion scraper", () => {
         upstreamStatus: 403,
         endpoint: "https://www.notion.so/api/v3/loadPageChunk"
       }
+    });
+    expect(requestInit?.headers).toMatchObject({
+      "content-type": "application/json",
+      "user-agent": "GTA-RP-Population-Graph/1.0 (+https://gta-rp.f1prediction.fr)"
     });
   });
 
