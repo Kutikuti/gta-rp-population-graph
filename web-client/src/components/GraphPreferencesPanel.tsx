@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import slidersIcon from "../assets/misc/sliders.svg";
 import { relationLabels } from "../constants";
 import {
@@ -40,6 +42,16 @@ export function GraphPreferencesPanel({
   onClose,
   onChange
 }: GraphPreferencesPanelProps) {
+  const wasOpen = useRef(isOpen);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (wasOpen.current === isOpen) return;
+    wasOpen.current = isOpen;
+    (isOpen ? closeButtonRef : openButtonRef).current?.focus();
+  }, [isOpen]);
+
   return (
     <section
       className={`graph-preferences-panel ${isOpen ? "is-open" : "is-collapsed"}`}
@@ -47,6 +59,7 @@ export function GraphPreferencesPanel({
     >
       {!isOpen ? (
         <button
+          ref={openButtonRef}
           type="button"
           className="ghost-button graph-preferences-toggle"
           aria-label="Affichage du graphe"
@@ -67,6 +80,7 @@ export function GraphPreferencesPanel({
               <h3>Préférences d'affichage</h3>
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               className="panel-icon-button"
               aria-label="Fermer les préférences"

@@ -754,6 +754,10 @@ Premier lot de retours interface (2026-09-07) :
   chevauchements mobiles ; la liste de completude n'est plus limitee a 340px.
   La recette sur les donnees reelles et les autres parcours de l'etape 16 reste
   a mener avant sa cloture.
+- Le focus clavier visible est harmonise pour les liens, boutons et champs de
+  formulaire. Les dispositions Cytoscape restent sans animation ; aucune regle
+  globale de reduction de mouvement n'est necessaire tant que l'interface ne
+  definit pas d'animation ou de transition.
 
 Lots de livraison :
 

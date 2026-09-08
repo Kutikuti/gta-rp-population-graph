@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { initialGraphPreferences } from "../graph/graphPreferences";
@@ -8,22 +9,27 @@ import { GraphPreferencesPanel } from "./GraphPreferencesPanel";
 describe("GraphPreferencesPanel", () => {
   it("opens the collapsed panel", async () => {
     const user = userEvent.setup();
-    const onOpen = vi.fn();
+    function Example() {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <GraphPreferencesPanel
+          twitchLive={false}
+          onTwitchLiveChange={vi.fn()}
+          isOpen={isOpen}
+          preferences={initialGraphPreferences}
+          onOpen={() => setIsOpen(true)}
+          onClose={() => setIsOpen(false)}
+          onChange={vi.fn()}
+        />
+      );
+    }
 
-    render(
-      <GraphPreferencesPanel
-        twitchLive={false}
-        onTwitchLiveChange={vi.fn()}
-        isOpen={false}
-        preferences={initialGraphPreferences}
-        onOpen={onOpen}
-        onClose={vi.fn()}
-        onChange={vi.fn()}
-      />
-    );
+    render(<Example />);
 
     await user.click(screen.getByRole("button", { name: "Affichage du graphe" }));
-    expect(onOpen).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Fermer les préférences" })).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Fermer les préférences" }));
+    expect(screen.getByRole("button", { name: "Affichage du graphe" })).toHaveFocus();
   });
 
   it("updates display, layout and relationship preferences", async () => {

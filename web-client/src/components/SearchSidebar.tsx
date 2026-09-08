@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import type { CharacterFilters, PublicTag } from "../api";
 import { FiltersPanel } from "./FiltersPanel";
 
@@ -30,6 +32,16 @@ export function SearchSidebar({
   onReset,
   onSuggestCreation
 }: SearchSidebarProps) {
+  const wasOpen = useRef(isOpen);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (wasOpen.current === isOpen) return;
+    wasOpen.current = isOpen;
+    (isOpen ? closeButtonRef : openButtonRef).current?.focus();
+  }, [isOpen]);
+
   return (
     <aside
       className={`filters-panel ${isOpen ? "is-open" : "is-collapsed"}`}
@@ -40,6 +52,7 @@ export function SearchSidebar({
           canSuggestCreation={canSuggestCreation}
           creationActionLabel={creationActionLabel}
           companies={companies}
+          closeButtonRef={closeButtonRef}
           filters={filters}
           onClose={onClose}
           tags={tags}
@@ -50,6 +63,7 @@ export function SearchSidebar({
         />
       ) : (
         <button
+          ref={openButtonRef}
           type="button"
           className="search-toggle"
           aria-label="Ouvrir la recherche"

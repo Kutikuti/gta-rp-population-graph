@@ -1,9 +1,12 @@
+import type { RefObject } from "react";
+
 import type { CharacterFilters, PublicTag } from "../api";
 import { isActiveFilters, lifeStatusLabels } from "../constants";
 
 type FiltersPanelProps = {
   filters: CharacterFilters;
   companies: string[];
+  closeButtonRef: RefObject<HTMLButtonElement | null>;
   canSuggestCreation: boolean;
   creationActionLabel: string;
   onClose: () => void;
@@ -19,6 +22,7 @@ export function FiltersPanel({
   creationActionLabel,
   filters,
   companies,
+  closeButtonRef,
   onClose,
   tags,
   resultSummary,
@@ -40,6 +44,7 @@ export function FiltersPanel({
             Réinitialiser
           </button>
           <button
+            ref={closeButtonRef}
             type="button"
             className="panel-icon-button"
             aria-label="Replier la recherche"
