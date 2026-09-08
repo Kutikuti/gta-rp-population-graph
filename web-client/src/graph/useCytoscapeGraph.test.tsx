@@ -50,8 +50,10 @@ const collection = () => {
 };
 
 const createCytoscapeFixture = () => {
+  const relationshipLayout = { run: vi.fn() };
   const nodeA = {
     addClass: vi.fn(),
+    connectedEdges: vi.fn(),
     removeClass: vi.fn(),
     data: vi.fn((key: string): string | undefined =>
       key === "characterId" ? "character-a" : undefined
@@ -59,6 +61,7 @@ const createCytoscapeFixture = () => {
   };
   const nodeB = {
     addClass: vi.fn(),
+    connectedEdges: vi.fn(),
     removeClass: vi.fn(),
     data: vi.fn((key: string): string | undefined =>
       key === "characterId" ? "character-b" : undefined
@@ -69,6 +72,7 @@ const createCytoscapeFixture = () => {
     data: vi.fn((key: string) => (key === "source" ? "character-a" : "character-b"))
   };
   const allNodes = collection() as ReturnType<typeof collection> & {
+    filter: ReturnType<typeof vi.fn>;
     forEach: ReturnType<typeof vi.fn>;
   };
   allNodes.forEach = vi.fn((callback: (node: typeof nodeA) => void) => {
@@ -85,6 +89,15 @@ const createCytoscapeFixture = () => {
   const neighborhood = collection();
   selected.closedNeighborhood = vi.fn(() => neighborhood);
   const outside = collection();
+  const relatedEdges = collection();
+  const relatedNodes = collection() as ReturnType<typeof collection> & {
+    connectedEdges: ReturnType<typeof vi.fn>;
+    union: ReturnType<typeof vi.fn>;
+  };
+  const relatedElements = { layout: vi.fn(() => relationshipLayout) };
+  relatedNodes.connectedEdges = vi.fn(() => relatedEdges);
+  relatedNodes.union = vi.fn(() => relatedElements);
+  allNodes.filter = vi.fn(() => relatedNodes);
   const allElements = { not: vi.fn(() => outside) };
   const style = { setProperty: vi.fn() };
   const cy = {
@@ -93,6 +106,7 @@ const createCytoscapeFixture = () => {
     destroy: vi.fn(),
     edges: vi.fn(() => allEdges),
     elements: vi.fn(() => allElements),
+    fit: vi.fn(),
     nodes: vi.fn((selector?: string) => (selector ? selected : allNodes)),
     on: vi.fn(),
     zoom: vi.fn(() => 0.8)
@@ -107,6 +121,8 @@ const createCytoscapeFixture = () => {
     nodeA,
     nodeB,
     outside,
+    relatedElements,
+    relationshipLayout,
     selected,
     style
   };
@@ -146,7 +162,8 @@ describe("useCytoscapeGraph", () => {
         elements: [{ data: { id: "character-a" } }],
         layout: { name: "preset" },
         maxZoom: 2.2,
-        minZoom: 0.35
+        minZoom: 0.08,
+        wheelSensitivity: 1.35
       })
     );
     expect(fixture.cy.on).toHaveBeenCalledTimes(3);
@@ -199,6 +216,52 @@ describe("useCytoscapeGraph", () => {
     expect(fixture.nodeA.addClass).toHaveBeenCalledWith("matched");
     expect(fixture.nodeB.addClass).toHaveBeenCalledWith("search-muted");
     expect(fixture.edge.addClass).toHaveBeenCalledWith("search-muted");
+  });
+
+  it("refines connected characters after a grouped layout", () => {
+    const fixture = createCytoscapeFixture();
+    mockState.cytoscape.mockReturnValue(fixture.cy);
+    const graphWithRelationship: PublicGraph = {
+      ...graph,
+      edges: [
+        {
+          data: {
+            id: "relationship-a",
+            type: "relationship",
+            source: "character-a",
+            target: "character-b",
+            label: "Fratrie",
+            relationshipType: "sibling",
+            direction: "symmetric",
+            verificationStatus: "community"
+          }
+        }
+      ]
+    };
+
+    renderHook(() =>
+      useCytoscapeGraph({
+        containerRef: { current: document.createElement("div") },
+        graph: graphWithRelationship,
+        layoutMode: "company",
+        matchingIdSet: new Set(),
+        isSearchActive: false,
+        selectedId: null,
+        onSelect: vi.fn()
+      })
+    );
+
+    expect(fixture.allNodes.filter).toHaveBeenCalledOnce();
+    expect(fixture.relatedElements.layout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        animate: false,
+        idealEdgeLength: 110,
+        name: "cose",
+        randomize: false
+      })
+    );
+    expect(fixture.relationshipLayout.run).toHaveBeenCalledOnce();
+    expect(fixture.cy.fit).toHaveBeenCalledWith(fixture.cy.elements(), 48);
   });
 
   it("does not create Cytoscape without a mounted container", () => {

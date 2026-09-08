@@ -758,6 +758,14 @@ Premier lot de retours interface (2026-09-07) :
   formulaire. Les dispositions Cytoscape restent sans animation ; aucune regle
   globale de reduction de mouvement n'est necessaire tant que l'interface ne
   definit pas d'animation ou de transition.
+- Les valeurs d'absence issues de l'import, notamment `Aucun métier/entreprise`
+  et `Aucun groupe`, sont traitees comme une grappe neutre compacte dans les
+  dispositions. Le zoom minimal et la sensibilite de la molette restent regles
+  pour rendre la vue complete atteignable sur les jeux de donnees denses.
+- Les dispositions Groupe, Entreprise et Famille conservent leur placement
+  initial, puis Cytoscape rapproche uniquement les personnages relies par une
+  relation visible. Les personnages isoles ne sont pas deplaces par cette passe
+  de relaxation afin de preserver la lisibilite des grappes.
 
 Lots de livraison :
 

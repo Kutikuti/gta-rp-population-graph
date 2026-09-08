@@ -4,10 +4,25 @@ import type { PublicGraph } from "../api";
 
 export type GraphLayoutMode = "grouped" | "company" | "family" | "network";
 const familyRelationshipTypes = new Set(["parent", "child", "sibling"]);
+const emptyClusterValueAliases = new Set([
+  "aucun groupe",
+  "aucun metier/entreprise",
+  "non renseigne",
+  "sans entreprise",
+  "sans groupe"
+]);
+const compactNeutralNodeGap = 68;
 
 const normalizedClusterName = (value: string | null, fallback: string) => {
   const trimmed = value?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : fallback;
+  if (!trimmed) return fallback;
+
+  const normalized = trimmed
+    .normalize("NFD")
+    .replaceAll(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase("fr");
+
+  return emptyClusterValueAliases.has(normalized) ? fallback : trimmed;
 };
 
 type Position = { x: number; y: number };
@@ -15,6 +30,7 @@ type Position = { x: number; y: number };
 type ClusterGroup = {
   key: string;
   nodes: PublicGraph["nodes"];
+  nodeGap?: number;
 };
 
 const positionsFromGroups = (
@@ -26,8 +42,8 @@ const positionsFromGroups = (
   const columnCount = Math.max(1, Math.ceil(Math.sqrt(sortedGroups.length || 1)));
   const rowCount = Math.max(1, Math.ceil(sortedGroups.length / columnCount));
   const positions: Record<string, Position> = {};
-  const nodeGap = 120;
   const circles = sortedGroups.map((group) => {
+    const nodeGap = group.nodeGap ?? 120;
     const nodes = [...group.nodes].sort(
       (left, right) =>
         left.data.fullName.localeCompare(right.data.fullName, "fr") ||
@@ -105,11 +121,13 @@ const clusteredPositions = (
     }
   }
 
-  return positionsFromGroups(
-    [...groupedNodes.entries()].map(([key, nodes]) => ({ key, nodes })),
-    width,
-    height
-  );
+  const groups = [...groupedNodes.entries()].map(([key, nodes]) => ({
+    key,
+    nodes,
+    ...(key === emptyLabel ? { nodeGap: compactNeutralNodeGap } : {})
+  }));
+
+  return positionsFromGroups(groups, width, height);
 };
 
 const familyClusteredPositions = (

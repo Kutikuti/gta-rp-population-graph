@@ -107,6 +107,42 @@ describe("graphLayoutOptions", () => {
     expect(reordered.positions).toEqual(layout.positions);
   });
 
+  it("keeps imported empty company values in a compact neutral cluster", () => {
+    const importedGraph: PublicGraph = {
+      nodes: Array.from({ length: 48 }, (_, index) => ({
+        data: {
+          ...templateData,
+          id: String(index),
+          characterId: String(index),
+          fullName: `Personnage ${index}`,
+          companyName: "Aucun métier/entreprise"
+        }
+      })),
+      edges: []
+    };
+
+    const layout = graphLayoutOptions(importedGraph, "company", { width: 375, height: 667 }) as {
+      positions: Record<string, { x: number; y: number }>;
+    };
+    const points = Object.values(layout.positions);
+
+    expect(points).toHaveLength(48);
+    expect(new Set(points.map((point) => `${point.x}:${point.y}`)).size).toBe(48);
+    const horizontalSpan =
+      Math.max(...points.map((point) => point.x)) - Math.min(...points.map((point) => point.x));
+    const verticalSpan =
+      Math.max(...points.map((point) => point.y)) - Math.min(...points.map((point) => point.y));
+    expect(horizontalSpan).toBeLessThanOrEqual(545);
+    expect(verticalSpan).toBeLessThanOrEqual(545);
+
+    const reordered = graphLayoutOptions(
+      { ...importedGraph, nodes: [...importedGraph.nodes].reverse() },
+      "company",
+      { width: 375, height: 667 }
+    ) as { positions: Record<string, { x: number; y: number }> };
+    expect(reordered.positions).toEqual(layout.positions);
+  });
+
   it("places a small group on a circle", () => {
     const circleGraph: PublicGraph = {
       nodes: Array.from({ length: 5 }, (_, i) => ({

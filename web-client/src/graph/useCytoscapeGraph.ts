@@ -6,6 +6,18 @@ import { cytoscapeStyles } from "./cytoscapeStyles";
 import { toCytoscapeElements } from "./graphElements";
 import { type GraphLayoutMode, graphLayoutOptions } from "./graphLayout";
 
+const relationshipRefinementLayout: cytoscape.CoseLayoutOptions = {
+  name: "cose",
+  animate: false,
+  fit: false,
+  randomize: false,
+  componentSpacing: 120,
+  nodeRepulsion: 5000,
+  idealEdgeLength: 110,
+  gravity: 0.05,
+  numIter: 250
+};
+
 type UseCytoscapeGraphParams = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   graph: PublicGraph;
@@ -40,14 +52,23 @@ export function useCytoscapeGraph({
     const cy = cytoscape({
       container: containerRef.current,
       elements: toCytoscapeElements(graph),
-      minZoom: 0.35,
+      minZoom: 0.08,
       maxZoom: 2.2,
+      wheelSensitivity: 1.35,
       style: cytoscapeStyles,
       layout: graphLayoutOptions(graph, layoutMode, {
         width: containerRef.current.clientWidth || window.innerWidth,
         height: containerRef.current.clientHeight || window.innerHeight
       })
     });
+
+    if (layoutMode !== "network" && graph.edges.length > 0) {
+      const relatedNodes = cy.nodes().filter((node) => node.connectedEdges().length > 0);
+      const relatedElements = relatedNodes.union(relatedNodes.connectedEdges());
+
+      relatedElements.layout(relationshipRefinementLayout).run();
+      cy.fit(cy.elements(), 48);
+    }
 
     const handleNodeTap = (event: EventObject) => {
       const node = event.target as NodeSingular;

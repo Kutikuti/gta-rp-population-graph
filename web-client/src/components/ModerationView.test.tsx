@@ -206,7 +206,7 @@ describe("ModerationView", () => {
     renderView({ onEditCharacter });
 
     expect(await screen.findAllByText("Camille Morel")).toHaveLength(2);
-    expect(apiMocks.getCharacter).toHaveBeenCalledWith("character-1");
+    await waitFor(() => expect(apiMocks.getCharacter).toHaveBeenCalledWith("character-1"));
 
     expect(screen.queryByText("Rapport chargé")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("tab", { name: "Fiches à compléter" }));
