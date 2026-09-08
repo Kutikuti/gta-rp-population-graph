@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-
 import {
   type AuthSession,
   approveChangeRequest,
@@ -22,6 +21,7 @@ import { DataCompletenessPanel } from "./DataCompletenessPanel";
 import { ModerationDetailPanel } from "./ModerationDetailPanel";
 import { ModerationRequestList } from "./ModerationRequestList";
 import { canModerate, diffSnapshots, getSelectedModerationRequest } from "./moderation-shared";
+import { WorkspaceTabs } from "./WorkspaceTabs";
 
 type ModerationViewProps = {
   session: AuthSession | null;
@@ -36,6 +36,7 @@ export function ModerationView({
   onEditCharacter,
   onError
 }: ModerationViewProps) {
+  const [activeTab, setActiveTab] = useState<"requests" | "completeness">("requests");
   const [requests, setRequests] = useState<ChangeRequestSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentSnapshot, setCurrentSnapshot] = useState<CharacterSnapshot | null>(null);
@@ -257,11 +258,11 @@ export function ModerationView({
   };
 
   return (
-    <section className="full-page-view" aria-labelledby="moderation-title">
+    <section className="full-page-view tabbed-workspace" aria-labelledby="moderation-title">
       <div className="full-page-header">
         <div>
           <p className="eyebrow">Modération</p>
-          <h2 id="moderation-title">Demandes de modification</h2>
+          <h2 id="moderation-title">Modération des fiches</h2>
         </div>
       </div>
 
@@ -271,50 +272,62 @@ export function ModerationView({
         </section>
       ) : (
         <div className="moderation-page-content">
-          <DataCompletenessPanel
-            isLoading={isCompletenessLoading}
-            onEditCharacter={onEditCharacter}
-            report={completenessReport}
-            title="Fiches à compléter"
-          />
+          <WorkspaceTabs
+            label="Sections modération"
+            tabs={[
+              { id: "requests", label: "Demandes en attente" },
+              { id: "completeness", label: "Fiches à compléter" }
+            ]}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+          >
+            {activeTab === "completeness" ? (
+              <DataCompletenessPanel
+                isLoading={isCompletenessLoading}
+                onEditCharacter={onEditCharacter}
+                report={completenessReport}
+                title="Fiches à compléter"
+              />
+            ) : (
+              <div className="moderation-layout">
+                <ModerationRequestList
+                  isLoading={isLoading}
+                  requests={requests}
+                  selectedRequestId={selectedRequest?.id ?? null}
+                  onSelectRequest={(requestId) => {
+                    setSelectedId(requestId);
+                    setFeedback(null);
+                    setLastChanges(null);
+                  }}
+                />
 
-          <div className="moderation-layout">
-            <ModerationRequestList
-              isLoading={isLoading}
-              requests={requests}
-              selectedRequestId={selectedRequest?.id ?? null}
-              onSelectRequest={(requestId) => {
-                setSelectedId(requestId);
-                setFeedback(null);
-                setLastChanges(null);
-              }}
-            />
-
-            <ModerationDetailPanel
-              characterNames={characterNames}
-              characterOptions={characterOptions}
-              editSnapshot={editSnapshot}
-              feedback={feedback}
-              isDetailLoading={isDetailLoading}
-              isSubmitting={isSubmitting}
-              lastChanges={lastChanges}
-              rejectComment={rejectComment}
-              selectedRequest={selectedRequest}
-              streamerNames={streamerNames}
-              streamers={streamers}
-              visibleDiff={visibleDiff}
-              onApprove={approveSelected}
-              onChangeEditSnapshot={setEditSnapshot}
-              onReject={rejectSelected}
-              onRejectCommentChange={setRejectComment}
-              onResetEditSnapshot={() => {
-                if (selectedRequest) {
-                  setEditSnapshot(selectedRequest.proposedSnapshot);
-                }
-              }}
-              onSubmitDirectEdit={submitDirectEdit}
-            />
-          </div>
+                <ModerationDetailPanel
+                  characterNames={characterNames}
+                  characterOptions={characterOptions}
+                  editSnapshot={editSnapshot}
+                  feedback={feedback}
+                  isDetailLoading={isDetailLoading}
+                  isSubmitting={isSubmitting}
+                  lastChanges={lastChanges}
+                  rejectComment={rejectComment}
+                  selectedRequest={selectedRequest}
+                  streamerNames={streamerNames}
+                  streamers={streamers}
+                  visibleDiff={visibleDiff}
+                  onApprove={approveSelected}
+                  onChangeEditSnapshot={setEditSnapshot}
+                  onReject={rejectSelected}
+                  onRejectCommentChange={setRejectComment}
+                  onResetEditSnapshot={() => {
+                    if (selectedRequest) {
+                      setEditSnapshot(selectedRequest.proposedSnapshot);
+                    }
+                  }}
+                  onSubmitDirectEdit={submitDirectEdit}
+                />
+              </div>
+            )}
+          </WorkspaceTabs>
         </div>
       )}
     </section>

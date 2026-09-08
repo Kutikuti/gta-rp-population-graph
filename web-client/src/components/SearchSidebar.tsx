@@ -5,6 +5,7 @@ type SearchSidebarProps = {
   canSuggestCreation: boolean;
   creationActionLabel: string;
   filters: CharacterFilters;
+  companies: string[];
   isOpen: boolean;
   resultSummary: string | null;
   tags: PublicTag[];
@@ -19,6 +20,7 @@ export function SearchSidebar({
   canSuggestCreation,
   creationActionLabel,
   filters,
+  companies,
   isOpen,
   resultSummary,
   tags,
@@ -37,6 +39,7 @@ export function SearchSidebar({
         <FiltersPanel
           canSuggestCreation={canSuggestCreation}
           creationActionLabel={creationActionLabel}
+          companies={companies}
           filters={filters}
           onClose={onClose}
           tags={tags}

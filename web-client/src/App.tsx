@@ -75,6 +75,15 @@ function App() {
   );
   const { history, isDetailLoading, refreshCharacterDetails, selectedCharacter } =
     useCharacterDetails(selectedId, handleError);
+  const companies = useMemo(
+    () =>
+      [
+        ...new Set(
+          graph?.nodes.flatMap(({ data }) => (data.companyName ? [data.companyName] : [])) ?? []
+        )
+      ].sort((left, right) => left.localeCompare(right, "fr")),
+    [graph]
+  );
   const filteredGraph = useMemo(
     () => filterGraphForPreferences(graph, graphPreferences),
     [graph, graphPreferences]
@@ -154,11 +163,11 @@ function App() {
 
   const updateFilter = (key: keyof CharacterFilters, value: string) => {
     setFilters((current) => ({ ...current, [key]: value }));
-    setIsSearchOpen(true);
+    if (key !== "twitchLive") setIsSearchOpen(true);
   };
 
   const resetFilters = () => {
-    setFilters(initialFilters);
+    setFilters((current) => ({ ...initialFilters, twitchLive: current.twitchLive }));
   };
 
   const openCharacterCreation = () => {
@@ -230,6 +239,7 @@ function App() {
             }
             creationActionLabel={creationActionLabel}
             error={error}
+            companies={companies}
             filters={filters}
             graph={filteredGraph}
             graphPreferences={graphPreferences}
@@ -308,11 +318,7 @@ function App() {
           />
         ) : null}
         {activeView === "administration" ? (
-          <AdminView
-            session={authSession}
-            onEditCharacter={openContributionForCharacter}
-            onError={handleError}
-          />
+          <AdminView session={authSession} onError={handleError} />
         ) : null}
         {activeView === "imports" ? (
           <NotionImportsView

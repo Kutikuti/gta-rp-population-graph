@@ -16,6 +16,7 @@ type ExploreViewProps = {
   creationActionLabel: string;
   error: string | null;
   filters: CharacterFilters;
+  companies: string[];
   graph: PublicGraph | null;
   graphPreferences: GraphPreferences;
   history: PublicHistoryEntry[];
@@ -50,6 +51,7 @@ export function ExploreView({
   creationActionLabel,
   error,
   filters,
+  companies,
   graph,
   graphPreferences,
   history,
@@ -84,6 +86,7 @@ export function ExploreView({
       <SearchSidebar
         canSuggestCreation={canSuggestCreation}
         creationActionLabel={creationActionLabel}
+        companies={companies}
         filters={filters}
         isOpen={isSearchOpen}
         resultSummary={resultSummary}
@@ -97,6 +100,8 @@ export function ExploreView({
 
       <GraphPanel
         graph={graph}
+        twitchLive={filters.twitchLive === "live"}
+        onTwitchLiveChange={(enabled) => onSearchChange("twitchLive", enabled ? "live" : "")}
         matchingIds={matchingIds}
         isSearchActive={isSearchActive}
         selectedId={selectedId}

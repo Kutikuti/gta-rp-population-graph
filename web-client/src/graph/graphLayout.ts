@@ -25,32 +25,59 @@ const positionsFromGroups = (
   const sortedGroups = [...groups].sort((left, right) => left.key.localeCompare(right.key, "fr"));
   const columnCount = Math.max(1, Math.ceil(Math.sqrt(sortedGroups.length || 1)));
   const rowCount = Math.max(1, Math.ceil(sortedGroups.length / columnCount));
-  const cellWidth = Math.max(260, width / columnCount);
-  const cellHeight = Math.max(220, height / rowCount);
   const positions: Record<string, Position> = {};
+  const nodeGap = 120;
+  const circles = sortedGroups.map((group) => {
+    const nodes = [...group.nodes].sort(
+      (left, right) =>
+        left.data.fullName.localeCompare(right.data.fullName, "fr") ||
+        left.data.id.localeCompare(right.data.id)
+    );
+    const offsets: Position[] = [];
+    let radius = 0;
+    if (nodes.length === 1) offsets.push({ x: 0, y: 0 });
+    while (offsets.length < nodes.length) {
+      radius += nodeGap;
+      const capacity = Math.floor(Math.PI / Math.asin(nodeGap / (2 * radius)));
+      const count = Math.min(capacity, nodes.length - offsets.length);
+      for (let index = 0; index < count; index += 1) {
+        const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
+        offsets.push({ x: radius * Math.cos(angle), y: radius * Math.sin(angle) });
+      }
+    }
+    return { nodes, offsets, diameter: radius * 2 + 200 };
+  });
+  const columnWidths = Array.from({ length: columnCount }, (_, column) =>
+    Math.max(
+      width / columnCount,
+      260,
+      ...circles.filter((_, i) => i % columnCount === column).map((circle) => circle.diameter)
+    )
+  );
+  const rowHeights = Array.from({ length: rowCount }, (_, row) =>
+    Math.max(
+      height / rowCount,
+      260,
+      ...circles.slice(row * columnCount, (row + 1) * columnCount).map((circle) => circle.diameter)
+    )
+  );
 
-  sortedGroups.forEach((group, groupIndex) => {
+  circles.forEach((group, groupIndex) => {
     const columnIndex = groupIndex % columnCount;
     const rowIndex = Math.floor(groupIndex / columnCount);
-    const centerX = columnIndex * cellWidth + cellWidth / 2;
-    const centerY = rowIndex * cellHeight + cellHeight / 2;
-    const sortedNodes = [...group.nodes].sort((left, right) =>
-      left.data.fullName.localeCompare(right.data.fullName, "fr")
-    );
-    const localColumnCount = Math.max(1, Math.ceil(Math.sqrt(sortedNodes.length || 1)));
-    const localRowCount = Math.max(1, Math.ceil(sortedNodes.length / localColumnCount));
-    const horizontalGap = Math.min(108, cellWidth / Math.max(2, localColumnCount + 0.5));
-    const verticalGap = Math.min(104, cellHeight / Math.max(2, localRowCount + 0.5));
+    const centerX =
+      columnWidths.slice(0, columnIndex).reduce((sum, size) => sum + size, 0) +
+      (columnWidths[columnIndex] ?? 260) / 2;
+    const centerY =
+      rowHeights.slice(0, rowIndex).reduce((sum, size) => sum + size, 0) +
+      (rowHeights[rowIndex] ?? 260) / 2;
 
-    sortedNodes.forEach((node, nodeIndex) => {
-      const localColumnIndex = nodeIndex % localColumnCount;
-      const localRowIndex = Math.floor(nodeIndex / localColumnCount);
-      const offsetX = (localColumnIndex - (localColumnCount - 1) / 2) * horizontalGap;
-      const offsetY = (localRowIndex - (localRowCount - 1) / 2) * verticalGap;
+    group.nodes.forEach((node, nodeIndex) => {
+      const offset = group.offsets[nodeIndex] ?? { x: 0, y: 0 };
 
       positions[node.data.id] = {
-        x: centerX + offsetX,
-        y: centerY + offsetY
+        x: centerX + offset.x,
+        y: centerY + offset.y
       };
     });
   });

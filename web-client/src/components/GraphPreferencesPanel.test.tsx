@@ -12,6 +12,8 @@ describe("GraphPreferencesPanel", () => {
 
     render(
       <GraphPreferencesPanel
+        twitchLive={false}
+        onTwitchLiveChange={vi.fn()}
         isOpen={false}
         preferences={initialGraphPreferences}
         onOpen={onOpen}
@@ -31,6 +33,8 @@ describe("GraphPreferencesPanel", () => {
 
     render(
       <GraphPreferencesPanel
+        twitchLive={false}
+        onTwitchLiveChange={vi.fn()}
         isOpen
         preferences={initialGraphPreferences}
         onOpen={vi.fn()}
@@ -39,7 +43,11 @@ describe("GraphPreferencesPanel", () => {
       />
     );
 
-    await user.click(screen.getByRole("checkbox", { name: "Afficher les personnages décédés" }));
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "Afficher les personnages hors jeu (décédés ou partis)"
+      })
+    );
     expect(onChange).toHaveBeenLastCalledWith({
       ...initialGraphPreferences,
       showDeceased: true
@@ -63,16 +71,18 @@ describe("GraphPreferencesPanel", () => {
     await user.click(screen.getByRole("button", { name: "Réinitialiser" }));
     expect(onChange).toHaveBeenLastCalledWith(initialGraphPreferences);
 
-    await user.click(screen.getByRole("button", { name: "X" }));
+    await user.click(screen.getByRole("button", { name: "Fermer les préférences" }));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("keeps the default relationships when the last visible type is removed", async () => {
+  it("allows removing the last visible relationship type", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(
       <GraphPreferencesPanel
+        twitchLive={false}
+        onTwitchLiveChange={vi.fn()}
         isOpen
         preferences={{
           ...initialGraphPreferences,
@@ -85,6 +95,9 @@ describe("GraphPreferencesPanel", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Parent" }));
-    expect(onChange).toHaveBeenCalledWith(initialGraphPreferences);
+    expect(onChange).toHaveBeenCalledWith({
+      ...initialGraphPreferences,
+      visibleRelationshipTypes: []
+    });
   });
 });

@@ -13,7 +13,14 @@ const readStoredFilters = (): CharacterFilters => {
       return initialFilters;
     }
 
-    return { ...initialFilters, ...(JSON.parse(stored) as Partial<CharacterFilters>) };
+    const previous = JSON.parse(stored) as Partial<CharacterFilters>;
+    return {
+      ...initialFilters,
+      ...previous,
+      q: previous.q || previous.streamer || "",
+      streamer: "",
+      verificationStatus: ""
+    };
   } catch {
     return initialFilters;
   }

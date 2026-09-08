@@ -39,10 +39,7 @@
   inset: 0;
   min-width: 0;
   overflow: hidden;
-  background:
-    linear-gradient(rgba(37, 119, 191, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37, 119, 191, 0.08) 1px, transparent 1px), #030912;
-  background-size: 30px 30px;
+  background: #030912;
 }
 
 .graph-canvas {

@@ -9,6 +9,8 @@ const GraphView = lazy(() => import("../GraphView"));
 
 type GraphPanelProps = {
   graph: PublicGraph | null;
+  twitchLive: boolean;
+  onTwitchLiveChange: (enabled: boolean) => void;
   matchingIds: string[];
   isSearchActive: boolean;
   selectedId: string | null;
@@ -25,6 +27,8 @@ type GraphPanelProps = {
 
 export function GraphPanel({
   graph,
+  twitchLive,
+  onTwitchLiveChange,
   matchingIds,
   isSearchActive,
   selectedId,
@@ -43,6 +47,8 @@ export function GraphPanel({
       <GraphPreferencesPanel
         isOpen={isPreferencesOpen}
         preferences={graphPreferences}
+        twitchLive={twitchLive}
+        onTwitchLiveChange={onTwitchLiveChange}
         onChange={onGraphPreferencesChange}
         onClose={onPreferencesClose}
         onOpen={onPreferencesOpen}

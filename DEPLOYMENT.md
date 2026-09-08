@@ -17,11 +17,11 @@ interactive.
 ## Prerequis serveur
 
 - VPS Ubuntu a jour.
-- Le runtime VPS connu est Node.js `24.18.1` et npm `12.0.2` via
-  `/opt/node-apps`, reference par compatibilite depuis `/opt/node-gta-rp`.
-  Le depot courant exige Node.js `24.20.0` ou plus : mettre a jour ce runtime
-  partage avant de deployer cette version, en coordonnant la validation avec
-  les autres applications qui l'utilisent.
+- Le runtime VPS courant est Node.js `24.20.0` et npm `12.0.2` via
+  `/opt/node-apps`, reference par compatibilite depuis `/opt/node-gta-rp` et
+  `/opt/node-f1`. Il est partage avec l'autre application du VPS : toute
+  montee de version doit donc inclure la validation et le redemarrage controles
+  des deux services.
 - PostgreSQL accessible depuis le backend via le service Docker/local du VPS.
 - Caddy pour le reverse proxy, TLS automatique et les domaines.
 - Process manager pour l'API Node.js : service `systemd` sur le VPS actuel.
@@ -277,6 +277,43 @@ de l'utilisateur authentifie concerne. Cet affichage reste acceptable tant
 qu'il n'est pas expose publiquement.
 
 ## Derniere maintenance systeme consignee
+
+Maintenance complete executee le `2026-09-04` sur le VPS actuel :
+
+- `apt-get full-upgrade` applique, dont les correctifs OpenSSH et les mises a
+  jour de securite systeme ; aucun paquet ne reste a mettre a jour.
+- Le VPS a redemarre sur le noyau `6.8.0-139-generic`.
+- L'ancien noyau inutilise `6.8.0-136-generic` a ete purge apres validation du
+  demarrage ; `6.8.0-138-generic` reste disponible comme noyau de repli.
+- Le runtime partage a ete remplace de facon atomique par
+  `/opt/node-v24.20.0`, avec npm `12.0.2`. Les liens `/opt/node-apps`,
+  `/opt/node-gta-rp` et `/opt/node-f1` pointent vers ce runtime. L'ancien
+  runtime `24.18.1` a ete retire apres verification des processus GTA et F1.
+- La release GTA `20260904T152255Z-v24.20-maintenance` a ete construite avec
+  `npm ci` et les builds backend/frontend, sans migration en attente, puis
+  activee atomiquement.
+- Le script `backup-uploads.sh` resout desormais correctement le dossier
+  partage lorsqu'il est execute depuis une release activee par le lien
+  symbolique `current`. Une sauvegarde uploads manuelle a ete creee et verifiee
+  apres la correction.
+- Le bit executable du script de sauvegarde PostgreSQL F1 a ete restaure ; son
+  execution manuelle a reussi.
+- `check-platform.sh`, les services applicatifs, Caddy, les timers, les
+  endpoints publics GTA/F1 et les conteneurs Prometheus/Grafana sont tous
+  operationnels. Aucune unite systemd n'est en echec.
+
+Lors de la construction d'une release, le lien `backend/.env` doit toujours
+viser le fichier partage. Ne jamais transferer un fichier `.env` depuis un
+poste de travail :
+
+```bash
+ln -sfn ../../../shared/config/backend.env backend/.env
+```
+
+Les scripts de sauvegarde peuvent recevoir `SHARED_DIR`, `UPLOADS_DIR` et
+`BACKUP_ROOT` en surcharge. Sans surcharge, `backup-uploads.sh` detecte
+l'arborescence `releases/<nom>` et utilise
+`/var/www/gta-rp-population-graph/shared`.
 
 Maintenance executee le `2026-06-30` sur le VPS actuel :
 

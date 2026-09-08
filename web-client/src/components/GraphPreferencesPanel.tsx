@@ -10,6 +10,8 @@ import {
 type GraphPreferencesPanelProps = {
   isOpen: boolean;
   preferences: GraphPreferences;
+  twitchLive: boolean;
+  onTwitchLiveChange: (enabled: boolean) => void;
   onOpen: () => void;
   onClose: () => void;
   onChange: (preferences: GraphPreferences) => void;
@@ -25,16 +27,15 @@ const toggleRelationshipType = (
 
   return {
     ...preferences,
-    visibleRelationshipTypes:
-      nextVisibleTypes.length > 0
-        ? nextVisibleTypes
-        : initialGraphPreferences.visibleRelationshipTypes
+    visibleRelationshipTypes: nextVisibleTypes
   };
 };
 
 export function GraphPreferencesPanel({
   isOpen,
   preferences,
+  twitchLive,
+  onTwitchLiveChange,
   onOpen,
   onClose,
   onChange
@@ -65,7 +66,12 @@ export function GraphPreferencesPanel({
             <div>
               <h3>Préférences d'affichage</h3>
             </div>
-            <button type="button" className="panel-icon-button" onClick={onClose}>
+            <button
+              type="button"
+              className="panel-icon-button"
+              aria-label="Fermer les préférences"
+              onClick={onClose}
+            >
               X
             </button>
           </div>
@@ -78,7 +84,16 @@ export function GraphPreferencesPanel({
                 onChange({ ...preferences, showDeceased: event.target.checked });
               }}
             />
-            <span>Afficher les personnages décédés</span>
+            <span>Afficher les personnages hors jeu (décédés ou partis)</span>
+          </label>
+
+          <label className="graph-preferences-checkbox">
+            <input
+              type="checkbox"
+              checked={twitchLive}
+              onChange={(event) => onTwitchLiveChange(event.target.checked)}
+            />
+            <span>Twitch : en direct uniquement</span>
           </label>
 
           <div className="graph-preferences-section">
@@ -138,6 +153,7 @@ export function GraphPreferencesPanel({
                 <button
                   key={relationshipType}
                   type="button"
+                  aria-pressed={preferences.visibleRelationshipTypes.includes(relationshipType)}
                   className={`ghost-button compact-action ${
                     preferences.visibleRelationshipTypes.includes(relationshipType)
                       ? "is-active-filter"
@@ -158,6 +174,7 @@ export function GraphPreferencesPanel({
             className="ghost-button"
             onClick={() => {
               onChange(initialGraphPreferences);
+              onTwitchLiveChange(false);
             }}
           >
             Réinitialiser

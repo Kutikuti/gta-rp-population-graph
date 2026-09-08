@@ -8,10 +8,8 @@ import {
   anonymizeAdminUserAccount,
   banAdminUser,
   createAdminTag,
-  type DataCompletenessReport,
   deleteAdminTag,
   getAdminDashboard,
-  getAdminDataCompleteness,
   getAdminUserPersonalData,
   revokeAdminUserBan,
   revokeAdminUserSessions,
@@ -38,9 +36,7 @@ export function useAdminViewState({ canAdmin, onError }: UseAdminViewStateInput)
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [banReasons, setBanReasons] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isCompletenessLoading, setIsCompletenessLoading] = useState(false);
   const [isPersonalDataLoading, setIsPersonalDataLoading] = useState(false);
-  const [completenessReport, setCompletenessReport] = useState<DataCompletenessReport | null>(null);
   const [personalDataExport, setPersonalDataExport] = useState<AdminUserPersonalDataExport | null>(
     null
   );
@@ -63,28 +59,16 @@ export function useAdminViewState({ canAdmin, onError }: UseAdminViewStateInput)
     }
   }, [onError]);
 
-  const loadCompleteness = useCallback(async () => {
-    setIsCompletenessLoading(true);
-    try {
-      setCompletenessReport(await getAdminDataCompleteness());
-    } catch {
-      onError("La vue de complétude n'a pas pu être chargée.");
-    } finally {
-      setIsCompletenessLoading(false);
-    }
-  }, [onError]);
-
   useEffect(() => {
     if (canAdmin) {
       void loadDashboard();
-      void loadCompleteness();
     }
-  }, [canAdmin, loadCompleteness, loadDashboard]);
+  }, [canAdmin, loadDashboard]);
 
   const runAction = async (action: () => Promise<unknown>, message: string) => {
     try {
       await action();
-      await Promise.all([loadDashboard(), loadCompleteness()]);
+      await loadDashboard();
       setFeedback(message);
     } catch (error) {
       onError(adminErrorMessage(error));
@@ -184,10 +168,8 @@ export function useAdminViewState({ canAdmin, onError }: UseAdminViewStateInput)
     actions: dashboard?.actions ?? [],
     anonymizationCandidate,
     banReasons,
-    completenessReport,
     editingTag,
     feedback,
-    isCompletenessLoading,
     isLoading,
     isPersonalDataLoading,
     personalDataExport,

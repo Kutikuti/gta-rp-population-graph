@@ -724,35 +724,93 @@ Limites assumees :
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 
-Statut : planifiee apres les stabilisations fonctionnelles et techniques des
-etapes 13 a 15.
+Statut : commencee le 2026-09-04.
 
 Cette etape regroupe les finitions visuelles et ergonomiques qui ne doivent pas
 ralentir les derniers lots fonctionnels. Elle ne doit pas modifier le contrat
 metier ni introduire de nouveau schema de donnees.
 
-Plan propose :
+Premier lot de retours interface (2026-09-07) :
 
-1. Realiser un audit UX transversal sur ordinateur et mobile : navigation,
-   hierarchie visuelle, alignements, densite, formulaires, tableaux, panneaux,
-   modales, chargements, etats vides, erreurs et confirmations.
-2. Finaliser l'UX du graphe : lisibilite des presets `Entreprise`, `Famille`,
-   `Groupe` et `Libre`, separation des grappes, chevauchements, labels,
-   centrage sur une fiche partagee, zoom initial et comportement responsive.
-3. Harmoniser les panneaux publics autour du graphe : recherche, filtres,
-   preferences d'affichage et fiche personnage, avec des actions compactes et
-   coherentes qui preservent au maximum la surface du graphe.
-4. Revoir les parcours profil, contribution, moderation, administration et
-   import Notion afin d'unifier les espacements, controles, messages et actions
-   principales sans reduire la densite utile de ces interfaces.
-5. Effectuer une passe d'accessibilite : navigation clavier, focus visible,
-   libelles accessibles des boutons icones, contrastes, tailles de cibles et
-   comportement lorsque les animations sont reduites.
-6. Ajouter les tests frontend pertinents et une validation visuelle avec des
-   captures Playwright sur plusieurs tailles d'ecran, en portant une attention
-   particuliere aux debordements et aux chevauchements.
-7. Executer la validation complete backend/frontend et documenter les choix UX
-   stabilises avant de clore l'etape.
+- Dispositions Entreprise, Groupe et Famille en cercles concentriques avec
+  espacement adapte au nombre de personnages ; fond du graphe sans quadrillage.
+- Recherche simplifiee : entreprise en liste deroulante issue du graphe complet,
+  nom public du streamer inclus dans la recherche universelle, suppression des
+  champs streamer et verification dedies et nettoyage des anciens filtres caches.
+- Option Twitch en direct deplacee dans les preferences ; sa valeur persistante
+  est conservee lors de la reinitialisation de la recherche.
+- Option hors jeu couvrant les statuts `deceased` et `left` ; le statut `unknown`
+  reste visible. Aucun nouveau statut personnage `banned` n'est introduit.
+- Une selection vide des relations est autorisee et conservee au rechargement.
+- Moderation en onglets pleine largeur Demandes en attente / Fiches a completer.
+  Administration en onglets Utilisateurs / Tags / Journaux ; suppression du
+  panneau de completude et de son chargement redondant en administration.
+- Les onglets partagent une navigation clavier (fleches, Debut et Fin).
+- Recette de ce lot : 235 tests backend, 91 tests frontend, 10 integrations
+  PostgreSQL, couvertures, controles Biome et builds valides. Recette Chromium
+  ponctuelle avec 150 personnages fictifs en 1440x900 et 390x844 : recherche,
+  preferences, selection vide persistante et cinq onglets de gestion.
+- La navigation des pages a onglets est placee dans le flux pour eviter les
+  chevauchements mobiles ; la liste de completude n'est plus limitee a 340px.
+  La recette sur les donnees reelles et les autres parcours de l'etape 16 reste
+  a mener avant sa cloture.
+
+Lots de livraison :
+
+1. **Lot A - Audit et socle visuel**
+   - Etablir une grille de recette desktop et mobile sur des donnees proches de
+     la production : graphe dense, fiche avec photo, recherche vide, etats de
+     chargement ou d'erreur, profil, contribution, moderation, administration
+     et import Notion.
+   - Relever les debordements, chevauchements, libelles redondants,
+     incoherences d'alignement, tailles de cibles et contrastes ; les classer
+     par impact sur la consultation ou l'action.
+   - Centraliser seulement les tokens CSS ou primitives dont la duplication est
+     prouvee, sans lancer de refonte decorrellee des problemes observes.
+
+2. **Lot B - Graphe et dispositions**
+   - Revoir les dispositions `Entreprise`, `Famille`, `Groupe` et `Libre` sur
+     une volumetrie reelle : separation des grappes, collisions, labels,
+     intensite visuelle des relations, centrage sur une fiche partagee, zoom
+     initial et comportement apres application de filtres.
+   - Clarifier visuellement les presets et preferences sans concurrencer le
+     graphe, qui doit conserver l'essentiel de la premiere vue.
+   - Verifier les performances et le comportement mobile sans remplacer
+     Cytoscape.js tant qu'aucune limite mesuree ne le justifie.
+
+3. **Lot C - Consultation publique**
+   - Harmoniser la recherche repliee, les filtres, les preferences et la fiche
+     personnage : ouverture/fermeture, priorite de la selection, actions de
+     partage, medias, historique, messages de confirmation et etats vides.
+   - Corriger les derniers defauts responsive et tout debordement horizontal,
+     en preservant une surface de graphe maximale sur mobile comme sur desktop.
+
+4. **Lot D - Parcours connectes et back-office**
+   - Uniformiser les interfaces profil, contribution, moderation,
+     administration et import Notion : alignement des controles, hierarchie des
+     actions, retours apres sauvegarde, tableaux denses et messages d'erreur ou
+     de succes situes pres de l'action concernee.
+   - Ne pas ajouter de nouveau parcours metier : toute anomalie fonctionnelle
+     decouverte est isolee et traitee dans une etape dediee si elle depasse une
+     correction ergonomique locale.
+
+5. **Lot E - Accessibilite operationnelle**
+   - Auditer navigation clavier, ordre de focus, focus visible, libelles des
+     icones, semantique des panneaux et modales, contraste, cibles tactiles et
+     `prefers-reduced-motion`.
+   - Ajouter les attributs et tests ciblant les parcours effectivement exposes,
+     sans masquer un probleme d'interaction par des libelles purement visuels.
+
+6. **Lot F - Recette, non-regression et cloture**
+   - Completer les tests frontend de comportements modifies et ajouter une
+     validation visuelle automatisable sur plusieurs tailles d'ecran lorsque
+     l'outillage est en place, avec attention aux chevauchements et aux
+     debordements.
+   - Rejouer `scripts/run-all-checks.sh`, les integrations PostgreSQL, les
+     builds et une recette manuelle des parcours anonymes, utilisateur,
+     moderateur et administrateur.
+   - Documenter les choix UX stabilises, les limites connues et les
+     ameliorations volontairement reportees avant cloture.
 
 Point de controle :
 

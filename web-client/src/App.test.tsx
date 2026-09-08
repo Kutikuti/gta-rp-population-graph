@@ -178,6 +178,7 @@ describe("App", () => {
               label: character.fullName,
               characterId: character.id,
               fullName: character.fullName,
+              companyName: character.companyName,
               lifeStatus: character.lifeStatus,
               verificationStatus: character.verificationStatus,
               photoUrl: character.photoUrl,
@@ -243,6 +244,44 @@ describe("App", () => {
     vi.unstubAllGlobals();
   });
 
+  it("moves Twitch into preferences and keeps the company selector and universal search together", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("button", { name: "Connexion" });
+    await user.click(screen.getByRole("button", { name: "Affichage du graphe" }));
+    await user.click(screen.getByRole("checkbox", { name: "Twitch : en direct uniquement" }));
+    expect(
+      screen.queryByRole("textbox", { name: "Recherche universelle" })
+    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("twitchLive=live"),
+        expect.anything()
+      )
+    );
+    await user.click(screen.getByRole("button", { name: "Fermer les préférences" }));
+    await user.click(screen.getByRole("button", { name: "Ouvrir la recherche" }));
+    expect(screen.queryByLabelText("Streamer")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Vérification")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Twitch")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("option", { name: "Blue Line Logistics" })).toHaveLength(1);
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Entreprise" }),
+      "Blue Line Logistics"
+    );
+    await user.type(screen.getByRole("textbox", { name: "Recherche universelle" }), "NovaRP");
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/q=NovaRP.*company=Blue\+Line\+Logistics.*twitchLive=live/),
+        expect.anything()
+      )
+    );
+    await user.click(screen.getByRole("button", { name: "Réinitialiser" }));
+    expect(screen.getByRole("textbox", { name: "Recherche universelle" })).toHaveValue("");
+    await user.click(screen.getByRole("button", { name: "Affichage du graphe" }));
+    expect(screen.getByRole("checkbox", { name: "Twitch : en direct uniquement" })).toBeChecked();
+  });
+
   it("renders public data, filters results and opens a character sheet", async () => {
     const user = userEvent.setup();
 
@@ -278,7 +317,7 @@ describe("App", () => {
 
     expect(screen.getByTitle("En direct")).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText("Nom, téléphone, matricule..."), "ines");
+    await user.type(screen.getByPlaceholderText("Nom, streamer, téléphone, matricule..."), "ines");
 
     await waitFor(() => {
       expect(screen.getByText(`Correspondances ${ines.id}`)).toBeInTheDocument();
@@ -665,7 +704,14 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "Contrôle des données et accès" })
     ).toBeInTheDocument();
     expect(screen.getByText("Viewer Example")).toBeInTheDocument();
+    expect(screen.queryByText("Fiches à compléter")).not.toBeInTheDocument();
+    expect(screen.queryByText("Famille Morel")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Tags" }));
     expect(screen.getByText("Famille Morel")).toBeInTheDocument();
+    expect(screen.queryByText("Viewer Example")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Journaux" }));
+    expect(screen.getByRole("tab", { name: "Journaux" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByText("Famille Morel")).not.toBeInTheDocument();
   });
 
   it("loads admin RGPD data, marks anonymized accounts and confirms anonymization explicitly", async () => {
@@ -1299,7 +1345,10 @@ describe("App", () => {
     render(<App />);
 
     await user.click(await screen.findByRole("button", { name: "Ouvrir la recherche" }));
-    await user.type(screen.getByPlaceholderText("Nom, téléphone, matricule..."), "Nadia Soler");
+    await user.type(
+      screen.getByPlaceholderText("Nom, streamer, téléphone, matricule..."),
+      "Nadia Soler"
+    );
 
     expect(await screen.findByText("Aucun personnage trouvé.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Proposer une nouvelle fiche" }));
@@ -1384,7 +1433,10 @@ describe("App", () => {
     render(<App />);
 
     await user.click(await screen.findByRole("button", { name: "Ouvrir la recherche" }));
-    await user.type(screen.getByPlaceholderText("Nom, téléphone, matricule..."), "Nadia Soler");
+    await user.type(
+      screen.getByPlaceholderText("Nom, streamer, téléphone, matricule..."),
+      "Nadia Soler"
+    );
 
     expect(await screen.findByText("Aucun personnage trouvé.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Créer une nouvelle fiche" }));

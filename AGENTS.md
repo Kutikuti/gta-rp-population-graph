@@ -173,6 +173,9 @@ Les commandes de base existent deja :
 - Reset backend sans seeds : `cd backend && npm run db:reset`
 - Reset backend avec seeds : `cd backend && npm run db:reset:seed`
 - Import Notion automatique complet : `cd backend && npm run notion:sync-all`
+- Reprise des photos d'un lot Notion :
+  `cd backend && npm run notion:sync-photos -- --batch-id=<uuid>` ; les photos
+  deja presentes sont laissees intactes.
 
 Les tests d'integration PostgreSQL creent et suppriment leur propre base
 ephemere ; ils exigent une instance PostgreSQL joignable via `backend/.env` et

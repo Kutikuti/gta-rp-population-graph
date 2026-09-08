@@ -201,9 +201,6 @@ export const getAdminDashboard = () => fetchJson<AdminDashboard>("/api/admin/das
 export const getAdminUserPersonalData = (id: string) =>
   fetchJson<AdminUserPersonalDataExport>(`/api/admin/users/${id}/personal-data`);
 
-export const getAdminDataCompleteness = () =>
-  fetchJson<DataCompletenessReport>("/api/admin/completeness");
-
 export const listAdminNotionImports = () =>
   fetchJson<AdminNotionImportBatch[]>("/api/admin/notion-imports");
 

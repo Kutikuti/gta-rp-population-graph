@@ -1,8 +1,9 @@
 import type { CharacterFilters, PublicTag } from "../api";
-import { isActiveFilters, lifeStatusLabels, verificationLabels } from "../constants";
+import { isActiveFilters, lifeStatusLabels } from "../constants";
 
 type FiltersPanelProps = {
   filters: CharacterFilters;
+  companies: string[];
   canSuggestCreation: boolean;
   creationActionLabel: string;
   onClose: () => void;
@@ -17,6 +18,7 @@ export function FiltersPanel({
   canSuggestCreation,
   creationActionLabel,
   filters,
+  companies,
   onClose,
   tags,
   resultSummary,
@@ -33,7 +35,7 @@ export function FiltersPanel({
             type="button"
             className="ghost-button"
             onClick={onReset}
-            disabled={!isActiveFilters(filters)}
+            disabled={!isActiveFilters({ ...filters, twitchLive: "" })}
           >
             Réinitialiser
           </button>
@@ -49,25 +51,34 @@ export function FiltersPanel({
       </div>
 
       <label className="field">
-        <span>Texte</span>
+        <span>Recherche universelle</span>
         <input
           value={filters.q}
           onChange={(event) => {
             onChange("q", event.target.value);
           }}
-          placeholder="Nom, téléphone, matricule..."
+          placeholder="Nom, streamer, téléphone, matricule..."
         />
       </label>
 
       <label className="field">
         <span>Entreprise</span>
-        <input
+        <select
           value={filters.company}
           onChange={(event) => {
             onChange("company", event.target.value);
           }}
-          placeholder="Entreprise"
-        />
+        >
+          <option value="">Toutes les entreprises</option>
+          {filters.company && !companies.includes(filters.company) ? (
+            <option value={filters.company}>{filters.company}</option>
+          ) : null}
+          {companies.map((company) => (
+            <option key={company} value={company}>
+              {company}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="field">
@@ -99,47 +110,6 @@ export function FiltersPanel({
           {tags.map((tag) => (
             <option key={tag.id} value={tag.id}>
               {tag.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="field">
-        <span>Streamer</span>
-        <input
-          value={filters.streamer}
-          onChange={(event) => {
-            onChange("streamer", event.target.value);
-          }}
-          placeholder="Nom public"
-        />
-      </label>
-
-      <label className="field">
-        <span>Twitch</span>
-        <select
-          value={filters.twitchLive}
-          onChange={(event) => {
-            onChange("twitchLive", event.target.value);
-          }}
-        >
-          <option value="">Tous</option>
-          <option value="live">En direct uniquement</option>
-        </select>
-      </label>
-
-      <label className="field">
-        <span>Vérification</span>
-        <select
-          value={filters.verificationStatus}
-          onChange={(event) => {
-            onChange("verificationStatus", event.target.value);
-          }}
-        >
-          <option value="">Toutes</option>
-          {Object.entries(verificationLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
             </option>
           ))}
         </select>

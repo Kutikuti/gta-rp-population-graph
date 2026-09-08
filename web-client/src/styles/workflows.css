@@ -180,6 +180,50 @@
   min-height: 0;
 }
 
+.workspace:has(> .tabbed-workspace) {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.workspace:has(> .tabbed-workspace) > .topbar {
+  position: relative;
+  inset: auto;
+  flex-shrink: 0;
+  margin: 14px 24px 0;
+}
+
+.tabbed-workspace {
+  position: relative;
+  inset: auto;
+  flex: 1;
+  min-height: 0;
+  padding-top: 24px;
+}
+
+.tabbed-workspace .full-page-header,
+.tabbed-workspace .admin-page-content,
+.tabbed-workspace .moderation-page-content,
+.tabbed-workspace .moderation-layout {
+  width: 100%;
+}
+
+.workspace-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #123c5f;
+  padding-bottom: 12px;
+}
+
+.workspace-tabs .ghost-button {
+  min-height: 44px;
+}
+
+.tabbed-workspace [role="tabpanel"] {
+  min-width: 0;
+}
+
 .admin-log-panel {
   grid-column: 1 / -1;
 }
@@ -372,6 +416,11 @@
   gap: 10px;
   max-height: 340px;
   overflow: auto;
+}
+
+.tabbed-workspace .completeness-list {
+  max-height: none;
+  overflow: visible;
 }
 
 .completeness-item {
@@ -1421,6 +1470,28 @@
 
   .full-page-view {
     padding: 138px 12px 24px;
+  }
+
+  .workspace:has(> .tabbed-workspace) > .topbar {
+    margin: 10px 12px 0;
+  }
+
+  .workspace:has(> .tabbed-workspace) .topbar-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workspace:has(> .tabbed-workspace) .topbar-actions {
+    flex-flow: row wrap;
+  }
+
+  .tabbed-workspace {
+    padding-top: 20px;
+  }
+
+  .tabbed-workspace .completeness-search {
+    flex: 0 1 auto;
+    width: 100%;
   }
 
   .imports-page {

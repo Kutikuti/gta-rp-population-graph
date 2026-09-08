@@ -3,7 +3,17 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SHARED_DIR="${SHARED_DIR:-${REPO_ROOT}/../shared}"
+RESOLVED_REPO_ROOT="$(readlink -f "${REPO_ROOT}")"
+
+# `current` is a release symlink in production. Resolve it before finding the
+# shared directory, otherwise `current/../shared` incorrectly targets releases/shared.
+if [[ "$(basename "$(dirname "${RESOLVED_REPO_ROOT}")")" == "releases" ]]; then
+  DEFAULT_SHARED_DIR="$(dirname "$(dirname "${RESOLVED_REPO_ROOT}")")/shared"
+else
+  DEFAULT_SHARED_DIR="${REPO_ROOT}/../shared"
+fi
+
+SHARED_DIR="${SHARED_DIR:-${DEFAULT_SHARED_DIR}}"
 UPLOADS_DIR="${UPLOADS_DIR:-${SHARED_DIR}/storage/uploads/characters}"
 BACKUP_ROOT="${BACKUP_ROOT:-${SHARED_DIR}/backups/uploads}"
 WEEKLY_DIR="${BACKUP_ROOT}/weekly"

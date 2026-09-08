@@ -57,10 +57,7 @@ export const normalizeGraphPreferences = (value: unknown): GraphPreferences => {
   return {
     layoutMode,
     showDeceased,
-    visibleRelationshipTypes:
-      visibleRelationshipTypes.length > 0
-        ? [...new Set(visibleRelationshipTypes)]
-        : initialGraphPreferences.visibleRelationshipTypes
+    visibleRelationshipTypes: [...new Set(visibleRelationshipTypes)]
   };
 };
 
@@ -74,7 +71,9 @@ export const filterGraphForPreferences = (
 
   const visibleNodeIds = new Set(
     graph.nodes
-      .filter((node) => preferences.showDeceased || node.data.lifeStatus !== "deceased")
+      .filter(
+        (node) => preferences.showDeceased || !["deceased", "left"].includes(node.data.lifeStatus)
+      )
       .map((node) => node.data.characterId)
   );
   const allowedRelationshipTypes = new Set(preferences.visibleRelationshipTypes);

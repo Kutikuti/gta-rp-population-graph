@@ -58,14 +58,19 @@ export const characterDetailIncludes = (): Includeable[] => [
   }
 ];
 
-const searchWhere = (q: string): WhereOptions => {
+const searchWhere = async (q: string): Promise<WhereOptions> => {
   const like = `%${q}%`;
+  const streamers = await Streamer.findAll({
+    attributes: ["id"],
+    where: { publicName: { [Op.iLike]: like } }
+  });
 
   return {
     [Op.or]: [
       { firstName: { [Op.iLike]: like } },
       { lastName: { [Op.iLike]: like } },
       { nickname: { [Op.iLike]: like } },
+      { streamerId: { [Op.in]: streamers.map((streamer) => streamer.id) } },
       where(cast(col("Character.phone_numbers"), "text"), { [Op.iLike]: like }),
       { companyName: { [Op.iLike]: like } },
       { companyRank: { [Op.iLike]: like } },
@@ -76,13 +81,13 @@ const searchWhere = (q: string): WhereOptions => {
   };
 };
 
-export const characterWhere = (
+export const characterWhere = async (
   filters: Pick<PublicCharacterQueryFilters, "company" | "lifeStatus" | "q" | "verificationStatus">
-): WhereOptions => {
+): Promise<WhereOptions> => {
   const where: WhereOptions = {};
 
   if (filters.q) {
-    Object.assign(where, searchWhere(filters.q));
+    Object.assign(where, await searchWhere(filters.q));
   }
 
   if (filters.lifeStatus) {

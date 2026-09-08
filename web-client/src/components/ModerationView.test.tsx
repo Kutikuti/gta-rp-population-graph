@@ -205,10 +205,13 @@ describe("ModerationView", () => {
     const onEditCharacter = vi.fn();
     renderView({ onEditCharacter });
 
-    expect(await screen.findByText("Rapport chargé")).toBeInTheDocument();
     expect(await screen.findAllByText("Camille Morel")).toHaveLength(2);
     expect(apiMocks.getCharacter).toHaveBeenCalledWith("character-1");
 
+    expect(screen.queryByText("Rapport chargé")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Fiches à compléter" }));
+    expect(await screen.findByText("Rapport chargé")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accepter" })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Modifier la fiche incomplète" }));
     expect(onEditCharacter).toHaveBeenCalledWith("camille-morel");
   });

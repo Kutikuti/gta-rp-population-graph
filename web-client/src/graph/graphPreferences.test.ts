@@ -70,7 +70,50 @@ const graph: PublicGraph = {
   ]
 };
 
+const templateNode = graph.nodes[0];
+if (!templateNode) throw new Error("Missing graph fixture");
+const templateData = templateNode.data;
+
 describe("graphPreferences", () => {
+  it("preserves an empty relationship selection through storage and displays no edges", () => {
+    const preferences = normalizeGraphPreferences(
+      JSON.parse(
+        JSON.stringify({
+          ...initialGraphPreferences,
+          showDeceased: true,
+          visibleRelationshipTypes: []
+        })
+      )
+    );
+    expect(preferences.visibleRelationshipTypes).toEqual([]);
+    expect(filterGraphForPreferences(graph, preferences)).toEqual({
+      nodes: graph.nodes,
+      edges: []
+    });
+  });
+
+  it("hides departed characters while keeping unknown statuses visible", () => {
+    const withStatuses: PublicGraph = {
+      ...graph,
+      nodes: (["alive", "deceased", "left", "unknown"] as const).map((status, index) => ({
+        data: {
+          ...templateData,
+          id: String(index),
+          characterId: String(index),
+          lifeStatus: status
+        }
+      }))
+    };
+    expect(
+      filterGraphForPreferences(withStatuses, initialGraphPreferences)?.nodes.map(
+        (node) => node.data.lifeStatus
+      )
+    ).toEqual(["alive", "unknown"]);
+    expect(
+      filterGraphForPreferences(withStatuses, { ...initialGraphPreferences, showDeceased: true })
+        ?.nodes
+    ).toHaveLength(4);
+  });
   it("hides deceased characters by default", () => {
     expect(initialGraphPreferences.showDeceased).toBe(false);
     expect(initialGraphPreferences.layoutMode).toBe("company");

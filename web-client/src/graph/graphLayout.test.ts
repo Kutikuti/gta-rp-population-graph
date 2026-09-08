@@ -70,7 +70,57 @@ const graph: PublicGraph = {
   ]
 };
 
+const templateNode = graph.nodes[0];
+if (!templateNode) throw new Error("Missing graph fixture");
+const templateData = templateNode.data;
+
 describe("graphLayoutOptions", () => {
+  it("keeps dense circular clusters separated on a mobile viewport", () => {
+    const denseGraph: PublicGraph = {
+      nodes: Array.from({ length: 150 }, (_, index) => ({
+        data: {
+          ...templateData,
+          id: String(index),
+          characterId: String(index),
+          fullName: `Personnage ${index}`,
+          companyName: index < 120 ? "A" : "B"
+        }
+      })),
+      edges: []
+    };
+    const layout = graphLayoutOptions(denseGraph, "company", { width: 375, height: 667 }) as {
+      positions: Record<string, { x: number; y: number }>;
+    };
+    const points = Object.values(layout.positions);
+    expect(points).toHaveLength(150);
+    for (const [index, point] of points.entries()) {
+      expect(Number.isFinite(point.x) && Number.isFinite(point.y)).toBe(true);
+      for (const other of points.slice(index + 1)) {
+        expect(Math.hypot(point.x - other.x, point.y - other.y)).toBeGreaterThanOrEqual(119.99);
+      }
+    }
+    const reordered = graphLayoutOptions(
+      { ...denseGraph, nodes: [...denseGraph.nodes].reverse() },
+      "company",
+      { width: 375, height: 667 }
+    ) as { positions: Record<string, { x: number; y: number }> };
+    expect(reordered.positions).toEqual(layout.positions);
+  });
+
+  it("places a small group on a circle", () => {
+    const circleGraph: PublicGraph = {
+      nodes: Array.from({ length: 5 }, (_, i) => ({
+        data: { ...templateData, id: String(i), characterId: String(i) }
+      })),
+      edges: []
+    };
+    const layout = graphLayoutOptions(circleGraph, "company", { width: 800, height: 800 }) as {
+      positions: Record<string, { x: number; y: number }>;
+    };
+    for (const point of Object.values(layout.positions)) {
+      expect(Math.hypot(point.x - 400, point.y - 400)).toBeCloseTo(120);
+    }
+  });
   it("returns grouped preset positions by default-ready mode", () => {
     const layout = graphLayoutOptions(graph, "grouped", { width: 1200, height: 800 });
     const presetLayout = layout as {

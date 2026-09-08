@@ -124,7 +124,7 @@ export class SequelizePublicDataService implements PublicDataService {
 
   async listCharacters(filters: CharacterListFilters): Promise<PublicCharacterList> {
     const baseQuery = {
-      where: characterWhere(filters),
+      where: await characterWhere(filters),
       include: characterIncludes(filters),
       order: characterOrder
     };
@@ -178,7 +178,7 @@ export class SequelizePublicDataService implements PublicDataService {
 
   async listCharacterMatches(filters: CharacterMatchFilters): Promise<PublicCharacterMatches> {
     const characters = await models.Character.findAll({
-      where: characterWhere(filters),
+      where: await characterWhere(filters),
       include: characterIncludes(filters),
       order: characterOrder
     });
