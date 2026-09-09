@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { AdminUser } from "../api";
 
@@ -16,7 +16,12 @@ export function AdminAnonymizationDialog({
   onConfirm
 }: AdminAnonymizationDialogProps) {
   const [typedConfirmation, setTypedConfirmation] = useState("");
+  const confirmationInputRef = useRef<HTMLInputElement | null>(null);
   const canConfirm = typedConfirmation.trim() === confirmationText;
+
+  useEffect(() => {
+    confirmationInputRef.current?.focus();
+  }, []);
 
   return (
     <div className="admin-confirmation-backdrop" role="presentation">
@@ -25,6 +30,11 @@ export function AdminAnonymizationDialog({
         role="dialog"
         aria-labelledby="admin-anonymization-title"
         aria-modal="true"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            onCancel();
+          }
+        }}
       >
         <div>
           <p className="eyebrow">Action RGPD sensible</p>
@@ -37,6 +47,7 @@ export function AdminAnonymizationDialog({
         <label>
           Tape {confirmationText} pour confirmer
           <input
+            ref={confirmationInputRef}
             value={typedConfirmation}
             onChange={(event) => {
               setTypedConfirmation(event.target.value);

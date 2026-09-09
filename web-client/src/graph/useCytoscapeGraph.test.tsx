@@ -97,7 +97,13 @@ const createCytoscapeFixture = () => {
   const relatedElements = { layout: vi.fn(() => relationshipLayout) };
   relatedNodes.connectedEdges = vi.fn(() => relatedEdges);
   relatedNodes.union = vi.fn(() => relatedElements);
-  allNodes.filter = vi.fn(() => relatedNodes);
+  nodeA.connectedEdges.mockReturnValue(relatedEdges);
+  nodeB.connectedEdges.mockReturnValue(relatedEdges);
+  allNodes.filter = vi.fn((predicate: (node: typeof nodeA) => boolean) => {
+    predicate(nodeA);
+    predicate(nodeB);
+    return relatedNodes;
+  });
   const allElements = { not: vi.fn(() => outside) };
   const style = { setProperty: vi.fn() };
   const cy = {
@@ -148,8 +154,8 @@ describe("useCytoscapeGraph", () => {
           containerRef,
           graph,
           layoutMode: "company",
-          matchingIdSet: new Set(),
-          isSearchActive: false,
+          matchingIdSet: new Set(["character-a"]),
+          isSearchActive: true,
           selectedId: null,
           onSelect: select
         }),
@@ -216,6 +222,36 @@ describe("useCytoscapeGraph", () => {
     expect(fixture.nodeA.addClass).toHaveBeenCalledWith("matched");
     expect(fixture.nodeB.addClass).toHaveBeenCalledWith("search-muted");
     expect(fixture.edge.addClass).toHaveBeenCalledWith("search-muted");
+  });
+
+  it("does not animate selection when reduced motion is requested", () => {
+    const fixture = createCytoscapeFixture();
+    mockState.cytoscape.mockReturnValue(fixture.cy);
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: true }))
+    );
+
+    try {
+      renderHook(() =>
+        useCytoscapeGraph({
+          containerRef: { current: document.createElement("div") },
+          graph,
+          layoutMode: "network",
+          matchingIdSet: new Set(),
+          isSearchActive: false,
+          selectedId: "character-a",
+          onSelect: vi.fn()
+        })
+      );
+
+      expect(fixture.cy.animate).toHaveBeenCalledWith(
+        { center: { eles: fixture.selected }, zoom: 1.05 },
+        { duration: 0 }
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("refines connected characters after a grouped layout", () => {

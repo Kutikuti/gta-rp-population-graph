@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { AuthSession } from "../api";
 import { AuthProviderIcon } from "./AuthProviderIcon";
@@ -48,11 +48,19 @@ export function AuthControls({
 }: AuthControlsProps) {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const loginPanelRef = useRef<HTMLDivElement | null>(null);
+  const loginButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const closeLogin = useCallback(() => {
+    setIsLoginOpen(false);
+    loginButtonRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (!isLoginOpen) {
       return undefined;
     }
+
+    loginPanelRef.current?.querySelector<HTMLButtonElement>(".auth-login-close")?.focus();
 
     const closeOnOutsideClick = (event: MouseEvent) => {
       if (
@@ -66,7 +74,7 @@ export function AuthControls({
 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsLoginOpen(false);
+        closeLogin();
       }
     };
 
@@ -77,7 +85,7 @@ export function AuthControls({
       document.removeEventListener("mousedown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [isLoginOpen]);
+  }, [closeLogin, isLoginOpen]);
 
   if (isLoading) {
     return (
@@ -91,6 +99,7 @@ export function AuthControls({
     return (
       <div className="auth-controls auth-login-menu" ref={loginPanelRef}>
         <button
+          ref={loginButtonRef}
           type="button"
           className={`ghost-button auth-button ${isLoginOpen ? "is-active" : ""}`}
           aria-expanded={isLoginOpen}
@@ -110,7 +119,7 @@ export function AuthControls({
                 className="auth-login-close"
                 aria-label="Fermer la connexion"
                 onClick={() => {
-                  setIsLoginOpen(false);
+                  closeLogin();
                 }}
               >
                 ×
