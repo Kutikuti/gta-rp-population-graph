@@ -786,10 +786,11 @@ Premiere passe du 2026-09-09 : correctifs locaux et bilan dans
 - Dump recent produit dans `shared` puis restaure dans une base ephemere :
   362 personnages, 107 relations et 1380 historiques verifies. Base de test
   supprimee ; sauvegardes et dossiers anciens proteges en 0600/0700.
-- **Etape non cloturee :** recette navigateur complete des roles, revue CSP et
-  revue complementaire des imports et des erreurs restent a faire. Les redirections OAuth des trois
-  fournisseurs, cookies, refus anonymes et protection d'origine sont verifies
-  sur le site deploye.
+- **Etape non cloturee :** recette navigateur complete des roles et revue
+  complementaire des imports et des erreurs restent a faire. La CSP et les
+  en-tetes du HTML statique ont ete deployes et verifies le 2026-09-09 ; les
+  redirections OAuth des trois fournisseurs, cookies, refus anonymes et
+  protection d'origine sont verifies sur le site deploye.
 
 Cette etape doit verifier que les retouches UX et les derniers flux publics ou
 authentifies n'ont pas fragilise la securite avant l'arrivee des premiers

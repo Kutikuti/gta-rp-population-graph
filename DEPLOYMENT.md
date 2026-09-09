@@ -1094,6 +1094,22 @@ Les corrections GTA ont ensuite ete deployees, comme detaille ci-dessous.
 - F1 et Caddy restent actifs ; aucun changement de leur configuration.
   Les anciennes releases sont conservees pour rollback.
 
+### Deploiement complementaire le 2026-09-09 — CSP et delai Notion
+
+- Release active : `20260909T145552Z-security-csp`.
+- Base applicative : `2e5d566149c2c451f298cf281f96f4fdcc4f9faf`.
+- Archive SHA-256 :
+  `7ac43a7009206a4234524717756ff562c43487f76b99dda009bef4e0055ac89b`.
+- Aucune migration en attente ; une sauvegarde PostgreSQL a ete produite avant
+  la commande de migration idempotente.
+- Le scraper Notion annule maintenant chaque requete distante au bout de 15 s.
+- Le Caddyfile GTA a ete valide avant installation, sauvegarde sous
+  `/etc/caddy/Caddyfile.backup-20260909T145552Z-security-csp`, puis recharge.
+  Le bloc F1 est inchange.
+- Les controles post-deploiement HTTP/SSH passent. La page publique retourne
+  `Content-Security-Policy`, HSTS, `X-Content-Type-Options`,
+  `X-Frame-Options`, `Referrer-Policy` et `Permissions-Policy` attendus.
+
 Si un sous-ensemble seulement change, garder la meme logique mais ne relancer
 que la partie concernee. En revanche, toute modification backend ou frontend
 publique doit idealement etre suivie d'un build local, d'une synchronisation

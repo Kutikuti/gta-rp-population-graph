@@ -9,9 +9,10 @@ additionnelle du contrôle des timers ; empreintes dans `DEPLOYMENT.md`.
 **Correctifs déployés ; audit encore ouvert.** La faille OAuth reproduite dans
 les tests est corrigée en production. Le dump récent a été restauré et les
 écarts de sauvegarde, permissions et écoute réseau GTA sont corrigés. Les
-contrôles HTTP/SSH passent. La recette navigateur complète des rôles, la revue
-CSP et la revue complémentaire des imports et erreurs restent à effectuer. Cette revue ne constitue pas
-une garantie d'absence de faille.
+contrôles HTTP/SSH et les en-têtes CSP du HTML statique passent. La recette
+navigateur complète des rôles et la revue complémentaire des imports et erreurs
+restent à effectuer. Cette revue ne constitue pas une garantie d'absence de
+faille.
 
 ## Périmètre et frontières de confiance
 
@@ -133,7 +134,8 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 | Traité — exploitant GTA | Déployer les correctifs AUTH-01/AUTH-02/PHOTO-01 et exécuter les smoke tests | Déployé ; redirections OAuth et cookies vérifiés. La connexion complète avec comptes réels reste une recette manuelle |
 | Traité — exploitant GTA | Produire un dump récent dans `shared`, protéger les anciens dossiers et restaurer le dump | Restauration réelle avec contrôles de données et suppression de la base éphémère effectuée |
 | P1 — exploitant plateforme | Revoir le port 5000 F1 autorisé publiquement par UFW et le compte d'exécution partagé `codex-deploy` | Hors périmètre de modification GTA ; l'API F1 n'a pas été modifiée. Le compte backend possède encore releases et configuration |
-| P1 — frontend/exploitant | Déployer la CSP et les en-têtes du HTML Caddy documentés, puis effectuer la recette navigateur des rôles et du blocage inter-origines | Helmet protège les réponses Express ; la configuration Caddy de référence est désormais durcie dans `DEPLOYMENT.md`, mais elle n'a pas été appliquée au VPS pendant cette revue. Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
+| Traité — exploitant GTA | Déployer la CSP et les en-têtes du HTML Caddy documentés | Configuration Caddy validée puis rechargée le 2026-09-09 ; contrôle HTTPS public positif pour CSP, HSTS, `nosniff`, anti-frame, referrer et permissions policy |
+| P1 — frontend/exploitant | Effectuer la recette navigateur des rôles et du blocage inter-origines | Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
 | P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
 | P2 — backend | Mesurer la contention du verrou commun si les mutations de comptes deviennent fréquentes | Lecture des sessions non verrouillée ; sérialisation limitée aux mutations sensibles |
 
