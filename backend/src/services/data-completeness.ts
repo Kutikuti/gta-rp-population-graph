@@ -46,6 +46,9 @@ const fullName = (character: { firstName: string; lastName: string }) =>
 const hasText = (value: string | null | undefined) =>
   typeof value === "string" && value.trim().length > 0;
 
+const isSaspCompany = (companyName: string | null) =>
+  /^SASP(?:\b|[,. -])/iu.test(companyName?.trim() ?? "");
+
 const normalizedStringList = (values: string[]) =>
   values.map((value) => value.trim()).filter(Boolean);
 
@@ -80,11 +83,11 @@ const missingFieldsForCharacter = (character: {
     missingFields.push({ key: "phoneNumbers", label: completenessLabels.phoneNumbers });
   }
 
-  if (hasCompanyName && !hasCompanyRank) {
+  if (isSaspCompany(character.companyName) && !hasCompanyRank) {
     missingFields.push({ key: "companyRank", label: completenessLabels.companyRank });
   }
 
-  if (hasCompanyName && !hasCompanyBadgeNumber) {
+  if (isSaspCompany(character.companyName) && !hasCompanyBadgeNumber) {
     missingFields.push({
       key: "companyBadgeNumber",
       label: completenessLabels.companyBadgeNumber

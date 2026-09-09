@@ -51,6 +51,58 @@ describe("SequelizeDataCompletenessService", () => {
     expect(report.items[0]?.attentionFlags).toEqual(["À vérifier", "Importée"]);
   });
 
+  it("only expects grade and badge number for SASP characters", async () => {
+    vi.spyOn(models.Character, "findAll").mockResolvedValue([
+      {
+        id: "char-sasp",
+        publicSlug: "alex-hayes",
+        firstName: "Alex",
+        lastName: "Hayes",
+        nickname: null,
+        birthDate: "1990-01-01",
+        photoUrl: "/uploads/characters/alex.webp",
+        phoneNumbers: ["555-0101"],
+        streamerId: null,
+        companyName: "SASP,P.A",
+        companyRank: null,
+        companyBadgeNumber: null,
+        lifeStatus: "alive",
+        verificationStatus: "verified",
+        dataSource: "manual",
+        sourceNote: null,
+        updatedAt: new Date("2026-09-09T12:00:00.000Z")
+      },
+      {
+        id: "char-company",
+        publicSlug: "maya-ross",
+        firstName: "Maya",
+        lastName: "Ross",
+        nickname: null,
+        birthDate: "1990-01-01",
+        photoUrl: "/uploads/characters/maya.webp",
+        phoneNumbers: ["555-0102"],
+        streamerId: null,
+        companyName: "Los Santos Customs",
+        companyRank: null,
+        companyBadgeNumber: null,
+        lifeStatus: "alive",
+        verificationStatus: "verified",
+        dataSource: "manual",
+        sourceNote: null,
+        updatedAt: new Date("2026-09-09T12:00:00.000Z")
+      }
+    ] as never);
+
+    const report = await new SequelizeDataCompletenessService().getReport();
+
+    expect(report.items).toHaveLength(1);
+    expect(report.items[0]?.id).toBe("char-sasp");
+    expect(report.items[0]?.missingFields).toEqual([
+      { key: "companyRank", label: "Grade" },
+      { key: "companyBadgeNumber", label: "Matricule" }
+    ]);
+  });
+
   it("does not consider missing media as an incomplete record on its own", async () => {
     vi.spyOn(models.Character, "findAll").mockResolvedValue([
       {
