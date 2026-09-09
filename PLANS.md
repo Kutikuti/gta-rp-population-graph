@@ -792,6 +792,71 @@ Premiere passe du 2026-09-09 : correctifs locaux et bilan dans
   redirections OAuth des trois fournisseurs, cookies, refus anonymes et
   protection d'origine sont verifies sur le site deploye.
 
+#### Plan de remédiation VPS issu de l'audit du 2026-09-09
+
+Ce plan ne doit pas être exécuté en bloc. Le VPS héberge aussi F1 : chaque lot
+prévoit un contrôle de non-régression et un retour arrière explicite. Les
+constats et preuves restent dans `SECURITY_AUDIT.md`.
+
+1. **Sécuriser l'accès avant toute fermeture SSH (P1 plateforme)**
+   - Inventorier les clés autorisées, les administrateurs réels et les usages
+     de tunnel ; confirmer l'accès console Hetzner ou un second accès de
+     secours par clé.
+   - Ouvrir deux sessions SSH indépendantes. Dans un fichier
+     `sshd_config.d` dédié, préparer `PermitRootLogin no`,
+     `PasswordAuthentication no`, `KbdInteractiveAuthentication no` et
+     `X11Forwarding no`. N'ajouter `AllowTcpForwarding no` qu'après avoir
+     confirmé qu'aucun service ou administrateur ne dépend d'un tunnel SSH.
+   - Valider avec `sshd -t`, recharger `ssh` (sans redémarrage), ouvrir une
+     troisième connexion par clé puis seulement fermer les sessions de secours.
+     En cas d'échec, restaurer le fichier de configuration depuis la session
+     encore ouverte ou la console Hetzner.
+
+2. **Réduire les expositions mutualisées (P1 plateforme)**
+   - Vérifier les besoins réels du service F1 qui écoute actuellement sur
+     `*:5000`. S'il ne doit être joint que par Caddy, le faire écouter sur
+     `127.0.0.1:5000`, retirer les règles UFW IPv4/IPv6 correspondantes et
+     vérifier F1 derrière Caddy avant/après.
+   - Étudier la séparation du compte de déploiement et du compte d'exécution
+     backend ; cette migration exige de transférer explicitement les droits des
+     releases, du stockage photo et de `backend.env`, sans donner accès aux
+     sauvegardes ou secrets à un compte non nécessaire.
+
+3. **Rendre privés les artefacts GTA non publics (P2 GTA)**
+   - Inventorier les lecteurs des journaux Notion et rapports de déploiement,
+     puis créer ou convertir leurs dossiers en `0700` et leurs fichiers en
+     `0600`, avec propriétaire `codex-deploy`.
+   - Mettre à jour les scripts qui les écrivent pour imposer `umask 077`.
+     Vérifier ensuite import, supervision et consultation des rapports. Ne pas
+     appliquer ces permissions aux photos validées : elles sont volontairement
+     publiques via Caddy ; les brouillons doivent au contraire rester privés.
+
+4. **Durcir systemd par paliers testables (P2 GTA)**
+   - Avant tout `UMask` restrictif, rendre les modes des photos explicites dans
+     l'application : photos validées lisibles par Caddy, brouillons privés.
+     Un `UMask=0077` immédiat rendrait les photos publiques illisibles par
+     Caddy.
+   - Ajouter d'abord un drop-in réversible au backend avec
+     `ProtectHome=true`, `PrivateDevices=true`, suppression des capabilities,
+     `LockPersonality=true`, `RestrictSUIDSGID=true`, `RestrictRealtime=true`,
+     `ProtectKernelTunables=true`, `ProtectKernelModules=true` et
+     `ProtectControlGroups=true`.
+   - Vérifier le fichier avec `systemd-analyze verify`, redémarrer pendant une
+     fenêtre courte, contrôler healthcheck, OAuth, import Notion, upload de
+     photo et logs. Garder `PrivateNetwork` et une liste IP sortante hors de ce
+     premier palier : OAuth, Notion et Twitch requièrent du réseau sortant.
+     Ajouter un filtre d'appels système seulement après ce palier stable.
+
+5. **Pérenniser les garde-fous (P2/P3)**
+   - Conserver `/opt/node-apps/bin` en tête de `PATH` pour toutes les tâches
+     npm VPS ; ne jamais appeler son npm directement depuis le `PATH` système.
+   - Planifier les quatre mises à jour Ubuntu disponibles dans une fenêtre
+     plateforme séparée, en vérifiant les paquets et un rollback/reboot si
+     nécessaire.
+   - Après chaque lot : `caddy validate`, tests HTTP/SSH, vérification des
+     sockets, sauvegardes, timers, fail2ban et journal de déploiement. Fermer
+     chaque constat dans `SECURITY_AUDIT.md` seulement avec la preuve associée.
+
 Cette etape doit verifier que les retouches UX et les derniers flux publics ou
 authentifies n'ont pas fragilise la securite avant l'arrivee des premiers
 utilisateurs. Elle se concentre sur les surfaces exposees en production :
