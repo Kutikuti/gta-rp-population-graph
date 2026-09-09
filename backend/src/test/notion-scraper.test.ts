@@ -60,6 +60,7 @@ describe("notion scraper", () => {
       "content-type": "application/json",
       "user-agent": "GTA-RP-Population-Graph/1.0 (+https://gta-rp.f1prediction.fr)"
     });
+    expect(requestInit?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("loads child pages and converts text properties to import input", async () => {

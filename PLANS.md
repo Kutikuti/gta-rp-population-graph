@@ -768,7 +768,7 @@ ne pas retarder l'audit securite pre-ouverture.
 Statut : commencee le 2026-09-09.
 
 Premiere passe du 2026-09-09 : correctifs locaux et bilan dans
-`SECURITY_AUDIT.md`, protocole Strix dans `STRIX.md`.
+`SECURITY_AUDIT.md`.
 
 - Faille de connexion OAuth par email commun reproduite puis corrigee ;
   verrouillage transactionnel des invariants de comptes et tests PostgreSQL
@@ -779,13 +779,17 @@ Premiere passe du 2026-09-09 : correctifs locaux et bilan dans
 - Sauvegardes atomiques/privees avec correction du chemin `current`, tests
   d'echec d'exploitation, packaging depuis Git et bascule GTA avec rollback.
 - Checks, tests, integrations et builds locaux passes sans baisse des seuils.
-- **Etape non cloturee : correctifs pas encore deployes.** Les controles VPS
-  renforces signalent un dump ancien dans le repertoire de restauration, des
-  permissions de sauvegarde trop larges et une API liee a toutes les interfaces.
-  Produire/restaurer un dump recent et faire la recette des roles apres bascule.
-- Strix etudie sur une version figee ; aucun scan execute. Laboratoire Docker,
-  fournisseur LLM et budget a preparer selon `STRIX.md`. La revue navigateur/CSP
-  et les ecarts de plateforme mutualisee restent explicites dans le bilan.
+- Correctifs deployes le 2026-09-09 dans
+  `20260909T134027Z-step17-security-r2` (base `997c560`, correction additionnelle
+  du controle individuel des timers). Builds VPS et 11 tests d'exploitation
+  passes. Controles HTTP/SSH passes ; API limitee a `127.0.0.1:4000`.
+- Dump recent produit dans `shared` puis restaure dans une base ephemere :
+  362 personnages, 107 relations et 1380 historiques verifies. Base de test
+  supprimee ; sauvegardes et dossiers anciens proteges en 0600/0700.
+- **Etape non cloturee :** recette navigateur complete des roles, revue CSP et
+  revue complementaire des imports et des erreurs restent a faire. Les redirections OAuth des trois
+  fournisseurs, cookies, refus anonymes et protection d'origine sont verifies
+  sur le site deploye.
 
 Cette etape doit verifier que les retouches UX et les derniers flux publics ou
 authentifies n'ont pas fragilise la securite avant l'arrivee des premiers

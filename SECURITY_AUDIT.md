@@ -1,14 +1,17 @@
 # Audit de sécurité — étape 17
 
-Date : 2026-09-09. Base examinée : `670d968`, avec correctifs locaux de cette
-passe. Consulter `git diff` pour les modifications non encore publiées.
+Date : 2026-09-09. Base examinée : `670d968`. Correctifs applicatifs du commit
+`997c560` déployés dans `20260909T134027Z-step17-security-r2`, avec correction
+additionnelle du contrôle des timers ; empreintes dans `DEPLOYMENT.md`.
 
 ## Décision actuelle
 
-**Ouverture reportée.** Les validations locales passent, mais les corrections
-ne sont pas encore déployées. Une faille OAuth critique a été reproduite dans
-les tests. Les contrôles du VPS révèlent aussi un décalage entre sauvegarde et
-restauration. Cette revue ne constitue pas une garantie d'absence de faille.
+**Correctifs déployés ; audit encore ouvert.** La faille OAuth reproduite dans
+les tests est corrigée en production. Le dump récent a été restauré et les
+écarts de sauvegarde, permissions et écoute réseau GTA sont corrigés. Les
+contrôles HTTP/SSH passent. La recette navigateur complète des rôles, la revue
+CSP et la revue complémentaire des imports et erreurs restent à effectuer. Cette revue ne constitue pas
+une garantie d'absence de faille.
 
 ## Périmètre et frontières de confiance
 
@@ -43,6 +46,11 @@ validation des charges utiles ou l'accès à la persistance.
 
 ## Constats et corrections
 
+Le tableau conserve l'état de préparation avant déploiement. Les correctifs
+applicatifs et scripts listés sont maintenant en production ; les anciens
+dossiers de sauvegardes ont aussi été protégés. Voir le bilan de déploiement
+daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
+
 | ID | Gravité | Preuve / effet | Traitement local et état production |
 | --- | --- | --- | --- |
 | AUTH-01 | Critique | Une identité non liée ayant le même email déclenchait une session sur le compte existant, y compris administrateur. L'ancien test masquait le problème en simulant un compte introuvable. | Refus `email_in_use` avant toute récupération de session. Test reproduit rouge avant correction, vert après ; reproduction PostgreSQL. **À déployer.** |
@@ -59,6 +67,41 @@ validation des charges utiles ou l'accès à la persistance.
 
 ## Vérifications effectuées
 
+- Revue statique complémentaire non intrusive du 2026-09-09 : aucun serveur n'a
+  été démarré, aucun endpoint de production n'a été appelé et aucune tentative
+  d'exploitation, de scan actif ou de mutation n'a été effectuée. L'examen a
+  couvert les routes, middlewares, sessions OAuth, imports, photos, fichiers de
+  configuration, scripts d'exploitation et tests associés.
+- Autorisations : les routes d'écriture de contribution exigent une session ;
+  les routes de modération exigent `moderator` ou `administrator` ; le routeur
+  d'administration applique `administrator` avant toutes ses routes. Le
+  chargement de session invalide également une session d'utilisateur banni.
+- Sessions et OAuth : cookie `HttpOnly`, `Secure` imposé en production,
+  `SameSite` configurable (valeur de référence `lax`), stockage persistant avec
+  expiration serveur et suppression à la lecture. La session est régénérée au
+  démarrage et à la réussite d'une connexion OAuth ; l'état est lié au
+  fournisseur, à l'intention et à une fenêtre de dix minutes.
+- Uploads et import distant : les uploads acceptent uniquement JPEG/PNG/WebP,
+  sont limités, vérifiés par signature, décodés avec une limite de pixels puis
+  réencodés en WebP. Les photos Notion n'acceptent que HTTPS et une liste de
+  domaines, contrôlent chaque redirection manuellement, limitent corps et délai
+  global. Les appels du scraper Notion sont egalement annules apres 15 s. Les
+  brouillons ne sont pas servis par le chemin public.
+- Lecture publique : les listes et l'historique valident les filtres et bornent
+  `limit` à 100. Le graphe est une lecture complète assumée par le produit ; sa
+  croissance doit rester suivie afin d'éviter un coût de réponse excessif.
+- Secrets et dépendances : recherche statique sans secret applicatif détecté
+  dans les fichiers suivis (hors valeurs de test et exemples) ; `.env`,
+  `.secrets` et le stockage sont ignorés par Git. Avec Node `v24.20.0` et npm
+  `12.0.2`, `npm audit --package-lock-only --omit=dev` est revenu sans
+  vulnérabilité connue pour `backend` et `web-client`. Cette vérification ne
+  couvre ni l'historique Git, ni les dépendances de développement, ni les
+  secrets réellement présents sur le VPS.
+- Configuration documentée : PostgreSQL et les composants de monitoring sont
+  liés à des adresses locales sur le VPS ; l'API GTA est attendue sur
+  `127.0.0.1:4000` derrière Caddy. Le `docker-compose.yml` de développement
+  publie toutefois PostgreSQL sur `5432` sans adresse de boucle explicite : ne
+  pas l'utiliser tel quel sur une machine exposée ou un hôte partagé.
 - Runtime local et VPS : Node 24.20.0 ; npm local 12.0.2.
 - `npm audit` backend et frontend : zéro vulnérabilité connue signalée lors
   de la passe du 2026-09-09. Cela ne couvre pas les erreurs métier.
@@ -68,7 +111,7 @@ validation des charges utiles ou l'accès à la persistance.
 - Couverture backend : statements 73,51 %, branches 61,40 % ; frontend :
   statements 81,45 %, branches 70,42 %. Le seuil du service auth reste à 100 %
   des statements/lignes ; aucun seuil n'a été abaissé.
-- 10 tests d'exploitation : exports partiels/invalides, permissions, rétention,
+- 11 tests d'exploitation : exports partiels/invalides, permissions, rétention,
   faux succès HTTP, activation et rollback simulés. Inclus dans le runner global.
 - HTTP production : accueil, health, session anonyme, liste publique,
   démarrage Google, refus admin et protection de la supervision passent.
@@ -76,19 +119,22 @@ validation des charges utiles ou l'accès à la persistance.
   fail2ban SSH présent, rétention journald, espace disque, supervision locale.
   Le test de restauration planifié a réussi le 6 septembre, **sur son chemin
   configuré** ; ce résultat n'atteste pas la restauration du dump récent.
-- Le contrôle SSH renforcé échoue comme attendu sur la fraîcheur du dump dans
-  `shared`, les permissions des sauvegardes et le bind de l'API. Ces échecs
-  correspondent à l'état actuellement déployé, pas à des tests ignorés.
+- Le contrôle SSH renforcé échouait avant déploiement sur la fraîcheur du dump
+  dans `shared`, les permissions et le bind de l'API. Il passe après correction,
+  avec vérification individuelle des timers et le bon service mutualisé.
+- Restauration réelle du dump du 2026-09-09 à 13:42:44 UTC : 362 personnages,
+  107 relations, 1380 historiques ; index valides et base temporaire supprimée.
+  Les empreintes de la release et du dump figurent dans `DEPLOYMENT.md`.
 
 ## Risques résiduels et suite obligatoire
 
 | Priorité | Action / responsable | Limite ou mesure actuelle |
 | --- | --- | --- |
-| P0 — exploitant GTA | Déployer les correctifs AUTH-01/AUTH-02/PHOTO-01 ; refaire les parcours OAuth et les smoke tests | Correctifs uniquement locaux ; ouverture non validée |
-| P0 — exploitant GTA | Produire un dump récent dans `shared`, protéger les anciens dossiers, restaurer ce dump dans une base éphémère puis vérifier tables et données | Ne pas supprimer les anciens dumps avant cette validation ; `pg_restore --list` n'est pas une restauration |
+| Traité — exploitant GTA | Déployer les correctifs AUTH-01/AUTH-02/PHOTO-01 et exécuter les smoke tests | Déployé ; redirections OAuth et cookies vérifiés. La connexion complète avec comptes réels reste une recette manuelle |
+| Traité — exploitant GTA | Produire un dump récent dans `shared`, protéger les anciens dossiers et restaurer le dump | Restauration réelle avec contrôles de données et suppression de la base éphémère effectuée |
 | P1 — exploitant plateforme | Revoir le port 5000 F1 autorisé publiquement par UFW et le compte d'exécution partagé `codex-deploy` | Hors périmètre de modification GTA ; l'API F1 n'a pas été modifiée. Le compte backend possède encore releases et configuration |
-| P1 — frontend/exploitant | Revue CSP et en-têtes du HTML Caddy, recette navigateur des rôles et du blocage inter-origines | Helmet protège les réponses Express ; le HTML statique vient de Caddy. Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
-| P1 — sécurité | Exécuter le protocole Strix isolé, reproduire ses résultats, poursuivre la revue des imports et erreurs/logs | Recherche Strix faite, scan non exécuté ; voir `STRIX.md`. La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
+| P1 — frontend/exploitant | Déployer la CSP et les en-têtes du HTML Caddy documentés, puis effectuer la recette navigateur des rôles et du blocage inter-origines | Helmet protège les réponses Express ; la configuration Caddy de référence est désormais durcie dans `DEPLOYMENT.md`, mais elle n'a pas été appliquée au VPS pendant cette revue. Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
+| P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
 | P2 — backend | Mesurer la contention du verrou commun si les mutations de comptes deviennent fréquentes | Lecture des sessions non verrouillée ; sérialisation limitée aux mutations sensibles |
 
 Le retour de release suppose des migrations compatibles avec l'ancienne

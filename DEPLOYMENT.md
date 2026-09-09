@@ -617,6 +617,17 @@ Configuration de reference :
 
 ```caddyfile
 gta-rp.f1prediction.fr {
+    # Ces en-tetes protegent aussi le HTML statique Vite. Helmet ne couvre que
+    # les reponses Express generees sous /api.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'"
+        Permissions-Policy "camera=(), geolocation=(), microphone=()"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+
     route {
         handle /api/* {
             reverse_proxy 127.0.0.1:4000
@@ -656,6 +667,13 @@ sudo systemctl reload caddy
 Caddy gere automatiquement le certificat TLS tant que le DNS
 `gta-rp.f1prediction.fr` pointe vers le VPS et que les ports 80/443 restent
 joignables publiquement.
+
+La directive `style-src` conserve exceptionnellement `'unsafe-inline'` pour
+les deux couleurs de tags appliquees par React ; les valeurs viennent d'un
+schema serveur limite a `#RRGGBB`. Aucun script inline ni source de script
+distante n'est autorise. Apres deploiement de cette configuration, verifier les
+en-tetes avec une requete `HEAD` et la navigation publique, puis retirer ce
+point de la checklist de l'audit.
 
 Les photos issues des imports Notion ne doivent pas etre servies directement
 depuis une URL distante. L'administration telecharge la photo au moment de
@@ -901,7 +919,7 @@ L'ancien runtime Node `24.18.0` a ete supprime apres mutualisation.
 
 Depuis l'audit du 2026-09-09, utiliser une archive d'un commit valide et le
 script GTA `scripts/activate-gta-release.sh`. Les correctifs de cet audit sont
-encore locaux : consulter `SECURITY_AUDIT.md` avant toute ouverture. La bascule
+deployes : consulter `SECURITY_AUDIT.md` pour les controles restants. La bascule
 verifie la sante HTTP et restaure le lien precedent si le redemarrage ou le
 healthcheck echoue. Elle ne restaure jamais automatiquement une base de donnees.
 
@@ -986,6 +1004,7 @@ cd /var/www/gta-rp-population-graph/releases/$release
 # Comparer cette empreinte a celle de la machine source avant extraction.
 sha256sum source.tar.gz
 tar -xzf source.tar.gz
+chmod 755 scripts/*.sh
 cd /var/www/gta-rp-population-graph/releases/$release/backend
 ln -sfn /var/www/gta-rp-population-graph/shared/config/backend.env .env
 npm ci
@@ -1014,8 +1033,8 @@ source et les parcours OAuth/moderation avec les comptes controles.
 
 ### Ecarts d'exploitation constates le 2026-09-09
 
-La production est encore sur `20260909T120000Z-step16-final-ux` au moment de
-cette revue en lecture. Aucun correctif de cette passe n'a ete deploye.
+Constats releves sur `20260909T120000Z-step16-final-ux` avant intervention.
+Les corrections GTA ont ensuite ete deployees, comme detaille ci-dessous.
 
 - Les dumps recents sont sous `releases/shared/backups/postgres`, a cause de
   la resolution du lien `current`. Le job de restauration lit
@@ -1033,6 +1052,47 @@ cette revue en lecture. Aucun correctif de cette passe n'a ete deploye.
 - Le port 5000 F1 reste autorise publiquement et le compte d'execution de
   l'API est aussi le compte de deploiement. Ces changements de plateforme
   doivent etre coordonnes avec F1 ; rien n'a ete modifie sur cette application.
+
+### Deploiement effectue le 2026-09-09 — etape 17
+
+- Release active : `20260909T134027Z-step17-security-r2`.
+- Base applicative : `997c560d286c5077472a16029763428cbd47be60`.
+- Archive de cette base : SHA-256
+  `20a3982adb6559cf79c619905c9491a971057061ff78b19968153c7a94cedd9a`.
+- La revision `r2` reprend les builds/dependances de la premiere release et
+  ajoute uniquement le controle individuel des unites systemd dans
+  `scripts/check-production-ops.sh` et son test dans `scripts/test-ops.mjs`.
+  Ces changements restent a commiter dans le depot local.
+- SHA-256 du script de controle deploye :
+  `8ae0a3dd26c38ee3eab543fc166c22fd3c3c81c7bbf45e56abd0132712872253`.
+- SHA-256 des tests d'exploitation deployes :
+  `21f5f5efb201dfcdcd570eb3230dc032e6063fed59715676328dc742e223409a`.
+- `npm ci` et builds backend/frontend executes sur le VPS avec Node 24.20.0
+  et npm 12.0.2 ; aucune migration en attente, aucune migration appliquee.
+  Les 11 tests d'exploitation passent aussi sur le VPS.
+- Les scripts shell extraits ont ete rendus executables en 0755 avant
+  utilisation : plusieurs sont suivis en 0644 dans Git. Cette normalisation
+  fait maintenant partie de la procedure ci-dessus.
+- Sauvegarde PostgreSQL restauree reellement avant bascule :
+  `shared/backups/postgres/daily/gta_rp_population_graph_20260909T134244Z.dump`,
+  SHA-256 `ea637abce85cb0183a245b85299b88f443669887e0613d265e4c7eed9bb8ec4d`.
+  Verification des tables, des index et de 362 personnages, 107 relations,
+  1380 historiques. La base `gta_rp_restore_test_*` a ete supprimee ensuite.
+  Le compte applicatif conserve son absence de droit de creation de base ;
+  seul le compte d'administration PostgreSQL a cree/supprime la base de test.
+- Archive photos :
+  `shared/backups/uploads/weekly/characters_20260909T134245Z.tar.gz`.
+  Les deux arborescences de sauvegardes GTA (`shared` et l'ancien
+  `releases/shared`) sont protegees : dossiers 0700, fichiers 0600.
+- L'API ecoute sur `127.0.0.1:4000`. Les controles HTTP et SSH passent,
+  y compris cookies Secure/HttpOnly/SameSite, redirections Google/Discord/Twitch,
+  refus anonymes, origines d'ecriture et acces a une photo existante.
+- Le timer reel des metriques est `platform-ops-textfile.timer`, son service
+  `platform-ops-textfile.service` a ete execute avec succes. Chaque unite est
+  verifiee separement : `systemctl is-active` avec plusieurs noms peut reussir
+  si une seule unite est active.
+- F1 et Caddy restent actifs ; aucun changement de leur configuration.
+  Les anciennes releases sont conservees pour rollback.
 
 Si un sous-ensemble seulement change, garder la meme logique mais ne relancer
 que la partie concernee. En revanche, toute modification backend ou frontend

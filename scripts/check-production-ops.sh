@@ -140,7 +140,7 @@ check_ssh() {
 
   run_check "backend, Caddy and timers are active" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "systemctl is-active gta-rp-backend.service caddy gta-rp-photo-cleanup.timer gta-rp-postgres-backup.timer gta-rp-uploads-backup.timer gta-rp-monitoring-textfile.timer >/dev/null"
+    "for unit in gta-rp-backend.service caddy gta-rp-photo-cleanup.timer gta-rp-postgres-backup.timer gta-rp-uploads-backup.timer platform-ops-textfile.timer; do systemctl is-active --quiet \"\$unit\" || exit 1; done"
 
   run_check "PostgreSQL backup is less than 36 hours old in the restore directory" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \

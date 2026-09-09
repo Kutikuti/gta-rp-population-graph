@@ -32,6 +32,8 @@ import {
 const isRetryableFetchError = (error: unknown) =>
   error instanceof TypeError || (error instanceof Error && error.name === "AbortError");
 
+const notionRequestTimeoutMs = 15_000;
+
 const notionRequestFailedError = (input: {
   failureMessage: string;
   upstreamStatus: number;
@@ -63,7 +65,8 @@ const requestNotionRecordMap = async (input: {
         "content-type": "application/json",
         "user-agent": notionUserAgent
       },
-      body: JSON.stringify(input.body)
+      body: JSON.stringify(input.body),
+      signal: AbortSignal.timeout(notionRequestTimeoutMs)
     });
   } catch (error) {
     if (isRetryableFetchError(error) && input.attempt < maxRateLimitRetries) {

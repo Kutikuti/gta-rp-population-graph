@@ -6,6 +6,17 @@ import { resolve, join } from "node:path";
 import { test } from "node:test";
 
 const scripts = import.meta.dirname;
+
+test("SSH health check fails if any required timer is inactive", t => {
+  const f = fixture(t);
+  f.env.SSH_KEY = f.env.ENV_FILE;
+  f.mock("ssh", 'command="${!#}"\nif [[ "$command" == *"systemctl is-active"* ]]; then bash -c "$command"; fi');
+  // Like systemctl, a multi-unit invocation succeeds if at least one is active.
+  f.mock("systemctl", 'for unit in "$@"; do case "$unit" in is-active|--quiet) continue;; esac; if [[ "$unit" != "${FAIL_UNIT:-}" ]]; then exit 0; fi; done\nexit 3');
+  assert.equal(f.run("check-production-ops.sh", ["--ssh-only"]).status, 0);
+  f.env.FAIL_UNIT = "gta-rp-postgres-backup.timer";
+  assert.equal(f.run("check-production-ops.sh", ["--ssh-only"]).status, 1);
+});
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), "gta-ops-test-"));
   const bin = join(root, "bin");
