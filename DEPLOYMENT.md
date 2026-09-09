@@ -899,6 +899,12 @@ L'ancien runtime Node `24.18.0` a ete supprime apres mutualisation.
 
 ## Procedure de mise a jour reproductible
 
+Depuis l'audit du 2026-09-09, utiliser une archive d'un commit valide et le
+script GTA `scripts/activate-gta-release.sh`. Les correctifs de cet audit sont
+encore locaux : consulter `SECURITY_AUDIT.md` avant toute ouverture. La bascule
+verifie la sante HTTP et restaure le lien precedent si le redemarrage ou le
+healthcheck echoue. Elle ne restaure jamais automatiquement une base de donnees.
+
 Sur le VPS actuel, le dossier de production `current` n'est pas un checkout
 Git et pointe vers une release immutable. La mise a jour doit donc preparer un
 nouveau dossier `releases/<horodatage>`, y synchroniser le code valide, puis
@@ -936,7 +942,7 @@ Sequence recommandee :
 7. Lancer un backup PostgreSQL avant toute migration si une migration est
    attendue.
 8. Appliquer les migrations si besoin.
-9. Activer la release avec `activate-release.sh`.
+9. Activer la release avec `scripts/activate-gta-release.sh` de cette release.
 10. Redemarrer le backend si le script de bascule ne l'a pas deja fait.
 11. Executer les smoke tests publics.
 
@@ -944,65 +950,42 @@ Exemple depuis la machine source :
 
 ```bash
 cd /workspaces/gta-rp-population-graph
+set -euo pipefail
 ./scripts/run-all-checks.sh
+# Commiter uniquement les changements applicatifs valides avant le packaging.
+./scripts/package-release.sh /tmp/gta-rp-release.tar.gz
 
 release=20260731T151800Z-exemple
 ssh -i .secrets/codex_gta_rp_deploy \
   codex-deploy@65.109.171.143 \
-  "mkdir -p /var/www/gta-rp-population-graph/releases/$release"
+  "mkdir /var/www/gta-rp-population-graph/releases/$release"
 
-rsync -avz --delete \
-  --exclude '.git' \
-  --exclude '.backups' \
-  --exclude '.codex' \
-  --exclude '.devcontainer' \
-  --exclude '.secrets' \
-  --exclude '.serena' \
-  --exclude '.vscode' \
-  --exclude 'node_modules' \
-  --exclude 'backend/node_modules' \
-  --exclude 'web-client/node_modules' \
-  --exclude 'backend/dist' \
-  --exclude 'web-client/dist' \
-  --exclude 'backend/.env' \
-  --exclude 'backend/storage' \
-  -e "ssh -i .secrets/codex_gta_rp_deploy" \
-  /workspaces/gta-rp-population-graph/ \
-  codex-deploy@65.109.171.143:/var/www/gta-rp-population-graph/releases/$release/
+scp -o BatchMode=yes -o StrictHostKeyChecking=yes \
+  -i .secrets/codex_gta_rp_deploy /tmp/gta-rp-release.tar.gz \
+  codex-deploy@65.109.171.143:/var/www/gta-rp-population-graph/releases/$release/source.tar.gz
 ```
 
-Si `rsync` est absent de la machine source, la release cible vient d'etre creee
-et est encore inactive : utiliser cette variante equivalente. Elle ne transfere
-pas les secrets ni le stockage partage.
+Le script exporte seulement `backend`, `web-client`, `scripts` et
+`.node-version` depuis Git. Il refuse les changements applicatifs non commites
+et les chemins prives/generes reconnus. Relire la liste de l'archive et conserver
+le commit et son SHA-256 ; cette selection ne remplace pas une revue des secrets
+eventuellement presents dans le contenu des fichiers suivis.
 
 ```bash
-tar -czf - \
-  --exclude=.git \
-  --exclude=.backups \
-  --exclude=.codex \
-  --exclude=.devcontainer \
-  --exclude=.secrets \
-  --exclude=.serena \
-  --exclude=.vscode \
-  --exclude=node_modules \
-  --exclude=backend/node_modules \
-  --exclude=web-client/node_modules \
-  --exclude=backend/dist \
-  --exclude=web-client/dist \
-  --exclude=backend/coverage \
-  --exclude=web-client/coverage \
-  --exclude=backend/.env \
-  --exclude=backend/storage \
-  . | ssh -i .secrets/codex_gta_rp_deploy \
-    codex-deploy@65.109.171.143 \
-    "tar -xzf - -C /var/www/gta-rp-population-graph/releases/$release"
+tar -tzf /tmp/gta-rp-release.tar.gz
+sha256sum /tmp/gta-rp-release.tar.gz
 ```
 
 Puis sur le VPS :
 
 ```bash
 release=20260731T151800Z-exemple
+set -euo pipefail
 export PATH=/opt/node-apps/bin:$PATH
+cd /var/www/gta-rp-population-graph/releases/$release
+# Comparer cette empreinte a celle de la machine source avant extraction.
+sha256sum source.tar.gz
+tar -xzf source.tar.gz
 cd /var/www/gta-rp-population-graph/releases/$release/backend
 ln -sfn /var/www/gta-rp-population-graph/shared/config/backend.env .env
 npm ci
@@ -1014,27 +997,42 @@ npm ci
 npm run build
 
 cd /var/www/gta-rp-population-graph/releases/$release/backend
-if npm run db:migrate:pending | rg -qv '\[\]'; then
-  sudo systemctl start gta-rp-postgres-backup.service
-  npm run db:migrate
-fi
+# Sauvegarder avant la commande idempotente de migration. Ne pas analyser
+# la sortie npm pour decider si une sauvegarde est necessaire.
+../scripts/backup-postgres.sh
+npm run db:migrate
 
-/var/www/platform-ops/scripts/activate-release.sh gta-rp "$release"
-sudo systemctl restart gta-rp-backend.service
-healthy=false
-for attempt in {1..10}; do
-  if curl --fail --silent --show-error \
-    https://gta-rp.f1prediction.fr/api/health; then
-    healthy=true
-    break
-  fi
-  sleep 2
-done
-if [[ "$healthy" != true ]]; then
-  sudo systemctl status gta-rp-backend.service --no-pager
-  exit 1
-fi
+../scripts/activate-gta-release.sh "$release"
+../scripts/check-production-ops.sh --public-only
 ```
+
+Executer ce bloc dans un shell avec `set -euo pipefail` : un echec de backup,
+de build ou de migration doit interrompre la sequence avant la bascule.
+Le rollback de code exige que le schema reste compatible avec la release
+precedente. Apres bascule, lancer aussi les controles SSH depuis la machine
+source et les parcours OAuth/moderation avec les comptes controles.
+
+### Ecarts d'exploitation constates le 2026-09-09
+
+La production est encore sur `20260909T120000Z-step16-final-ux` au moment de
+cette revue en lecture. Aucun correctif de cette passe n'a ete deploye.
+
+- Les dumps recents sont sous `releases/shared/backups/postgres`, a cause de
+  la resolution du lien `current`. Le job de restauration lit
+  `shared/backups/postgres`, qui contient des archives anciennes. Le script
+  corrige pointe maintenant sur ce dernier chemin ; produire puis restaurer
+  un dump recent avant de conclure que la chaine de sauvegarde est valide.
+- Les dumps existants sont en 0644. Les nouveaux scripts creent des dossiers
+  0700 et des fichiers 0600. Proteger egalement les dossiers/archives anciens
+  avant nettoyage ; ne pas les supprimer avant restauration verifiee.
+- L'API ecoute sur `*:4000`. La correction limite la production a
+  `127.0.0.1:4000`. Les directives Caddy existantes utilisent deja ce port local.
+- Le textfile monitoring est dans
+  `/var/www/platform-ops/monitoring/data/node-exporter-textfile/gta_rp_ops.prom`.
+  Le controle d'exploitation a ete aligne sur ce chemin.
+- Le port 5000 F1 reste autorise publiquement et le compte d'execution de
+  l'API est aussi le compte de deploiement. Ces changements de plateforme
+  doivent etre coordonnes avec F1 ; rien n'a ete modifie sur cette application.
 
 Si un sous-ensemble seulement change, garder la meme logique mais ne relancer
 que la partie concernee. En revanche, toute modification backend ou frontend

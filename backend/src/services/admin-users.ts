@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-
 import type { Transaction } from "sequelize";
-
 import type { AuthProvider, RoleName } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
+import { lockAccountMutations } from "./account-mutation-lock.js";
 import {
   type AdminUser,
   type BanInput,
+  countActiveAdministrators,
   logAdminAction,
   serializeUser,
   userInclude
@@ -83,6 +83,7 @@ export class SequelizeAdminUserService {
     }
 
     return sequelize.transaction(async (transaction) => {
+      await lockAccountMutations(transaction);
       const user = await models.User.findByPk(userId, {
         attributes: ["id"],
         transaction
@@ -128,6 +129,7 @@ export class SequelizeAdminUserService {
     }
 
     return sequelize.transaction(async (transaction) => {
+      await lockAccountMutations(transaction);
       const user = await models.User.findByPk(userId, {
         include: [
           {
@@ -192,6 +194,7 @@ export class SequelizeAdminUserService {
     }
 
     return sequelize.transaction(async (transaction) => {
+      await lockAccountMutations(transaction);
       const user = await models.User.findByPk(userId, {
         include: [
           ...userInclude(),
@@ -209,11 +212,8 @@ export class SequelizeAdminUserService {
         return { status: "not_found" as const };
       }
 
-      if (user.role?.name === "administrator") {
-        const adminCount = await models.User.count({
-          include: [{ model: models.Role, as: "role", where: { name: "administrator" } }],
-          transaction
-        });
+      if (user.role?.name === "administrator" && !user.bans?.length) {
+        const adminCount = await countActiveAdministrators(transaction);
 
         if (adminCount <= 1) {
           return { status: "last_admin" as const };

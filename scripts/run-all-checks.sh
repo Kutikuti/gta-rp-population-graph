@@ -26,8 +26,10 @@ run_npm_script() {
   local script_name="$2"
 
   run_step "${project_dir}: npm run ${script_name}" \
-    bash -lc "cd \"$ROOT_DIR/$project_dir\" && npm run $script_name"
+    npm --prefix "$ROOT_DIR/$project_dir" run "$script_name"
 }
+
+run_step "scripts: operational regression tests" node --test "$ROOT_DIR/scripts/test-ops.mjs"
 
 run_npm_script "backend" "check"
 run_npm_script "backend" "test:coverage"

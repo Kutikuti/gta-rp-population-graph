@@ -9,6 +9,7 @@ import { loadCurrentUser } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { recordHttpMetrics } from "./middleware/metrics.js";
 import { shouldSkipGlobalRateLimit } from "./middleware/rate-limit.js";
+import { requireTrustedWriteOrigin } from "./middleware/request-origin.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createContributionsRouter } from "./routes/contributions.js";
@@ -93,6 +94,21 @@ export const createApp = (dependencies: AppDependencies = {}) => {
         response.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       }
     })
+  );
+  app.use(requireTrustedWriteOrigin);
+  app.use(
+    [
+      "/api/auth",
+      "/api/profile",
+      "/api/contributions",
+      "/api/moderation",
+      "/api/admin",
+      "/api/supervision"
+    ],
+    (_request, response, next) => {
+      response.setHeader("Cache-Control", "no-store");
+      next();
+    }
   );
   app.use(express.json({ limit: "1mb" }));
   app.use(recordHttpMetrics);

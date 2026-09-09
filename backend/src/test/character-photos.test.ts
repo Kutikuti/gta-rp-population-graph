@@ -1,8 +1,9 @@
 import sharp from "sharp";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   createCharacterPhotoDraft,
+  deleteStoredCharacterPhoto,
   InvalidCharacterPhotoError,
   importCharacterPhotoFromRemoteUrl
 } from "../services/character-photos.js";
@@ -95,6 +96,9 @@ describe("character photo validation", () => {
       accept: "image/jpeg,image/png,image/webp",
       "user-agent": "GTA-RP-Population-Graph/1.0 (+https://gta-rp.f1prediction.fr)"
     });
+    expect(requestInit?.redirect).toBe("manual");
+    expect(requestInit?.signal).toBeInstanceOf(AbortSignal);
+    await deleteStoredCharacterPhoto(photoUrl);
   });
 
   it("rejects remote photos outside the Notion allowlist", async () => {
@@ -104,4 +108,68 @@ describe("character photo validation", () => {
       })
     ).rejects.toBeInstanceOf(InvalidCharacterPhotoError);
   });
+
+  it.each([
+    "http://www.notion.so/image/test.png",
+    "https://www.notion.so:8443/image/test.png",
+    "https://user:password@www.notion.so/image/test.png",
+    "https://www.notion.so.evil.test/image/test.png",
+    "https://127.0.0.1/photo.png"
+  ])("rejects untrusted URL %s before any request", async (url) => {
+    const fetchImpl = vi.fn();
+    await expect(importCharacterPhotoFromRemoteUrl({ url, fetchImpl })).rejects.toBeInstanceOf(
+      InvalidCharacterPhotoError
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "http://169.254.169.254/latest/meta-data/",
+    "https://127.0.0.1/private",
+    "https://evil.test/photo"
+  ])("does not follow an untrusted redirect to %s", async (location) => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 302, headers: { location } }));
+    await expect(
+      importCharacterPhotoFromRemoteUrl({ url: "https://www.notion.so/photo", fetchImpl })
+    ).rejects.toBeInstanceOf(InvalidCharacterPhotoError);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("bounds redirect loops", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockImplementation(
+        async () => new Response(null, { status: 307, headers: { location: "/photo" } })
+      );
+    await expect(
+      importCharacterPhotoFromRemoteUrl({ url: "https://www.notion.so/photo", fetchImpl })
+    ).rejects.toBeInstanceOf(InvalidCharacterPhotoError);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it.each([true, false])(
+    "cancels oversized remote bodies (declared length: %s)",
+    async (declaredLength) => {
+      const cancel = vi.fn();
+      const body = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new Uint8Array(3_000_000));
+        },
+        cancel
+      });
+      const fetchImpl = async () =>
+        new Response(body, {
+          headers: {
+            "content-type": "image/png",
+            ...(declaredLength ? { "content-length": "3000000" } : {})
+          }
+        });
+      await expect(
+        importCharacterPhotoFromRemoteUrl({ url: "https://www.notion.so/photo", fetchImpl })
+      ).rejects.toBeInstanceOf(InvalidCharacterPhotoError);
+      expect(cancel).toHaveBeenCalledOnce();
+    }
+  );
 });

@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
 import { env } from "../config/env.js";
@@ -259,6 +259,46 @@ const oauthStateFromLocation = (location: string | undefined) => {
 };
 
 describe("auth API", () => {
+  it("binds login state to its provider before exchanging a code", async () => {
+    const discordOauthClient = new FixtureDiscordOauthClient();
+    const exchange = vi.spyOn(discordOauthClient, "exchangeCodeForProfile");
+    const agent = request.agent(
+      createApp({
+        authService: new FixtureAuthService(),
+        googleOauthClient: new FixtureGoogleOauthClient(),
+        discordOauthClient
+      })
+    );
+    const start = await agent.get("/api/auth/google");
+    const state = oauthStateFromLocation(start.headers["location"]);
+    const callback = await agent.get("/api/auth/discord/callback").query({ code: "ok", state });
+    expect(callback.headers["location"]).toContain("auth_error=invalid_state");
+    expect(exchange).not.toHaveBeenCalled();
+    expect((await agent.get("/api/auth/session")).body).toEqual({ authenticated: false });
+  });
+
+  it("expires OAuth attempts after ten minutes", async () => {
+    const googleOauthClient = new FixtureGoogleOauthClient();
+    const exchange = vi.spyOn(googleOauthClient, "exchangeCodeForProfile");
+    const agent = request.agent(
+      createApp({ authService: new FixtureAuthService(), googleOauthClient })
+    );
+    const start = await agent.get("/api/auth/google");
+    const state = oauthStateFromLocation(start.headers["location"]);
+    const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 601_000);
+    try {
+      const callback = await agent.get("/api/auth/google/callback").query({ code: "ok", state });
+      expect(callback.headers["location"]).toContain("auth_error=invalid_state");
+      expect(exchange).not.toHaveBeenCalled();
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it("does not cache authenticated session responses", async () => {
+    const response = await request(createApp()).get("/api/auth/session");
+    expect(response.headers["cache-control"]).toBe("no-store");
+  });
   it("returns an anonymous session when no user is connected", async () => {
     const app = createApp({
       authService: new FixtureAuthService(),

@@ -82,7 +82,12 @@ const assertAllowedRemotePhotoUrl = (value: string) => {
     throw new InvalidCharacterPhotoError("URL de photo distante invalide.");
   }
 
-  if (url.protocol !== "https:") {
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    (url.port && url.port !== "443")
+  ) {
     throw new InvalidCharacterPhotoError("Seules les URLs HTTPS sont autorisees.");
   }
 
@@ -100,6 +105,7 @@ const readResponseBuffer = async (response: Response, maxBytes: number) => {
   const contentLength = Number.parseInt(response.headers.get("content-length") ?? "", 10);
 
   if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    await response.body?.cancel();
     throw new InvalidCharacterPhotoError("La photo distante depasse la taille maximale autorisee.");
   }
 
@@ -237,18 +243,33 @@ export const createCharacterPhotoDraft = async (input: {
 export const importCharacterPhotoFromRemoteUrl = async (
   input: { url: string; fetchImpl?: FetchLike } = { url: "" }
 ) => {
-  const remoteUrl = assertAllowedRemotePhotoUrl(input.url);
+  let remoteUrl = assertAllowedRemotePhotoUrl(input.url);
   const fetchImpl = input.fetchImpl ?? fetch;
-  const response = await fetchImpl(remoteUrl.toString(), {
-    method: "GET",
-    redirect: "follow",
-    headers: {
-      accept: "image/jpeg,image/png,image/webp",
-      "user-agent": notionUserAgent
+  const signal = AbortSignal.timeout(15_000);
+  let response: Response;
+  for (let redirects = 0; ; redirects += 1) {
+    response = await fetchImpl(remoteUrl.toString(), {
+      method: "GET",
+      redirect: "manual",
+      signal,
+      headers: {
+        accept: "image/jpeg,image/png,image/webp",
+        "user-agent": notionUserAgent
+      }
+    });
+    if (![301, 302, 303, 307, 308].includes(response.status)) break;
+    const location = response.headers.get("location");
+    await response.body?.cancel();
+    if (!location || redirects >= 3) {
+      throw new InvalidCharacterPhotoError(
+        "Redirection de photo distante invalide ou trop nombreuse."
+      );
     }
-  });
+    remoteUrl = assertAllowedRemotePhotoUrl(new URL(location, remoteUrl).toString());
+  }
 
   if (!response.ok) {
+    await response.body?.cancel();
     throw new InvalidCharacterPhotoError(
       `Le telechargement de la photo distante a echoue (HTTP ${response.status}).`
     );
@@ -259,6 +280,7 @@ export const importCharacterPhotoFromRemoteUrl = async (
   const contentType = normalizeContentType(response.headers.get("content-type"));
 
   if (!allowedContentTypes.has(contentType)) {
+    await response.body?.cancel();
     throw new InvalidCharacterPhotoError("Le format de la photo distante n'est pas autorise.");
   }
 

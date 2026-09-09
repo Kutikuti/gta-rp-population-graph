@@ -765,7 +765,27 @@ ne pas retarder l'audit securite pre-ouverture.
 
 ### Etape 17 - Audit securite pre-ouverture
 
-Statut : planifiee apres la finalisation UX de l'etape 16.
+Statut : commencee le 2026-09-09.
+
+Premiere passe du 2026-09-09 : correctifs locaux et bilan dans
+`SECURITY_AUDIT.md`, protocole Strix dans `STRIX.md`.
+
+- Faille de connexion OAuth par email commun reproduite puis corrigee ;
+  verrouillage transactionnel des invariants de comptes et tests PostgreSQL
+  concurrents ajoutes.
+- Matrice de refus des routes sensibles, protection des origines d'ecriture,
+  etat OAuth lie au fournisseur et expire apres 10 minutes, delais reseau
+  bornes, redirections des photos controlees avant chaque acces.
+- Sauvegardes atomiques/privees avec correction du chemin `current`, tests
+  d'echec d'exploitation, packaging depuis Git et bascule GTA avec rollback.
+- Checks, tests, integrations et builds locaux passes sans baisse des seuils.
+- **Etape non cloturee : correctifs pas encore deployes.** Les controles VPS
+  renforces signalent un dump ancien dans le repertoire de restauration, des
+  permissions de sauvegarde trop larges et une API liee a toutes les interfaces.
+  Produire/restaurer un dump recent et faire la recette des roles apres bascule.
+- Strix etudie sur une version figee ; aucun scan execute. Laboratoire Docker,
+  fournisseur LLM et budget a preparer selon `STRIX.md`. La revue navigateur/CSP
+  et les ecarts de plateforme mutualisee restent explicites dans le bilan.
 
 Cette etape doit verifier que les retouches UX et les derniers flux publics ou
 authentifies n'ont pas fragilise la securite avant l'arrivee des premiers
@@ -773,26 +793,77 @@ utilisateurs. Elle se concentre sur les surfaces exposees en production :
 authentification, roles, contributions, moderation, imports, photos,
 administration, supervision et exploitation VPS.
 
-Plan propose :
+Lots de travail :
 
-1. Repasser toutes les routes publiques, authentifiees, moderateur et
-   administrateur avec une matrice claire des droits attendus, y compris le cas
-   utilisateur banni.
-2. Verifier les protections d'entrees : schemas, limites de taille, validations
-   serveur, echappement des contenus affiches et absence de confiance dans le
-   frontend.
-3. Auditer le pipeline photo : types MIME, signatures fichiers, reencodage,
-   chemins de stockage, exposition publique, quotas, nettoyage et moderation.
-4. Controler les flux OAuth et session : callbacks, cookies, expiration, liaison
-   et dissociation des comptes, blocage de la suppression du dernier moyen de
-   connexion.
-5. Verifier les imports Notion : URLs distantes, telechargement photo, absence
-   de publication automatique non voulue, historique et donnees brutes.
-6. Revoir la configuration production : Caddy, TLS, ports exposes, systemd,
-   PostgreSQL Docker non public, sauvegardes, permissions fichiers, secrets hors
-   Git et supervision protegee.
-7. Lancer les audits et checks disponibles, documenter les risques residuels et
-   corriger les failles bloquantes avant ouverture.
+1. **Lot A - Baseline et modele de menace**
+   - Etablir l'inventaire versionne des endpoints, methodes HTTP, roles,
+     donnees lues ou ecrites et dependances externes.
+   - Formaliser les frontieres de confiance : navigateur, API, PostgreSQL,
+     stockage photo, Notion, fournisseurs OAuth, Caddy, Grafana et VPS.
+   - Relever les versions, avis de securite applicables et configurations
+     effectives, sans mettre a jour une dependance a l'aveugle pendant l'audit.
+
+2. **Lot B - Autorisations et ecritures API**
+   - Construire une matrice de droits executable couvrant visiteur,
+     utilisateur, moderateur, administrateur et utilisateur banni.
+   - Verifier chaque route d'ecriture : authentification, role, appartenance a
+     la ressource, validation de charge utile, erreurs sans fuite et audit des
+     actions sensibles.
+   - Tester les contournements usuels : identifiants modifies, requetes
+     directes, session absente ou invalide et comptes bannis.
+
+3. **Lot C - Sessions, OAuth et protection navigateur**
+   - Auditer cookies, `Secure`, `HttpOnly`, `SameSite`, duree de session,
+     regeneration, deconnexion, revocation et nettoyage des sessions expirees.
+   - Verifier les etats OAuth, redirections, rattachement/dissociation de
+     compte et la protection du dernier moyen de connexion.
+   - Examiner CORS, risque CSRF, headers `Helmet`, CSP et comportement des
+     pages publiques, sans ajouter de mecanisme inutile si les garanties
+     actuelles sont suffisantes et testees.
+
+4. **Lot D - Photos et fichiers distants**
+   - Rejouer les controles de taille, MIME, signature, decodage `sharp`,
+     reencodage, suppression des metadonnees, noms generes et permissions de
+     stockage.
+   - Verifier les suppressions, brouillons, nettoyage planifie, exposition
+     `/uploads` et absence de traversal ou de fichier orphelin exploitable.
+   - Auditer le telechargement de photos Notion : URL, redirections, delais,
+     erreurs, limite de taille et protection contre les destinations internes.
+
+5. **Lot E - Imports, moderation et integrite des donnees**
+   - Verifier que le scraping et l'application Notion ne publient rien sans le
+     workflow attendu et conservent une trace exploitable.
+   - Controler relations, photos, dedoublonnage, transactions et actions de
+     moderation directe pour eviter escalade de privilege ou incoherence.
+   - Examiner export et anonymisation RGPD afin qu'ils ne divulguent pas de
+     donnees d'un autre compte ni ne cassent la tracabilite necessaire.
+
+6. **Lot F - Frontend et informations publiques**
+   - Examiner les interpolations de contenu communautaire, URLs externes,
+     liens medias et affichage d'erreurs pour les risques XSS, open redirect ou
+     fuite d'informations.
+   - Verifier que les donnees OAuth privees, les secrets et les actions admin
+     ne sont jamais exposes dans les bundles, reponses publiques ou logs.
+   - Repasser les routes publiques et les pages RGPD pour confirmer que les
+     informations affichees correspondent aux traitements reels.
+
+7. **Lot G - VPS et exploitation**
+   - Auditer Caddy/TLS, firewall, ports, Docker PostgreSQL, services systemd,
+     permissions des releases et fichiers partages, runtime Node et secrets.
+   - Rejouer les controles de sauvegarde, restauration, nettoyage photo,
+     supervision, fail2ban et acces SSH par cle, sans intervenir sur les autres
+     applications du VPS.
+   - Verifier que Grafana, Prometheus et les endpoints internes restent
+     proteges et que les logs ne contiennent pas de secret.
+
+8. **Lot H - Remediation et decision d'ouverture**
+   - Corriger immediatement les constats critiques ou eleves, avec test de
+     non-regression adapte ; planifier les constats moyens ou faibles avec
+     responsable et justification.
+   - Rejouer checks, tests, integrations PostgreSQL, builds, smoke tests et
+     recette manuelle des roles apres chaque correction significative.
+   - Produire un bilan de securite : constats, corrections, risques residuels,
+     date de revue et decision explicite d'ouverture ou de report.
 
 Point de controle :
 
@@ -805,6 +876,9 @@ Point de controle :
   endpoints publics.
 - Le VPS n'expose publiquement que les ports strictement necessaires.
 - Les checks, tests et builds restent verts apres corrections.
+- Aucun constat critique ou eleve non traite ne subsiste avant ouverture.
+- Les constats moyens ou faibles restants sont documentes dans le plan avec
+  leur risque, leur priorite et leur mesure compensatoire eventuelle.
 
 ### Etape 18 - Declinaison par serveur et sources d'import
 

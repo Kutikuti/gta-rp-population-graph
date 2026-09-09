@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -37,7 +38,11 @@ prune_count() {
   done
 }
 
+[[ "${KEEP_WEEKLY}" =~ ^[1-9][0-9]*$ ]] || { echo "Retention must be positive" >&2; exit 1; }
 mkdir -p "${WEEKLY_DIR}"
+chmod 700 "${BACKUP_ROOT}" "${WEEKLY_DIR}"
+exec 9>"${BACKUP_ROOT}/.backup.lock"
+flock -n 9 || { echo "Uploads backup already running" >&2; exit 1; }
 
 if [[ ! -d "${UPLOADS_DIR}" ]]; then
   echo "Uploads directory does not exist: ${UPLOADS_DIR}" >&2
@@ -45,12 +50,16 @@ if [[ ! -d "${UPLOADS_DIR}" ]]; then
 fi
 
 archive_file="${WEEKLY_DIR}/characters_${TIMESTAMP}.tar.gz"
-tar -C "${UPLOADS_DIR}/.." -czf "${archive_file}" "$(basename "${UPLOADS_DIR}")"
+temporary_file="$(mktemp "${WEEKLY_DIR}/.pending.XXXXXX")"
+trap 'rm -f -- "${temporary_file}"' EXIT
+tar -C "${UPLOADS_DIR}/.." -czf "${temporary_file}" "$(basename "${UPLOADS_DIR}")"
+tar -tzf "${temporary_file}" >/dev/null
 
-if [[ ! -s "${archive_file}" ]]; then
-  echo "Uploads archive is empty: ${archive_file}" >&2
+if [[ ! -s "${temporary_file}" ]]; then
+  echo "Uploads archive is empty" >&2
   exit 1
 fi
+mv -- "${temporary_file}" "${archive_file}"
 
 prune_count "${WEEKLY_DIR}" "${KEEP_WEEKLY}" "*.tar.gz"
 

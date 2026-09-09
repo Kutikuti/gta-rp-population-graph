@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -u
+set -uo pipefail
+umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -10,15 +11,19 @@ SSH_PORT="${SSH_PORT:-22}"
 SSH_USER="${SSH_USER:-codex-deploy}"
 SSH_KEY="${SSH_KEY:-${REPO_ROOT}/.secrets/codex_gta_rp_deploy}"
 REMOTE_BACKUP_ROOT="${REMOTE_BACKUP_ROOT:-/var/www/gta-rp-population-graph/shared/backups}"
-MONITORING_SHARED_DIR="${MONITORING_SHARED_DIR:-/var/www/gta-rp-population-graph/shared/monitoring}"
+MONITORING_SHARED_DIR="${MONITORING_SHARED_DIR:-/var/www/platform-ops/monitoring/data}"
 PUBLIC_ONLY=false
 SSH_ONLY=false
 FAILED=0
+CHECK_TMP="$(mktemp -d)"
+trap 'rm -rf -- "${CHECK_TMP}"' EXIT
 
 ssh_args=(
   -i "${SSH_KEY}"
   -p "${SSH_PORT}"
-  -o StrictHostKeyChecking=accept-new
+  -o StrictHostKeyChecking=yes
+  -o BatchMode=yes
+  -o ConnectTimeout=10
 )
 
 usage() {
@@ -41,7 +46,7 @@ Environment overrides:
   SSH_USER              default: codex-deploy
   SSH_KEY               default: .secrets/codex_gta_rp_deploy
   REMOTE_BACKUP_ROOT    default: /var/www/gta-rp-population-graph/shared/backups
-  MONITORING_SHARED_DIR default: /var/www/gta-rp-population-graph/shared/monitoring
+  MONITORING_SHARED_DIR default: /var/www/platform-ops/monitoring/data
 USAGE
 }
 
@@ -58,11 +63,11 @@ run_check() {
   local label="$1"
   shift
 
-  if "$@" >/tmp/gta-rp-ops-check.out 2>/tmp/gta-rp-ops-check.err; then
+  if "$@" >"${CHECK_TMP}/stdout" 2>"${CHECK_TMP}/stderr"; then
     mark_ok "${label}"
   else
     mark_fail "${label}"
-    sed 's/^/     /' /tmp/gta-rp-ops-check.err >&2
+    sed 's/^/     /' "${CHECK_TMP}/stderr" >&2
   fi
 }
 
@@ -96,24 +101,37 @@ if [[ "${PUBLIC_ONLY}" == true && "${SSH_ONLY}" == true ]]; then
   exit 1
 fi
 
+http_check() {
+  local path="$1" expected="$2" pattern="${3:-}" status
+  status="$(curl --silent --show-error --connect-timeout 10 --max-time 30 \
+    --output "${CHECK_TMP}/body" --write-out '%{http_code}' "${BASE_URL}${path}")" || return 1
+  [[ " ${expected} " == *" ${status} "* ]] || { echo "Unexpected HTTP ${status} for ${path}" >&2; return 1; }
+  [[ -z "${pattern}" ]] || grep -Eq "${pattern}" "${CHECK_TMP}/body"
+}
+
 check_public() {
   echo "== Public HTTP checks =="
   run_check "public page returns HTTP 200" \
-    curl -fsSI "${BASE_URL}/"
+    http_check / 200
   run_check "health endpoint returns ok" \
-    bash -c "curl -fsS '${BASE_URL}/api/health' | grep -q '\"status\":\"ok\"'"
+    http_check /api/health 200 '"status"[[:space:]]*:[[:space:]]*"ok"'
   run_check "anonymous session is readable" \
-    bash -c "curl -fsS '${BASE_URL}/api/auth/session' | grep -q '\"authenticated\":false'"
+    http_check /api/auth/session 200 '"authenticated"[[:space:]]*:[[:space:]]*false'
   run_check "public characters endpoint returns items" \
-    bash -c "curl -fsS '${BASE_URL}/api/characters?limit=1' | grep -q '\"items\"'"
+    http_check '/api/characters?limit=1' 200 '"items"[[:space:]]*:'
   run_check "Google OAuth starts with redirect" \
-    bash -c "curl -fsSI '${BASE_URL}/api/auth/google' | grep -q '^HTTP/2 302\\|^HTTP/1.1 302'"
+    http_check /api/auth/google 302
   run_check "supervision is not public without admin session" \
-    bash -c "curl -fsSI '${BASE_URL}/supervision/' | grep -q '^HTTP/2 302\\|^HTTP/1.1 302\\|^HTTP/2 401\\|^HTTP/1.1 401\\|^HTTP/2 403\\|^HTTP/1.1 403'"
+    http_check /supervision/ '302 401 403'
+  run_check "administration is not public" http_check /api/admin/dashboard 401
 }
 
 check_ssh() {
   echo "== SSH server checks =="
+
+  for remote_path in "${REMOTE_BACKUP_ROOT}" "${MONITORING_SHARED_DIR}"; do
+    [[ "${remote_path}" =~ ^/[a-zA-Z0-9_./-]+$ ]] || { mark_fail "invalid remote path"; return; }
+  done
 
   if [[ ! -f "${SSH_KEY}" ]]; then
     mark_fail "SSH key exists at ${SSH_KEY}"
@@ -124,21 +142,25 @@ check_ssh() {
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
     "systemctl is-active gta-rp-backend.service caddy gta-rp-photo-cleanup.timer gta-rp-postgres-backup.timer gta-rp-uploads-backup.timer gta-rp-monitoring-textfile.timer >/dev/null"
 
-  run_check "latest PostgreSQL backup exists" \
+  run_check "PostgreSQL backup is less than 36 hours old in the restore directory" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "find '${REMOTE_BACKUP_ROOT}/postgres/daily' -maxdepth 1 -type f -name '*.dump' -size +0c | grep -q ."
+    "find '${REMOTE_BACKUP_ROOT}/postgres/daily' -maxdepth 1 -type f -name '*.dump' -size +0c -mmin -2160 | grep -q ."
 
-  run_check "latest uploads backup exists" \
+  run_check "uploads backup is less than 8 days old" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "find '${REMOTE_BACKUP_ROOT}/uploads/weekly' -maxdepth 1 -type f -name '*.tar.gz' -size +0c | grep -q ."
+    "find '${REMOTE_BACKUP_ROOT}/uploads/weekly' -maxdepth 1 -type f -name '*.tar.gz' -size +0c -mmin -11520 | grep -q ."
+
+  run_check "backup directories are private" \
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "test \"\$(stat -c %a '${REMOTE_BACKUP_ROOT}/postgres/daily')\" = 700 && test \"\$(stat -c %a '${REMOTE_BACKUP_ROOT}/uploads/weekly')\" = 700"
 
   run_check "firewall is active and PostgreSQL is not public" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "sudo ufw status verbose | grep -q 'Status: active' && sudo ufw status verbose | grep -q '5432/tcp.*DENY IN'"
+    "sudo -n ufw status verbose | grep -q 'Status: active' && sudo -n ufw status verbose | grep -q '5432/tcp.*DENY IN'"
 
   run_check "fail2ban sshd jail is available" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "sudo fail2ban-client status sshd >/dev/null"
+    "sudo -n fail2ban-client status sshd >/dev/null"
 
   run_check "root filesystem below 80 percent" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
@@ -150,7 +172,7 @@ check_ssh() {
 
   run_check "monitoring stack is healthy locally" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "sudo docker ps --format '{{.Names}}' | grep -E 'monitoring[-_](prometheus|grafana|blackbox-exporter|node-exporter)[-_]1' | wc -l | grep -q '^4$' && curl -fsS http://127.0.0.1:9090/-/healthy >/dev/null"
+    "sudo -n docker ps --format '{{.Names}}' | grep -E 'monitoring[-_](prometheus|grafana|blackbox-exporter|node-exporter)[-_]1' | wc -l | grep -q '^4$' && curl -fsS --connect-timeout 5 --max-time 10 http://127.0.0.1:9090/-/healthy >/dev/null"
 
   run_check "monitoring ports are bound locally only" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
@@ -159,6 +181,10 @@ check_ssh() {
   run_check "monitoring textfile metrics exist" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
     "test -s '${MONITORING_SHARED_DIR}/node-exporter-textfile/gta_rp_ops.prom'"
+
+  run_check "backend port is bound to IPv4 loopback" \
+    ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
+    "ss -H -lnt 'sport = :4000' | awk '{print \$4}' | grep -x '127.0.0.1:4000' >/dev/null && ! ss -H -lnt 'sport = :4000' | awk '{print \$4}' | grep -vx '127.0.0.1:4000'"
 }
 
 if [[ "${SSH_ONLY}" != true ]]; then
@@ -168,8 +194,6 @@ fi
 if [[ "${PUBLIC_ONLY}" != true ]]; then
   check_ssh
 fi
-
-rm -f /tmp/gta-rp-ops-check.out /tmp/gta-rp-ops-check.err
 
 if [[ "${FAILED}" -eq 0 ]]; then
   echo "All selected production ops checks passed."

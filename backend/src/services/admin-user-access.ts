@@ -1,11 +1,13 @@
 import type { Transaction } from "sequelize";
-
 import type { RoleName } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
+import { conflictError } from "../middleware/api-error.js";
+import { lockAccountMutations } from "./account-mutation-lock.js";
 import {
   type AdminUser,
   activeBanWhere,
   type BanInput,
+  countActiveAdministrators,
   logAdminAction,
   serializeUser,
   userInclude
@@ -18,6 +20,7 @@ export class SequelizeAdminUserAccessService {
     roleName: RoleName
   ): Promise<AdminUser | "last_admin" | null> {
     return sequelize.transaction(async (transaction) => {
+      await lockAccountMutations(transaction);
       const user = await models.User.findByPk(userId, {
         include: userInclude(),
         transaction
@@ -28,11 +31,12 @@ export class SequelizeAdminUserAccessService {
         return null;
       }
 
-      if (user.role?.name === "administrator" && roleName !== "administrator") {
-        const adminCount = await models.User.count({
-          include: [{ model: models.Role, as: "role", where: { name: "administrator" } }],
-          transaction
-        });
+      if (
+        user.role?.name === "administrator" &&
+        !user.bans?.length &&
+        roleName !== "administrator"
+      ) {
+        const adminCount = await countActiveAdministrators(transaction);
 
         if (adminCount <= 1) {
           return "last_admin";
@@ -59,10 +63,19 @@ export class SequelizeAdminUserAccessService {
 
   async banUser(actorUserId: string, userId: string, input: BanInput): Promise<AdminUser | null> {
     return sequelize.transaction(async (transaction) => {
-      const user = await models.User.findByPk(userId, { transaction });
+      await lockAccountMutations(transaction);
+      const user = await models.User.findByPk(userId, { include: userInclude(), transaction });
 
       if (!user) {
         return null;
+      }
+
+      if (
+        user.role?.name === "administrator" &&
+        !user.bans?.length &&
+        (await countActiveAdministrators(transaction)) <= 1
+      ) {
+        throw conflictError("LAST_ADMIN", "Impossible de bannir le dernier administrateur actif.");
       }
 
       await models.Ban.create(
@@ -93,6 +106,7 @@ export class SequelizeAdminUserAccessService {
 
   async revokeUserBan(actorUserId: string, userId: string): Promise<AdminUser | null> {
     return sequelize.transaction(async (transaction) => {
+      await lockAccountMutations(transaction);
       const user = await models.User.findByPk(userId, { transaction });
 
       if (!user) {

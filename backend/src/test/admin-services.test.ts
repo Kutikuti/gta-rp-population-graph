@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const db = vi.hoisted(() => {
   const transaction = { id: "tx" };
   const sequelize = {
+    query: vi.fn(),
     col: vi.fn((value: string) => ({ col: value })),
     fn: vi.fn((name: string, value: unknown) => ({ fn: name, value })),
     literal: vi.fn((value: string) => ({ literal: value })),

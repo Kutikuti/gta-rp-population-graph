@@ -49,6 +49,8 @@ export class DiscordOidcClient implements DiscordOauthClient {
   async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
     const { clientId, clientSecret, callbackUrl } = ensureDiscordOauthEnabled();
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       method: "POST",
       headers: {
         "content-type": "application/x-www-form-urlencoded"
@@ -75,6 +77,8 @@ export class DiscordOidcClient implements DiscordOauthClient {
     }
 
     const profileResponse = await fetch("https://discord.com/api/users/@me", {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       headers: {
         authorization: `Bearer ${tokenBody.access_token}`
       }

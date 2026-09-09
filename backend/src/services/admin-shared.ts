@@ -71,6 +71,20 @@ export const userInclude = () => [
   { model: models.Ban, as: "bans", required: false, where: activeBanWhere() }
 ];
 
+// Called while holding the account mutation lock, so a concurrent ban or role
+// change cannot invalidate the last-administrator check.
+export const countActiveAdministrators = (transaction: Transaction) =>
+  models.User.count({
+    where: { "$bans.id$": null },
+    include: [
+      { model: models.Role, as: "role", where: { name: "administrator" } },
+      { model: models.Ban, as: "bans", required: false, where: activeBanWhere() }
+    ],
+    distinct: true,
+    col: "id",
+    transaction
+  });
+
 export const adminActionInclude = [
   { model: models.User, as: "actor", attributes: ["id", "displayName"] },
   { model: models.User, as: "targetUser", attributes: ["id", "displayName"] }

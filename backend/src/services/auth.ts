@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
-
 import { Op } from "sequelize";
-
 import type { AuthProvider } from "../db/enums.js";
 import { models, sequelize } from "../db/index.js";
 import { internalServerError } from "../middleware/api-error.js";
+import { lockAccountMutations } from "./account-mutation-lock.js";
 import {
   activeBanWhere,
   serializeAuthenticatedUser,
@@ -89,6 +88,7 @@ export class SequelizeAuthService implements AuthService {
     let userId = "";
 
     await sequelize.transaction(async (transaction) => {
+      await lockAccountMutations(transaction);
       const existingIdentity = await models.UserIdentity.findOne({
         where: {
           provider: identity.provider,
@@ -109,7 +109,6 @@ export class SequelizeAuthService implements AuthService {
         });
 
         if (existingUserWithEmail) {
-          userId = existingUserWithEmail.id;
           return;
         }
       }
@@ -171,6 +170,10 @@ export class SequelizeAuthService implements AuthService {
       userId = user.id;
     });
 
+    if (!userId) {
+      return { status: "email_in_use" };
+    }
+
     const authenticatedUser = await this.getSessionUser(userId);
 
     if (!authenticatedUser) {
@@ -189,6 +192,7 @@ export class SequelizeAuthService implements AuthService {
     identity: ExternalIdentity
   ): Promise<LinkIdentityResult | null> {
     const outcome = await sequelize.transaction(async (transaction) => {
+      await lockAccountMutations(transaction);
       const user = await models.User.findByPk(userId, {
         include: [
           {
@@ -347,6 +351,7 @@ export class SequelizeAuthService implements AuthService {
   ): Promise<AuthenticatedUser | "last_identity" | null> {
     const result: string | "last_identity" | null = await sequelize.transaction(
       async (transaction) => {
+        await lockAccountMutations(transaction);
         const user = await models.User.findByPk(userId, {
           include: [
             {

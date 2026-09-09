@@ -39,6 +39,8 @@ export class TwitchOidcClient implements TwitchOauthClient {
   async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
     const { clientId, clientSecret, callbackUrl } = ensureTwitchOauthEnabled();
     const tokenResponse = await fetch("https://id.twitch.tv/oauth2/token", {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       method: "POST",
       headers: {
         "content-type": "application/x-www-form-urlencoded"
@@ -65,6 +67,8 @@ export class TwitchOidcClient implements TwitchOauthClient {
     }
 
     const profileResponse = await fetch("https://api.twitch.tv/helix/users", {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       headers: {
         authorization: `Bearer ${tokenBody.access_token}`,
         "client-id": clientId

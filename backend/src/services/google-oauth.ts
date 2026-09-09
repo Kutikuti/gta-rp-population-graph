@@ -47,6 +47,8 @@ export class GoogleOidcClient implements GoogleOauthClient {
   async exchangeCodeForProfile(code: string): Promise<ExternalIdentity> {
     const { clientId, clientSecret, callbackUrl } = ensureGoogleOauthEnabled();
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       method: "POST",
       headers: {
         "content-type": "application/x-www-form-urlencoded"
@@ -73,6 +75,8 @@ export class GoogleOidcClient implements GoogleOauthClient {
     }
 
     const profileResponse = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       headers: {
         authorization: `Bearer ${tokenBody.access_token}`
       }

@@ -57,6 +57,8 @@ const redirectToClient = (searchParams: Record<string, string>) => {
 
 const clearOauthSessionState = (request: express.Request) => {
   delete request.session.oauthState;
+  delete request.session.oauthStartedAt;
+  delete request.session.oauthProviderIntent;
   delete request.session.oauthIntent;
   delete request.session.oauthLinkUserId;
 };
@@ -122,11 +124,14 @@ export const createAuthRouter = ({
   const startOauthLogin = async (
     request: express.Request,
     response: express.Response,
-    client: OauthClient
+    client: OauthClient,
+    providerIntent: OauthLinkIntent
   ) => {
     const state = createOauthState();
     await regenerateSession(request);
     request.session.oauthState = state;
+    request.session.oauthStartedAt = Date.now();
+    request.session.oauthProviderIntent = providerIntent;
     request.session.oauthIntent = "login";
     delete request.session.oauthLinkUserId;
     response.redirect(302, client.buildAuthorizationUrl(state));
@@ -143,6 +148,8 @@ export const createAuthRouter = ({
     const state = createOauthState();
     request.session.oauthState = state;
     request.session.oauthIntent = intent;
+    request.session.oauthStartedAt = Date.now();
+    request.session.oauthProviderIntent = intent;
     request.session.oauthLinkUserId = currentUser.id;
     response.redirect(302, client.buildAuthorizationUrl(state));
   };
@@ -156,6 +163,7 @@ export const createAuthRouter = ({
     const { code, state, error } = request.query;
 
     if (typeof error === "string") {
+      clearOauthSessionState(request);
       response.redirect(302, redirectToClient({ auth_error: error }));
       return;
     }
@@ -164,7 +172,14 @@ export const createAuthRouter = ({
       throw new GoogleOauthStateError("OAuth callback is missing code or state.");
     }
 
-    if (!request.session.oauthState || request.session.oauthState !== state) {
+    if (
+      !request.session.oauthState ||
+      request.session.oauthState !== state ||
+      request.session.oauthProviderIntent !== linkIntent ||
+      !request.session.oauthStartedAt ||
+      Date.now() - request.session.oauthStartedAt > 600_000
+    ) {
+      clearOauthSessionState(request);
       throw new GoogleOauthStateError("OAuth callback state did not match the session.");
     }
 
@@ -249,7 +264,9 @@ export const createAuthRouter = ({
   }) => {
     router.get(
       `/${path}`,
-      withOauthRedirect((request, response) => startOauthLogin(request, response, client))
+      withOauthRedirect((request, response) =>
+        startOauthLogin(request, response, client, linkIntent)
+      )
     );
 
     router.get(

@@ -11,6 +11,7 @@ const mockState = vi.hoisted(() => ({
   userIdentityCreate: vi.fn(),
   userIdentityDestroy: vi.fn(),
   userIdentityUpsert: vi.fn(),
+  query: vi.fn(),
   transaction: vi.fn()
 }));
 
@@ -33,6 +34,7 @@ vi.mock("../db/index.js", () => ({
     }
   },
   sequelize: {
+    query: mockState.query,
     transaction: mockState.transaction
   }
 }));
@@ -169,12 +171,14 @@ describe("SequelizeAuthService", () => {
   it("reports an email conflict instead of linking accounts implicitly", async () => {
     mockState.userFindOne.mockResolvedValue({ id: "email-owner" });
     const service = new SequelizeAuthService();
-    const getSessionUser = vi.spyOn(service, "getSessionUser").mockResolvedValue(null);
+    const getSessionUser = vi
+      .spyOn(service, "getSessionUser")
+      .mockResolvedValue(authenticatedUser("administrator"));
 
     await expect(service.authenticateIdentity(identity)).resolves.toEqual({
       status: "email_in_use"
     });
-    expect(getSessionUser).toHaveBeenCalledWith("email-owner");
+    expect(getSessionUser).not.toHaveBeenCalled();
     expect(mockState.userCreate).not.toHaveBeenCalled();
     expect(mockState.userIdentityUpsert).not.toHaveBeenCalled();
   });
@@ -188,6 +192,15 @@ describe("SequelizeAuthService", () => {
     await expect(service.authenticateIdentity(identity)).resolves.toEqual({
       status: "banned",
       user: bannedUser
+    });
+  });
+
+  it("does not authenticate an account that disappeared after the transaction", async () => {
+    mockState.userCount.mockResolvedValue(1);
+    const service = new SequelizeAuthService();
+    vi.spyOn(service, "getSessionUser").mockResolvedValue(null);
+    await expect(service.authenticateIdentity(identity)).resolves.toEqual({
+      status: "email_in_use"
     });
   });
 
