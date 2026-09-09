@@ -130,6 +130,22 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 - Restauration réelle du dump du 2026-09-09 à 13:42:44 UTC : 362 personnages,
   107 relations, 1380 historiques ; index valides et base temporaire supprimée.
   Les empreintes de la release et du dump figurent dans `DEPLOYMENT.md`.
+- Revue VPS complémentaire en lecture seule du 2026-09-09 : la release active
+  est `20260909T151730Z-notion-response-bound`, l'API et PostgreSQL sont liés à
+  `127.0.0.1`, et Prometheus, Grafana, node-exporter et blackbox-exporter ne
+  sont aussi exposés que localement. Caddy 2.11.4 valide sa configuration ; le
+  certificat Let's Encrypt de `gta-rp.f1prediction.fr` expire le 2026-11-27.
+  Les secrets n'ont pas été lus : `backend.env` est en `0600` sous un dossier
+  `0700`, et les clés SSH de déploiement sont en `0700`/`0600`.
+- Le backend exécute effectivement `/opt/node-v24.20.0/bin/node`. En revanche,
+  appeler `/opt/node-apps/bin/npm` sans placer ce dossier en tête de `PATH`
+  résout le Node système 18 via son shebang ; le service et le runbook utilisent
+  déjà le `PATH` correct, qui doit rester obligatoire dans les procédures.
+- Aucun brouillon d'upload temporaire n'était présent. Les photos validées sont
+  volontairement lisibles localement pour être servies publiquement ; les
+  journaux Notion et les rapports de déploiement existants sont en `0644` et
+  doivent être rendus privés s'ils peuvent contenir des données importées ou des
+  détails de sécurité.
 
 ## Risques résiduels et suite obligatoire
 
@@ -138,10 +154,13 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 | Traité — exploitant GTA | Déployer les correctifs AUTH-01/AUTH-02/PHOTO-01 et exécuter les smoke tests | Déployé ; redirections OAuth et cookies vérifiés. La connexion complète avec comptes réels reste une recette manuelle |
 | Traité — exploitant GTA | Produire un dump récent dans `shared`, protéger les anciens dossiers et restaurer le dump | Restauration réelle avec contrôles de données et suppression de la base éphémère effectuée |
 | P1 — exploitant plateforme | Revoir le port 5000 F1 autorisé publiquement par UFW et le compte d'exécution partagé `codex-deploy` | Hors périmètre de modification GTA ; l'API F1 n'a pas été modifiée. Le compte backend possède encore releases et configuration |
+| P1 — exploitant plateforme | Durcir SSH après vérification d'un accès de secours par clé | `PermitRootLogin yes`, `PasswordAuthentication yes`, `X11Forwarding yes` et `AllowTcpForwarding yes` sont actifs. Fail2ban et les permissions de clés sont corrects, mais ce réglage expose le VPS entier ; ne pas le modifier sans confirmer les clés administrateur et les besoins de tunnel |
 | Traité — exploitant GTA | Déployer la CSP et les en-têtes du HTML Caddy documentés | Configuration Caddy validée puis rechargée le 2026-09-09 ; contrôle HTTPS public positif pour CSP, HSTS, `nosniff`, anti-frame, referrer et permissions policy |
 | P1 — frontend/exploitant | Effectuer la recette navigateur des rôles et du blocage inter-origines | Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
 | P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
 | P2 — backend | Mesurer la contention du verrou commun si les mutations de comptes deviennent fréquentes | Lecture des sessions non verrouillée ; sérialisation limitée aux mutations sensibles |
+| P2 — exploitant GTA | Durcir l'unité backend après test de démarrage | Service non-root avec `NoNewPrivileges`, `PrivateTmp` et système de fichiers protégé, mais sans `UMask`, `ProtectHome`, filtre d'appels système ni bornage IP. Les appels OAuth/Notion exigent un accès réseau ; le profil doit être testé avant activation |
+| P2 — exploitant GTA | Passer les journaux et rapports de déploiement GTA en privé | Les fichiers existants sont en `0644`. Évaluer leur contenu et les lecteurs nécessaires avant un `0700`/`0600` afin de ne pas gêner l'exploitation |
 
 Le retour de release suppose des migrations compatibles avec l'ancienne
 version. Un changement de schéma destructif exige une procédure spécifique.
