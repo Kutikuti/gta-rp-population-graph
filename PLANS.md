@@ -724,116 +724,44 @@ Limites assumees :
 
 ### Etape 16 - Finalisation UX de l'application et du graphe
 
-Statut : commencee le 2026-09-04.
+Statut : terminee le 2026-09-09.
 
-Cette etape regroupe les finitions visuelles et ergonomiques qui ne doivent pas
-ralentir les derniers lots fonctionnels. Elle ne doit pas modifier le contrat
-metier ni introduire de nouveau schema de donnees.
+Cette etape a stabilise l'experience de consultation et les surfaces de gestion
+sans modifier le contrat metier ni le schema de donnees.
 
-Premier lot de retours interface (2026-09-07) :
+**Bilan**
 
-- Dispositions Entreprise, Groupe et Famille en cercles concentriques avec
-  espacement adapte au nombre de personnages ; fond du graphe sans quadrillage.
-- Recherche simplifiee : entreprise en liste deroulante issue du graphe complet,
-  nom public du streamer inclus dans la recherche universelle, suppression des
-  champs streamer et verification dedies et nettoyage des anciens filtres caches.
-- Option Twitch en direct deplacee dans les preferences ; sa valeur persistante
-  est conservee lors de la reinitialisation de la recherche.
-- Option hors jeu couvrant les statuts `deceased` et `left` ; le statut `unknown`
-  reste visible. Aucun nouveau statut personnage `banned` n'est introduit.
-- Une selection vide des relations est autorisee et conservee au rechargement.
-- Moderation en onglets pleine largeur Demandes en attente / Fiches a completer.
-  Administration en onglets Utilisateurs / Tags / Journaux ; suppression du
-  panneau de completude et de son chargement redondant en administration.
-- Les onglets partagent une navigation clavier (fleches, Debut et Fin).
-- Recette de ce lot : 235 tests backend, 91 tests frontend, 10 integrations
-  PostgreSQL, couvertures, controles Biome et builds valides. Recette Chromium
-  ponctuelle avec 150 personnages fictifs en 1440x900 et 390x844 : recherche,
-  preferences, selection vide persistante et cinq onglets de gestion.
-- La navigation des pages a onglets est placee dans le flux pour eviter les
-  chevauchements mobiles ; la liste de completude n'est plus limitee a 340px.
-  La recette sur les donnees reelles et les autres parcours de l'etape 16 reste
-  a mener avant sa cloture.
-- Le focus clavier visible est harmonise pour les liens, boutons et champs de
-  formulaire. Les dispositions Cytoscape restent sans animation ; aucune regle
-  globale de reduction de mouvement n'est necessaire tant que l'interface ne
-  definit pas d'animation ou de transition.
-- Les valeurs d'absence issues de l'import, notamment `Aucun métier/entreprise`
-  et `Aucun groupe`, sont traitees comme une grappe neutre compacte dans les
-  dispositions. Le zoom minimal et la sensibilite de la molette restent regles
-  pour rendre la vue complete atteignable sur les jeux de donnees denses.
-- Les dispositions Groupe, Entreprise et Famille conservent leur placement
-  initial, puis Cytoscape rapproche uniquement les personnages relies par une
-  relation visible. Les personnages isoles ne sont pas deplaces par cette passe
-  de relaxation afin de preserver la lisibilite des grappes.
+- Graphe : dispositions `Entreprise`, `Groupe` et `Famille` lisibles sur les
+  donnees denses, rapprochement local des personnages relies, grappes neutres
+  compactes, fond sans quadrillage, zoom complet atteignable et molette plus
+  reactive.
+- Consultation : recherche simplifiee, filtre entreprise, recherche streamer,
+  option Twitch en direct dans les preferences, statuts hors jeu coherents et
+  selection vide persistante des relations.
+- Interfaces de gestion : moderation et administration en onglets pleine
+  largeur, navigation clavier des onglets et suppression des chargements de
+  completude redondants.
+- Accessibilite : focus visible harmonise, focus initial et `Echap` dans la
+  connexion et l'anonymisation, recentrage sans animation avec
+  `prefers-reduced-motion`.
+- Performance et indexation : vues secondaires chargees a la demande, bundle
+  initial reduit de 88 a 72 kio gzip, et ajout d'un amorcage HTML,
+  `robots.txt`, `llms.txt` et d'une description de page.
 
-Lots de livraison :
+**Validation**
 
-1. **Lot A - Audit et socle visuel**
-   - Etablir une grille de recette desktop et mobile sur des donnees proches de
-     la production : graphe dense, fiche avec photo, recherche vide, etats de
-     chargement ou d'erreur, profil, contribution, moderation, administration
-     et import Notion.
-   - Relever les debordements, chevauchements, libelles redondants,
-     incoherences d'alignement, tailles de cibles et contrastes ; les classer
-     par impact sur la consultation ou l'action.
-   - Centraliser seulement les tokens CSS ou primitives dont la duplication est
-     prouvee, sans lancer de refonte decorrellee des problemes observes.
+- Validation locale : 235 tests backend, 10 integrations PostgreSQL, 98 tests
+  frontend, couvertures, Biome et builds complets verts ; preview de production
+  et proxy API verifies sur `localhost:4173`.
+- Recette de production : graphe Notion complet deploye et accessible avec
+  362 noeuds et 107 liens ; Lighthouse confirme accessibilite, bonnes
+  pratiques, SEO et navigation agentique a 100. Le graphe dense atteint FCP et
+  LCP a 2,4 s ; son score performance de 66 et son cout CPU initial restent
+  documentes comme optimisations reportees dans les ameliorations possibles.
 
-2. **Lot B - Graphe et dispositions**
-   - Revoir les dispositions `Entreprise`, `Famille`, `Groupe` et `Libre` sur
-     une volumetrie reelle : separation des grappes, collisions, labels,
-     intensite visuelle des relations, centrage sur une fiche partagee, zoom
-     initial et comportement apres application de filtres.
-   - Clarifier visuellement les presets et preferences sans concurrencer le
-     graphe, qui doit conserver l'essentiel de la premiere vue.
-   - Verifier les performances et le comportement mobile sans remplacer
-     Cytoscape.js tant qu'aucune limite mesuree ne le justifie.
-
-3. **Lot C - Consultation publique**
-   - Harmoniser la recherche repliee, les filtres, les preferences et la fiche
-     personnage : ouverture/fermeture, priorite de la selection, actions de
-     partage, medias, historique, messages de confirmation et etats vides.
-   - Corriger les derniers defauts responsive et tout debordement horizontal,
-     en preservant une surface de graphe maximale sur mobile comme sur desktop.
-
-4. **Lot D - Parcours connectes et back-office**
-   - Uniformiser les interfaces profil, contribution, moderation,
-     administration et import Notion : alignement des controles, hierarchie des
-     actions, retours apres sauvegarde, tableaux denses et messages d'erreur ou
-     de succes situes pres de l'action concernee.
-   - Ne pas ajouter de nouveau parcours metier : toute anomalie fonctionnelle
-     decouverte est isolee et traitee dans une etape dediee si elle depasse une
-     correction ergonomique locale.
-
-5. **Lot E - Accessibilite operationnelle**
-   - Auditer navigation clavier, ordre de focus, focus visible, libelles des
-     icones, semantique des panneaux et modales, contraste, cibles tactiles et
-     `prefers-reduced-motion`.
-   - Ajouter les attributs et tests ciblant les parcours effectivement exposes,
-     sans masquer un probleme d'interaction par des libelles purement visuels.
-
-6. **Lot F - Recette, non-regression et cloture**
-   - Completer les tests frontend de comportements modifies et ajouter une
-     validation visuelle automatisable sur plusieurs tailles d'ecran lorsque
-     l'outillage est en place, avec attention aux chevauchements et aux
-     debordements.
-   - Rejouer `scripts/run-all-checks.sh`, les integrations PostgreSQL, les
-     builds et une recette manuelle des parcours anonymes, utilisateur,
-     moderateur et administrateur.
-   - Documenter les choix UX stabilises, les limites connues et les
-     ameliorations volontairement reportees avant cloture.
-
-Point de controle :
-
-- Le graphe reste l'element principal de la premiere vue publique.
-- Les dispositions du graphe sont lisibles avec une volumetrie proche de la
-  production, sur ordinateur comme sur mobile.
-- Aucun panneau, formulaire ou message ne provoque de debordement horizontal ou
-  de chevauchement incoherent.
-- Les parcours publics et authentifies restent fonctionnels au clavier et
-  conservent des contrastes suffisants.
-- Tous les checks, tests et builds existants restent verts.
+Les optimisations de cache des assets, de miniatures de photos et de CPU
+Cytoscape sont volontairement reportees dans `Ameliorations possibles` afin de
+ne pas retarder l'audit securite pre-ouverture.
 
 ### Etape 17 - Audit securite pre-ouverture
 
@@ -956,6 +884,18 @@ a 18.
   davantage si les donnees ou le trafic augmentent fortement.
 - Reevaluer `Sigma.js` avec `Graphology` uniquement si Cytoscape.js devient une
   limite mesurable sur des graphes proches de la volumetrie de production.
+- Configurer Caddy pour mettre en cache de maniere immutable les assets Vite
+  hashes sous `/assets/*`. Le rapport Lighthouse de production du 2026-09-09
+  releve actuellement une duree de cache nulle pour ces fichiers, alors qu'ils
+  peuvent etre mis en cache sans risque jusqu'a la prochaine release.
+- Generer et servir des miniatures WebP dediees aux noeuds du graphe si la
+  volumetrie des photos continue de peser sur le chargement initial. Le rapport
+  Lighthouse de production locale du 2026-09-09 mesure environ 4,8 Mio d'images
+  pour 235 requetes ; ce chantier est reporte car il n'est pas bloquant.
+- Optimiser l'initialisation Cytoscape sur les graphes denses seulement apres
+  profilage : le rapport Lighthouse de production mesure environ 2,9 s de CPU
+  dans `GraphView` pour le graphe complet. Toute evolution devra preserver la
+  lisibilite et les regroupements avant de considerer un changement de moteur.
 
 ### Import Notion et robustesse technique
 

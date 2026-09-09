@@ -302,6 +302,25 @@ Maintenance complete executee le `2026-09-04` sur le VPS actuel :
   endpoints publics GTA/F1 et les conteneurs Prometheus/Grafana sont tous
   operationnels. Aucune unite systemd n'est en echec.
 
+## Dernier deploiement applicatif consigne
+
+Deploiement de l'etape 16 execute le `2026-09-09` :
+
+- release active : `20260909T120000Z-step16-final-ux` ;
+- dependances installees avec `npm ci`, builds backend et frontend valides sous
+  Node `24.20.0` et npm `12.0.2` ;
+- aucune migration en attente ;
+- activation atomique suivie du redemarrage de `gta-rp-backend.service` ;
+- smoke tests publics, backend et controle mutualise
+  `check-platform.sh` valides ;
+- import Notion complet : `359` pages scrappees, `357` fiches appliquees,
+  aucune fiche differee, invalide ou introuvable ;
+- graphe public apres import : `362` noeuds et `107` liens ;
+- photos : `334` importees, `22` ignorees sans photo source exploitable, une
+  indisponibilite distante Notion `HTTP 503` sur la page
+  `35207fc3-2f6c-809f-8f72-e77420ba7b73`. La reprise ciblee n'a introduit
+  aucune nouvelle erreur et n'a pas modifie les photos deja presentes.
+
 Lors de la construction d'une release, le lien `backend/.env` doit toujours
 viser le fichier partage. Ne jamais transferer un fichier `.env` depuis un
 poste de travail :
@@ -885,6 +904,27 @@ Git et pointe vers une release immutable. La mise a jour doit donc preparer un
 nouveau dossier `releases/<horodatage>`, y synchroniser le code valide, puis
 activer cette release avec le script de bascule atomique.
 
+### Garde-fous pratiques
+
+- Ne jamais deployer dans `current` : preparer une release nouvelle et ne
+  basculer qu'apres les installations, builds et controles de migrations.
+- Verifier `git status` avant le transfert. Les secrets, stockage partage,
+  dependances, artefacts de build et metadonnees locales ne font pas partie
+  d'une release.
+- `rtk` n'est pas un proxy universel de commandes shell : en particulier,
+  `rtk rsync` n'existe pas. Utiliser la commande native `rsync` si elle est
+  installee, sinon le transfert `tar | ssh` documente plus bas.
+- Le devcontainer ne garantit pas la presence de `rsync` : tester
+  `command -v rsync` avant de choisir la commande de transfert.
+- Sur le VPS, prefixer les installations et builds avec
+  `PATH=/opt/node-apps/bin:$PATH`. Le `npm` du `PATH` systeme peut viser un
+  Node different du runtime mutualise GTA.
+- Apres `systemctl restart gta-rp-backend.service`, attendre le healthcheck
+  avec une courte boucle de retry. Un `502` dans les toutes premieres secondes
+  peut simplement correspondre a la fenetre normale de redemarrage ; ne pas
+  lancer d'import ni conclure a un echec avant d'avoir consulte l'etat et les
+  journaux du service.
+
 Sequence recommandee :
 
 1. Sur la machine source, verifier l'etat du code et lancer les validations.
@@ -931,10 +971,38 @@ rsync -avz --delete \
   codex-deploy@65.109.171.143:/var/www/gta-rp-population-graph/releases/$release/
 ```
 
+Si `rsync` est absent de la machine source, la release cible vient d'etre creee
+et est encore inactive : utiliser cette variante equivalente. Elle ne transfere
+pas les secrets ni le stockage partage.
+
+```bash
+tar -czf - \
+  --exclude=.git \
+  --exclude=.backups \
+  --exclude=.codex \
+  --exclude=.devcontainer \
+  --exclude=.secrets \
+  --exclude=.serena \
+  --exclude=.vscode \
+  --exclude=node_modules \
+  --exclude=backend/node_modules \
+  --exclude=web-client/node_modules \
+  --exclude=backend/dist \
+  --exclude=web-client/dist \
+  --exclude=backend/coverage \
+  --exclude=web-client/coverage \
+  --exclude=backend/.env \
+  --exclude=backend/storage \
+  . | ssh -i .secrets/codex_gta_rp_deploy \
+    codex-deploy@65.109.171.143 \
+    "tar -xzf - -C /var/www/gta-rp-population-graph/releases/$release"
+```
+
 Puis sur le VPS :
 
 ```bash
 release=20260731T151800Z-exemple
+export PATH=/opt/node-apps/bin:$PATH
 cd /var/www/gta-rp-population-graph/releases/$release/backend
 ln -sfn /var/www/gta-rp-population-graph/shared/config/backend.env .env
 npm ci
@@ -953,7 +1021,19 @@ fi
 
 /var/www/platform-ops/scripts/activate-release.sh gta-rp "$release"
 sudo systemctl restart gta-rp-backend.service
-curl -sS https://gta-rp.f1prediction.fr/api/health
+healthy=false
+for attempt in {1..10}; do
+  if curl --fail --silent --show-error \
+    https://gta-rp.f1prediction.fr/api/health; then
+    healthy=true
+    break
+  fi
+  sleep 2
+done
+if [[ "$healthy" != true ]]; then
+  sudo systemctl status gta-rp-backend.service --no-pager
+  exit 1
+fi
 ```
 
 Si un sous-ensemble seulement change, garder la meme logique mais ne relancer
