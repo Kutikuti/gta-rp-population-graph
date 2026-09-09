@@ -1,0 +1,8 @@
+# GTA-RP Population Graph
+
+> Annuaire public et graphe narratif de personnages pour des communautes GTA-RP.
+
+## Ressources
+
+- [Application publique](/)
+- [Depôt du projet](https://github.com/Kutikuti/gta-rp-population-graph)

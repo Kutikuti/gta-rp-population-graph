@@ -1,16 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import type { CharacterCreationContext, CharacterFilters } from "./api";
 import "./App.css";
-import { AdminView } from "./components/AdminView";
 import { AppHeader } from "./components/AppHeader";
-import { ContributionView } from "./components/ContributionView";
 import { ExploreView } from "./components/ExploreView";
-import { ModerationView } from "./components/ModerationView";
-import { NotionImportsView } from "./components/NotionImportsView";
-import { PrivacyView } from "./components/PrivacyView";
-import { ProfileView } from "./components/ProfileView";
-import { PublicInfoView } from "./components/PublicInfoView";
+import { LoadingBlock } from "./components/StateBlock";
 import { initialFilters } from "./constants";
 import { filterGraphForPreferences } from "./graph/graphPreferences";
 import { useAuthSession } from "./hooks/useAuthSession";
@@ -19,6 +13,35 @@ import { useGraphPreferences } from "./hooks/useGraphPreferences";
 import { usePersistentFilters } from "./hooks/usePersistentFilters";
 import { usePublicGraphData } from "./hooks/usePublicGraphData";
 import { useSearchMatches } from "./hooks/useSearchMatches";
+
+const ContributionView = lazy(async () => {
+  const module = await import("./components/ContributionView");
+  return { default: module.ContributionView };
+});
+const ModerationView = lazy(async () => {
+  const module = await import("./components/ModerationView");
+  return { default: module.ModerationView };
+});
+const AdminView = lazy(async () => {
+  const module = await import("./components/AdminView");
+  return { default: module.AdminView };
+});
+const NotionImportsView = lazy(async () => {
+  const module = await import("./components/NotionImportsView");
+  return { default: module.NotionImportsView };
+});
+const ProfileView = lazy(async () => {
+  const module = await import("./components/ProfileView");
+  return { default: module.ProfileView };
+});
+const PublicInfoView = lazy(async () => {
+  const module = await import("./components/PublicInfoView");
+  return { default: module.PublicInfoView };
+});
+const PrivacyView = lazy(async () => {
+  const module = await import("./components/PrivacyView");
+  return { default: module.PrivacyView };
+});
 
 const readInitialCharacterId = () => new URL(window.location.href).searchParams.get("character");
 const readInitialView = () => {
@@ -297,58 +320,60 @@ function App() {
           />
         ) : null}
 
-        {activeView === "contribution" ? (
-          <ContributionView
-            character={selectedCharacter}
-            creationContext={creationContext}
-            isCharacterLoading={Boolean(selectedId) && !selectedCharacter && isDetailLoading}
-            session={authSession}
-            onDataChanged={refreshAfterModerationChange}
-            onError={handleError}
-            onSubmitted={handleContributionSubmitted}
-          />
-        ) : null}
+        <Suspense fallback={<LoadingBlock label="Chargement de la vue..." />}>
+          {activeView === "contribution" ? (
+            <ContributionView
+              character={selectedCharacter}
+              creationContext={creationContext}
+              isCharacterLoading={Boolean(selectedId) && !selectedCharacter && isDetailLoading}
+              session={authSession}
+              onDataChanged={refreshAfterModerationChange}
+              onError={handleError}
+              onSubmitted={handleContributionSubmitted}
+            />
+          ) : null}
 
-        {activeView === "moderation" ? (
-          <ModerationView
-            session={authSession}
-            onDataChanged={refreshAfterModerationChange}
-            onEditCharacter={openContributionForCharacter}
-            onError={handleError}
-          />
-        ) : null}
-        {activeView === "administration" ? (
-          <AdminView session={authSession} onError={handleError} />
-        ) : null}
-        {activeView === "imports" ? (
-          <NotionImportsView
-            session={authSession}
-            onDataChanged={refreshAfterModerationChange}
-            onError={handleError}
-          />
-        ) : null}
-        {activeView === "profile" ? (
-          <ProfileView
-            session={authSession}
-            onDisplayNameUpdate={handleDisplayNameUpdate}
-            onIdentityUnlink={handleIdentityUnlink}
-            onError={handleError}
-          />
-        ) : null}
-        {activeView === "information" ? (
-          <PublicInfoView
-            onOpenPrivacy={() => {
-              setActiveView("privacy");
-            }}
-          />
-        ) : null}
-        {activeView === "privacy" ? (
-          <PrivacyView
-            onOpenInfo={() => {
-              setActiveView("information");
-            }}
-          />
-        ) : null}
+          {activeView === "moderation" ? (
+            <ModerationView
+              session={authSession}
+              onDataChanged={refreshAfterModerationChange}
+              onEditCharacter={openContributionForCharacter}
+              onError={handleError}
+            />
+          ) : null}
+          {activeView === "administration" ? (
+            <AdminView session={authSession} onError={handleError} />
+          ) : null}
+          {activeView === "imports" ? (
+            <NotionImportsView
+              session={authSession}
+              onDataChanged={refreshAfterModerationChange}
+              onError={handleError}
+            />
+          ) : null}
+          {activeView === "profile" ? (
+            <ProfileView
+              session={authSession}
+              onDisplayNameUpdate={handleDisplayNameUpdate}
+              onIdentityUnlink={handleIdentityUnlink}
+              onError={handleError}
+            />
+          ) : null}
+          {activeView === "information" ? (
+            <PublicInfoView
+              onOpenPrivacy={() => {
+                setActiveView("privacy");
+              }}
+            />
+          ) : null}
+          {activeView === "privacy" ? (
+            <PrivacyView
+              onOpenInfo={() => {
+                setActiveView("information");
+              }}
+            />
+          ) : null}
+        </Suspense>
         {toast ? (
           <div className={`app-toast app-toast-${toast.tone}`} role="status" aria-live="polite">
             {toast.message}

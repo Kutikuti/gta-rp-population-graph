@@ -703,7 +703,7 @@ describe("App", () => {
     expect(
       await screen.findByRole("heading", { name: "Contrôle des données et accès" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Viewer Example")).toBeInTheDocument();
+    expect(await screen.findByText("Viewer Example")).toBeInTheDocument();
     expect(screen.queryByText("Fiches à compléter")).not.toBeInTheDocument();
     expect(screen.queryByText("Famille Morel")).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Tags" }));
@@ -1125,7 +1125,7 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "Prévisualisation des fiches importées" })
     ).toBeInTheDocument();
     expect(screen.getByText("Flashback Whitelist V6")).toBeInTheDocument();
-    expect(screen.getAllByText("Ada Lovelace").length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Ada Lovelace")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Zoe Washburne").length).toBeGreaterThan(0);
     expect(screen.getByText("Twitch")).toBeInTheDocument();
     expect(screen.getAllByText("À faire")).toHaveLength(1);

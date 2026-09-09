@@ -56,6 +56,22 @@
       "problemMatcher": []
     },
     {
+      "label": "dev:web-client-preview",
+      "type": "shell",
+      "command": "npm run preview -- --host 0.0.0.0",
+      "options": {
+        "cwd": "${workspaceFolder}/web-client"
+      },
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "terminal:root",
       "type": "shell",
       "command": "bash",

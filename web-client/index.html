@@ -3,10 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Annuaire et graphe des personnages GTA-RP : retrouvez les fiches, liens narratifs et streamers de la communauté."
+    />
+    <meta name="application-name" content="GTA-RP Population Graph" />
+    <meta name="theme-color" content="#030a12" />
+    <meta name="robots" content="index,follow" />
     <title>GTA-RP Population Graph</title>
+    <style>
+      body {
+        margin: 0;
+        background: #030a12;
+        color: #cceaff;
+        font-family: system-ui, sans-serif;
+      }
+
+      .app-bootstrap {
+        display: grid;
+        min-height: 100vh;
+        place-content: center;
+        gap: 8px;
+        padding: 24px;
+        text-align: center;
+      }
+
+      .app-bootstrap strong {
+        color: #eaf7ff;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-bootstrap" role="status" aria-live="polite">
+        <strong>GTA-RP Population Graph</strong>
+        <span>Chargement...</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -45,11 +45,14 @@
     "source=mewtwo-npm-cache,target=/home/vscode/.npm,type=volume",
     "source=mewtwo-codex-home,target=/home/vscode/.codex,type=volume"
   ],
-  "forwardPorts": [4000, 5173],
+  "forwardPorts": [4000, 4173, 5173],
   "name": "mewtwo-dev",
   "portsAttributes": {
     "4000": {
       "label": "GTA-RP API"
+    },
+    "4173": {
+      "label": "GTA-RP web-client (production preview)"
     },
     "5173": {
       "label": "GTA-RP web-client",
