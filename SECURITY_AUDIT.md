@@ -86,8 +86,9 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
   sont limités, vérifiés par signature, décodés avec une limite de pixels puis
   réencodés en WebP. Les photos Notion n'acceptent que HTTPS et une liste de
   domaines, contrôlent chaque redirection manuellement, limitent corps et délai
-  global. Les appels du scraper Notion sont egalement annules apres 15 s. Les
-  brouillons ne sont pas servis par le chemin public.
+  global. Les appels du scraper Notion sont egalement annules apres 15 s et
+  bornent chaque reponse a 5 Mio avant analyse JSON. Les brouillons ne sont pas
+  servis par le chemin public.
 - Lecture publique : les listes et l'historique valident les filtres et bornent
   `limit` à 100. Le graphe est une lecture complète assumée par le produit ; sa
   croissance doit rester suivie afin d'éviter un coût de réponse excessif.
@@ -101,8 +102,11 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 - Configuration documentée : PostgreSQL et les composants de monitoring sont
   liés à des adresses locales sur le VPS ; l'API GTA est attendue sur
   `127.0.0.1:4000` derrière Caddy. Le `docker-compose.yml` de développement
-  publie toutefois PostgreSQL sur `5432` sans adresse de boucle explicite : ne
-  pas l'utiliser tel quel sur une machine exposée ou un hôte partagé.
+  publie toutefois PostgreSQL sur `5432` sans adresse de boucle explicite. Ce
+  risque est limite au developpement : il n'affecte pas le VPS, ou PostgreSQL
+  est bloque publiquement. Le bind local est reporte car le devcontainer accede
+  a ce service via `host.docker.internal`; une configuration dediee est
+  necessaire pour le durcir sans casser cet acces.
 - Runtime local et VPS : Node 24.20.0 ; npm local 12.0.2.
 - `npm audit` backend et frontend : zéro vulnérabilité connue signalée lors
   de la passe du 2026-09-09. Cela ne couvre pas les erreurs métier.

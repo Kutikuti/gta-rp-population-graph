@@ -33,6 +33,7 @@ const isRetryableFetchError = (error: unknown) =>
   error instanceof TypeError || (error instanceof Error && error.name === "AbortError");
 
 const notionRequestTimeoutMs = 15_000;
+const maxNotionResponseBytes = 5 * 1024 * 1024;
 
 const notionRequestFailedError = (input: {
   failureMessage: string;
@@ -48,6 +49,59 @@ const notionRequestFailedError = (input: {
       endpoint: input.url
     }
   });
+
+const notionInvalidResponseError = (input: { message: string; url: string }) =>
+  new ApiError({
+    status: 502,
+    code: "NOTION_RESPONSE_INVALID",
+    message: input.message,
+    details: { endpoint: input.url }
+  });
+
+const readNotionRecordMap = async (response: Response, url: string): Promise<NotionRecordMap> => {
+  const contentLength = Number.parseInt(response.headers.get("content-length") ?? "", 10);
+
+  if (Number.isFinite(contentLength) && contentLength > maxNotionResponseBytes) {
+    await response.body?.cancel();
+    throw notionInvalidResponseError({
+      message: "La reponse Notion depasse la taille maximale autorisee.",
+      url
+    });
+  }
+
+  if (!response.body) {
+    throw notionInvalidResponseError({ message: "La reponse Notion est vide.", url });
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    total += value.byteLength;
+    if (total > maxNotionResponseBytes) {
+      await reader.cancel();
+      throw notionInvalidResponseError({
+        message: "La reponse Notion depasse la taille maximale autorisee.",
+        url
+      });
+    }
+    chunks.push(Buffer.from(value));
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.concat(chunks, total).toString("utf8")) as {
+      recordMap?: NotionRecordMap;
+    };
+    return payload.recordMap ?? (payload as NotionRecordMap);
+  } catch {
+    throw notionInvalidResponseError({ message: "La reponse Notion est invalide.", url });
+  }
+};
 
 const requestNotionRecordMap = async (input: {
   url: string;
@@ -100,8 +154,7 @@ const requestNotionRecordMap = async (input: {
     });
   }
 
-  const payload = (await response.json()) as { recordMap?: NotionRecordMap };
-  return payload.recordMap ?? (payload as NotionRecordMap);
+  return readNotionRecordMap(response, input.url);
 };
 
 const loadPageChunk = async (

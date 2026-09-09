@@ -63,6 +63,42 @@ describe("notion scraper", () => {
     expect(requestInit?.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it("rejects an oversized Notion response before reading its body", async () => {
+    const fetchMock = async () =>
+      new Response("{}", {
+        status: 200,
+        headers: { "content-length": String(5 * 1024 * 1024 + 1) }
+      });
+
+    await expect(
+      scrapePublicNotionPage(
+        "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+        { fetch: fetchMock }
+      )
+    ).rejects.toMatchObject({
+      status: 502,
+      code: "NOTION_RESPONSE_INVALID",
+      message: "La reponse Notion depasse la taille maximale autorisee.",
+      details: { endpoint: "https://www.notion.so/api/v3/loadPageChunk" }
+    });
+  });
+
+  it("reports an invalid JSON response from Notion without leaking a parser error", async () => {
+    const fetchMock = async () => new Response("not-json", { status: 200 });
+
+    await expect(
+      scrapePublicNotionPage(
+        "https://www.notion.so/Flashback-Whitelist-V6-34407fc32f6c80968f3bdedadec5253c",
+        { fetch: fetchMock }
+      )
+    ).rejects.toMatchObject({
+      status: 502,
+      code: "NOTION_RESPONSE_INVALID",
+      message: "La reponse Notion est invalide.",
+      details: { endpoint: "https://www.notion.so/api/v3/loadPageChunk" }
+    });
+  });
+
   it("loads child pages and converts text properties to import input", async () => {
     const rootId = "34407fc3-2f6c-8096-8f3b-dedadec5253c";
     const characterId = "11111111-2222-4333-8444-555555555555";
