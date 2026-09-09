@@ -1110,6 +1110,21 @@ Les corrections GTA ont ensuite ete deployees, comme detaille ci-dessous.
   `Content-Security-Policy`, HSTS, `X-Content-Type-Options`,
   `X-Frame-Options`, `Referrer-Policy` et `Permissions-Policy` attendus.
 
+### Deploiement complementaire le 2026-09-09 — taille des reponses Notion
+
+- Release active : `20260909T151730Z-notion-response-bound`.
+- Base applicative : `ada562b96f7943eacfe81c8b5eb283749b486f2d`.
+- Archive SHA-256 :
+  `ebc48c047bdf7c4883e6f7920205c515dd6f0112045fc5fdc0e514d3741d6813`.
+- Aucune migration en attente ; sauvegarde PostgreSQL produite avant la
+  commande de migration idempotente.
+- Les appels Notion sont limites a 15 s et leurs reponses a 5 Mio avant
+  analyse JSON. Les reponses invalides sont traitees comme une erreur amont
+  controlee.
+- Les controles post-deploiement HTTP/SSH passent ; le backend reste lie a
+  `127.0.0.1:4000` et Caddy conserve les en-tetes de securite deployes dans la
+  release precedente.
+
 Si un sous-ensemble seulement change, garder la meme logique mais ne relancer
 que la partie concernee. En revanche, toute modification backend ou frontend
 publique doit idealement etre suivie d'un build local, d'une synchronisation
