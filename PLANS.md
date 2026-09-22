@@ -893,8 +893,10 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      `/usr/local/sbin/gta-rp-activate-release`. Les rôles SQL
      `gta_rp_migrator` et `gta_rp_runtime` sont séparés, `PUBLIC` n'accède plus
      à la base et `gta_rp_app` est `NOLOGIN` sans privilège. `codex-deploy` est
-     retiré du groupe `sudo`. Le nettoyage photo reste à basculer vers le
-     runtime dans un lot distinct, car son unité l'utilise encore.
+     retiré du groupe `sudo`. Le nettoyage photo a aussi été basculé et validé
+     sous `gta-rp-runtime` avec son timer horaire. Un correctif du helper de
+     promotion reste requis : il ne doit pas retirer le bit exécutable des
+     binaires de dépendances, notamment `esbuild`.
 
 3. **Rendre privés les artefacts GTA non publics (P2 GTA)**
    - Inventorier les lecteurs des journaux Notion et rapports de déploiement,

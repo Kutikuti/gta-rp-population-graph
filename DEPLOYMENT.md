@@ -160,7 +160,9 @@ Le helper valide le nom de release, effectue la promotion, fixe la release en
 `root:gta-rp-runtime` non modifiable par le deployeur, bascule `current`,
 redemarre le backend et restaure la release precedente si le health check
 echoue. Il ne lance jamais `npm`, une migration, un hook ou du code de release
-en root.
+en root. **Point ouvert :** il doit préserver les bits exécutables requis dans
+la release, notamment celui de `esbuild`; la release active a été réparée
+manuellement en `0755 root:gta-rp-runtime` le 2026-09-22.
 
 Le backend tourne sous le compte non connectable et sans sudo `gta-rp-runtime`.
 Il charge exclusivement la configuration runtime hors release :
