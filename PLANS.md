@@ -821,7 +821,8 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      jamais supprimer la dernière clé fonctionnelle avant le contrôle suivant.
    - **Bascule contrôlée :** ouvrir deux sessions indépendantes, l'une en
      `jrechau` par clé et l'autre en `codex-deploy`. Ajouter le fichier dédié
-     `/etc/ssh/sshd_config.d/99-platform-hardening.conf` avec
+     `/etc/ssh/sshd_config.d/00-platform-hardening.conf` (son préfixe est
+     nécessaire pour précéder `50-cloud-init.conf`) avec
      `PermitRootLogin no`, `PasswordAuthentication no`,
      `KbdInteractiveAuthentication no`, `X11Forwarding no`,
      `AllowTcpForwarding no` et `AllowAgentForwarding no`. Le refus du
@@ -841,6 +842,11 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      deux sites. En cas d'échec, restaurer ou retirer le seul fichier de
      drop-in depuis une session existante ; à défaut, utiliser la console
      Hetzner. Fermer les anciennes sessions seulement après ces contrôles.
+   - **État :** bascule principale appliquée et contrôlée le 2026-09-22.
+     La clé personnelle `jrechau` est validée, et une nouvelle connexion
+     `codex-deploy` par clé ainsi que les healthchecks GTA/F1 sont positifs.
+     La restriction `restrict` de `codex-deploy` reste à traiter après la
+     validation explicite des flux de déploiement F1.
 
 2. **Réduire les expositions mutualisées (P1 plateforme)**
    - Vérifier les besoins réels du service F1 qui écoute actuellement sur

@@ -1582,6 +1582,27 @@ uploads hebdomadaire deja presentes sur le VPS.
 Le VPS de production active desormais `fail2ban` pour `sshd`, en complement de
 `ufw`.
 
+Depuis le 2026-09-22, le durcissement SSH commun aux sites GTA-RP et F1 est
+porte par `/etc/ssh/sshd_config.d/00-platform-hardening.conf`. Le prefixe `00`
+est intentionnel : OpenSSH retient la premiere valeur et doit donc passer avant
+`50-cloud-init.conf` qui activait auparavant les mots de passe.
+
+```ini
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+X11Forwarding no
+AllowTcpForwarding no
+AllowAgentForwarding no
+```
+
+L'administration humaine se fait avec la cle personnelle du compte `jrechau`;
+le compte `codex-deploy` conserve pour l'instant sa cle d'automatisation et ses
+droits existants. La configuration precedant cette bascule est sauvegardee sous
+`/var/backups/platform-ssh/20260922T000000Z`. Avant toute modification future,
+conserver une session `jrechau` par cle et valider `sudo sshd -t`, puis recharger
+avec `sudo systemctl reload ssh` (jamais redemarrer SSH).
+
 Configuration minimale appliquee :
 
 ```ini

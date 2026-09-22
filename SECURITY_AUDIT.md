@@ -21,8 +21,9 @@ valide les entrées et les droits ; PostgreSQL conserve identités, demandes et
 historique. Les photos passent par décodage/réencodage avant exposition. Notion
 et les fournisseurs OAuth sont des services externes. Caddy termine TLS et
 transmet à l'API locale. Grafana est protégé par une autorisation administrateur.
-Le VPS et son runtime sont mutualisés avec F1 ; aucune modification de F1 n'a
-été effectuée.
+Le VPS et son runtime sont mutualisés avec F1 ; aucune modification applicative
+de F1 n'a été effectuée. Le durcissement SSH de plateforme est toutefois commun
+aux deux sites.
 
 Inventaire condensé des routes (préfixe `/api`) :
 
@@ -130,6 +131,16 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 - Restauration réelle du dump du 2026-09-09 à 13:42:44 UTC : 362 personnages,
   107 relations, 1380 historiques ; index valides et base temporaire supprimée.
   Les empreintes de la release et du dump figurent dans `DEPLOYMENT.md`.
+- Durcissement SSH de plateforme appliqué le 2026-09-22 après validation d'une
+  clé personnelle `jrechau`. Le drop-in
+  `/etc/ssh/sshd_config.d/00-platform-hardening.conf` impose
+  `PermitRootLogin no`, `PasswordAuthentication no`,
+  `KbdInteractiveAuthentication no`, `X11Forwarding no`,
+  `AllowTcpForwarding no` et `AllowAgentForwarding no`. Le préfixe `00` est
+  requis pour primer sur `50-cloud-init.conf`. Une sauvegarde antérieure est
+  conservée sous `/var/backups/platform-ssh/20260922T000000Z`; `sshd -t`, une
+  nouvelle connexion par clé et les contrôles HTTP GTA/F1 sont positifs. La
+  clé `codex-deploy` n'est pas encore restreinte par `restrict`.
 - Revue VPS complémentaire en lecture seule du 2026-09-09 : la release active
   est `20260909T151730Z-notion-response-bound`, l'API et PostgreSQL sont liés à
   `127.0.0.1`, et Prometheus, Grafana, node-exporter et blackbox-exporter ne
@@ -154,7 +165,7 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 | Traité — exploitant GTA | Déployer les correctifs AUTH-01/AUTH-02/PHOTO-01 et exécuter les smoke tests | Déployé ; redirections OAuth et cookies vérifiés. La connexion complète avec comptes réels reste une recette manuelle |
 | Traité — exploitant GTA | Produire un dump récent dans `shared`, protéger les anciens dossiers et restaurer le dump | Restauration réelle avec contrôles de données et suppression de la base éphémère effectuée |
 | P1 — exploitant plateforme | Revoir le port 5000 F1 autorisé publiquement par UFW et le compte d'exécution partagé `codex-deploy` | Hors périmètre de modification GTA ; l'API F1 n'a pas été modifiée. Le compte backend possède encore releases et configuration |
-| P1 — exploitant plateforme | Durcir SSH après vérification d'un accès de secours par clé | `PermitRootLogin yes`, `PasswordAuthentication yes`, `X11Forwarding yes` et `AllowTcpForwarding yes` sont actifs. Fail2ban et les permissions de clés sont corrects, mais ce réglage expose le VPS entier ; ne pas le modifier sans confirmer les clés administrateur et les besoins de tunnel |
+| Partiellement traité — exploitant plateforme | Durcir SSH après vérification d'un accès de secours par clé | Root, mots de passe, X11 et tous les forwardings sont refusés depuis le 2026-09-22. La clé `jrechau` est validée et l'ancien tunnel PostgreSQL n'est plus permis. Reste à restreindre la clé `codex-deploy` après validation F1, puis à réduire ses droits `sudo` dans un lot séparé. |
 | Traité — exploitant GTA | Déployer la CSP et les en-têtes du HTML Caddy documentés | Configuration Caddy validée puis rechargée le 2026-09-09 ; contrôle HTTPS public positif pour CSP, HSTS, `nosniff`, anti-frame, referrer et permissions policy |
 | P1 — frontend/exploitant | Effectuer la recette navigateur des rôles et du blocage inter-origines | Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
 | P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
