@@ -864,6 +864,29 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      Les sauvegardes GTA et le test de restauration mutualisé sont exécutés par
      des helpers `root:root` hors des releases; l'allowlist ne conserve que les
      helpers F1/GTA, le redémarrage du backend GTA et des lectures d'exploitation.
+   - **Plan de séparation déploiement / exécution (P2 plateforme) :**
+     1. Créer les comptes système non connectables `gta-rp-runtime` et
+        `f1-runtime`, sans `sudo`, sans clé SSH et sans répertoire personnel
+        utilisable. Ne supprimer aucun droit de `codex-deploy` durant ce palier.
+     2. Modifier les unités GTA (`gta-rp-backend`, nettoyage photo) et F1
+        (backend, worker) pour les exécuter sous leur compte runtime. Effectuer
+        d'abord un test de démarrage sur une release de test et contrôler les
+        healthchecks, OAuth, imports, uploads et worker F1.
+     3. Séparer les permissions : configurations en `root:<runtime>` `0640`,
+        stockage en écriture seulement pour son runtime, et releases actives en
+        `root:<runtime>` non modifiables par `codex-deploy`. Caddy conserve la
+        lecture strictement nécessaire des photos publiques.
+     4. Faire préparer une release dans un répertoire de staging détenu par
+        `codex-deploy`; le helper root-owned valide un nom de release borné,
+        bascule le lien atomiquement, fixe les propriétaires/modes de la
+        release puis redémarre les unités. Il ne doit jamais exécuter en root
+        du code, un hook ou une configuration provenant de cette release.
+     5. Traiter les migrations séparément : elles nécessitent une identité DB
+        dédiée et des permissions SQL minimales. Ne pas contourner ce point par
+        un helper root exécutant `npm` depuis une release modifiable.
+     6. Tester déploiement, rollback, sauvegarde, restauration, uploads et
+        démarrage après reboot; seulement ensuite retirer à `codex-deploy` les
+        droits d'écriture sur les releases actives et de lecture sur les secrets.
 
 3. **Rendre privés les artefacts GTA non publics (P2 GTA)**
    - Inventorier les lecteurs des journaux Notion et rapports de déploiement,
