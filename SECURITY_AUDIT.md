@@ -140,7 +140,8 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
   requis pour primer sur `50-cloud-init.conf`. Une sauvegarde antérieure est
   conservée sous `/var/backups/platform-ssh/20260922T000000Z`; `sshd -t`, une
   nouvelle connexion par clé et les contrôles HTTP GTA/F1 sont positifs. La
-  clé `codex-deploy` n'est pas encore restreinte par `restrict`.
+  clé `codex-deploy` a reçu l'option `restrict` après validation du flux F1 ;
+  une nouvelle connexion non interactive avec `sudo -n` est positive.
 - Revue VPS complémentaire en lecture seule du 2026-09-09 : la release active
   est `20260909T151730Z-notion-response-bound`, l'API et PostgreSQL sont liés à
   `127.0.0.1`, et Prometheus, Grafana, node-exporter et blackbox-exporter ne
@@ -165,7 +166,7 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 | Traité — exploitant GTA | Déployer les correctifs AUTH-01/AUTH-02/PHOTO-01 et exécuter les smoke tests | Déployé ; redirections OAuth et cookies vérifiés. La connexion complète avec comptes réels reste une recette manuelle |
 | Traité — exploitant GTA | Produire un dump récent dans `shared`, protéger les anciens dossiers et restaurer le dump | Restauration réelle avec contrôles de données et suppression de la base éphémère effectuée |
 | P1 — exploitant plateforme | Revoir le port 5000 F1 autorisé publiquement par UFW et le compte d'exécution partagé `codex-deploy` | Hors périmètre de modification GTA ; l'API F1 n'a pas été modifiée. Le compte backend possède encore releases et configuration |
-| Partiellement traité — exploitant plateforme | Durcir SSH après vérification d'un accès de secours par clé | Root, mots de passe, X11 et tous les forwardings sont refusés depuis le 2026-09-22. La clé `jrechau` est validée et l'ancien tunnel PostgreSQL n'est plus permis. Reste à restreindre la clé `codex-deploy` après validation F1, puis à réduire ses droits `sudo` dans un lot séparé. |
+| Traité — exploitant plateforme | Durcir SSH après vérification d'un accès de secours par clé | Root, mots de passe, X11 et tous les forwardings sont refusés depuis le 2026-09-22. La clé `jrechau` est validée, l'ancien tunnel PostgreSQL n'est plus permis et la clé unique `codex-deploy` est restreinte. La réduction de ses droits `sudo` reste un lot séparé. |
 | Traité — exploitant GTA | Déployer la CSP et les en-têtes du HTML Caddy documentés | Configuration Caddy validée puis rechargée le 2026-09-09 ; contrôle HTTPS public positif pour CSP, HSTS, `nosniff`, anti-frame, referrer et permissions policy |
 | P1 — frontend/exploitant | Effectuer la recette navigateur des rôles et du blocage inter-origines | Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
 | P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |

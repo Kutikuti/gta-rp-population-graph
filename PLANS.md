@@ -845,8 +845,10 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
    - **État :** bascule principale appliquée et contrôlée le 2026-09-22.
      La clé personnelle `jrechau` est validée, et une nouvelle connexion
      `codex-deploy` par clé ainsi que les healthchecks GTA/F1 sont positifs.
-     La restriction `restrict` de `codex-deploy` reste à traiter après la
-     validation explicite des flux de déploiement F1.
+     Après la validation explicite des flux F1, la clé unique de
+     `codex-deploy` a aussi reçu l'option `restrict`; une nouvelle connexion
+     non interactive avec `sudo -n` est positive. La réduction de ses droits
+     `sudo` reste un lot séparé.
 
 2. **Réduire les expositions mutualisées (P1 plateforme)**
    - Vérifier les besoins réels du service F1 qui écoute actuellement sur

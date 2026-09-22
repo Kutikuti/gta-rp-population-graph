@@ -1596,12 +1596,15 @@ AllowTcpForwarding no
 AllowAgentForwarding no
 ```
 
-L'administration humaine se fait avec la cle personnelle du compte `jrechau`;
-le compte `codex-deploy` conserve pour l'instant sa cle d'automatisation et ses
-droits existants. La configuration precedant cette bascule est sauvegardee sous
-`/var/backups/platform-ssh/20260922T000000Z`. Avant toute modification future,
-conserver une session `jrechau` par cle et valider `sudo sshd -t`, puis recharger
-avec `sudo systemctl reload ssh` (jamais redemarrer SSH).
+L'administration humaine se fait avec la cle personnelle du compte `jrechau`.
+La cle unique de `codex-deploy` utilise l'option OpenSSH `restrict` : pas de
+TTY, X11, agent ni forwarding ; les deploiements GTA-RP et F1 ont ete verifies
+en mode non interactif. Ses droits `sudo` existants restent temporairement
+inchangés. La configuration precedant cette bascule et la cle avant restriction
+sont sauvegardees sous `/var/backups/platform-ssh/20260922T000000Z`. Avant toute
+modification future, conserver une session `jrechau` par cle et valider
+`sudo sshd -t`, puis recharger avec `sudo systemctl reload ssh` (jamais
+redemarrer SSH).
 
 Configuration minimale appliquee :
 
