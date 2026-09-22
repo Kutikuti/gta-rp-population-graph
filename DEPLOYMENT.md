@@ -396,8 +396,9 @@ Passe non destructive executee depuis l'environnement de travail :
   controle.
 - Espace disque : environ `6.3G / 38G`, soit `18%`.
 
-Point a garder en tete : le port `5000` reste ouvert pour le site historique ou
-un usage existant du VPS. Ne pas le fermer sans verifier l'autre application.
+Le backend F1 est lie a `127.0.0.1:5000` depuis le 2026-09-22 et les regles UFW
+IPv4/IPv6 publiques correspondantes sont retirees. Il reste accessible a Caddy
+localement, sans exposition directe sur Internet.
 
 ## Etat operationnel de reference du 2026-07-31
 
@@ -1049,9 +1050,10 @@ Les corrections GTA ont ensuite ete deployees, comme detaille ci-dessous.
 - Le textfile monitoring est dans
   `/var/www/platform-ops/monitoring/data/node-exporter-textfile/gta_rp_ops.prom`.
   Le controle d'exploitation a ete aligne sur ce chemin.
-- Le port 5000 F1 reste autorise publiquement et le compte d'execution de
-  l'API est aussi le compte de deploiement. Ces changements de plateforme
-  doivent etre coordonnes avec F1 ; rien n'a ete modifie sur cette application.
+- Le port 5000 F1 est lie a la boucle locale et n'est plus autorise
+  publiquement depuis le 2026-09-22. Le compte d'execution de l'API est encore
+  le compte de deploiement ; sa separation reste un changement de plateforme a
+  planifier avec F1.
 
 ### Deploiement effectue le 2026-09-09 — etape 17
 
@@ -1634,8 +1636,8 @@ Etat reseau actuellement constate sur le VPS :
 - `22/tcp` ouvert pour SSH.
 - `5432/tcp` explicitement refuse publiquement.
 - `3000/tcp` non utilise et non ouvert.
-- `5000/tcp` reste ouvert tant que le site historique `f1prediction.fr` depend
-  encore de ce backend Node distinct.
+- `5000/tcp` n'est pas ouvert publiquement ; F1 est servi par Caddy qui joint
+  son backend uniquement via `127.0.0.1:5000`.
 
 ## Premier administrateur et recuperation
 

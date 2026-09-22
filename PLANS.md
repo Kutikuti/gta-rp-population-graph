@@ -851,10 +851,11 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      `sudo` reste un lot séparé.
 
 2. **Réduire les expositions mutualisées (P1 plateforme)**
-   - Vérifier les besoins réels du service F1 qui écoute actuellement sur
-     `*:5000`. S'il ne doit être joint que par Caddy, le faire écouter sur
-     `127.0.0.1:5000`, retirer les règles UFW IPv4/IPv6 correspondantes et
-     vérifier F1 derrière Caddy avant/après.
+   - **Traité le 2026-09-22 :** F1 écoute désormais seulement sur
+     `127.0.0.1:5000`; les règles UFW IPv4/IPv6 `5000` ont été retirées après
+     validation du backend local, de Caddy et du HTTPS public. Le rollback F1
+     est conservé dans
+     `/var/www/f1-paris-project/shared/backups/network-exposure/20260922T170000Z/`.
    - Étudier la séparation du compte de déploiement et du compte d'exécution
      backend ; cette migration exige de transférer explicitement les droits des
      releases, du stockage photo et de `backend.env`, sans donner accès aux
