@@ -5,7 +5,4 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=codex-deploy
-Group=codex-deploy
-WorkingDirectory=/var/www/gta-rp-population-graph/current
-ExecStart=/var/www/gta-rp-population-graph/current/scripts/backup-postgres.sh
+ExecStart=/usr/local/sbin/gta-rp-postgres-backup

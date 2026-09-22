@@ -1,0 +1,8 @@
+[Unit]
+Description=Validate latest F1 and GTA PostgreSQL backups
+After=docker.service f1-postgres-backup.service gta-rp-postgres-backup.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/platform-postgres-restore-test

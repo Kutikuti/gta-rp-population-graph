@@ -152,7 +152,7 @@ check_ssh() {
 
   run_check "backup directories are private" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \
-    "test \"\$(stat -c %a '${REMOTE_BACKUP_ROOT}/postgres/daily')\" = 700 && test \"\$(stat -c %a '${REMOTE_BACKUP_ROOT}/uploads/weekly')\" = 700"
+    "test \"\$(stat -c %a '${REMOTE_BACKUP_ROOT}/postgres/daily')\" = 750 && test \"\$(stat -c %a '${REMOTE_BACKUP_ROOT}/uploads/weekly')\" = 700"
 
   run_check "firewall is active and PostgreSQL is not public" \
     ssh "${ssh_args[@]}" "${SSH_USER}@${SSH_HOST}" \

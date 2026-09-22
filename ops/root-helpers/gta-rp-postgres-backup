@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 027
+
+# Root-owned production helper. It deliberately has no arguments and never
+# sources a release or an application environment file.
+readonly container_name="postgres_db"
+readonly database_name="gta_rp_population_graph"
+readonly backup_root="/var/www/gta-rp-population-graph/shared/backups/postgres"
+readonly daily_dir="${backup_root}/daily"
+readonly weekly_dir="${backup_root}/weekly"
+readonly keep_daily=7
+readonly keep_weekly=4
+
+(( $# == 0 )) || { echo "This helper accepts no arguments." >&2; exit 2; }
+
+database_user="$(docker exec "${container_name}" printenv POSTGRES_USER)"
+database_password="$(docker exec "${container_name}" printenv POSTGRES_PASSWORD)"
+[[ "${database_user}" =~ ^[a-zA-Z0-9_]+$ ]] || { echo "Invalid PostgreSQL user." >&2; exit 1; }
+[[ -n "${database_password}" ]] || { echo "Missing PostgreSQL password." >&2; exit 1; }
+
+install -d -o root -g codex-deploy -m 0750 "${daily_dir}" "${weekly_dir}"
+exec 9>"${backup_root}/.backup.lock"
+flock -n 9 || { echo "PostgreSQL backup already running." >&2; exit 1; }
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+daily_file="${daily_dir}/${database_name}_${timestamp}.dump"
+temporary_file="$(mktemp "${daily_dir}/.pending.XXXXXX")"
+weekly_temporary=""
+cleanup() { rm -f -- "${temporary_file}" "${weekly_temporary}"; }
+trap cleanup EXIT
+
+export PGPASSWORD="${database_password}"
+docker exec -e PGPASSWORD "${container_name}" pg_dump \
+  --dbname="${database_name}" --host=127.0.0.1 --port=5432 \
+  --username="${database_user}" --format=custom --no-owner --no-privileges >"${temporary_file}"
+docker exec -i "${container_name}" pg_restore --list <"${temporary_file}" >/dev/null
+[[ -s "${temporary_file}" ]] || { echo "Backup file is empty." >&2; exit 1; }
+chown root:codex-deploy "${temporary_file}"
+chmod 0640 "${temporary_file}"
+mv -- "${temporary_file}" "${daily_file}"
+
+if [[ "$(date -u +%u)" == 7 ]]; then
+  weekly_temporary="$(mktemp "${weekly_dir}/.pending.XXXXXX")"
+  cp "${daily_file}" "${weekly_temporary}"
+  chown root:codex-deploy "${weekly_temporary}"
+  chmod 0640 "${weekly_temporary}"
+  mv -- "${weekly_temporary}" "${weekly_dir}/$(basename "${daily_file}")"
+fi
+
+prune() {
+  local directory="$1" keep="$2"
+  mapfile -t files < <(find "${directory}" -maxdepth 1 -type f -name '*.dump' -printf '%f\n' | sort -r)
+  local file
+  for file in "${files[@]:keep}"; do rm -f -- "${directory}/${file}"; done
+}
+prune "${daily_dir}" "${keep_daily}"
+prune "${weekly_dir}" "${keep_weekly}"
+echo "PostgreSQL backup complete: ${daily_file}"
