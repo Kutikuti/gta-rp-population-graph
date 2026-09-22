@@ -799,18 +799,48 @@ prévoit un contrôle de non-régression et un retour arrière explicite. Les
 constats et preuves restent dans `SECURITY_AUDIT.md`.
 
 1. **Sécuriser l'accès avant toute fermeture SSH (P1 plateforme)**
-   - Inventorier les clés autorisées, les administrateurs réels et les usages
-     de tunnel ; confirmer l'accès console Hetzner ou un second accès de
-     secours par clé.
-   - Ouvrir deux sessions SSH indépendantes. Dans un fichier
-     `sshd_config.d` dédié, préparer `PermitRootLogin no`,
-     `PasswordAuthentication no`, `KbdInteractiveAuthentication no` et
-     `X11Forwarding no`. N'ajouter `AllowTcpForwarding no` qu'après avoir
-     confirmé qu'aucun service ou administrateur ne dépend d'un tunnel SSH.
-   - Valider avec `sshd -t`, recharger `ssh` (sans redémarrage), ouvrir une
-     troisième connexion par clé puis seulement fermer les sessions de secours.
-     En cas d'échec, restaurer le fichier de configuration depuis la session
-     encore ouverte ou la console Hetzner.
+   - État confirmé le 2026-09-22 : les seuls comptes locaux sont `root`,
+     `jrechau` et `codex-deploy`. Les deux derniers ont actuellement un accès
+     `sudo` complet ; seul `codex-deploy` possède une clé autorisée (empreinte
+     enregistrée dans le journal d'audit), et son `sudo` est sans mot de passe.
+     `root` et `jrechau` n'ont pas de clé autorisée. Aucun tunnel ni session SSH
+     établie n'était actif lors du contrôle ; l'ancien tunnel PostgreSQL n'est
+     plus nécessaire.
+   - **Précondition de secours :** depuis le poste personnel de `jrechau`,
+     générer ou sélectionner une clé Ed25519 dédiée à l'administration, en
+     conserver la clé privée hors du VPS, puis l'ajouter à
+     `/home/jrechau/.ssh/authorized_keys` avec les permissions `0700` pour
+     `.ssh` et `0600` pour le fichier. Vérifier une connexion neuve par clé et
+     `sudo -v`. Vérifier aussi l'accès à la console Hetzner. La clé personnelle
+     ne doit jamais être celle de l'automatisation `codex-deploy`.
+   - **Assainissement des clés :** dresser la liste par empreinte et supprimer
+     uniquement les clés non retenues après la connexion de `jrechau` validée.
+     Conserver la clé d'administration de `jrechau` et la clé de déploiement
+     connue de `codex-deploy`; supprimer les clés de `root` (inutile une fois
+     sa connexion SSH désactivée) et toutes les autres clés autorisées. Ne
+     jamais supprimer la dernière clé fonctionnelle avant le contrôle suivant.
+   - **Bascule contrôlée :** ouvrir deux sessions indépendantes, l'une en
+     `jrechau` par clé et l'autre en `codex-deploy`. Ajouter le fichier dédié
+     `/etc/ssh/sshd_config.d/99-platform-hardening.conf` avec
+     `PermitRootLogin no`, `PasswordAuthentication no`,
+     `KbdInteractiveAuthentication no`, `X11Forwarding no`,
+     `AllowTcpForwarding no` et `AllowAgentForwarding no`. Le refus du
+     forwarding est maintenant compatible avec la suppression confirmée du
+     tunnel PostgreSQL ; il empêche aussi la réintroduction silencieuse d'un
+     accès local à PostgreSQL via SSH.
+   - **Réduction du compte d'automatisation :** après vérification d'un
+     déploiement GTA et F1 sans tunnel ni terminal interactif, remplacer
+     l'entrée de clé de `codex-deploy` par une entrée `restrict` (ou les options
+     explicites équivalentes) afin d'interdire PTY, forwarding et X11 pour ce
+     compte. Conserver son accès `sudo` actuel dans ce premier lot : sa
+     réduction exige un inventaire séparé des commandes de déploiement et de
+     maintenance qui l'utilisent.
+   - **Validation et retour arrière :** exécuter `sshd -t`, puis `systemctl
+     reload ssh` (jamais un redémarrage), ouvrir une troisième connexion
+     `jrechau` par clé, contrôler `sudo -v` et les déploiements/healthchecks des
+     deux sites. En cas d'échec, restaurer ou retirer le seul fichier de
+     drop-in depuis une session existante ; à défaut, utiliser la console
+     Hetzner. Fermer les anciennes sessions seulement après ces contrôles.
 
 2. **Réduire les expositions mutualisées (P1 plateforme)**
    - Vérifier les besoins réels du service F1 qui écoute actuellement sur
