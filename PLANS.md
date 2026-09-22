@@ -860,6 +860,10 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      backend ; cette migration exige de transférer explicitement les droits des
      releases, du stockage photo et de `backend.env`, sans donner accès aux
      sauvegardes ou secrets à un compte non nécessaire.
+   - **Traité le 2026-09-22 :** `codex-deploy` n'a plus `NOPASSWD: ALL`.
+     Les sauvegardes GTA et le test de restauration mutualisé sont exécutés par
+     des helpers `root:root` hors des releases; l'allowlist ne conserve que les
+     helpers F1/GTA, le redémarrage du backend GTA et des lectures d'exploitation.
 
 3. **Rendre privés les artefacts GTA non publics (P2 GTA)**
    - Inventorier les lecteurs des journaux Notion et rapports de déploiement,
