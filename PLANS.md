@@ -799,13 +799,11 @@ prévoit un contrôle de non-régression et un retour arrière explicite. Les
 constats et preuves restent dans `SECURITY_AUDIT.md`.
 
 1. **Sécuriser l'accès avant toute fermeture SSH (P1 plateforme)**
-   - État confirmé le 2026-09-22 : les seuls comptes locaux sont `root`,
-     `jrechau` et `codex-deploy`. Les deux derniers ont actuellement un accès
-     `sudo` complet ; seul `codex-deploy` possède une clé autorisée (empreinte
-     enregistrée dans le journal d'audit), et son `sudo` est sans mot de passe.
-     `root` et `jrechau` n'ont pas de clé autorisée. Aucun tunnel ni session SSH
-     établie n'était actif lors du contrôle ; l'ancien tunnel PostgreSQL n'est
-     plus nécessaire.
+   - État historique relevé avant remédiation le 2026-09-22 : les seuls comptes
+     locaux étaient `root`, `jrechau` et `codex-deploy`, avec une configuration
+     SSH permissive. L'état courant est durci : `jrechau` administre par clé,
+     root et mots de passe SSH sont refusés, et `codex-deploy` n'a ni groupe
+     `sudo`, ni tunnel, ni terminal SSH.
    - **Précondition de secours :** depuis le poste personnel de `jrechau`,
      générer ou sélectionner une clé Ed25519 dédiée à l'administration, en
      conserver la clé privée hors du VPS, puis l'ajouter à
@@ -847,8 +845,8 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      `codex-deploy` par clé ainsi que les healthchecks GTA/F1 sont positifs.
      Après la validation explicite des flux F1, la clé unique de
      `codex-deploy` a aussi reçu l'option `restrict`; une nouvelle connexion
-     non interactive avec `sudo -n` est positive. La réduction de ses droits
-     `sudo` reste un lot séparé.
+     non interactive avec `sudo -n` est positive. L'allowlist est désormais le
+     seul accès sudo de `codex-deploy`, après son retrait du groupe `sudo`.
 
 2. **Réduire les expositions mutualisées (P1 plateforme)**
    - **Traité le 2026-09-22 :** F1 écoute désormais seulement sur
@@ -856,10 +854,9 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      validation du backend local, de Caddy et du HTTPS public. Le rollback F1
      est conservé dans
      `/var/www/f1-paris-project/shared/backups/network-exposure/20260922T170000Z/`.
-   - Étudier la séparation du compte de déploiement et du compte d'exécution
-     backend ; cette migration exige de transférer explicitement les droits des
-     releases, du stockage photo et de `backend.env`, sans donner accès aux
-     sauvegardes ou secrets à un compte non nécessaire.
+   - **Traité le 2026-09-22 :** les comptes runtime GTA/F1, le staging détenu
+     par le déploiement, les releases immuables, les configurations runtime et
+     migration séparées, ainsi que les rôles SQL minimaux sont en place.
    - **Traité le 2026-09-22 :** `codex-deploy` n'a plus `NOPASSWD: ALL`.
      Les sauvegardes GTA et le test de restauration mutualisé sont exécutés par
      des helpers `root:root` hors des releases; l'allowlist ne conserve que les
