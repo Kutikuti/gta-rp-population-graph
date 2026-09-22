@@ -126,11 +126,10 @@ Sur le VPS actuel :
 - backups PostgreSQL : `/var/www/gta-rp-population-graph/shared/backups/postgres`
 - backups uploads : `/var/www/gta-rp-population-graph/shared/backups/uploads`
 - logs applicatifs complementaires : `/var/www/gta-rp-population-graph/shared/logs`
-- fichier d'environnement backend :
-  `/var/www/gta-rp-population-graph/shared/config/backend.env`
-- compatibilite historique :
-  `/var/www/gta-rp-population-graph/current/backend/.env` pointe vers
-  `/var/www/gta-rp-population-graph/shared/config/backend.env`
+- configuration runtime :
+  `/var/www/gta-rp-population-graph/shared/config/runtime.env`
+- configuration de migrations :
+  `/var/www/gta-rp-population-graph/shared/config/migrations.env`
 
 Organisation active :
 
@@ -142,25 +141,32 @@ Organisation active :
 └── shared/
     ├── backups/
     ├── config/
-    │   └── backend.env
+    │   ├── runtime.env
+    │   └── migrations.env
     ├── logs/
     └── storage/
 ```
 
-`current` est un lien symbolique. Une nouvelle version doit etre preparee dans
-`releases/<horodatage>`, puis activee atomiquement. La commande commune de
-bascule ou de rollback est :
+Depuis la bascule plateforme validee le 2026-09-22, `current` pointe vers la
+release immutable `20260922T215134Z-runtime-separation`. Une nouvelle version
+est preparee uniquement dans `staging/<horodatage>` par `codex-deploy`, puis
+promue atomiquement par le helper root-owned :
 
 ```bash
-/var/www/platform-ops/scripts/activate-release.sh gta-rp <release>
+sudo /usr/local/sbin/gta-rp-activate-release <release>
 ```
 
-Le fichier d'environnement backend reste hors release, avec les permissions
-`600 codex-deploy:codex-deploy`. Le service `gta-rp-backend.service` le charge
-directement via :
+Le helper valide le nom de release, effectue la promotion, fixe la release en
+`root:gta-rp-runtime` non modifiable par le deployeur, bascule `current`,
+redemarre le backend et restaure la release precedente si le health check
+echoue. Il ne lance jamais `npm`, une migration, un hook ou du code de release
+en root.
+
+Le backend tourne sous le compte non connectable et sans sudo `gta-rp-runtime`.
+Il charge exclusivement la configuration runtime hors release :
 
 ```ini
-EnvironmentFile=/var/www/gta-rp-population-graph/shared/config/backend.env
+EnvironmentFile=/var/www/gta-rp-population-graph/shared/config/runtime.env
 ```
 
 Les logs principaux passent aujourd'hui par `journalctl` car le backend et les
@@ -321,12 +327,13 @@ Deploiement de l'etape 16 execute le `2026-09-09` :
   `35207fc3-2f6c-809f-8f72-e77420ba7b73`. La reprise ciblee n'a introduit
   aucune nouvelle erreur et n'a pas modifie les photos deja presentes.
 
-Lors de la construction d'une release, le lien `backend/.env` doit toujours
-viser le fichier partage. Ne jamais transferer un fichier `.env` depuis un
-poste de travail :
+Lors de la construction dans `staging`, le lien `backend/.env` doit viser
+uniquement `migrations.env`. Ne jamais transferer un fichier `.env` depuis un
+poste de travail; le helper remplace ce lien par la configuration runtime lors
+de la promotion :
 
 ```bash
-ln -sfn ../../../shared/config/backend.env backend/.env
+ln -sfn ../../../shared/config/migrations.env backend/.env
 ```
 
 Les scripts de sauvegarde peuvent recevoir `SHARED_DIR`, `UPLOADS_DIR` et
@@ -918,16 +925,16 @@ L'ancien runtime Node `24.18.0` a ete supprime apres mutualisation.
 
 ## Procedure de mise a jour reproductible
 
-Depuis l'audit du 2026-09-09, utiliser une archive d'un commit valide et le
-script GTA `scripts/activate-gta-release.sh`. Les correctifs de cet audit sont
-deployes : consulter `SECURITY_AUDIT.md` pour les controles restants. La bascule
-verifie la sante HTTP et restaure le lien precedent si le redemarrage ou le
-healthcheck echoue. Elle ne restaure jamais automatiquement une base de donnees.
+Depuis la bascule runtime du 2026-09-22, utiliser une archive d'un commit valide
+et le flux `staging` puis `/usr/local/sbin/gta-rp-activate-release`. Les
+correctifs de cet audit sont deployes : consulter `SECURITY_AUDIT.md` pour les
+controles restants. La promotion verifie la sante HTTP et restaure le lien
+precedent sur echec; elle ne restaure jamais automatiquement une base de donnees.
 
-Sur le VPS actuel, le dossier de production `current` n'est pas un checkout
-Git et pointe vers une release immutable. La mise a jour doit donc preparer un
-nouveau dossier `releases/<horodatage>`, y synchroniser le code valide, puis
-activer cette release avec le script de bascule atomique.
+Sur le VPS, `current` n'est pas un checkout Git et pointe vers une release
+immutable. Le deployeur prepare un dossier `staging/<horodatage>` et applique
+les migrations avec `migrations.env`; seul le helper root-owned promeut ce
+contenu vers `releases/` et l'active.
 
 ### Garde-fous pratiques
 
@@ -953,16 +960,16 @@ activer cette release avec le script de bascule atomique.
 Sequence recommandee :
 
 1. Sur la machine source, verifier l'etat du code et lancer les validations.
-2. Creer une nouvelle release horodatee sur le serveur.
-3. Synchroniser le depot vers cette release sans ecraser le stockage partage.
+2. Creer une nouvelle zone de staging horodatee sur le serveur.
+3. Synchroniser le depot vers ce staging sans ecraser le stockage partage.
 4. Reinstaller les dependances si necessaire.
 5. Rebuilder backend et frontend sur le VPS.
 6. Verifier l'etat des migrations.
 7. Lancer un backup PostgreSQL avant toute migration si une migration est
    attendue.
 8. Appliquer les migrations si besoin.
-9. Activer la release avec `scripts/activate-gta-release.sh` de cette release.
-10. Redemarrer le backend si le script de bascule ne l'a pas deja fait.
+9. Promouvoir et activer avec `/usr/local/sbin/gta-rp-activate-release`.
+10. Laisser le helper effectuer le redemarrage et le rollback de sante.
 11. Executer les smoke tests publics.
 
 Exemple depuis la machine source :
@@ -998,32 +1005,32 @@ sha256sum /tmp/gta-rp-release.tar.gz
 Puis sur le VPS :
 
 ```bash
-release=20260731T151800Z-exemple
+release=20260922T215134Z-exemple
 set -euo pipefail
 export PATH=/opt/node-apps/bin:$PATH
-cd /var/www/gta-rp-population-graph/releases/$release
+cd /var/www/gta-rp-population-graph/staging/$release
 # Comparer cette empreinte a celle de la machine source avant extraction.
 sha256sum source.tar.gz
 tar -xzf source.tar.gz
 chmod 755 scripts/*.sh
-cd /var/www/gta-rp-population-graph/releases/$release/backend
-ln -sfn /var/www/gta-rp-population-graph/shared/config/backend.env .env
+cd /var/www/gta-rp-population-graph/staging/$release/backend
+ln -sfn /var/www/gta-rp-population-graph/shared/config/migrations.env .env
 npm ci
 npm run build
 npm run db:migrate:pending
 
-cd /var/www/gta-rp-population-graph/releases/$release/web-client
+cd /var/www/gta-rp-population-graph/staging/$release/web-client
 npm ci
 npm run build
 
-cd /var/www/gta-rp-population-graph/releases/$release/backend
+cd /var/www/gta-rp-population-graph/staging/$release/backend
 # Sauvegarder avant la commande idempotente de migration. Ne pas analyser
 # la sortie npm pour decider si une sauvegarde est necessaire.
-../scripts/backup-postgres.sh
+sudo /usr/local/sbin/gta-rp-postgres-backup
 npm run db:migrate
 
-../scripts/activate-gta-release.sh "$release"
-../scripts/check-production-ops.sh --public-only
+sudo /usr/local/sbin/gta-rp-activate-release "$release"
+curl --fail --silent --show-error https://gta-rp.f1prediction.fr/api/health
 ```
 
 Executer ce bloc dans un shell avec `set -euo pipefail` : un echec de backup,
@@ -1287,8 +1294,8 @@ atomiquement une release connue comme stable.
 Rollback applicatif minimal :
 
 1. Identifier une release precedente validee dans `releases/`.
-2. Reactiver cette release avec `activate-release.sh`.
-3. Redemarrer le service backend et verifier le healthcheck.
+2. Reactiver cette release avec le helper root-owned.
+3. Laisser le helper redemarrer le service backend et verifier le healthcheck.
 4. Restaurer la base seulement si la migration appliquee n'est pas compatible
    avec l'ancien code.
 
@@ -1296,8 +1303,7 @@ Sur le VPS :
 
 ```bash
 release=<release-precedente-validee>
-/var/www/platform-ops/scripts/activate-release.sh gta-rp "$release"
-sudo systemctl restart gta-rp-backend.service
+sudo /usr/local/sbin/gta-rp-activate-release "$release"
 curl -sS https://gta-rp.f1prediction.fr/api/health
 ```
 

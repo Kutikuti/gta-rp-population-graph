@@ -885,8 +885,16 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
         dédiée et des permissions SQL minimales. Ne pas contourner ce point par
         un helper root exécutant `npm` depuis une release modifiable.
      6. Tester déploiement, rollback, sauvegarde, restauration, uploads et
-        démarrage après reboot; seulement ensuite retirer à `codex-deploy` les
-        droits d'écriture sur les releases actives et de lecture sur les secrets.
+     démarrage après reboot; seulement ensuite retirer à `codex-deploy` les
+     droits d'écriture sur les releases actives et de lecture sur les secrets.
+   - **Appliqué et validé le 2026-09-22 :** le backend tourne sous
+     `gta-rp-runtime`; la release active
+     `20260922T215134Z-runtime-separation` a été promue depuis `staging` par
+     `/usr/local/sbin/gta-rp-activate-release`. Les rôles SQL
+     `gta_rp_migrator` et `gta_rp_runtime` sont séparés, `PUBLIC` n'accède plus
+     à la base et `gta_rp_app` est `NOLOGIN` sans privilège. `codex-deploy` est
+     retiré du groupe `sudo`. Le nettoyage photo reste à basculer vers le
+     runtime dans un lot distinct, car son unité l'utilise encore.
 
 3. **Rendre privés les artefacts GTA non publics (P2 GTA)**
    - Inventorier les lecteurs des journaux Notion et rapports de déploiement,

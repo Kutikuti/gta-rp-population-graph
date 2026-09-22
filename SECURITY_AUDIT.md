@@ -74,6 +74,16 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
   d'exploitation, de scan actif ou de mutation n'a été effectuée. L'examen a
   couvert les routes, middlewares, sessions OAuth, imports, photos, fichiers de
   configuration, scripts d'exploitation et tests associés.
+- Séparation runtime validée le 2026-09-22 :
+  `gta-rp-backend.service` s'exécute sous le compte système non connectable
+  `gta-rp-runtime`; la release active est promue de `staging` par
+  `/usr/local/sbin/gta-rp-activate-release`, helper `root:root` qui ne lance
+  ni npm, ni migration, ni hook ou code de release en root et effectue un
+  rollback sur échec de santé. `runtime.env` est `root:gta-rp-runtime` `0640`;
+  `migrations.env` est `root:codex-deploy` `0640`. Les rôles PostgreSQL sont
+  séparés : `gta_rp_migrator` possède les objets, `gta_rp_runtime` a les droits
+  runtime minimaux, `PUBLIC` n'accède plus à la base et `gta_rp_app` est
+  `NOLOGIN` sans privilège. `codex-deploy` n'appartient plus à `sudo`.
 - Autorisations : les routes d'écriture de contribution exigent une session ;
   les routes de modération exigent `moderator` ou `administrator` ; le routeur
   d'administration applique `administrator` avant toutes ses routes. Le
@@ -172,6 +182,7 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 | P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
 | P2 — backend | Mesurer la contention du verrou commun si les mutations de comptes deviennent fréquentes | Lecture des sessions non verrouillée ; sérialisation limitée aux mutations sensibles |
 | P2 — exploitant GTA | Durcir l'unité backend après test de démarrage | Service non-root avec `NoNewPrivileges`, `PrivateTmp` et système de fichiers protégé, mais sans `UMask`, `ProtectHome`, filtre d'appels système ni bornage IP. Les appels OAuth/Notion exigent un accès réseau ; le profil doit être testé avant activation |
+| P2 — exploitant GTA | Basculer le nettoyage photo vers `gta-rp-runtime` | Le backend est isolé, mais `gta-rp-photo-cleanup.service` s'exécute encore sous `codex-deploy`; adapter son unité et vérifier les ACL de stockage avant de retirer ses accès historiques. |
 | P2 — exploitant GTA | Passer les journaux et rapports de déploiement GTA en privé | Les fichiers existants sont en `0644`. Évaluer leur contenu et les lecteurs nécessaires avant un `0700`/`0600` afin de ne pas gêner l'exploitation |
 
 Le retour de release suppose des migrations compatibles avec l'ancienne
