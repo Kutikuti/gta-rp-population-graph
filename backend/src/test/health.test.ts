@@ -50,4 +50,28 @@ describe("GET /api/health", () => {
     expect(response.status).toBe(503);
     expect(response.body).toEqual({ status: "unavailable" });
   });
+
+  it("does not accumulate database probes when the first one is blocked", async () => {
+    let calls = 0;
+    const app = createApp({
+      databaseHealthCheck: () => {
+        calls += 1;
+        return new Promise<void>(() => {});
+      },
+      healthCheckTimeoutMs: 5
+    });
+
+    const responses = await Promise.all(
+      Array.from({ length: 4 }, () => request(app).get("/api/health"))
+    );
+
+    expect(calls).toBe(1);
+    expect(responses.map((response) => response.status)).toEqual([503, 503, 503, 503]);
+    expect(responses.map((response) => response.body)).toEqual([
+      { status: "unavailable" },
+      { status: "unavailable" },
+      { status: "unavailable" },
+      { status: "unavailable" }
+    ]);
+  });
 });
