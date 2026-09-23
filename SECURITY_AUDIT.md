@@ -84,6 +84,11 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
   séparés : `gta_rp_migrator` possède les objets, `gta_rp_runtime` a les droits
   runtime minimaux, `PUBLIC` n'accède plus à la base et `gta_rp_app` est
   `NOLOGIN` sans privilège. `codex-deploy` n'appartient plus à `sudo`.
+- Healthcheck de promotion renforcé : `GET /api/health` exécute une lecture
+  Sequelize `SELECT 1` bornée à une seconde. Le contrat de succès reste
+  inchangé; une erreur ou un délai PostgreSQL répondent seulement
+  `503 {"status":"unavailable"}`. Les tests couvrent succès, échec et délai
+  sans connexion réelle à PostgreSQL.
 - Autorisations : les routes d'écriture de contribution exigent une session ;
   les routes de modération exigent `moderator` ou `administrator` ; le routeur
   d'administration applique `administrator` avant toutes ses routes. Le

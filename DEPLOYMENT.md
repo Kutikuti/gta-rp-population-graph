@@ -164,6 +164,13 @@ en root. **Point ouvert :** il doit préserver les bits exécutables requis dans
 la release, notamment celui de `esbuild`; la release active a été réparée
 manuellement en `0755 root:gta-rp-runtime` le 2026-09-22.
 
+Le healthcheck anonyme `GET /api/health` est aussi la sonde de promotion : il
+renvoie exactement `200 {"status":"ok","service":"gta-rp-population-graph-api"}`
+uniquement après une requête légère `SELECT 1` via Sequelize. Une indisponibilité
+ou un dépassement de délai PostgreSQL renvoie `503 {"status":"unavailable"}`
+sans détail interne. Une promotion GTA doit donc considérer tout autre résultat
+que ce contrat `200` comme un échec et exécuter son rollback.
+
 Le backend tourne sous le compte non connectable et sans sudo `gta-rp-runtime`.
 Il charge exclusivement la configuration runtime hors release :
 

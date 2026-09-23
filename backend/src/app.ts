@@ -5,6 +5,7 @@ import helmet from "helmet";
 
 import { env } from "./config/env.js";
 import { sessionMiddleware } from "./config/session.js";
+import { sequelize } from "./db/index.js";
 import { loadCurrentUser } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { recordHttpMetrics } from "./middleware/metrics.js";
@@ -13,7 +14,7 @@ import { requireTrustedWriteOrigin } from "./middleware/request-origin.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createContributionsRouter } from "./routes/contributions.js";
-import { healthRouter } from "./routes/health.js";
+import { createHealthRouter, type DatabaseHealthCheck } from "./routes/health.js";
 import { createInternalMetricsRouter } from "./routes/internal-metrics.js";
 import { createModerationRouter } from "./routes/moderation.js";
 import { createProfileRouter } from "./routes/profile.js";
@@ -46,6 +47,8 @@ export type AppDependencies = {
   adminService?: AdminService;
   dataCompletenessService?: DataCompletenessService;
   metricsService?: MetricsService;
+  databaseHealthCheck?: DatabaseHealthCheck;
+  healthCheckTimeoutMs?: number;
 };
 
 export const createApp = (dependencies: AppDependencies = {}) => {
@@ -115,7 +118,16 @@ export const createApp = (dependencies: AppDependencies = {}) => {
   app.use(sessionMiddleware);
   app.use(loadCurrentUser(authService));
 
-  app.use("/api/health", healthRouter);
+  app.use(
+    "/api/health",
+    createHealthRouter(
+      dependencies.databaseHealthCheck ??
+        (async () => {
+          await sequelize.query("SELECT 1");
+        }),
+      dependencies.healthCheckTimeoutMs
+    )
+  );
   app.use("/api/internal", createInternalMetricsRouter(dependencies.metricsService));
   app.use("/api/supervision", supervisionRouter);
   app.use(
