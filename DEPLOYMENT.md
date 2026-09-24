@@ -125,9 +125,7 @@ services et état effectif des environnements sont maintenus dans
 [catalogue](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md).
 Ce dépôt ne dépend pas d'un chemin local précis pour consulter ces documents.
 
-Les scripts d'exploitation GTA, dont la sauvegarde des uploads et le packaging
-des releases, sont centralisés avec leurs tests dans `platform-ops`. Les copies
-locales et leurs tests ont été retirés. Les fragments de monitoring présents
-ici restent référencés par le Compose de développement ; ils ne représentent
-pas la configuration d'une plateforme active et ne doivent pas être remplacés
-sans revue dédiée.
+La supervision de la plateforme est également centralisée dans `platform-ops`.
+Ce dépôt conserve uniquement le code applicatif des métriques et de l'accès
+administrateur à la supervision ; aucune stack locale Prometheus/Grafana ni
+configuration d'administration VPS n'y est maintenue.
