@@ -125,10 +125,9 @@ services et état effectif des environnements sont maintenus dans
 [catalogue](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md).
 Ce dépôt ne dépend pas d'un chemin local précis pour consulter ces documents.
 
-Deux scripts restent temporairement dans ce dépôt pour des raisons de
-compatibilité : le script de sauvegarde des uploads est encore référencé par
-le service plateforme correspondant ; le script de packaging suppose que le
-dépôt GTA est sa racine Git. Le catalogue central suit leur migration. Les
-fragments de monitoring locaux restent propres à l'environnement de
-développement et ne doivent pas être interprétés comme la configuration d'une
-plateforme active.
+Les scripts d'exploitation GTA, dont la sauvegarde des uploads et le packaging
+des releases, sont centralisés avec leurs tests dans `platform-ops`. Les copies
+locales et leurs tests ont été retirés. Les fragments de monitoring présents
+ici restent référencés par le Compose de développement ; ils ne représentent
+pas la configuration d'une plateforme active et ne doivent pas être remplacés
+sans revue dédiée.

@@ -29,8 +29,6 @@ run_npm_script() {
     npm --prefix "$ROOT_DIR/$project_dir" run "$script_name"
 }
 
-run_step "scripts: operational regression tests" node --test "$ROOT_DIR/scripts/test-ops.mjs"
-
 run_npm_script "backend" "check"
 run_npm_script "backend" "test:coverage"
 run_npm_script "backend" "test:integration"
