@@ -885,27 +885,23 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      démarrage après reboot; seulement ensuite retirer à `codex-deploy` les
      droits d'écriture sur les releases actives et de lecture sur les secrets.
    - **Appliqué et validé le 2026-09-22 :** le backend tourne sous
-     `gta-rp-runtime`; la release active
-     `20260922T215134Z-runtime-separation` a été promue depuis `staging` par
-     `/usr/local/sbin/gta-rp-activate-release`. Les rôles SQL
-     `gta_rp_migrator` et `gta_rp_runtime` sont séparés, `PUBLIC` n'accède plus
+     `gta-rp-runtime`; les rôles SQL `gta_rp_migrator` et `gta_rp_runtime` sont
+     séparés, `PUBLIC` n'accède plus
      à la base et `gta_rp_app` est `NOLOGIN` sans privilège. `codex-deploy` est
      retiré du groupe `sudo`. Le nettoyage photo a aussi été basculé et validé
      sous `gta-rp-runtime` avec son timer horaire. Le helper de promotion a été
      corrigé le 2026-09-23 pour préserver les bits exécutables, notamment
      `esbuild`; sa validation complète est attendue à la prochaine promotion.
 
-3. **Reprendre les sources GTA d'exploitation (P2 GTA / plateforme)**
-   - Maintenir dans ce dépôt les scripts de déploiement et d'audit GTA, les
-     helpers root-owned et les unités systemd GTA ; `SECURITY_AUDIT.md` et
-     `DEPLOYMENT.md` en sont les documents de référence.
-   - Laisser dans `platform-ops` uniquement SSH, Caddy, UFW, monitoring et les
-     scripts qui contrôlent réellement GTA et F1 ensemble. Une copie installée
-     root-owned n'est pas une source de vérité.
-   - Avant de retirer un ancien fichier plateforme : comparer l'empreinte avec
-     la source GTA, installer le candidat dans une fenêtre dédiée, vérifier
-     promotion, healthcheck PostgreSQL, rollback, timers et les deux sites,
-     puis consigner l'opération dans les deux runbooks.
+3. **Centraliser l'interface VPS dans platform-ops (traité le 2026-09-24)**
+   - Le catalogue platform-ops est la référence pour les scripts, helpers,
+     unités et procédures VPS GTA/F1. `DEPLOYMENT.md` conserve les exigences
+     propres au build et aux migrations GTA ; `SECURITY_AUDIT.md` conserve
+     l'audit applicatif et renvoie à l'audit central pour l'infrastructure.
+   - Les sources locales ayant une dépendance de chemin à l'arborescence GTA
+     restent présentes et sont identifiées dans `DEPLOYMENT.md`. Les fragments
+     de monitoring qui alimentent le Compose local restent en attente de
+     réconciliation ; ne pas les utiliser pour la stack active.
 
 4. **Rendre privés les artefacts GTA non publics (P2 GTA)**
    - **Traité pour les rapports de déploiement le 2026-09-23 :**

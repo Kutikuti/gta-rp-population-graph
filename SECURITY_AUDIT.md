@@ -1,50 +1,36 @@
 # Audit de sécurité — étape 17
 
-Date : 2026-09-09. Base examinée : `670d968`. Correctifs applicatifs du commit
-`997c560` déployés dans `20260909T134027Z-step17-security-r2`, avec correction
-additionnelle du contrôle des timers ; empreintes dans `DEPLOYMENT.md`.
+Mise à jour documentaire : 2026-09-24. La dernière revue applicative date du
+2026-09-09. Les opérations VPS et leur état effectif sont suivis dans l'audit central
+[`platform-ops/SECURITY_AUDIT.md`](https://github.com/Kutikuti/platform-ops/blob/main/SECURITY_AUDIT.md).
 
 ## Décision actuelle
 
-**Correctifs déployés ; audit encore ouvert.** La faille OAuth reproduite dans
-les tests est corrigée en production. Le dump récent a été restauré et les
-écarts de sauvegarde, permissions et écoute réseau GTA sont corrigés. Les
-contrôles HTTP/SSH et les en-têtes CSP du HTML statique passent. La recette
-navigateur complète des rôles et la revue complémentaire des imports et erreurs
-restent à effectuer. Cette revue ne constitue pas une garantie d'absence de
+**Audit applicatif encore ouvert.** Les tests couvrent les corrections OAuth,
+les autorisations, la sonde SQL de santé et les protections des imports/uploads.
+La recette navigateur complète des rôles et la revue complémentaire des
+erreurs/logs restent à effectuer. Cette revue ne garantit pas l'absence de
 faille.
 
-## Autorité documentaire et sources d'exploitation
+## Référence pour l'exploitation VPS
 
-`SECURITY_AUDIT.md` est le registre de sécurité unique de GTA-RP dans ce
-dépôt : aucun autre audit GTA versionné ne le double. `DEPLOYMENT.md` est le
-runbook applicatif de référence. Les sources propres à GTA doivent vivre ici :
-contrôles applicatifs sous `scripts/`, helpers root-owned sous
-`ops/root-helpers/` et unités GTA sous `ops/systemd/`.
-
-La plateforme conserve uniquement les éléments réellement mutualisés : SSH,
-Caddy, UFW, monitoring, le contrôle de santé des deux applications et le test
-de restauration PostgreSQL GTA+F1. Elle peut installer une copie root-owned
-d'un artefact GTA, mais ne doit pas devenir la seule source de ce code.
-
-La reprise est engagée le 2026-09-24 : le helper
-`ops/root-helpers/gta-rp-activate-release` et les unités runtime GTA sont
-désormais versionnés ici, sans modification du VPS. Avant de retirer toute
-copie de `platform-ops`, il faut comparer les empreintes, installer depuis ce
-dépôt dans une fenêtre dédiée, tester une promotion et son rollback, puis
-mettre à jour le runbook plateforme. Aucun script partagé ne doit être copié
-ou modifié sans cette séparation explicite.
+`platform-ops` est la source de référence pour les helpers, unités, scripts,
+accès et procédures d'administration VPS. Les copies GTA redondantes retirées
+du présent dépôt sont cataloguées dans
+[`OPS_CATALOG.md`](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md).
+L'audit de sécurité plateforme est dans
+[`platform-ops/SECURITY_AUDIT.md`](https://github.com/Kutikuti/platform-ops/blob/main/SECURITY_AUDIT.md).
+Ce document reste dédié au code applicatif GTA ; les fichiers de monitoring
+locaux conservés sont des fragments non autorisés pour l'administration de la
+stack active.
 
 ## Périmètre et frontières de confiance
 
 Le navigateur et toutes les données communautaires sont non fiables. L'API
 valide les entrées et les droits ; PostgreSQL conserve identités, demandes et
 historique. Les photos passent par décodage/réencodage avant exposition. Notion
-et les fournisseurs OAuth sont des services externes. Caddy termine TLS et
-transmet à l'API locale. Grafana est protégé par une autorisation administrateur.
-Le VPS et son runtime sont mutualisés avec F1 ; aucune modification applicative
-de F1 n'a été effectuée. Le durcissement SSH de plateforme est toutefois commun
-aux deux sites.
+et les fournisseurs OAuth sont des services externes. Les propriétés du VPS,
+du proxy et de la supervision sont décrites dans l'audit central.
 
 Inventaire condensé des routes (préfixe `/api`) :
 
@@ -69,42 +55,24 @@ validation des charges utiles ou l'accès à la persistance.
 
 ## Constats et corrections
 
-Le tableau conserve l'état de préparation avant déploiement. Les correctifs
-applicatifs et scripts listés sont maintenant en production ; les anciens
-dossiers de sauvegardes ont aussi été protégés. Voir le bilan de déploiement
-daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
+Le tableau suit les constats applicatifs et les protections implémentées dans
+le code. L'état et les preuves d'exploitation VPS ne sont pas dupliqués ici ;
+ils sont consignés dans l'audit central `platform-ops`.
 
-| ID | Gravité | Preuve / effet | Traitement local et état production |
+| ID | Gravité | Preuve / effet | Traitement local et dernier état de production documenté |
 | --- | --- | --- | --- |
-| AUTH-01 | Critique | Une identité non liée ayant le même email déclenchait une session sur le compte existant, y compris administrateur. L'ancien test masquait le problème en simulant un compte introuvable. | Refus `email_in_use` avant toute récupération de session. Test reproduit rouge avant correction, vert après ; reproduction PostgreSQL. **À déployer.** |
-| AUTH-02 | Élevée | Les transactions seules ne sérialisaient pas le premier administrateur, les dissociations ou la suppression du dernier administrateur. | Verrou transactionnel PostgreSQL commun ; tests concurrents réels. Les administrateurs bannis ne comptent plus comme secours ; bannissement du dernier admin refusé. À déployer. |
-| PHOTO-01 | Élevée | `fetch` suivait les redirections avant de vérifier leur destination. | Vérification de chaque saut avant accès réseau, trois redirections maximum, HTTPS/ports/hôtes bornés, délai global 15 s, annulation des corps trop grands. Tests de destinations internes et de boucles. À déployer. |
-| OPS-01 | Élevée | Les dumps du 9 septembre sont sous `releases/shared/backups`, mais le contrôle de restauration lit `shared/backups` contenant des dumps de juin/juillet. | Résolution du chemin de release corrigée ; test du lien `current` ; contrôle de fraîcheur 36 h dans le répertoire réellement restauré. À appliquer et faire suivre d'une restauration récente. |
-| OPS-02 | Élevée | Dumps observés en mode 0644 ; des exports partiels pouvaient être publiés comme sauvegardes finales. | Répertoires 0700, fichiers 0600, verrou d'exécution, fichier temporaire, vérification `pg_restore --list`/`tar -tzf`, publication atomique puis rétention. Les archives existantes restent à protéger. |
-| WEB-01 | Moyenne | CORS ne constitue pas à lui seul une autorisation d'écriture ; les sous-domaines partagent la notion de site navigateur. | Contrôle exact de l'Origin pour les écritures, défense Fetch Metadata, compatibilité clients non navigateur sans Origin ; tests avec session authentifiée. À déployer. |
-| AUTH-03 | Moyenne | État de connexion non rattaché explicitement au fournisseur et sans expiration courte. | Fournisseur lié à l'état, expiration 10 min, nettoyage, tests de confusion et d'expiration. Délais OAuth 10 s par requête, redirections réseau refusées. À déployer. |
-| OPS-03 | Moyenne | API en écoute sur `*:4000`, derrière le pare-feu mais accessible depuis les autres services locaux. | Écoute production sur `127.0.0.1:4000`, cohérente avec Caddy ; contrôle SSH explicite. À déployer. |
-| OPS-04 | Moyenne | Activation mutualisée vérifiant seulement systemd, sans santé HTTP ni retour automatique. | Script GTA dédié de bascule atomique et retour sur échec systemd/HTTP ; tests de simulation. Ne modifie pas la base ni F1. À utiliser lors de la prochaine release. |
-| OPS-05 | Moyenne | Smoke checks avec fichiers `/tmp` prévisibles, interpolation shell de l'URL et mauvais traitement des HTTP 401/403. | Répertoire temporaire privé, paramètres cités, délais réseau, code HTTP explicite ; tests d'échec réseau et d'exposition de Grafana. Chemin monitoring corrigé. |
-| PRIV-01 | Faible | Absence d'instruction explicite de non-stockage des réponses privées. | `Cache-Control: no-store` sur les espaces authentifiés. À déployer. |
+| AUTH-01 | Critique | Une identité non liée ayant le même email déclenchait une session sur le compte existant, y compris administrateur. L'ancien test masquait le problème en simulant un compte introuvable. | Refus `email_in_use` avant toute récupération de session. Test reproduit rouge avant correction, vert après ; reproduction PostgreSQL. Déployé le 2026-09-09. |
+| AUTH-02 | Élevée | Les transactions seules ne sérialisaient pas le premier administrateur, les dissociations ou la suppression du dernier administrateur. | Verrou transactionnel PostgreSQL commun ; tests concurrents réels. Les administrateurs bannis ne comptent plus comme secours ; bannissement du dernier admin refusé. Déployé le 2026-09-09. |
+| PHOTO-01 | Élevée | `fetch` suivait les redirections avant de vérifier leur destination. | Vérification de chaque saut avant accès réseau, trois redirections maximum, HTTPS/ports/hôtes bornés, délai global 15 s, annulation des corps trop grands. Tests de destinations internes et de boucles. Déployé le 2026-09-09. |
+| WEB-01 | Moyenne | CORS ne constitue pas à lui seul une autorisation d'écriture ; les sous-domaines partagent la notion de site navigateur. | Contrôle exact de l'Origin pour les écritures, défense Fetch Metadata, compatibilité clients non navigateur sans Origin ; tests avec session authentifiée. Déployé le 2026-09-09. |
+| AUTH-03 | Moyenne | État de connexion non rattaché explicitement au fournisseur et sans expiration courte. | Fournisseur lié à l'état, expiration 10 min, nettoyage, tests de confusion et d'expiration. Délais OAuth 10 s par requête, redirections réseau refusées. Déployé le 2026-09-09. |
+| PRIV-01 | Faible | Absence d'instruction explicite de non-stockage des réponses privées. | `Cache-Control: no-store` sur les espaces authentifiés. Déployé le 2026-09-09. |
 
 ## Vérifications effectuées
 
-- Revue statique complémentaire non intrusive du 2026-09-09 : aucun serveur n'a
-  été démarré, aucun endpoint de production n'a été appelé et aucune tentative
-  d'exploitation, de scan actif ou de mutation n'a été effectuée. L'examen a
-  couvert les routes, middlewares, sessions OAuth, imports, photos, fichiers de
-  configuration, scripts d'exploitation et tests associés.
-- Séparation runtime validée le 2026-09-22 :
-  `gta-rp-backend.service` s'exécute sous le compte système non connectable
-  `gta-rp-runtime`; la release active est promue de `staging` par
-  `/usr/local/sbin/gta-rp-activate-release`, helper `root:root` qui ne lance
-  ni npm, ni migration, ni hook ou code de release en root et effectue un
-  rollback sur échec de santé. `runtime.env` est `root:gta-rp-runtime` `0640`;
-  `migrations.env` est `root:codex-deploy` `0640`. Les rôles PostgreSQL sont
-  séparés : `gta_rp_migrator` possède les objets, `gta_rp_runtime` a les droits
-  runtime minimaux, `PUBLIC` n'accède plus à la base et `gta_rp_app` est
-  `NOLOGIN` sans privilège. `codex-deploy` n'appartient plus à `sudo`.
+- Revue statique applicative non intrusive : aucune opération de production
+  n'a été effectuée. Les scripts d'administration, services et contrôles VPS
+  sont suivis dans l'audit central `platform-ops`.
 - Healthcheck de promotion renforcé : `GET /api/health` exécute une lecture
   Sequelize `SELECT 1` bornée à une seconde. Le contrat de succès reste
   inchangé; une erreur ou un délai PostgreSQL répondent seulement
@@ -138,15 +106,12 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
   vulnérabilité connue pour `backend` et `web-client`. Cette vérification ne
   couvre ni l'historique Git, ni les dépendances de développement, ni les
   secrets réellement présents sur le VPS.
-- Configuration documentée : PostgreSQL et les composants de monitoring sont
-  liés à des adresses locales sur le VPS ; l'API GTA est attendue sur
-  `127.0.0.1:4000` derrière Caddy. Le `docker-compose.yml` de développement
-  publie toutefois PostgreSQL sur `5432` sans adresse de boucle explicite. Ce
-  risque est limite au developpement : il n'affecte pas le VPS, ou PostgreSQL
-  est bloque publiquement. Le bind local est reporte car le devcontainer accede
-  a ce service via `host.docker.internal`; une configuration dediee est
-  necessaire pour le durcir sans casser cet acces.
-- Runtime local et VPS : Node 24.20.0 ; npm local 12.0.2.
+- Le `docker-compose.yml` de développement publie PostgreSQL sur `5432` sans
+  adresse de boucle explicite. Ce risque concerne le développement, pas la
+  configuration VPS. Le bind local est reporté car le devcontainer accède à
+  PostgreSQL via `host.docker.internal`; un réglage dédié est nécessaire pour
+  le durcir sans casser cet accès.
+- Runtime de référence du dépôt : Node 24.20.0 ; npm 12.0.2.
 - `npm audit` backend et frontend : zéro vulnérabilité connue signalée lors
   de la passe du 2026-09-09. Cela ne couvre pas les erreurs métier.
 - `scripts/run-all-checks.sh` : contrôles Biome, tests avec seuils de couverture,
@@ -155,67 +120,17 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 - Couverture backend : statements 73,51 %, branches 61,40 % ; frontend :
   statements 81,45 %, branches 70,42 %. Le seuil du service auth reste à 100 %
   des statements/lignes ; aucun seuil n'a été abaissé.
-- 11 tests d'exploitation : exports partiels/invalides, permissions, rétention,
-  faux succès HTTP, activation et rollback simulés. Inclus dans le runner global.
-- HTTP production : accueil, health, session anonyme, liste publique,
-  démarrage Google, refus admin et protection de la supervision passent.
-- SSH en lecture : backend/Caddy/timers actifs, UFW actif, PostgreSQL local,
-  fail2ban SSH présent, rétention journald, espace disque, supervision locale.
-  Le test de restauration planifié a réussi le 6 septembre, **sur son chemin
-  configuré** ; ce résultat n'atteste pas la restauration du dump récent.
-- Le contrôle SSH renforcé échouait avant déploiement sur la fraîcheur du dump
-  dans `shared`, les permissions et le bind de l'API. Il passe après correction,
-  avec vérification individuelle des timers et le bon service mutualisé.
-- Restauration réelle du dump du 2026-09-09 à 13:42:44 UTC : 362 personnages,
-  107 relations, 1380 historiques ; index valides et base temporaire supprimée.
-  Les empreintes de la release et du dump figurent dans `DEPLOYMENT.md`.
-- Durcissement SSH de plateforme appliqué le 2026-09-22 après validation d'une
-  clé personnelle `jrechau`. Le drop-in
-  `/etc/ssh/sshd_config.d/00-platform-hardening.conf` impose
-  `PermitRootLogin no`, `PasswordAuthentication no`,
-  `KbdInteractiveAuthentication no`, `X11Forwarding no`,
-  `AllowTcpForwarding no` et `AllowAgentForwarding no`. Le préfixe `00` est
-  requis pour primer sur `50-cloud-init.conf`. Une sauvegarde antérieure est
-  conservée sous `/var/backups/platform-ssh/20260922T000000Z`; `sshd -t`, une
-  nouvelle connexion par clé et les contrôles HTTP GTA/F1 sont positifs. La
-  clé `codex-deploy` a reçu l'option `restrict` après validation du flux F1 ;
-  une nouvelle connexion non interactive avec `sudo -n` est positive.
-- Revue VPS complémentaire en lecture seule du 2026-09-09 : la release active
-  est `20260909T151730Z-notion-response-bound`, l'API et PostgreSQL sont liés à
-  `127.0.0.1`, et Prometheus, Grafana, node-exporter et blackbox-exporter ne
-  sont aussi exposés que localement. Caddy 2.11.4 valide sa configuration ; le
-  certificat Let's Encrypt de `gta-rp.f1prediction.fr` expire le 2026-11-27.
-  Les secrets n'ont pas été lus : `backend.env` est en `0600` sous un dossier
-  `0700`, et les clés SSH de déploiement sont en `0700`/`0600`.
-- Le backend exécute effectivement `/opt/node-v24.20.0/bin/node`. En revanche,
-  appeler `/opt/node-apps/bin/npm` sans placer ce dossier en tête de `PATH`
-  résout le Node système 18 via son shebang ; le service et le runbook utilisent
-  déjà le `PATH` correct, qui doit rester obligatoire dans les procédures.
-- Aucun brouillon d'upload temporaire n'était présent. Les photos validées sont
-  volontairement lisibles localement pour être servies publiquement ; les
-  journaux Notion et les rapports de déploiement existants sont en `0644` et
-  doivent être rendus privés s'ils peuvent contenir des données importées ou des
-  détails de sécurité.
+- Les contrôles de déploiement, sauvegarde, restauration, SSH et systemd sont
+  conservés et documentés par `platform-ops`, hors de ce registre applicatif.
 
 ## Risques résiduels et suite obligatoire
 
 | Priorité | Action / responsable | Limite ou mesure actuelle |
 | --- | --- | --- |
-| Traité — exploitant GTA | Déployer les correctifs AUTH-01/AUTH-02/PHOTO-01 et exécuter les smoke tests | Déployé ; redirections OAuth et cookies vérifiés. La connexion complète avec comptes réels reste une recette manuelle |
-| Traité — exploitant GTA | Produire un dump récent dans `shared`, protéger les anciens dossiers et restaurer le dump | Restauration réelle avec contrôles de données et suppression de la base éphémère effectuée |
-| Traité — exploitant plateforme | Réduire les expositions et séparer l'exécution de `codex-deploy` | F1 est lié à `127.0.0.1:5000` sans règle UFW publique. GTA/F1 utilisent leurs comptes runtime, leurs releases immuables et des configurations séparées; les rôles SQL runtime/migrator limitent les accès aux bases. |
-| Traité — exploitant plateforme | Durcir SSH et limiter les privilèges de déploiement | Root, mots de passe, X11 et tous les forwardings sont refusés depuis le 2026-09-22. La clé `jrechau` est validée, `codex-deploy` est restreint, retiré du groupe `sudo` et limité à une allowlist. Les sauvegardes et restaurations utilisent des helpers root-owned hors des releases. |
-| Traité — exploitant GTA | Déployer la CSP et les en-têtes du HTML Caddy documentés | Configuration Caddy validée puis rechargée le 2026-09-09 ; contrôle HTTPS public positif pour CSP, HSTS, `nosniff`, anti-frame, referrer et permissions policy |
 | P1 — frontend/exploitant | Effectuer la recette navigateur des rôles et du blocage inter-origines | Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
 | P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
 | P2 — backend | Mesurer la contention du verrou commun si les mutations de comptes deviennent fréquentes | Lecture des sessions non verrouillée ; sérialisation limitée aux mutations sensibles |
-| P2 — exploitant GTA | Durcir l'unité backend après test de démarrage | Service non-root avec `UMask=0027`, `NoNewPrivileges`, `PrivateTmp` et système de fichiers protégé. Restent `ProtectHome`, la restriction des périphériques, le filtre d'appels système et le bornage IP sortant ; OAuth/Notion exigent du réseau, donc le profil doit être testé par paliers. |
-| Traité — exploitant GTA | Basculer le nettoyage photo vers `gta-rp-runtime` | `gta-rp-photo-cleanup.service` et son timer horaire sont validés sous `gta-rp-runtime` le 2026-09-22; lancement manuel positif (`scanned=0`, `deleted=0`, `skipped=0`) et healthchecks GTA/F1 à HTTP 200. |
-| Traité — exploitant GTA / plateforme | Préserver les binaires exécutables lors d'une promotion GTA | Le helper root-owned installé le 2026-09-23 préserve les bits exécutables issus du staging, dont `esbuild`, et fixe les autres fichiers en lecture seule. Sa source GTA est reprise dans `ops/root-helpers/gta-rp-activate-release`; la prochaine promotion doit encore valider ce comportement de bout en bout. |
-| Traité — exploitant GTA | Passer les journaux et rapports de déploiement GTA en privé | Le 2026-09-23, `shared/deployment-reports` a été confirmé en `0700` et ses fichiers existants en `0600`. Aucun producteur versionné n'a été trouvé dans ce dépôt ; tout nouveau producteur doit imposer `umask 077`. Les photos publiques sont explicitement hors périmètre. |
-| P2 — GTA / plateforme | Finaliser la reprise des sources d'exploitation GTA | Les sources GTA sont reprises dans ce dépôt ; la copie active root-owned et les procédures plateforme doivent encore être alignées puis validées lors d'une promotion avec rollback. |
+| Exploitation VPS | Consulter l'audit central platform-ops | Les droits, services, promotion, restauration et durcissement systemd sont suivis dans le dépôt central ; ce fichier ne duplique pas leur statut. |
 
-Le retour de release suppose des migrations compatibles avec l'ancienne
+Le retour au code précédent suppose des migrations compatibles avec l'ancienne
 version. Un changement de schéma destructif exige une procédure spécifique.
-La validation finale doit identifier la release effectivement déployée, le dump
-récent effectivement restauré et le résultat des parcours authentifiés.

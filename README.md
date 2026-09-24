@@ -90,14 +90,12 @@ Le workflow d'import Notion est egalement operationnel cote administration :
 - liste des fiches importees triable de maniere stable par nom, avec recherche
   et suivi `a faire` / `appliquee`.
 
-La production de travail s'appuie maintenant sur le sous-domaine
-`gta-rp.f1prediction.fr`, avec backend `systemd`, frontend statique derriere
-Caddy, base PostgreSQL locale via Docker, sauvegardes automatisees et
-durcissement minimal du VPS (`ufw`, `fail2ban`, nettoyage photo, backups).
-L'exploitation VPS utilise une organisation par releases sous
-`/var/www/gta-rp-population-graph/releases`, un lien `current` atomique, une
-configuration partagee sous `shared/config/backend.env` et une supervision
-mutualisee avec les autres applications sous `/var/www/platform-ops`.
+La production utilise le sous-domaine `gta-rp.f1prediction.fr`. `platform-ops`
+est la source de référence pour l'interface VPS et l'état réel des services.
+Consulter son [catalogue](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md)
+et ses [runbooks](https://github.com/Kutikuti/platform-ops) pour les procédures
+d'administration. Les exigences de build et de migration propres à GTA restent
+dans [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Lancement local
 

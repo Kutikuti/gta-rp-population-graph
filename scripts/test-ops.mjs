@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, symlinkSync, readlinkSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve, join } from "node:path";
+import { join } from "node:path";
 import { test } from "node:test";
 
 const scripts = import.meta.dirname;
@@ -29,33 +29,6 @@ function fixture(t) {
     mock(name, body) { writeFileSync(join(bin, name), `#!/usr/bin/env bash\nset -eu\n${body}\n`, { mode: 0o700 }); },
     run(name, args = []) { return spawnSync("bash", [join(scripts, name), ...args], { env, encoding: "utf8", timeout: 15000 }); }
   };
-}
-
-test("PostgreSQL backup publishes only a validated private archive", t => {
-  const f = fixture(t);
-  f.mock("pg_dump", 'for arg in "$@"; do case "$arg" in --file=*) printf "fixture archive" >"${arg#--file=}";; esac; done');
-  f.mock("pg_restore", 'test "$(cat "${@: -1}")" = "fixture archive"');
-  const result = f.run("backup-postgres.sh");
-  assert.equal(result.status, 0, result.stderr);
-  const dir = join(f.env.BACKUP_ROOT, "daily");
-  const archives = readdirSync(dir).filter(file => file.endsWith(".dump"));
-  assert.equal(archives.length, 1);
-  assert.equal(statSync(join(dir, archives[0])).mode & 0o777, 0o600);
-  assert.equal(statSync(dir).mode & 0o777, 0o700);
-});
-
-for (const failure of ["pg_dump", "pg_restore"]) {
-  test(`PostgreSQL ${failure} failure preserves old backups and removes partial output`, t => {
-    const f = fixture(t);
-    const daily = join(f.env.BACKUP_ROOT, "daily");
-    mkdirSync(daily, { recursive: true });
-    writeFileSync(join(daily, "previous.dump"), "previous");
-    f.mock("pg_dump", 'for arg in "$@"; do case "$arg" in --file=*) printf "partial" >"${arg#--file=}";; esac; done' + (failure === "pg_dump" ? "\nexit 1" : ""));
-    f.mock("pg_restore", failure === "pg_restore" ? "exit 1" : "exit 0");
-    assert.notEqual(f.run("backup-postgres.sh").status, 0);
-    assert.deepEqual(readdirSync(daily), ["previous.dump"]);
-    assert.equal(readFileSync(join(daily, "previous.dump"), "utf8"), "previous");
-  });
 }
 
 test("uploads archive is private and invalid retention cannot prune it", t => {
@@ -103,63 +76,6 @@ test("HTTP checks accept protected 403 but reject transport failure and public s
   delete f.env.CURL_EXIT;
   f.env.SUPERVISION_STATUS = "200";
   assert.notEqual(f.run("check-production-ops.sh", ["--public-only"]).status, 0);
-});
-
-for (const restartFails of [false, true]) {
-  test(`release activation ${restartFails ? "rolls back on failed restart" : "checks health before success"}`, t => {
-    const f = fixture(t);
-    f.env.APPLICATION_ROOT = join(f.root, "app");
-    for (const release of ["old", "new"]) {
-      const root = join(f.env.APPLICATION_ROOT, "releases", release);
-      mkdirSync(join(root, "backend/dist"), { recursive: true });
-      mkdirSync(join(root, "web-client/dist"), { recursive: true });
-      writeFileSync(join(root, "backend/dist/index.js"), "fixture");
-      writeFileSync(join(root, "web-client/dist/index.html"), "fixture");
-    }
-    symlinkSync("releases/old", join(f.env.APPLICATION_ROOT, "current"));
-    f.mock("sudo", 'shift\nexec "$@"');
-    f.mock("systemctl", restartFails ? '[[ "$(readlink "${APPLICATION_ROOT}/current")" != */new ]]' : "exit 0");
-    f.mock("curl", 'printf \'{"status":"ok"}\'');
-    const result = f.run("activate-gta-release.sh", ["new"]);
-    assert.equal(result.status, restartFails ? 1 : 0, result.stderr);
-    assert.equal(readlinkSync(join(f.env.APPLICATION_ROOT, "current")), resolve(f.env.APPLICATION_ROOT, "releases", restartFails ? "old" : "new"));
-    assert.notEqual(f.run("activate-gta-release.sh", ["../outside"]).status, 0);
-  });
-}
-
-test("an unhealthy backend rolls back even when systemd reports active", t => {
-  const f = fixture(t);
-  f.env.APPLICATION_ROOT = join(f.root, "app");
-  for (const release of ["old", "new"]) {
-    const root = join(f.env.APPLICATION_ROOT, "releases", release);
-    mkdirSync(join(root, "backend/dist"), {recursive:true});
-    mkdirSync(join(root, "web-client/dist"), {recursive:true});
-    writeFileSync(join(root, "backend/dist/index.js"), "fixture");
-    writeFileSync(join(root, "web-client/dist/index.html"), "fixture");
-  }
-  symlinkSync("releases/old", join(f.env.APPLICATION_ROOT, "current"));
-  f.mock("sudo", 'shift\nexec "$@"');
-  f.mock("systemctl", "exit 0");
-  f.mock("curl", 'printf \'{"status":"error"}\'');
-  f.mock("sleep", "exit 0");
-  assert.equal(f.run("activate-gta-release.sh", ["new"]).status, 1);
-  assert.equal(readlinkSync(join(f.env.APPLICATION_ROOT, "current")), resolve(f.env.APPLICATION_ROOT, "releases/old"));
-});
-
-test("backup resolves shared storage through the current release symlink", t => {
-  const f = fixture(t);
-  const app = join(f.root, "app");
-  const release = join(app, "releases/new");
-  mkdirSync(join(release, "scripts"), {recursive:true});
-  writeFileSync(join(release, "scripts/backup-postgres.sh"), readFileSync(join(scripts, "backup-postgres.sh")));
-  symlinkSync("releases/new", join(app, "current"));
-  delete f.env.BACKUP_ROOT;
-  delete f.env.SHARED_DIR;
-  f.mock("pg_dump", 'for arg in "$@"; do case "$arg" in --file=*) printf "fixture" >"${arg#--file=}";; esac; done');
-  f.mock("pg_restore", "exit 0");
-  const result = spawnSync("bash", [join(app, "current/scripts/backup-postgres.sh")], {env:f.env, encoding:"utf8", timeout:15000});
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(readdirSync(join(app, "shared/backups/postgres/daily")).length, 1);
 });
 
 test("packaging excludes ignored secrets and refuses uncommitted application changes", t => {

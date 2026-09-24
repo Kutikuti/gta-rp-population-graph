@@ -1,8 +1,0 @@
-[Unit]
-Description=GTA RP PostgreSQL backup
-After=network-online.target docker.service
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/sbin/gta-rp-postgres-backup
