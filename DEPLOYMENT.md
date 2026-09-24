@@ -129,14 +129,34 @@ Les commandes d'administration, l'état effectif des services, les scripts
 centraux, les chemins VPS, les sauvegardes et les procédures de promotion ou de
 rollback sont maintenus dans [`platform-ops`](https://github.com/Kutikuti/platform-ops).
 
-Certaines sources applicatives demeurent ici parce qu'elles dépendent de
-l'arborescence GTA et n'ont pas été exécutées depuis leur nouvel emplacement
-central : `backup-uploads.sh` calcule le répertoire `shared` à partir de son
-chemin d'exécution ; `check-production-ops.sh` et `fetch-latest-backups.sh`
-cherchent par défaut la clé SSH dans `.secrets` ; `fetch-latest-backups.sh`
-écrit aussi ses archives dans `.backups/server` ; `package-release.sh` déduit
-le dépôt Git qui contient `backend/` et `web-client/`. Ne pas supprimer ces
-originaux avant adaptation et validation du contexte de chemin central.
+Les contrôles de production et la récupération manuelle des sauvegardes sont
+centralisés dans `platform-ops`. Depuis la racine de son checkout, fournir
+explicitement les chemins locaux — les valeurs par défaut sont relatives au
+dépôt central et ne désignent pas les secrets ou sauvegardes de ce projet :
+
+```bash
+SSH_KEY=/chemin/vers/cle-privee bash ops/projects/gta/scripts/check-production-ops.sh --all
+umask 077
+SSH_KEY=/chemin/vers/cle-privee LOCAL_BACKUP_DIR=/chemin/prive/vers/sauvegardes \
+  bash ops/projects/gta/scripts/fetch-latest-backups.sh --all
+```
+
+Les originaux GTA de `check-production-ops.sh` et `fetch-latest-backups.sh`
+ont été retirés après comparaison de leurs hashes et modes au catalogue
+central. Ils n'étaient référencés que par les tests opérationnels locaux et
+ce runbook ; leurs contrôles de comportement liés au VPS ne sont donc plus
+exécutés par `scripts/test-ops.mjs`.
+
+Deux scripts restent dans GTA avec une dépendance de chemin qui empêche leur
+suppression sûre dans ce lot. `backup-uploads.sh` est encore appelé par
+l'unité centrale `gta-rp-uploads-backup.service` via
+`/var/www/gta-rp-population-graph/current/scripts/backup-uploads.sh` ; une
+release GTA sans cette copie casserait le timer. Sa copie centrale calcule
+aussi `shared` relativement à son propre emplacement. `package-release.sh`
+déduit le dépôt Git contenant `backend/` et `web-client/` depuis son dossier,
+et ne sait pas encore cibler le checkout GTA lorsqu'il est lancé depuis
+`platform-ops`. Ces deux dépendances doivent être résolues et validées côté
+plateforme avant de retirer les originaux.
 
 Les fragments sous `ops/monitoring/` sont conservés parce que le Compose local
 les référence par chemins relatifs. Le Compose et `prometheus.yml` ont des

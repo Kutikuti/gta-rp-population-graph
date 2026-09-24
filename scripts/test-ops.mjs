@@ -7,16 +7,6 @@ import { test } from "node:test";
 
 const scripts = import.meta.dirname;
 
-test("SSH health check fails if any required timer is inactive", t => {
-  const f = fixture(t);
-  f.env.SSH_KEY = f.env.ENV_FILE;
-  f.mock("ssh", 'command="${!#}"\nif [[ "$command" == *"systemctl is-active"* ]]; then bash -c "$command"; fi');
-  // Like systemctl, a multi-unit invocation succeeds if at least one is active.
-  f.mock("systemctl", 'for unit in "$@"; do case "$unit" in is-active|--quiet) continue;; esac; if [[ "$unit" != "${FAIL_UNIT:-}" ]]; then exit 0; fi; done\nexit 3');
-  assert.equal(f.run("check-production-ops.sh", ["--ssh-only"]).status, 0);
-  f.env.FAIL_UNIT = "gta-rp-postgres-backup.timer";
-  assert.equal(f.run("check-production-ops.sh", ["--ssh-only"]).status, 1);
-});
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), "gta-ops-test-"));
   const bin = join(root, "bin");
@@ -45,37 +35,6 @@ test("uploads archive is private and invalid retention cannot prune it", t => {
   f.env.KEEP_WEEKLY = "0";
   assert.notEqual(f.run("backup-uploads.sh").status, 0);
   assert.deepEqual(readdirSync(weekly), archives);
-});
-
-const fakeCurl = `out=""
-while (($#)); do
-  case "$1" in --output) out="$2"; shift;; esac
-  url="$1"
-  shift
-done
-body='{}'; code=200
-case "$url" in
-  */api/health) body='{"status":"ok"}';;
-  */api/auth/session) body='{"authenticated":false}';;
-  *'/api/characters?limit=1') body='{"items":[]}';;
-  */api/auth/google) code=302;;
-  */supervision/) code="$(printenv SUPERVISION_STATUS || printf 403)";;
-  */api/admin/dashboard) code=401;;
-esac
-printf '%s' "$body" >"$out"
-printf '%s' "$code"
-exit "$(printenv CURL_EXIT || printf 0)"`;
-
-test("HTTP checks accept protected 403 but reject transport failure and public supervision", t => {
-  const f = fixture(t);
-  f.env.BASE_URL = "https://fixture.invalid";
-  f.mock("curl", fakeCurl);
-  assert.equal(f.run("check-production-ops.sh", ["--public-only"]).status, 0);
-  f.env.CURL_EXIT = "28";
-  assert.notEqual(f.run("check-production-ops.sh", ["--public-only"]).status, 0);
-  delete f.env.CURL_EXIT;
-  f.env.SUPERVISION_STATUS = "200";
-  assert.notEqual(f.run("check-production-ops.sh", ["--public-only"]).status, 0);
 });
 
 test("packaging excludes ignored secrets and refuses uncommitted application changes", t => {
