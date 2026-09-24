@@ -2,8 +2,8 @@
 
 Ce document conserve les exigences propres à l'application : configuration,
 build, migrations et contrôles avant livraison. `platform-ops` est la source de
-référence pour l'interface VPS, les services, les sauvegardes, les accès et les
-procédures d'administration. Consulter son [catalogue](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md), ses [runbooks de changement](https://github.com/Kutikuti/platform-ops/blob/main/CHANGE_RUNBOOKS.md) et ses [consignes d'incident et de rollback](https://github.com/Kutikuti/platform-ops/blob/main/INCIDENT_AND_ROLLBACK.md) avant toute opération serveur.
+référence pour les services, sauvegardes, accès et les
+procédures d'administration. Consulter son [catalogue](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md), ses [runbooks de changement](https://github.com/Kutikuti/platform-ops/blob/main/CHANGE_RUNBOOKS.md) et ses [consignes d'incident et de rollback](https://github.com/Kutikuti/platform-ops/blob/main/INCIDENT_AND_ROLLBACK.md) avant toute opération plateforme.
 
 ## Exigences de livraison applicative
 
@@ -44,16 +44,10 @@ contient que les noms de variables attendus par l'application :
 des exemples et stockés hors Git. Ne jamais inscrire leur valeur dans ce
 document, un rapport de livraison ou un journal.
 
-Les fournisseurs OAuth doivent autoriser les callbacks HTTPS de production :
-
-- Google : `https://gta-rp.f1prediction.fr/api/auth/google/callback`
-- Discord : `https://gta-rp.f1prediction.fr/api/auth/discord/callback`
-- Twitch : `https://gta-rp.f1prediction.fr/api/auth/twitch/callback`
-
-Les trois variables `*_CALLBACK_URL` doivent correspondre exactement à la
-valeur déclarée chez leur fournisseur. Le domaine canonique actuel est
-`gta-rp.f1prediction.fr`. Ne pas modifier les domaines ou routes partagés avec
-F1 depuis ce dépôt ; toute modification VPS relève des runbooks centraux.
+Les fournisseurs OAuth doivent autoriser les callbacks HTTPS configurés pour
+l'environnement. Les trois variables `*_CALLBACK_URL` doivent correspondre
+exactement aux valeurs déclarées chez leur fournisseur. Les domaines, reverse
+proxy et services partagés relèvent des runbooks centraux.
 
 Les sessions de production sont persistées dans PostgreSQL, avec expiration
 serveur et nettoyage périodique. Derrière le proxy, l'application doit
@@ -123,42 +117,18 @@ Les tests d'intégration PostgreSQL créent et suppriment leur propre base
 éphémère. Ils exigent une instance joignable via `backend/.env` et refusent les
 noms de base qui ne correspondent pas au préfixe de test prévu.
 
-## Exploitation VPS
+## Exploitation de la plateforme
 
-Les commandes d'administration, l'état effectif des services, les scripts
-centraux, les chemins VPS, les sauvegardes et les procédures de promotion ou de
-rollback sont maintenus dans [`platform-ops`](https://github.com/Kutikuti/platform-ops).
+Les procédures d'administration, contrôles de production, sauvegardes,
+services et état effectif des environnements sont maintenus dans
+[`platform-ops`](https://github.com/Kutikuti/platform-ops), notamment son
+[catalogue](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md).
+Ce dépôt ne dépend pas d'un chemin local précis pour consulter ces documents.
 
-Les contrôles de production et la récupération manuelle des sauvegardes sont
-centralisés dans `platform-ops`. Depuis la racine de son checkout, fournir
-explicitement les chemins locaux — les valeurs par défaut sont relatives au
-dépôt central et ne désignent pas les secrets ou sauvegardes de ce projet :
-
-```bash
-SSH_KEY=/chemin/vers/cle-privee bash ops/projects/gta/scripts/check-production-ops.sh --all
-umask 077
-SSH_KEY=/chemin/vers/cle-privee LOCAL_BACKUP_DIR=/chemin/prive/vers/sauvegardes \
-  bash ops/projects/gta/scripts/fetch-latest-backups.sh --all
-```
-
-Les originaux GTA de `check-production-ops.sh` et `fetch-latest-backups.sh`
-ont été retirés après comparaison de leurs hashes et modes au catalogue
-central. Ils n'étaient référencés que par les tests opérationnels locaux et
-ce runbook ; leurs contrôles de comportement liés au VPS ne sont donc plus
-exécutés par `scripts/test-ops.mjs`.
-
-Deux scripts restent dans GTA avec une dépendance de chemin qui empêche leur
-suppression sûre dans ce lot. `backup-uploads.sh` est encore appelé par
-l'unité centrale `gta-rp-uploads-backup.service` via
-`/var/www/gta-rp-population-graph/current/scripts/backup-uploads.sh` ; une
-release GTA sans cette copie casserait le timer. Sa copie centrale calcule
-aussi `shared` relativement à son propre emplacement. `package-release.sh`
-déduit le dépôt Git contenant `backend/` et `web-client/` depuis son dossier,
-et ne sait pas encore cibler le checkout GTA lorsqu'il est lancé depuis
-`platform-ops`. Ces deux dépendances doivent être résolues et validées côté
-plateforme avant de retirer les originaux.
-
-Les fragments sous `ops/monitoring/` sont conservés parce que le Compose local
-les référence par chemins relatifs. Le Compose et `prometheus.yml` ont des
-hashes différents de la configuration VPS centrale : ne pas les lancer ni les
-remplacer par les copies importées sans réconciliation explicite.
+Deux scripts restent temporairement dans ce dépôt pour des raisons de
+compatibilité : le script de sauvegarde des uploads est encore référencé par
+le service plateforme correspondant ; le script de packaging suppose que le
+dépôt GTA est sa racine Git. Le catalogue central suit leur migration. Les
+fragments de monitoring locaux restent propres à l'environnement de
+développement et ne doivent pas être interprétés comme la configuration d'une
+plateforme active.

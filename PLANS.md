@@ -561,17 +561,11 @@ Statut : terminee le 2026-06-27.
 
 Statut : terminee le 2026-07-01.
 
-- Production sur `gta-rp.f1prediction.fr` avec Caddy, backend `systemd` et
-  PostgreSQL Docker non expose publiquement.
-- OAuth, uploads, import Notion et parcours metier principaux valides derriere
-  proxy avec cookies `Secure`.
-- VPS durci avec `ufw`, `fail2ban`, retention `journald` et maintenance systeme
-  documentee.
-- Sauvegardes PostgreSQL et uploads automatisees avec rotation, plus scripts de
-  verification et de recuperation locale.
-- Supervision Prometheus/Grafana deployee avec metriques systeme, application,
-  donnees metier, stockage et sauvegardes.
-- `DEPLOYMENT.md` reste la source de verite operationnelle detaillee.
+- Préparation initiale de l'environnement de production et validation des
+  parcours métier derrière HTTPS.
+- Les exigences applicatives restent dans `DEPLOYMENT.md` ; les procédures et
+  l'état de la plateforme sont maintenus dans
+  [platform-ops](https://github.com/Kutikuti/platform-ops).
 
 ### Etape 12 - SSO multiples et integrations plateformes
 
@@ -642,8 +636,8 @@ Point de controle :
   npm 12 sans relacher les protections du devcontainer.
 - Tous les checks et tests existants restent verts.
 - Node.js 24 LTS reste la version d'execution cible ; le devcontainer suit la
-  derniere version 24.x validee, tandis que la production demande une migration
-  VPS distincte.
+  derniere version 24.x validee. Les runtimes des environnements de production
+  sont suivis par la plateforme.
 - Aucun changement fonctionnel ou de schema de donnees n'est introduit par
   cette etape technique.
 
@@ -655,19 +649,13 @@ Resultat :
   les 8 tests d'integration PostgreSQL, les 77 tests frontend, les checks Biome
   et les builds backend/frontend sont valides localement.
 - Le devcontainer reconstruit utilise Node.js `24.20.0` et npm `12.0.2`.
-- Le runtime VPS commun `/opt/node-apps` pointe vers `/opt/node-v24.18.1`,
-  avec npm `12.0.2`, et `/opt/node-gta-rp` reste un lien de compatibilite.
-- Les builds backend/frontend, le controle des migrations en attente, le
-  redemarrage du backend et les smoke tests publics/SSH de production sont
-  valides sur le VPS.
-- L'ancien dossier `/opt/node-v24.16.0` a ete supprime apres verification que le
-  service backend tourne sur `/opt/node-v24.18.1/bin/node`.
+- Les validations applicatives de production sont décrites dans le runbook
+  central ; les runtimes et leur état courant ne sont pas dupliqués ici.
 
 Maintenance de dependances du `2026-09-04` :
 
 - la cible locale et devcontainer est passee a Node.js `24.20.0`, avec npm
-  `12.0.2` ; le runtime VPS `24.18.1` reste documente comme etat a migrer de
-  maniere coordonnee avec F1 ;
+  `12.0.2` ;
 - les dependances mineures backend et frontend ont ete actualisees, y compris
   Biome `2.5.12`, Vite `8.2.2`, React `19.2.8`, Vitest `4.1.11`, `pg 8.23.0`,
   `sharp 0.35.4`, Zod `4.5.4` et `express-rate-limit 8.7.0` ;
@@ -763,278 +751,60 @@ Les optimisations de cache des assets, de miniatures de photos et de CPU
 Cytoscape sont volontairement reportees dans `Ameliorations possibles` afin de
 ne pas retarder l'audit securite pre-ouverture.
 
-### Etape 17 - Audit securite pre-ouverture
+### Etape 17 - Revue de sécurité applicative
 
-Statut : commencee le 2026-09-09.
+Statut : en cours depuis le 2026-09-09. Les procédures et constats
+d'infrastructure sont suivis dans
+[platform-ops](https://github.com/Kutikuti/platform-ops) et ne sont pas
+dupliqués dans le plan produit.
 
-Premiere passe du 2026-09-09 : correctifs locaux et bilan dans
-`SECURITY_AUDIT.md`.
+Correctifs applicatifs réalisés :
 
-- Faille de connexion OAuth par email commun reproduite puis corrigee ;
-  verrouillage transactionnel des invariants de comptes et tests PostgreSQL
-  concurrents ajoutes.
-- Matrice de refus des routes sensibles, protection des origines d'ecriture,
-  etat OAuth lie au fournisseur et expire apres 10 minutes, delais reseau
-  bornes, redirections des photos controlees avant chaque acces.
-- Sauvegardes atomiques/privees avec correction du chemin `current`, tests
-  d'echec d'exploitation, packaging depuis Git et bascule GTA avec rollback.
-- Checks, tests, integrations et builds locaux passes sans baisse des seuils.
-- Correctifs deployes le 2026-09-09 dans
-  `20260909T134027Z-step17-security-r2` (base `997c560`, correction additionnelle
-  du controle individuel des timers). Builds VPS et 11 tests d'exploitation
-  passes. Controles HTTP/SSH passes ; API limitee a `127.0.0.1:4000`.
-- Dump recent produit dans `shared` puis restaure dans une base ephemere :
-  362 personnages, 107 relations et 1380 historiques verifies. Base de test
-  supprimee ; sauvegardes et dossiers anciens proteges en 0600/0700.
-- **Etape non cloturee :** recette navigateur complete des roles et revue
-  complementaire des imports et des erreurs restent a faire. La CSP et les
-  en-tetes du HTML statique ont ete deployes et verifies le 2026-09-09 ; les
-  redirections OAuth des trois fournisseurs, cookies, refus anonymes et
-  protection d'origine sont verifies sur le site deploye.
+- Refus de connexion OAuth par simple correspondance d'email et sérialisation
+  transactionnelle des invariants de comptes ; tests PostgreSQL concurrents.
+- Matrice de refus des routes sensibles, protection des origines d'écriture,
+  état OAuth lié au fournisseur et expirant, délais réseau bornés et validation
+  des redirections de photos avant chaque accès.
+- Sonde `/api/health` vérifiant PostgreSQL par `SELECT 1` en lecture seule,
+  délai borné, réponse `503` sans détail interne et limitation à une sonde SQL
+  simultanée.
+- Uploads et imports distants contraints par taille, type, décodage, domaines,
+  redirections et délais ; brouillons non exposés publiquement.
+- Contrôle des permissions des routes, sessions persistantes et en-têtes/cache
+  des espaces privés couverts par des tests.
 
-#### Plan de remédiation VPS issu de l'audit du 2026-09-09
+Travaux applicatifs encore ouverts :
 
-Ce plan ne doit pas être exécuté en bloc. Le VPS héberge aussi F1 : chaque lot
-prévoit un contrôle de non-régression et un retour arrière explicite. Les
-constats et preuves restent dans `SECURITY_AUDIT.md`.
+- P1 : recette navigateur réelle des rôles, des parcours OAuth et du blocage
+  inter-origines.
+- P1 : revue complémentaire des imports et des erreurs/journaux afin de
+  rechercher les fuites d'information et les contrôles d'accès objet manquants.
+- P2 : mesurer la contention du verrou transactionnel commun si les mutations
+  de comptes deviennent fréquentes ; les lectures de session ne sont pas
+  sérialisées.
 
-1. **Sécuriser l'accès avant toute fermeture SSH (P1 plateforme)**
-   - État historique relevé avant remédiation le 2026-09-22 : les seuls comptes
-     locaux étaient `root`, `jrechau` et `codex-deploy`, avec une configuration
-     SSH permissive. L'état courant est durci : `jrechau` administre par clé,
-     root et mots de passe SSH sont refusés, et `codex-deploy` n'a ni groupe
-     `sudo`, ni tunnel, ni terminal SSH.
-   - **Précondition de secours :** depuis le poste personnel de `jrechau`,
-     générer ou sélectionner une clé Ed25519 dédiée à l'administration, en
-     conserver la clé privée hors du VPS, puis l'ajouter à
-     `/home/jrechau/.ssh/authorized_keys` avec les permissions `0700` pour
-     `.ssh` et `0600` pour le fichier. Vérifier une connexion neuve par clé et
-     `sudo -v`. Vérifier aussi l'accès à la console Hetzner. La clé personnelle
-     ne doit jamais être celle de l'automatisation `codex-deploy`.
-   - **Assainissement des clés :** dresser la liste par empreinte et supprimer
-     uniquement les clés non retenues après la connexion de `jrechau` validée.
-     Conserver la clé d'administration de `jrechau` et la clé de déploiement
-     connue de `codex-deploy`; supprimer les clés de `root` (inutile une fois
-     sa connexion SSH désactivée) et toutes les autres clés autorisées. Ne
-     jamais supprimer la dernière clé fonctionnelle avant le contrôle suivant.
-   - **Bascule contrôlée :** ouvrir deux sessions indépendantes, l'une en
-     `jrechau` par clé et l'autre en `codex-deploy`. Ajouter le fichier dédié
-     `/etc/ssh/sshd_config.d/00-platform-hardening.conf` (son préfixe est
-     nécessaire pour précéder `50-cloud-init.conf`) avec
-     `PermitRootLogin no`, `PasswordAuthentication no`,
-     `KbdInteractiveAuthentication no`, `X11Forwarding no`,
-     `AllowTcpForwarding no` et `AllowAgentForwarding no`. Le refus du
-     forwarding est maintenant compatible avec la suppression confirmée du
-     tunnel PostgreSQL ; il empêche aussi la réintroduction silencieuse d'un
-     accès local à PostgreSQL via SSH.
-   - **Réduction du compte d'automatisation :** après vérification d'un
-     déploiement GTA et F1 sans tunnel ni terminal interactif, remplacer
-     l'entrée de clé de `codex-deploy` par une entrée `restrict` (ou les options
-     explicites équivalentes) afin d'interdire PTY, forwarding et X11 pour ce
-     compte. Conserver son accès `sudo` actuel dans ce premier lot : sa
-     réduction exige un inventaire séparé des commandes de déploiement et de
-     maintenance qui l'utilisent.
-   - **Validation et retour arrière :** exécuter `sshd -t`, puis `systemctl
-     reload ssh` (jamais un redémarrage), ouvrir une troisième connexion
-     `jrechau` par clé, contrôler `sudo -v` et les déploiements/healthchecks des
-     deux sites. En cas d'échec, restaurer ou retirer le seul fichier de
-     drop-in depuis une session existante ; à défaut, utiliser la console
-     Hetzner. Fermer les anciennes sessions seulement après ces contrôles.
-   - **État :** bascule principale appliquée et contrôlée le 2026-09-22.
-     La clé personnelle `jrechau` est validée, et une nouvelle connexion
-     `codex-deploy` par clé ainsi que les healthchecks GTA/F1 sont positifs.
-     Après la validation explicite des flux F1, la clé unique de
-     `codex-deploy` a aussi reçu l'option `restrict`; une nouvelle connexion
-     non interactive avec `sudo -n` est positive. L'allowlist est désormais le
-     seul accès sudo de `codex-deploy`, après son retrait du groupe `sudo`.
+Les contrôles de déploiement, sauvegarde, restauration, SSH, services et
+durcissement système relèvent exclusivement des runbooks de la plateforme.
 
-2. **Réduire les expositions mutualisées (P1 plateforme)**
-   - **Traité le 2026-09-22 :** F1 écoute désormais seulement sur
-     `127.0.0.1:5000`; les règles UFW IPv4/IPv6 `5000` ont été retirées après
-     validation du backend local, de Caddy et du HTTPS public. Le rollback F1
-     est conservé dans
-     `/var/www/f1-paris-project/shared/backups/network-exposure/20260922T170000Z/`.
-   - **Traité le 2026-09-22 :** les comptes runtime GTA/F1, le staging détenu
-     par le déploiement, les releases immuables, les configurations runtime et
-     migration séparées, ainsi que les rôles SQL minimaux sont en place.
-   - **Traité le 2026-09-22 :** `codex-deploy` n'a plus `NOPASSWD: ALL`.
-     Les sauvegardes GTA et le test de restauration mutualisé sont exécutés par
-     des helpers `root:root` hors des releases; l'allowlist ne conserve que les
-     helpers F1/GTA, le redémarrage du backend GTA et des lectures d'exploitation.
-   - **Plan de séparation déploiement / exécution (P2 plateforme) :**
-     1. Créer les comptes système non connectables `gta-rp-runtime` et
-        `f1-runtime`, sans `sudo`, sans clé SSH et sans répertoire personnel
-        utilisable. Ne supprimer aucun droit de `codex-deploy` durant ce palier.
-     2. Modifier les unités GTA (`gta-rp-backend`, nettoyage photo) et F1
-        (backend, worker) pour les exécuter sous leur compte runtime. Effectuer
-        d'abord un test de démarrage sur une release de test et contrôler les
-        healthchecks, OAuth, imports, uploads et worker F1.
-     3. Séparer les permissions : configurations en `root:<runtime>` `0640`,
-        stockage en écriture seulement pour son runtime, et releases actives en
-        `root:<runtime>` non modifiables par `codex-deploy`. Caddy conserve la
-        lecture strictement nécessaire des photos publiques.
-     4. Faire préparer une release dans un répertoire de staging détenu par
-        `codex-deploy`; le helper root-owned valide un nom de release borné,
-        bascule le lien atomiquement, fixe les propriétaires/modes de la
-        release puis redémarre les unités. Il ne doit jamais exécuter en root
-        du code, un hook ou une configuration provenant de cette release.
-     5. Traiter les migrations séparément : elles nécessitent une identité DB
-        dédiée et des permissions SQL minimales. Ne pas contourner ce point par
-        un helper root exécutant `npm` depuis une release modifiable.
-     6. Tester déploiement, rollback, sauvegarde, restauration, uploads et
-     démarrage après reboot; seulement ensuite retirer à `codex-deploy` les
-     droits d'écriture sur les releases actives et de lecture sur les secrets.
-   - **Appliqué et validé le 2026-09-22 :** le backend tourne sous
-     `gta-rp-runtime`; les rôles SQL `gta_rp_migrator` et `gta_rp_runtime` sont
-     séparés, `PUBLIC` n'accède plus
-     à la base et `gta_rp_app` est `NOLOGIN` sans privilège. `codex-deploy` est
-     retiré du groupe `sudo`. Le nettoyage photo a aussi été basculé et validé
-     sous `gta-rp-runtime` avec son timer horaire. Le helper de promotion a été
-     corrigé le 2026-09-23 pour préserver les bits exécutables, notamment
-     `esbuild`; sa validation complète est attendue à la prochaine promotion.
+Cette étape vérifie que les surfaces applicatives exposées — authentification,
+rôles, contributions, modération, imports, photos, administration et données
+publiques — restent protégées avant l'ouverture. Elle ne constitue pas une
+garantie d'absence de vulnérabilité.
 
-3. **Centraliser l'interface VPS dans platform-ops (traité le 2026-09-24)**
-   - Le catalogue platform-ops est la référence pour les scripts, helpers,
-     unités et procédures VPS GTA/F1. `DEPLOYMENT.md` conserve les exigences
-     propres au build et aux migrations GTA ; `SECURITY_AUDIT.md` conserve
-     l'audit applicatif et renvoie à l'audit central pour l'infrastructure.
-   - Les sources locales ayant une dépendance de chemin à l'arborescence GTA
-     restent présentes et sont identifiées dans `DEPLOYMENT.md`. Les fragments
-     de monitoring qui alimentent le Compose local restent en attente de
-     réconciliation ; ne pas les utiliser pour la stack active.
+Conditions de clôture :
 
-4. **Rendre privés les artefacts GTA non publics (P2 GTA)**
-   - **Traité pour les rapports de déploiement le 2026-09-23 :**
-     `shared/deployment-reports` est `0700`, ses fichiers existants sont
-     `0600` et aucun producteur versionné n'a été trouvé. Tout nouveau
-     producteur doit imposer `umask 077` et être documenté avant installation.
-   - Les journaux Notion restent à inventorier s'ils sont introduits. Ne pas
-     appliquer ces permissions aux photos validées : elles sont volontairement
-     publiques via Caddy ; les brouillons doivent au contraire rester privés.
-
-5. **Durcir systemd par paliers testables (P2 GTA)**
-   - Avant tout `UMask` restrictif, rendre les modes des photos explicites dans
-     l'application : photos validées lisibles par Caddy, brouillons privés.
-     Un `UMask=0077` immédiat rendrait les photos publiques illisibles par
-     Caddy.
-   - Ajouter d'abord un drop-in réversible au backend avec
-     `ProtectHome=true`, `PrivateDevices=true`, suppression des capabilities,
-     `LockPersonality=true`, `RestrictSUIDSGID=true`, `RestrictRealtime=true`,
-     `ProtectKernelTunables=true`, `ProtectKernelModules=true` et
-     `ProtectControlGroups=true`.
-   - Vérifier le fichier avec `systemd-analyze verify`, redémarrer pendant une
-     fenêtre courte, contrôler healthcheck, OAuth, import Notion, upload de
-     photo et logs. Garder `PrivateNetwork` et une liste IP sortante hors de ce
-     premier palier : OAuth, Notion et Twitch requièrent du réseau sortant.
-     Ajouter un filtre d'appels système seulement après ce palier stable.
-
-6. **Pérenniser les garde-fous (P2/P3)**
-   - Conserver `/opt/node-apps/bin` en tête de `PATH` pour toutes les tâches
-     npm VPS ; ne jamais appeler son npm directement depuis le `PATH` système.
-   - Planifier les quatre mises à jour Ubuntu disponibles dans une fenêtre
-     plateforme séparée, en vérifiant les paquets et un rollback/reboot si
-     nécessaire.
-   - Après chaque lot : `caddy validate`, tests HTTP/SSH, vérification des
-     sockets, sauvegardes, timers, fail2ban et journal de déploiement. Fermer
-     chaque constat dans `SECURITY_AUDIT.md` seulement avec la preuve associée.
-
-Cette etape doit verifier que les retouches UX et les derniers flux publics ou
-authentifies n'ont pas fragilise la securite avant l'arrivee des premiers
-utilisateurs. Elle se concentre sur les surfaces exposees en production :
-authentification, roles, contributions, moderation, imports, photos,
-administration, supervision et exploitation VPS.
-
-Lots de travail :
-
-1. **Lot A - Baseline et modele de menace**
-   - Etablir l'inventaire versionne des endpoints, methodes HTTP, roles,
-     donnees lues ou ecrites et dependances externes.
-   - Formaliser les frontieres de confiance : navigateur, API, PostgreSQL,
-     stockage photo, Notion, fournisseurs OAuth, Caddy, Grafana et VPS.
-   - Relever les versions, avis de securite applicables et configurations
-     effectives, sans mettre a jour une dependance a l'aveugle pendant l'audit.
-
-2. **Lot B - Autorisations et ecritures API**
-   - Construire une matrice de droits executable couvrant visiteur,
-     utilisateur, moderateur, administrateur et utilisateur banni.
-   - Verifier chaque route d'ecriture : authentification, role, appartenance a
-     la ressource, validation de charge utile, erreurs sans fuite et audit des
-     actions sensibles.
-   - Tester les contournements usuels : identifiants modifies, requetes
-     directes, session absente ou invalide et comptes bannis.
-
-3. **Lot C - Sessions, OAuth et protection navigateur**
-   - Auditer cookies, `Secure`, `HttpOnly`, `SameSite`, duree de session,
-     regeneration, deconnexion, revocation et nettoyage des sessions expirees.
-   - Verifier les etats OAuth, redirections, rattachement/dissociation de
-     compte et la protection du dernier moyen de connexion.
-   - Examiner CORS, risque CSRF, headers `Helmet`, CSP et comportement des
-     pages publiques, sans ajouter de mecanisme inutile si les garanties
-     actuelles sont suffisantes et testees.
-
-4. **Lot D - Photos et fichiers distants**
-   - Rejouer les controles de taille, MIME, signature, decodage `sharp`,
-     reencodage, suppression des metadonnees, noms generes et permissions de
-     stockage.
-   - Verifier les suppressions, brouillons, nettoyage planifie, exposition
-     `/uploads` et absence de traversal ou de fichier orphelin exploitable.
-   - Auditer le telechargement de photos Notion : URL, redirections, delais,
-     erreurs, limite de taille et protection contre les destinations internes.
-
-5. **Lot E - Imports, moderation et integrite des donnees**
-   - Verifier que le scraping et l'application Notion ne publient rien sans le
-     workflow attendu et conservent une trace exploitable.
-   - Controler relations, photos, dedoublonnage, transactions et actions de
-     moderation directe pour eviter escalade de privilege ou incoherence.
-   - Examiner export et anonymisation RGPD afin qu'ils ne divulguent pas de
-     donnees d'un autre compte ni ne cassent la tracabilite necessaire.
-
-6. **Lot F - Frontend et informations publiques**
-   - Examiner les interpolations de contenu communautaire, URLs externes,
-     liens medias et affichage d'erreurs pour les risques XSS, open redirect ou
-     fuite d'informations.
-   - Verifier que les donnees OAuth privees, les secrets et les actions admin
-     ne sont jamais exposes dans les bundles, reponses publiques ou logs.
-   - Repasser les routes publiques et les pages RGPD pour confirmer que les
-     informations affichees correspondent aux traitements reels.
-
-7. **Lot G - VPS et exploitation**
-   - Auditer Caddy/TLS, firewall, ports, Docker PostgreSQL, services systemd,
-     permissions des releases et fichiers partages, runtime Node et secrets.
-   - Rejouer les controles de sauvegarde, restauration, nettoyage photo,
-     supervision, fail2ban et acces SSH par cle, sans intervenir sur les autres
-     applications du VPS.
-   - Verifier que Grafana, Prometheus et les endpoints internes restent
-     proteges et que les logs ne contiennent pas de secret.
-
-8. **Lot H - Remediation et decision d'ouverture**
-   - Corriger immediatement les constats critiques ou eleves, avec test de
-     non-regression adapte ; planifier les constats moyens ou faibles avec
-     responsable et justification.
-   - Rejouer checks, tests, integrations PostgreSQL, builds, smoke tests et
-     recette manuelle des roles apres chaque correction significative.
-   - Produire un bilan de securite : constats, corrections, risques residuels,
-     date de revue et decision explicite d'ouverture ou de report.
-
-Point de controle :
-
-- Aucun endpoint d'ecriture n'est accessible sans authentification et role
-  attendu.
-- Les utilisateurs bannis sont bloques sur toutes les actions sensibles.
-- Les uploads et imports distants ne peuvent pas servir de vecteur de fichier
-  dangereux ou de chemin arbitraire.
-- Les secrets ne sont pas presents dans le depot ni exposes par les logs ou
-  endpoints publics.
-- Le VPS n'expose publiquement que les ports strictement necessaires.
-- Les checks, tests et builds restent verts apres corrections.
-- Aucun constat critique ou eleve non traite ne subsiste avant ouverture.
-- Les constats moyens ou faibles restants sont documentes dans le plan avec
-  leur risque, leur priorite et leur mesure compensatoire eventuelle.
+- Réaliser la recette navigateur des rôles, des parcours OAuth et du blocage
+  inter-origines.
+- Terminer la revue des imports, des erreurs/journaux et des contrôles d'accès
+  objet ; corriger les constats significatifs avec des tests adaptés.
+- Garder les tests, intégrations disponibles, contrôles de type et builds verts.
+- Documenter les risques résiduels applicatifs et la décision d'ouverture dans
+  ce plan. La validation de l'infrastructure reste gérée par la plateforme.
 
 ### Etape 18 - Declinaison par serveur et sources d'import
 
-Statut : planifiee en dernier, apres le refactor transversal, la finalisation
-UX et l'audit securite.
+Statut : planifiee après le refactor transversal, la finalisation UX et la
+clôture des travaux applicatifs prioritaires de l'étape 17.
 
 Cette etape rend le projet reutilisable par d'autres communautes GTA-RP sans
 introduire une architecture multi-tenant. Chaque deploiement reste une instance
@@ -1047,9 +817,8 @@ Plan propose :
    serveur, marque, contact, depot, liens et preferences initiales. La servir par
    l'API sans exposer de secret et retirer les valeurs compilees en dur du client.
 2. Deplacer les valeurs Flashback dans un profil d'instance selectionne par la
-   configuration, y compris l'URL Notion par defaut. Parametrer aussi les scripts
-   d'exploitation, le domaine et la supervision sans perdre le runbook reel du
-   deploiement actuel.
+   configuration, y compris l'URL Notion par defaut. Les scripts et paramètres
+   d'exploitation restent gérés par la documentation de plateforme.
 3. Separer le scraper Notion generique du mapping Flashback V6 et introduire un
    contrat d'adaptateur de source couvrant collecte, mapping, rapport et
    application.
@@ -1109,10 +878,8 @@ a 18.
   davantage si les donnees ou le trafic augmentent fortement.
 - Reevaluer `Sigma.js` avec `Graphology` uniquement si Cytoscape.js devient une
   limite mesurable sur des graphes proches de la volumetrie de production.
-- Configurer Caddy pour mettre en cache de maniere immutable les assets Vite
-  hashes sous `/assets/*`. Le rapport Lighthouse de production du 2026-09-09
-  releve actuellement une duree de cache nulle pour ces fichiers, alors qu'ils
-  peuvent etre mis en cache sans risque jusqu'a la prochaine release.
+- Améliorer la politique de cache des assets fingerprintés si les mesures
+  confirment que cela réduit le chargement sans nuire aux mises à jour.
 - Generer et servir des miniatures WebP dediees aux noeuds du graphe si la
   volumetrie des photos continue de peser sur le chargement initial. Le rapport
   Lighthouse de production locale du 2026-09-09 mesure environ 4,8 Mio d'images
@@ -1138,20 +905,15 @@ a 18.
 
 ### Exploitation et conservation
 
-- Ajouter une cible de sauvegarde distante hors VPS lorsque le stockage externe
-  retenu sera disponible ; utiliser entre-temps le script de recuperation
-  locale documente dans `DEPLOYMENT.md`.
-- Etudier une bascule rapide vers Cloudflare si le trafic du lancement devient
-  important : DNS proxy, cache des assets statiques, protection DDoS/WAF
-  minimale, preservation des vrais IP cote backend/Caddy et impacts RGPD/cookies.
-- Ajouter une configuration Caddy multi-domaines uniquement si un second
-  domaine public devient necessaire.
-- Ajouter un alerting externe email ou Discord sur les signaux critiques de la
-  supervision lorsque le canal operationnel sera choisi.
+- Ajouter une cible de sauvegarde distante lorsque le stockage externe retenu
+  sera disponible ; suivre les modalités d'exploitation dans la documentation
+  de plateforme.
+- Évaluer un CDN ou une protection applicative en périphérie si le trafic le
+  justifie, avec revue des impacts de confidentialité et de journalisation.
+- Définir une politique d'alerting externe si un canal opérationnel est retenu.
 - Automatiser, apres validation des regles de conservation, la purge des comptes
   inactifs, demandes anciennes, historiques d'administration et imports
-  editoriaux. Les durees cibles restent documentees dans `PRIVACY.md` et
-  `DEPLOYMENT.md`.
+  editoriaux. Les durees cibles restent documentees dans `PRIVACY.md`.
 
 ## Hypotheses et contraintes persistantes
 
@@ -1159,10 +921,9 @@ a 18.
   structure, l'accessibilite et les limites peuvent changer sans preavis.
 - Google, Discord et Twitch restent dependants de leurs services OAuth et de
   leurs limites d'API respectives.
-- Le developpement local cible Node.js `24.20.0` LTS. La production conserve sa
-  version documentee dans `DEPLOYMENT.md` tant qu'une migration VPS distincte
-  n'a pas ete decidee.
-- Le deploiement GTA-RP partage le VPS avec `f1prediction.fr` et ne doit pas
-  perturber ses ports, services ou configuration Caddy.
+- Le developpement local cible Node.js `24.20.0` LTS. La version d'exécution
+  des environnements déployés est suivie par la plateforme.
+- Toute évolution du produit doit respecter l'isolation et les contrats de
+  l'environnement où l'application est hébergée.
 - Toute nouvelle collecte de donnees personnelles ou ajout de traceur client
   doit declencher une nouvelle revue RGPD et cookies.

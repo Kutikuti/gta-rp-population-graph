@@ -23,8 +23,8 @@ personnages, leurs informations publiques, leurs streamers et leurs liens RP.
 - Graphe : Cytoscape.js.
 - Qualite code : Biome pour lint et formatage, TypeScript pour le type-check.
 - Authentification : Google OAuth, Discord OAuth et Twitch OAuth.
-- Production : VPS Ubuntu avec Caddy, sur le sous-domaine
-  `gta-rp.f1prediction.fr`.
+- Production : environnement Linux derrière un reverse proxy HTTPS, avec une
+  base PostgreSQL non exposée publiquement.
 
 ## Direction produit
 
@@ -41,7 +41,7 @@ La securite du serveur est la priorite numero 1 du developpement.
   securite et workflow.
 - [PLANS.md](PLANS.md) : plan MVP, decisions produit/techniques et feuille de
   route de developpement.
-- [DEPLOYMENT.md](DEPLOYMENT.md) : runbook vivant de mise en production.
+- [DEPLOYMENT.md](DEPLOYMENT.md) : exigences applicatives de livraison.
 - [PRIVACY.md](PRIVACY.md) : base documentaire RGPD, cookies et registre
   simplifie des traitements.
 
@@ -59,13 +59,12 @@ procedure minimale RGPD sont documentees dans [PRIVACY.md](PRIVACY.md).
 
 ## Etat actuel
 
-Les etapes 1 a 15 du plan sont terminees. Le backend/frontend, PostgreSQL, les
-routes publiques, le multi-SSO Google/Discord/Twitch, la contribution moderee,
-la moderation, l'administration, le profil utilisateur, la conformite RGPD
-minimale et les photos securisees sont en place.
-
-La prochaine etape planifiee est l'etape 16, consacree a la finalisation UX de
-l'application et du graphe avant un audit securite pre-ouverture.
+Les étapes 1 à 16 sont terminées. Le backend/frontend, PostgreSQL, les routes
+publiques, le multi-SSO Google/Discord/Twitch, la contribution modérée, la
+modération, l'administration, le profil utilisateur, la conformité RGPD
+minimale et les photos sécurisées sont en place. L'étape 17 poursuit la revue
+de sécurité applicative avant ouverture ; les contrôles d'exploitation sont
+documentés séparément dans [platform-ops](https://github.com/Kutikuti/platform-ops).
 
 La fiche publique et les formulaires de modification supportent maintenant :
 
@@ -90,12 +89,10 @@ Le workflow d'import Notion est egalement operationnel cote administration :
 - liste des fiches importees triable de maniere stable par nom, avec recherche
   et suivi `a faire` / `appliquee`.
 
-La production utilise le sous-domaine `gta-rp.f1prediction.fr`. `platform-ops`
-est la source de référence pour l'interface VPS et l'état réel des services.
-Consulter son [catalogue](https://github.com/Kutikuti/platform-ops/blob/main/OPS_CATALOG.md)
-et ses [runbooks](https://github.com/Kutikuti/platform-ops) pour les procédures
-d'administration. Les exigences de build et de migration propres à GTA restent
-dans [DEPLOYMENT.md](DEPLOYMENT.md).
+Les exigences de build et de migration propres à GTA sont décrites dans
+[DEPLOYMENT.md](DEPLOYMENT.md). Les procédures et l'état de l'infrastructure
+sont maintenus dans [platform-ops](https://github.com/Kutikuti/platform-ops) ;
+ce dépôt ne suppose pas de chemin local particulier pour son checkout.
 
 ## Lancement local
 
@@ -415,11 +412,8 @@ Points utiles en local :
   `TWITCH_CALLBACK_URL=http://localhost:4000/api/auth/twitch/callback` en
   local.
 - L'application Twitch doit autoriser cette URL dans ses redirects OAuth.
-- En production sur le VPS actuel, ajouter aussi les URLs de callback publiques
-  dans Google, Discord et Twitch :
-  `https://gta-rp.f1prediction.fr/api/auth/google/callback`,
-  `https://gta-rp.f1prediction.fr/api/auth/discord/callback` et
-  `https://gta-rp.f1prediction.fr/api/auth/twitch/callback`.
+- En production, enregistrer dans Google, Discord et Twitch les URLs HTTPS
+  correspondant aux variables `*_CALLBACK_URL` de l'environnement déployé.
 - En production, `SESSION_COOKIE_SECURE=true` est requis. En developpement
   local, le backend neutralise ce flag hors production pour permettre les
   tests HTTP locaux.
@@ -440,8 +434,8 @@ Verification rapide :
 - Utiliser `Deconnexion` pour verifier la destruction de session.
 
 Sur une base sans utilisateur reel, le premier compte cree hors seeds recoit
-automatiquement le role administrateur. La procedure de verification et de
-recuperation est documentee dans [DEPLOYMENT.md](DEPLOYMENT.md).
+automatiquement le role administrateur. Les procédures de création et
+récupération d'environnement sont décrites dans les runbooks de plateforme.
 
 ## Donnees
 

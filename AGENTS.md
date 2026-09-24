@@ -151,8 +151,8 @@ Principes :
   reproductibles et TypeScript `7.0.2` pour les builds backend/frontend.
 - Le devcontainer active l'extension officielle TypeScript 7 et `tsgo` afin
   d'aligner les diagnostics VS Code avec les compilations CLI.
-- Production sur VPS Hetzner Ubuntu deja utilise pour un autre site.
-- Prevoir que plusieurs noms de domaine puissent pointer vers le meme serveur.
+- Production sur un environnement Linux maintenu séparément du code produit.
+- Ne pas supposer qu'une instance applicative dispose d'un hôte dédié.
 - Ne pas supposer que Node.js est installe dans WSL ; verifier avant de lancer
   des commandes npm cote Ubuntu.
 
@@ -183,26 +183,12 @@ refusent les noms de base qui ne correspondent pas au prefixe de test attendu.
 
 ## Deploiement
 
-Le deploiement VPS est operationnel sur `gta-rp.f1prediction.fr` avec :
-
-- API Node.js geree par un service `systemd`.
-- PostgreSQL local via Docker, non expose publiquement.
-- Frontend servi en statique derriere Caddy.
-- Caddy responsable du reverse proxy, du TLS automatique et de la coexistence
-  avec le site historique.
-- Organisation par releases sous `/var/www/gta-rp-population-graph/releases`,
-  avec `current` comme lien symbolique active atomiquement.
-- Variables d'environnement separees hors Git sous
-  `/var/www/gta-rp-population-graph/shared/config/backend.env`.
-- Runtime Node.js mutualise avec les autres applications via
-  `/opt/node-apps`, avec `/opt/node-gta-rp` conserve comme lien de
-  compatibilite.
-- Sauvegardes et nettoyage photo planifies par `systemd`.
-- Supervision Prometheus/Grafana mutualisee sous `/var/www/platform-ops`,
-  protegee par la session administrateur.
-
-Le runbook detaille et l'etat reel du VPS doivent etre maintenus dans
-`DEPLOYMENT.md`.
+Les procédures d'administration, de déploiement, de sauvegarde, de supervision
+et l'état des environnements sont maintenus dans le dépôt central
+[platform-ops](https://github.com/Kutikuti/platform-ops). Ne pas recopier ici
+des chemins d'installation, identifiants d'hôte ou détails de configuration
+propres à une plateforme. `DEPLOYMENT.md` conserve seulement les exigences
+applicatives de build, configuration, migration et validation.
 
 ## Style
 

@@ -2,7 +2,8 @@
 
 Ce document sert de base opérationnelle minimale pour la conformité RGPD du
 projet dans son périmètre actuel. Il complète la page publique de
-confidentialité et le runbook de déploiement.
+confidentialité. Les durées d'exploitation des journaux et sauvegardes sont
+définies dans la documentation de la plateforme.
 
 ## Position actuelle
 
@@ -30,9 +31,9 @@ revue RGPD/cookies avant mise en production.
 | Sessions persistantes | Maintenir la connexion après authentification | identifiant de session, contenu de session, expiration | Strictement nécessaire au service d'authentification | backend, base PostgreSQL | `7` jours maximum, nettoyage périodique horaire | PostgreSQL (`user_sessions`) + cookie navigateur `HttpOnly` | cookie `HttpOnly`, `SameSite`, `Secure` en production, expiration serveur |
 | Contributions, modération et historique | Permettre les demandes, validations, refus et traçabilité | snapshots proposés, commentaires de modération, identifiants des acteurs, historiques de changement | Intérêt légitime de qualité des données, sécurité et traçabilité du service | backend, base PostgreSQL, modérateurs et administrateurs | demandes courantes : `24` mois ; historiques et traces d'administration : `12` mois glissants minimum puis revue, avec extension possible si incident, abus ou contentieux | PostgreSQL (`change_requests`, `change_histories`, `admin_actions`) | rôles serveur, journalisation métier, séparation des accès |
 | Imports éditoriaux | Préparer, comparer et appliquer des imports de données communautaires avant publication | contenu brut importé, mapping, hash de contenu, état d'application, opérateur d'application | Intérêt légitime de maintien éditorial du répertoire | backend, base PostgreSQL, administrateurs | cible de conservation active : `12` mois après le dernier traitement du lot, puis purge ou archivage court si un besoin d'audit subsiste | PostgreSQL (`notion_import_batches`, `notion_import_entries`) | revue admin avant application, pas de publication automatique |
-| Photos de personnages | Afficher des portraits liés aux fiches et traiter les propositions de photo | images temporaires, images validées, métadonnées de cadrage implicites | Intérêt légitime éditorial ; exécution du service de contribution | backend, stockage partagé, modérateurs/admins | propositions en attente `24` h max ; photos validées tant que la fiche les référence | stockage disque sous `shared/storage/uploads` ou équivalent | validation MIME/signature, réencodage contrôlé, noms générés, pas de SVG |
-| Supervision et métriques | Suivre la santé technique et un volume approximatif d'usage | métriques HTTP, fingerprint visiteur dérivé de l'IP et du user-agent, métriques métier, journaux système | Intérêt légitime d'exploitation et de sécurité | backend, Prometheus/Grafana, administrateurs | fingerprint visiteur conservé en mémoire jusqu'au redémarrage ; traces et journaux techniques : cible `6` à `12` mois selon la doctrine CNIL, plafonnée aujourd'hui à `30` jours via `journald` | mémoire du process, système de métriques, journaux système | hachage SHA-256 du couple IP + user-agent, accès supervision protégé |
-| Sauvegardes | Restaurer le service en cas d'incident | dumps PostgreSQL, uploads photo validés | Intérêt légitime de continuité de service et sécurité | administrateurs du service | PostgreSQL : `7` journalières + `4` hebdomadaires ; uploads : `2` à `4` hebdomadaires | infrastructure de sauvegarde du projet | rotation automatique, accès SSH restreint, stockage hors Git |
+| Photos de personnages | Afficher des portraits liés aux fiches et traiter les propositions de photo | images temporaires, images validées, métadonnées de cadrage implicites | Intérêt légitime éditorial ; exécution du service de contribution | backend, stockage de fichiers, modérateurs/admins | propositions en attente `24` h max ; photos validées tant que la fiche les référence | stockage de fichiers distinct du contenu statique | validation MIME/signature, réencodage contrôlé, noms générés, pas de SVG |
+| Supervision et métriques | Suivre la santé technique et un volume approximatif d'usage | métriques HTTP, fingerprint visiteur dérivé de l'IP et du user-agent, métriques métier, journaux techniques | Intérêt légitime d'exploitation et de sécurité | backend, système de supervision, administrateurs | fingerprint visiteur conservé en mémoire jusqu'au redémarrage ; durée des traces et journaux définie par la politique de conservation de la plateforme | mémoire du process, système de métriques, journaux techniques | hachage SHA-256 du couple IP + user-agent, accès supervision protégé |
+| Sauvegardes | Restaurer le service en cas d'incident | dumps PostgreSQL, uploads photo validés | Intérêt légitime de continuité de service et sécurité | administrateurs du service | durée définie par la politique de conservation de la plateforme | infrastructure de sauvegarde du projet | rotation automatique, accès restreint, stockage hors Git |
 
 ## Cookies et stockages côté navigateur
 
@@ -72,10 +73,6 @@ revue RGPD/cookies avant mise en production.
   minutes.
 - Propositions de photo en attente : suppression automatique après `24` heures
   (`PHOTO_DRAFT_MAX_AGE_HOURS=24`).
-- Journaux système sur le VPS : rétention plafonnée à `30` jours maximum et
-  taille limitée via `journald`.
-- Sauvegardes PostgreSQL : `7` journalières + `4` hebdomadaires.
-- Sauvegardes uploads : `2` à `4` hebdomadaires selon la volumétrie.
 
 ### Politique cible à resserrer
 
