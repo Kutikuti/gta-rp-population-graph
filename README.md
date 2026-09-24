@@ -96,7 +96,7 @@ ce dépôt ne suppose pas de chemin local particulier pour son checkout.
 
 ## Lancement local
 
-Chaine d'outillage de reference : Node.js `24.20.0`, npm `12.0.2` et
+Chaine d'outillage de reference : Node.js `24.21.0`, npm `12.1.0` et
 TypeScript `7.0.2`. Les fichiers `.nvmrc` et `.node-version` sont fournis pour
 les gestionnaires de versions Node.js. Le devcontainer installe aussi
 l'extension officielle TypeScript 7 et utilise `tsgo` pour les diagnostics de

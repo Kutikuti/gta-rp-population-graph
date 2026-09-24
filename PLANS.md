@@ -921,7 +921,7 @@ a 18.
   structure, l'accessibilite et les limites peuvent changer sans preavis.
 - Google, Discord et Twitch restent dependants de leurs services OAuth et de
   leurs limites d'API respectives.
-- Le developpement local cible Node.js `24.20.0` LTS. La version d'exécution
+- Le developpement local cible Node.js `24.21.0` LTS. La version d'exécution
   des environnements déployés est suivie par la plateforme.
 - Toute évolution du produit doit respecter l'isolation et les contrats de
   l'environnement où l'application est hébergée.

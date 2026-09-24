@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
+import { Counter, collectDefaultMetrics, Gauge, Histogram, Registry } from "@prometheus-io/client";
 import type { Request } from "express";
-import { Counter, collectDefaultMetrics, Gauge, Histogram, Registry } from "prom-client";
 import { Op } from "sequelize";
 import {
   changeRequestStatuses,
