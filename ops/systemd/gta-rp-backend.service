@@ -1,0 +1,23 @@
+[Unit]
+Description=GTA RP Population Graph backend
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gta-rp-runtime
+Group=gta-rp-runtime
+WorkingDirectory=/var/www/gta-rp-population-graph/current/backend
+EnvironmentFile=/var/www/gta-rp-population-graph/shared/config/runtime.env
+Environment=PATH=/opt/node-gta-rp/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/node-gta-rp/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/www/gta-rp-population-graph/shared/logs /var/www/gta-rp-population-graph/shared/storage/uploads
+
+[Install]
+WantedBy=multi-user.target

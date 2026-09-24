@@ -160,9 +160,11 @@ Le helper valide le nom de release, effectue la promotion, fixe la release en
 `root:gta-rp-runtime` non modifiable par le deployeur, bascule `current`,
 redemarre le backend et restaure la release precedente si le health check
 echoue. Il ne lance jamais `npm`, une migration, un hook ou du code de release
-en root. **Point ouvert :** il doit préserver les bits exécutables requis dans
-la release, notamment celui de `esbuild`; la release active a été réparée
-manuellement en `0755 root:gta-rp-runtime` le 2026-09-22.
+en root. Depuis le 2026-09-23, il préserve les bits exécutables requis dans le
+staging, notamment celui de `esbuild`, et rend les autres fichiers en lecture
+seule. Sa source de référence est
+`ops/root-helpers/gta-rp-activate-release`; la copie installée reste
+root-owned sous `/usr/local/sbin`.
 
 Le healthcheck anonyme `GET /api/health` est aussi la sonde de promotion : il
 renvoie exactement `200 {"status":"ok","service":"gta-rp-population-graph-api"}`
@@ -191,7 +193,7 @@ sudo journalctl -u gta-rp-postgres-backup.service -n 50 --no-pager
 sudo journalctl -u gta-rp-uploads-backup.service -n 50 --no-pager
 sudo systemctl status caddy --no-pager
 sudo journalctl -u caddy -n 100 --no-pager
-/var/www/platform-ops/scripts/check-platform.sh
+scripts/check-production-ops.sh --all
 sudo systemctl status platform-health-check.timer --no-pager
 sudo systemctl status platform-postgres-restore-test.timer --no-pager
 sudo docker compose \
@@ -516,13 +518,21 @@ son timer ont ensuite ete retires du VPS. Leur role est repris par
 `platform-ops-textfile.service` et `platform-ops-textfile.timer`, geres depuis
 `/var/www/platform-ops`.
 
-## Check ops reproductible
+## Check ops reproductible et responsabilités
 
-Le controle de plateforme mutualise est la reference d'exploitation actuelle :
+Le contrôle GTA versionné dans ce dépôt est la référence pour les vérifications
+applicatives et de déploiement :
 
 ```bash
-/var/www/platform-ops/scripts/check-platform.sh
+scripts/check-production-ops.sh --all
 ```
+
+Les sources spécifiques GTA — scripts, helpers root-owned et unités systemd —
+sont maintenues dans ce dépôt. La plateforme conserve le contrôle mutualisé
+des deux sites, installé root-owned sous
+`/usr/local/libexec/platform-ops/check-platform.sh`, mais il complète le
+contrôle GTA et ne le remplace pas. Ne pas modifier ni retirer cette copie
+mutualisée depuis une release GTA.
 
 Il est lance toutes les cinq minutes par :
 
@@ -569,7 +579,8 @@ Le script accepte les memes variables d'environnement SSH que le script de
 recuperation de sauvegarde : `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_KEY` et
 `REMOTE_BACKUP_ROOT`. Il ne remplace pas les smoke tests metier interactifs,
 mais sert de controle ops rapide apres maintenance, deploiement ou incident.
-Sur le VPS, preferer le controle mutualise `check-platform.sh`.
+Sur le VPS, exécuter aussi le contrôle mutualisé `check-platform.sh` après une
+opération ayant un impact F1, Caddy, monitoring ou restauration partagée.
 
 ## Hygiene stockage
 

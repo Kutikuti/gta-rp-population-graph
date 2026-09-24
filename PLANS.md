@@ -891,20 +891,32 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      `gta_rp_migrator` et `gta_rp_runtime` sont séparés, `PUBLIC` n'accède plus
      à la base et `gta_rp_app` est `NOLOGIN` sans privilège. `codex-deploy` est
      retiré du groupe `sudo`. Le nettoyage photo a aussi été basculé et validé
-     sous `gta-rp-runtime` avec son timer horaire. Un correctif du helper de
-     promotion reste requis : il ne doit pas retirer le bit exécutable des
-     binaires de dépendances, notamment `esbuild`.
+     sous `gta-rp-runtime` avec son timer horaire. Le helper de promotion a été
+     corrigé le 2026-09-23 pour préserver les bits exécutables, notamment
+     `esbuild`; sa validation complète est attendue à la prochaine promotion.
 
-3. **Rendre privés les artefacts GTA non publics (P2 GTA)**
-   - Inventorier les lecteurs des journaux Notion et rapports de déploiement,
-     puis créer ou convertir leurs dossiers en `0700` et leurs fichiers en
-     `0600`, avec propriétaire `codex-deploy`.
-   - Mettre à jour les scripts qui les écrivent pour imposer `umask 077`.
-     Vérifier ensuite import, supervision et consultation des rapports. Ne pas
+3. **Reprendre les sources GTA d'exploitation (P2 GTA / plateforme)**
+   - Maintenir dans ce dépôt les scripts de déploiement et d'audit GTA, les
+     helpers root-owned et les unités systemd GTA ; `SECURITY_AUDIT.md` et
+     `DEPLOYMENT.md` en sont les documents de référence.
+   - Laisser dans `platform-ops` uniquement SSH, Caddy, UFW, monitoring et les
+     scripts qui contrôlent réellement GTA et F1 ensemble. Une copie installée
+     root-owned n'est pas une source de vérité.
+   - Avant de retirer un ancien fichier plateforme : comparer l'empreinte avec
+     la source GTA, installer le candidat dans une fenêtre dédiée, vérifier
+     promotion, healthcheck PostgreSQL, rollback, timers et les deux sites,
+     puis consigner l'opération dans les deux runbooks.
+
+4. **Rendre privés les artefacts GTA non publics (P2 GTA)**
+   - **Traité pour les rapports de déploiement le 2026-09-23 :**
+     `shared/deployment-reports` est `0700`, ses fichiers existants sont
+     `0600` et aucun producteur versionné n'a été trouvé. Tout nouveau
+     producteur doit imposer `umask 077` et être documenté avant installation.
+   - Les journaux Notion restent à inventorier s'ils sont introduits. Ne pas
      appliquer ces permissions aux photos validées : elles sont volontairement
      publiques via Caddy ; les brouillons doivent au contraire rester privés.
 
-4. **Durcir systemd par paliers testables (P2 GTA)**
+5. **Durcir systemd par paliers testables (P2 GTA)**
    - Avant tout `UMask` restrictif, rendre les modes des photos explicites dans
      l'application : photos validées lisibles par Caddy, brouillons privés.
      Un `UMask=0077` immédiat rendrait les photos publiques illisibles par
@@ -920,7 +932,7 @@ constats et preuves restent dans `SECURITY_AUDIT.md`.
      premier palier : OAuth, Notion et Twitch requièrent du réseau sortant.
      Ajouter un filtre d'appels système seulement après ce palier stable.
 
-5. **Pérenniser les garde-fous (P2/P3)**
+6. **Pérenniser les garde-fous (P2/P3)**
    - Conserver `/opt/node-apps/bin` en tête de `PATH` pour toutes les tâches
      npm VPS ; ne jamais appeler son npm directement depuis le `PATH` système.
    - Planifier les quatre mises à jour Ubuntu disponibles dans une fenêtre

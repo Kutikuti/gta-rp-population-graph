@@ -14,6 +14,27 @@ navigateur complète des rôles et la revue complémentaire des imports et erreu
 restent à effectuer. Cette revue ne constitue pas une garantie d'absence de
 faille.
 
+## Autorité documentaire et sources d'exploitation
+
+`SECURITY_AUDIT.md` est le registre de sécurité unique de GTA-RP dans ce
+dépôt : aucun autre audit GTA versionné ne le double. `DEPLOYMENT.md` est le
+runbook applicatif de référence. Les sources propres à GTA doivent vivre ici :
+contrôles applicatifs sous `scripts/`, helpers root-owned sous
+`ops/root-helpers/` et unités GTA sous `ops/systemd/`.
+
+La plateforme conserve uniquement les éléments réellement mutualisés : SSH,
+Caddy, UFW, monitoring, le contrôle de santé des deux applications et le test
+de restauration PostgreSQL GTA+F1. Elle peut installer une copie root-owned
+d'un artefact GTA, mais ne doit pas devenir la seule source de ce code.
+
+La reprise est engagée le 2026-09-24 : le helper
+`ops/root-helpers/gta-rp-activate-release` et les unités runtime GTA sont
+désormais versionnés ici, sans modification du VPS. Avant de retirer toute
+copie de `platform-ops`, il faut comparer les empreintes, installer depuis ce
+dépôt dans une fenêtre dédiée, tester une promotion et son rollback, puis
+mettre à jour le runbook plateforme. Aucun script partagé ne doit être copié
+ou modifié sans cette séparation explicite.
+
 ## Périmètre et frontières de confiance
 
 Le navigateur et toutes les données communautaires sont non fiables. L'API
@@ -87,7 +108,9 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 - Healthcheck de promotion renforcé : `GET /api/health` exécute une lecture
   Sequelize `SELECT 1` bornée à une seconde. Le contrat de succès reste
   inchangé; une erreur ou un délai PostgreSQL répondent seulement
-  `503 {"status":"unavailable"}`. Les tests couvrent succès, échec et délai
+  `503 {"status":"unavailable"}`. Une seule sonde SQL est admise à la fois :
+  les requêtes HTTP concurrentes reçoivent `503` sans déclencher de nouveau
+  `SELECT 1` bloqué. Les tests couvrent succès, échec, délai et concurrence,
   sans connexion réelle à PostgreSQL.
 - Autorisations : les routes d'écriture de contribution exigent une session ;
   les routes de modération exigent `moderator` ou `administrator` ; le routeur
@@ -186,10 +209,11 @@ daté dans `DEPLOYMENT.md` pour les preuves et les changements d'exploitation.
 | P1 — frontend/exploitant | Effectuer la recette navigateur des rôles et du blocage inter-origines | Aucun test navigateur réel des fournisseurs OAuth durant cette passe |
 | P1 — backend | Poursuivre la revue des imports et erreurs/logs | La matrice de routes et la couverture ne prouvent pas l'absence d'IDOR ou de fuite dans tout le code |
 | P2 — backend | Mesurer la contention du verrou commun si les mutations de comptes deviennent fréquentes | Lecture des sessions non verrouillée ; sérialisation limitée aux mutations sensibles |
-| P2 — exploitant GTA | Durcir l'unité backend après test de démarrage | Service non-root avec `NoNewPrivileges`, `PrivateTmp` et système de fichiers protégé, mais sans `UMask`, `ProtectHome`, filtre d'appels système ni bornage IP. Les appels OAuth/Notion exigent un accès réseau ; le profil doit être testé avant activation |
+| P2 — exploitant GTA | Durcir l'unité backend après test de démarrage | Service non-root avec `UMask=0027`, `NoNewPrivileges`, `PrivateTmp` et système de fichiers protégé. Restent `ProtectHome`, la restriction des périphériques, le filtre d'appels système et le bornage IP sortant ; OAuth/Notion exigent du réseau, donc le profil doit être testé par paliers. |
 | Traité — exploitant GTA | Basculer le nettoyage photo vers `gta-rp-runtime` | `gta-rp-photo-cleanup.service` et son timer horaire sont validés sous `gta-rp-runtime` le 2026-09-22; lancement manuel positif (`scanned=0`, `deleted=0`, `skipped=0`) et healthchecks GTA/F1 à HTTP 200. |
-| P2 — exploitant plateforme | Préserver les binaires exécutables lors d'une promotion GTA | Le helper root-owned applique `0644` à tous les fichiers de release et retire ainsi le bit exécutable d'`esbuild`. La release active a été corrigée manuellement en `0755 root:gta-rp-runtime`; corriger et tester le helper avant toute nouvelle promotion. |
-| P2 — exploitant GTA | Passer les journaux et rapports de déploiement GTA en privé | Les fichiers existants sont en `0644`. Évaluer leur contenu et les lecteurs nécessaires avant un `0700`/`0600` afin de ne pas gêner l'exploitation |
+| Traité — exploitant GTA / plateforme | Préserver les binaires exécutables lors d'une promotion GTA | Le helper root-owned installé le 2026-09-23 préserve les bits exécutables issus du staging, dont `esbuild`, et fixe les autres fichiers en lecture seule. Sa source GTA est reprise dans `ops/root-helpers/gta-rp-activate-release`; la prochaine promotion doit encore valider ce comportement de bout en bout. |
+| Traité — exploitant GTA | Passer les journaux et rapports de déploiement GTA en privé | Le 2026-09-23, `shared/deployment-reports` a été confirmé en `0700` et ses fichiers existants en `0600`. Aucun producteur versionné n'a été trouvé dans ce dépôt ; tout nouveau producteur doit imposer `umask 077`. Les photos publiques sont explicitement hors périmètre. |
+| P2 — GTA / plateforme | Finaliser la reprise des sources d'exploitation GTA | Les sources GTA sont reprises dans ce dépôt ; la copie active root-owned et les procédures plateforme doivent encore être alignées puis validées lors d'une promotion avec rollback. |
 
 Le retour de release suppose des migrations compatibles avec l'ancienne
 version. Un changement de schéma destructif exige une procédure spécifique.
