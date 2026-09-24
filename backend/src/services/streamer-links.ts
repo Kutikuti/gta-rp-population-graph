@@ -4,6 +4,7 @@ import type { VerificationStatus } from "../db/enums.js";
 import { models } from "../db/index.js";
 import type { SocialLinks, Streamer } from "../db/models/index.js";
 import { notFoundError } from "../middleware/api-error.js";
+import { escapeLikeLiteral, normalizeExactCaseInsensitive } from "./notion-exact-match.js";
 
 export type StreamerSyncMode = "merge" | "replace";
 
@@ -147,14 +148,20 @@ export const resolveOrCreateStreamer = async (input: {
     return null;
   }
 
-  const existing = await models.Streamer.findOne({
+  const queriedExisting = await models.Streamer.findOne({
     where: {
       publicName: {
-        [Op.iLike]: input.streamerPublicName
+        [Op.iLike]: escapeLikeLiteral(input.streamerPublicName)
       }
     },
     transaction: input.transaction
   });
+  const existing =
+    queriedExisting &&
+    normalizeExactCaseInsensitive(queriedExisting.publicName) ===
+      normalizeExactCaseInsensitive(input.streamerPublicName)
+      ? queriedExisting
+      : null;
 
   if (existing) {
     await syncStreamerMetadata({

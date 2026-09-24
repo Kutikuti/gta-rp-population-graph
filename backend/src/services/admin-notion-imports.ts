@@ -26,6 +26,7 @@ import {
 } from "./admin-notion-imports-shared.js";
 import { logAdminAction } from "./admin-shared.js";
 import { generateUniqueCharacterSlug } from "./character-slug.js";
+import { escapeLikeLiteral, normalizeExactCaseInsensitive } from "./notion-exact-match.js";
 
 export class SequelizeAdminNotionImportService {
   async listNotionImports(): Promise<AdminNotionImportBatch[]> {
@@ -107,14 +108,21 @@ export class SequelizeAdminNotionImportService {
       }
 
       if (!character) {
-        const matches = await models.Character.findAll({
+        const queriedMatches = await models.Character.findAll({
           where: {
-            firstName: { [Op.iLike]: candidate.firstName },
-            lastName: { [Op.iLike]: candidate.lastName }
+            firstName: { [Op.iLike]: escapeLikeLiteral(candidate.firstName) },
+            lastName: { [Op.iLike]: escapeLikeLiteral(candidate.lastName) }
           },
           transaction,
           lock: transaction.LOCK.UPDATE
         });
+        const matches = queriedMatches.filter(
+          (match) =>
+            normalizeExactCaseInsensitive(match.firstName) ===
+              normalizeExactCaseInsensitive(candidate.firstName) &&
+            normalizeExactCaseInsensitive(match.lastName) ===
+              normalizeExactCaseInsensitive(candidate.lastName)
+        );
 
         if (matches.length > 1) {
           return {

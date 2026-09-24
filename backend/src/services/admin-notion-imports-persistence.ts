@@ -16,6 +16,7 @@ import {
   relationshipLabel,
   relationshipTypeForCharacterView
 } from "./character-relationships.js";
+import { escapeLikeLiteral, normalizeExactCaseInsensitive } from "./notion-exact-match.js";
 import { resolveOrCreateStreamer } from "./streamer-links.js";
 
 const DEFAULT_TAG_COLOR = "#2f9bff";
@@ -95,22 +96,29 @@ export const resolveOrCreateTags = async (tagNames: string[], transaction: Trans
     return [];
   }
 
-  const existingTags = await models.Tag.findAll({
+  const queriedTags = await models.Tag.findAll({
     where: {
       [Op.or]: uniqueNames.map((name) => ({
         name: {
-          [Op.iLike]: name
+          [Op.iLike]: escapeLikeLiteral(name)
         }
       }))
     },
     transaction
   });
+  const existingTags = queriedTags.filter((tag) =>
+    uniqueNames.some(
+      (name) => normalizeExactCaseInsensitive(tag.name) === normalizeExactCaseInsensitive(name)
+    )
+  );
 
-  const tagsByName = new Map(existingTags.map((tag) => [normalizeText(tag.name), tag] as const));
+  const tagsByName = new Map(
+    existingTags.map((tag) => [normalizeExactCaseInsensitive(tag.name), tag] as const)
+  );
   const resolved: Tag[] = [...existingTags];
 
   for (const name of uniqueNames) {
-    if (tagsByName.has(normalizeText(name))) {
+    if (tagsByName.has(normalizeExactCaseInsensitive(name))) {
       continue;
     }
 
@@ -124,7 +132,7 @@ export const resolveOrCreateTags = async (tagNames: string[], transaction: Trans
       { transaction }
     );
 
-    tagsByName.set(normalizeText(created.name), created);
+    tagsByName.set(normalizeExactCaseInsensitive(created.name), created);
     resolved.push(created);
   }
 

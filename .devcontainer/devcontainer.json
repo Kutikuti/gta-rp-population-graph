@@ -66,5 +66,5 @@
     "PATH": "/home/vscode/.local/bin:${containerEnv:PATH}"
   },
   "remoteUser": "vscode",
-  "runArgs": ["--hostname=mewtwo-dev", "--add-host=host.docker.internal:host-gateway", "--cap-add=SYS_ADMIN", "--security-opt=seccomp=unconfined"]
+  "runArgs": ["--hostname=mewtwo-dev", "--network=gta-rp-dev", "--cap-add=SYS_ADMIN", "--security-opt=seccomp=unconfined"]
 }

@@ -772,16 +772,19 @@ Correctifs applicatifs réalisés :
   redirections et délais ; brouillons non exposés publiquement.
 - Contrôle des permissions des routes, sessions persistantes et en-têtes/cache
   des espaces privés couverts par des tests.
+- Import Notion : rapprochements exacts insensibles à la casse, échappement des
+  métacaractères SQL `LIKE`, revue des routes d'accès et journaux d'erreurs
+  internes expurgés ; configuration SQL des migrations séparée du runtime.
 
 Travaux applicatifs encore ouverts :
 
 - P1 : recette navigateur réelle des rôles, des parcours OAuth et du blocage
   inter-origines.
-- P1 : revue complémentaire des imports et des erreurs/journaux afin de
-  rechercher les fuites d'information et les contrôles d'accès objet manquants.
 - P2 : mesurer la contention du verrou transactionnel commun si les mutations
   de comptes deviennent fréquentes ; les lectures de session ne sont pas
   sérialisées.
+- Recette réelle de l'accès PostgreSQL depuis le devcontainer sur le réseau
+  privé `gta-rp-dev` ; Docker était indisponible lors de la vérification locale.
 
 Les contrôles de déploiement, sauvegarde, restauration, SSH, services et
 durcissement système relèvent exclusivement des runbooks de la plateforme.
@@ -795,8 +798,7 @@ Conditions de clôture :
 
 - Réaliser la recette navigateur des rôles, des parcours OAuth et du blocage
   inter-origines.
-- Terminer la revue des imports, des erreurs/journaux et des contrôles d'accès
-  objet ; corriger les constats significatifs avec des tests adaptés.
+- Compléter la recette locale réelle du réseau PostgreSQL privé du devcontainer.
 - Garder les tests, intégrations disponibles, contrôles de type et builds verts.
 - Documenter les risques résiduels applicatifs et la décision d'ouverture dans
   ce plan. La validation de l'infrastructure reste gérée par la plateforme.

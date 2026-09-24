@@ -91,10 +91,13 @@ Le dernier `pending` doit être vide. La migration initiale crée notamment
 `user_sessions` pour le store de session persistant et `public_slug` pour les
 URLs publiques lisibles. Ne pas exécuter `npm run db:seed` en production.
 
-La configuration de migration est injectée séparément de la configuration
-runtime. Le mécanisme d'installation hors Git et le lien attendu en staging
-sont documentés dans le runbook central ; ne pas transférer un fichier `.env`
-depuis un poste de travail.
+La configuration de migration est injectée séparément dans
+`migrations.env` : le processus lit et valide uniquement `DB_NAME`, `DB_USER`,
+`DB_PASSWORD`, `DB_HOST`, `DB_PORT` et `DB_SSL`. Il ne charge pas la validation
+runtime et n'exige ni ne copie de secret de session/OAuth. En local, partir de
+`backend/migrations.env.example`; en environnement hébergé, installation,
+permissions et rôle SQL relèvent du runbook central. Ne jamais transférer un
+fichier `.env` depuis un poste de travail.
 
 ## Vérifications locales
 

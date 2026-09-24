@@ -249,7 +249,9 @@ describe("profile API", () => {
 
     await loginAs(agent, "multi");
 
-    const response = await agent.get("/api/profile/personal-data");
+    const response = await agent
+      .get("/api/profile/personal-data")
+      .query({ userId: singleIdentityUser.id });
 
     expect(response.status).toBe(200);
     expect(response.body.account).toMatchObject({
@@ -262,6 +264,7 @@ describe("profile API", () => {
       expect.objectContaining({ provider: "discord", providerEmail: null })
     ]);
     expect(typeof response.body.exportedAt).toBe("string");
+    expect(response.body.account.id).not.toBe(singleIdentityUser.id);
   });
 
   it("returns an explicit error when personal data export is unavailable", async () => {

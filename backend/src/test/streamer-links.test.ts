@@ -122,6 +122,32 @@ describe("streamer-links", () => {
     );
   });
 
+  it.each(["Ada%Live", "Ada_Live", "Ada\\Live"])(
+    "does not reuse a streamer that only matches the iLike pattern %s",
+    async (streamerPublicName) => {
+      const transaction = {} as never;
+      mockState.streamerFindOne.mockResolvedValue({
+        id: "near-match",
+        publicName: streamerPublicName.replace(/[\\%_]/gu, "x"),
+        update: vi.fn()
+      });
+      mockState.streamerCreate.mockResolvedValue({ id: "created-streamer" });
+
+      const result = await resolveOrCreateStreamer({
+        streamerPublicName,
+        socialLinks: null,
+        verificationStatus: "imported",
+        transaction
+      });
+
+      expect(result).toBe("created-streamer");
+      expect(mockState.streamerCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ publicName: streamerPublicName }),
+        { transaction }
+      );
+    }
+  );
+
   it("does not recreate or clear an existing streamer when a later import has no new social link to add", async () => {
     const transaction = {} as never;
     const existingStreamer = {

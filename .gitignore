@@ -4,6 +4,7 @@ coverage/
 *.tsbuildinfo
 
 backend/.env
+backend/migrations.env
 web-client/.env
 backend/storage/
 .secrets/

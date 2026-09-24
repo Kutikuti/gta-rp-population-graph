@@ -1,7 +1,9 @@
 import { DataTypes, literal, type Sequelize } from "sequelize";
 import { SequelizeStorage, Umzug } from "umzug";
 
-import { createSequelize } from "./sequelize.js";
+import { loadMigrationEnv } from "../config/migration-env.js";
+import { runMigrationCommand } from "./migration-command.js";
+import { createSequelizeConnection } from "./sequelize-connection.js";
 
 export type MigrationContext = {
   queryInterface: ReturnType<Sequelize["getQueryInterface"]>;
@@ -9,7 +11,7 @@ export type MigrationContext = {
   literal: typeof literal;
 };
 
-const sequelize = createSequelize();
+const sequelize = createSequelizeConnection(loadMigrationEnv());
 
 const migrator = new Umzug<MigrationContext>({
   migrations: {
@@ -28,19 +30,8 @@ const command = process.argv[2] ?? "up";
 const all = process.argv.includes("--all");
 
 try {
-  if (command === "up") {
-    await migrator.up();
-  } else if (command === "down") {
-    await migrator.down(all ? { to: 0 } : undefined);
-  } else if (command === "pending") {
-    const pending = await migrator.pending();
-    console.log(pending.map((migration) => migration.name));
-  } else if (command === "executed") {
-    const executed = await migrator.executed();
-    console.log(executed.map((migration) => migration.name));
-  } else {
-    throw new Error(`Unknown migration command: ${command}`);
-  }
+  const result = await runMigrationCommand(migrator, command, all);
+  if (result) console.log(result);
 } finally {
   await sequelize.close();
 }

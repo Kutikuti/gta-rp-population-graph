@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const transactionMock = {
@@ -143,6 +144,7 @@ beforeEach(() => {
     appliedAt: "2026-06-27T00:00:00.000Z"
   }));
   mockState.loadCharacterTags.mockResolvedValue([]);
+  mockState.characterCreate.mockResolvedValue({ id: "character-new", update: vi.fn() });
   mockState.relationshipsForCharacter.mockResolvedValue([]);
   mockState.resolveOrCreateTags.mockResolvedValue([]);
   mockState.resolveOrCreateStreamerId.mockResolvedValue("streamer-1");
@@ -159,6 +161,106 @@ beforeEach(() => {
 });
 
 describe("admin notion import service", () => {
+  it("reuses an exact character match regardless of letter case", async () => {
+    const update = vi.fn().mockResolvedValue(undefined);
+    const existingCharacter = {
+      id: "character-case-match",
+      firstName: "ADA",
+      lastName: "LOVELACE",
+      nickname: null,
+      lifeStatus: "alive",
+      deathOrDepartureDate: null,
+      phoneNumbers: [],
+      companyName: null,
+      companyRank: null,
+      companyBadgeNumber: null,
+      groupName: null,
+      district: null,
+      isRpDeath: false,
+      previousCharacters: null,
+      verificationStatus: "imported",
+      sourceNote: null,
+      publicSlug: "ada-lovelace",
+      streamerId: null,
+      update
+    };
+    mockState.notionImportEntryFindOne.mockResolvedValue({
+      ...notionEntryBase,
+      appliedCharacterId: null
+    });
+    mockState.characterFindAll.mockResolvedValue([existingCharacter]);
+    mockState.resolveRelationshipTargets.mockResolvedValue({
+      resolved: [],
+      unresolved: [],
+      ambiguous: []
+    });
+    mockState.notionImportEntryFindByPk.mockResolvedValue({
+      sourcePageId: "page-ada",
+      appliedCharacterId: existingCharacter.id
+    });
+
+    const result = await service.applyNotionImportEntry({
+      actorUserId: "admin-1",
+      batchId: "batch-1",
+      pageId: "page-ada"
+    });
+
+    expect(mockState.characterCreate).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: "applied",
+      characterId: existingCharacter.id,
+      created: false
+    });
+  });
+
+  it.each(["Ada%", "Ada_", "Ada\\"])(
+    "creates a separate character instead of attaching an iLike wildcard name %s",
+    async (firstName) => {
+      const candidate = { ...candidateBase, firstName, lastName: "Lovelace" };
+      mockState.importCandidateFromEntry.mockReturnValue(candidate);
+      mockState.notionImportEntryFindOne.mockResolvedValue({
+        ...notionEntryBase,
+        appliedCharacterId: null
+      });
+      mockState.characterFindAll.mockResolvedValue([
+        { id: "near-match", firstName: `${firstName.slice(0, -1)}X`, lastName: "Lovelace" }
+      ]);
+      mockState.resolveRelationshipTargets.mockResolvedValue({
+        resolved: [],
+        unresolved: [],
+        ambiguous: []
+      });
+      mockState.notionImportEntryFindByPk.mockResolvedValue({
+        sourcePageId: "page-ada",
+        appliedCharacterId: "character-new"
+      });
+
+      const result = await service.applyNotionImportEntry({
+        actorUserId: "admin-1",
+        batchId: "batch-1",
+        pageId: "page-ada"
+      });
+
+      expect(mockState.characterCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ firstName, lastName: "Lovelace" }),
+        { transaction: transactionMock }
+      );
+      const query = mockState.characterFindAll.mock.calls[0]?.[0] as {
+        where: {
+          firstName: { [Op.iLike]: string };
+          lastName: { [Op.iLike]: string };
+        };
+      };
+      expect(query.where.firstName[Op.iLike]).toBe(firstName.replace(/[\\%_]/gu, "\\$&"));
+      expect(result).toMatchObject({
+        status: "applied",
+        characterId: "character-new",
+        created: true
+      });
+    }
+  );
+
   it("blocks apply when several existing characters match the same full name", async () => {
     mockState.notionImportEntryFindOne.mockResolvedValue({
       ...notionEntryBase,

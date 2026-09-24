@@ -150,12 +150,20 @@ npm run build
 Base PostgreSQL de developpement :
 
 ```bash
-docker compose up -d postgres
+# Une fois, depuis WSL avant de (re)construire le devcontainer :
+docker network create gta-rp-dev
+# Après avoir renseigné DB_PASSWORD dans backend/.env :
+docker compose --env-file backend/.env up -d postgres
 ```
 
-Depuis le devcontainer, utiliser `DB_HOST=host.docker.internal` dans
-`backend/.env` si PostgreSQL tourne dans Docker sur le host. Depuis WSL hors
-devcontainer, `DB_HOST=localhost` suffit avec le port `5432` expose.
+Le service PostgreSQL rejoint le réseau privé Docker `gta-rp-dev`, également
+utilisé par le devcontainer, et ne publie aucun port sur l'hôte. Depuis le
+devcontainer, `DB_HOST=postgres` (valeur de `backend/.env.example`) permet de
+le joindre directement. Il n'y a pas d'accès PostgreSQL direct depuis WSL ou
+depuis le réseau local ; ne réintroduire ni port public ni liaison
+`host.docker.internal` sans une revue de sécurité dédiée. Le mot de passe doit
+être défini dans le fichier local ignoré `backend/.env` et partagé avec Compose
+via `--env-file`; le fichier exemple ne fournit aucun mot de passe par défaut.
 
 La validation globale lance aussi les tests d'integration PostgreSQL. Ceux-ci
 creent une base ephemere au nom strictement reserve aux tests, appliquent puis
@@ -171,6 +179,11 @@ npm run db:migrate
 npm run db:seed
 npm run db:migrate:executed
 ```
+
+Les commandes de migration lisent uniquement `backend/migrations.env`, distinct
+de la configuration runtime `backend/.env`. Créer ce fichier local depuis
+`backend/migrations.env.example` et ne renseigner que les paramètres SQL du rôle
+de migration. Les commandes `pending` et `executed` ne modifient pas le schéma.
 
 ## Commandes disponibles
 

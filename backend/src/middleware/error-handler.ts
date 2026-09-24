@@ -13,7 +13,7 @@ export const notFoundHandler: RequestHandler = (request, response) => {
   });
 };
 
-export const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+export const errorHandler: ErrorRequestHandler = (error, request, response, _next) => {
   if ((error as { type?: string }).type === "entity.too.large") {
     response.status(413).json({
       error: {
@@ -59,7 +59,22 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, _ne
     return;
   }
 
-  console.error(error);
+  const errorCode = (error as { code?: unknown } | null)?.code;
+  const safeCode =
+    typeof errorCode === "string" && /^[0-9]{5}$/u.test(errorCode)
+      ? errorCode
+      : "INTERNAL_SERVER_ERROR";
+  const route = typeof request.route?.path === "string" ? request.route.path : "unmatched";
+
+  console.error(
+    JSON.stringify({
+      category: "internal_error",
+      code: safeCode,
+      method: request.method,
+      route,
+      status: 500
+    })
+  );
 
   response.status(500).json({
     error: {
