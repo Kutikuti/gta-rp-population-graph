@@ -665,6 +665,29 @@ Maintenance de dependances du `2026-09-04` :
   backend et `84` tests frontend. Les integrations PostgreSQL restent a
   rejouer lorsque PostgreSQL local est joignable.
 
+Maintenance des dépendances du `2026-10-04` :
+
+- Node.js reste sur `24.21.0` LTS et TypeScript sur `7.0.2`. Les types Node
+  sont mis à jour dans la branche 24 (`24.19.1`), cohérente avec le runtime.
+- Le devcontainer prépare npm `12.2.0`, uv `0.12.23` et RTK `v0.51.0` ;
+  ces outils nécessitent une reconstruction du conteneur. Serena `1.7.0`,
+  ast-grep `0.45.3` et Repomix `1.18.1` restent inchangés.
+- Les dépendances directes et transitives sont actualisées, notamment Biome
+  `2.5.15`, Vitest/coverage `5.0.3`, Vite `8.3.2`, dotenv `18.0.5`, pg
+  `8.23.1`, sharp `0.35.5`, Supertest `7.3.1` et jsdom `30.1.2`.
+- Les lockfiles sont mis à jour avec npm `12.2.0` et les deux installations
+  propres `npm ci` réussissent. Les audits npm ne remontent aucune
+  vulnérabilité. Les contrôles globaux passent : 394 tests backend,
+  15 intégrations PostgreSQL, 98 tests frontend, couvertures, Biome et builds.
+  Un test a reçu uniquement un ajustement de formatage demandé par Biome.
+- Les intégrations utilisent PostgreSQL `17.4` via `host.docker.internal`,
+  avec des bases temporaires `gta_rp_test_*`, sans base de test résiduelle.
+  Ce résultat ne clôture pas la
+  recette du réseau privé `gta-rp-dev` et de l'alias `postgres` documentés.
+- Aucun changement VPS n'a été appliqué : l'accès SSH disponible ne permet
+  pas l'authentification. La promotion applicative et toute maintenance système
+  restent à réaliser et à consigner dans `platform-ops`.
+
 ### Etape 15 - Refactor et nettoyage transversal
 
 Statut : terminee le 2026-07-30.

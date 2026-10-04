@@ -96,11 +96,18 @@ ce dépôt ne suppose pas de chemin local particulier pour son checkout.
 
 ## Lancement local
 
-Chaine d'outillage de reference : Node.js `24.21.0`, npm `12.1.0` et
+Chaine d'outillage de reference : Node.js `24.21.0`, npm `12.2.0` et
 TypeScript `7.0.2`. Les fichiers `.nvmrc` et `.node-version` sont fournis pour
 les gestionnaires de versions Node.js. Le devcontainer installe aussi
 l'extension officielle TypeScript 7 et utilise `tsgo` pour les diagnostics de
 l'editeur.
+
+Les versions des outils du devcontainer sont centralisées dans
+`.devcontainer/versions.env` : npm `12.2.0`, uv `0.12.23` et RTK `v0.51.0`.
+Après une mise à jour de ce fichier, utiliser **Dev Containers: Rebuild Container**
+pour installer les versions épinglées. Le contrôle de mises à jour décrit les
+versions de l'image en cours d'exécution ; modifier les versions dans le dépôt
+ne met pas à jour les outils du conteneur déjà démarré.
 
 Installation et demarrage backend :
 
