@@ -244,7 +244,8 @@ describe("write origin protection", () => {
     const agent = request.agent(
       createApp({
         authService: new FixtureAuthService(),
-        googleOauthClient: new FixtureGoogleOauthClient()
+        googleOauthClient: new FixtureGoogleOauthClient(),
+        databaseHealthCheck: async () => {}
       })
     );
     await loginAs(agent, "user");

@@ -36,9 +36,21 @@ contient que les noms de variables attendus par l'application :
 - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_CALLBACK_URL`
 - `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_CALLBACK_URL`
 - `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX_REQUESTS`,
+  `RATE_LIMIT_READ_MAX_REQUESTS`, `RATE_LIMIT_SESSION_WINDOW_MS`,
+  `RATE_LIMIT_SESSION_MAX_REQUESTS`,
   `CHANGE_REQUEST_RATE_LIMIT_MAX`, `PHOTO_UPLOAD_MAX_BYTES`,
   `PHOTO_UPLOAD_RATE_LIMIT_MAX`, `PHOTO_STORAGE_DIR`,
   `PHOTO_DRAFT_MAX_AGE_HOURS`, `METRICS_TOKEN`
+
+Les quotas restent fondés sur l'adresse IP, avec le regroupement IPv6 fourni
+par express-rate-limit. Par défaut : lectures 600 / 15 minutes, OAuth et
+écritures 100 / 15 minutes, contrôle de session et déconnexion 120 / minute.
+Ces trois budgets sont indépendants ; augmenter celui des lectures ne doit
+pas modifier celui des actions sensibles. Les sous-limites des contributions
+et photos gardent leur fenêtre et leurs valeurs existantes. HTTP 429 conserve
+les en-têtes RateLimit et Retry-After et renvoie une erreur JSON explicite.
+Les variables ajoutées ont des valeurs par défaut ; aucun changement du
+fichier runtime n'est nécessaire si ces valeurs conviennent.
 
 `SESSION_SECRET` et `METRICS_TOKEN` doivent être aléatoires, longs, distincts
 des exemples et stockés hors Git. Ne jamais inscrire leur valeur dans ce

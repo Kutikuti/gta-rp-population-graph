@@ -1,6 +1,5 @@
 import cors from "cors";
 import express from "express";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
 import { env } from "./config/env.js";
@@ -9,8 +8,8 @@ import { sequelize } from "./db/index.js";
 import { loadCurrentUser } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { recordHttpMetrics } from "./middleware/metrics.js";
-import { shouldSkipGlobalRateLimit } from "./middleware/rate-limit.js";
 import { requireTrustedWriteOrigin } from "./middleware/request-origin.js";
+import { createRequestRateLimits } from "./middleware/request-rate-limits.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createContributionsRouter } from "./routes/contributions.js";
@@ -75,17 +74,7 @@ export const createApp = (dependencies: AppDependencies = {}) => {
       credentials: true
     })
   );
-  app.use(
-    rateLimit({
-      windowMs: env.RATE_LIMIT_WINDOW_MS,
-      limit: env.RATE_LIMIT_MAX_REQUESTS,
-      standardHeaders: true,
-      legacyHeaders: false,
-      skip: (request) =>
-        shouldSkipGlobalRateLimit(request) ||
-        (request.method === "GET" && request.path === "/api/supervision/authorize")
-    })
-  );
+  app.use(createRequestRateLimits());
   app.use(
     "/uploads/characters",
     express.static(characterPhotoPublicDir, {

@@ -799,6 +799,13 @@ Correctifs applicatifs réalisés :
   métacaractères SQL `LIKE`, revue des routes d'accès et journaux d'erreurs
   internes expurgés ; configuration SQL des migrations séparée du runtime.
 
+Correctif de disponibilité préparé le 22 octobre 2026 : séparer le quota des
+lectures, celui d'OAuth/écritures et celui du contrôle de session/logout, avec
+budgets IP/IPv6 bornés. Conserver les sous-limites des photos/contributions et
+tester épuisement, reprise et indépendance des budgets. La livraison et sa
+recette restent suivies par platform-ops ; ne pas déclarer installé avant
+preuve de promotion.
+
 Travaux applicatifs encore ouverts :
 
 - P1 : recette navigateur réelle des rôles, des parcours OAuth et du blocage
@@ -882,6 +889,11 @@ a 18.
   comme des faits verifies.
 
 ### Moderation et qualite des donnees
+
+- Dans la preview d'une modification de photo sur l'écran de modération,
+  afficher côte à côte l'image actuelle et l'image proposée. Demande issue
+  de la recette R11 du 22 octobre 2026, validée pour le traitement des images ;
+  amélioration d'interface à réaliser séparément du correctif des quotas.
 
 - Ajouter dans la vue de completude un statut `en cours de traitement`, des
   filtres experts et une orchestration collective du rattrapage si le volume ou
