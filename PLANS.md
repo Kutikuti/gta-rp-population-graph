@@ -799,17 +799,20 @@ Correctifs applicatifs réalisés :
   métacaractères SQL `LIKE`, revue des routes d'accès et journaux d'erreurs
   internes expurgés ; configuration SQL des migrations séparée du runtime.
 
-Correctif de disponibilité préparé le 22 octobre 2026 : séparer le quota des
-lectures, celui d'OAuth/écritures et celui du contrôle de session/logout, avec
-budgets IP/IPv6 bornés. Conserver les sous-limites des photos/contributions et
-tester épuisement, reprise et indépendance des budgets. La livraison et sa
-recette restent suivies par platform-ops ; ne pas déclarer installé avant
-preuve de promotion.
+Correctif de disponibilité installé le 22 octobre 2026 (`07e99cd`) : budgets
+lecture, OAuth/écritures et session/logout séparés, avec sous-limites photos et
+contributions conservées. La recette navigateur complète et les intégrations
+PostgreSQL 15.19 isolées sont validées le 23 octobre ; preuves dans platform-ops.
+
+Mises à jour de sécurité préparées le 23 octobre : `ip-address` 10.7.4 dans le
+limiteur backend et Vite 8.3.5 dans les outils backend/frontend. Les lockfiles
+figent aussi leurs dépendances de build compatibles. Audits npm sans avis,
+404 tests backend et 98 frontend, style et builds réussis. Aucun changement
+de logique produit, de migration ou de configuration ; déploiement VPS
+encore requis via les procédures centrales platform-ops.
 
 Travaux applicatifs encore ouverts :
 
-- P1 : recette navigateur réelle des rôles, des parcours OAuth et du blocage
-  inter-origines.
 - P2 : mesurer la contention du verrou transactionnel commun si les mutations
   de comptes deviennent fréquentes ; les lectures de session ne sont pas
   sérialisées.
