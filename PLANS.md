@@ -967,3 +967,15 @@ a 18.
   l'environnement où l'application est hébergée.
 - Toute nouvelle collecte de donnees personnelles ou ajout de traceur client
   doit declencher une nouvelle revue RGPD et cookies.
+
+
+Maintenance de sécurité du 2026-11-02 :
+
+- Lot isolé depuis la baseline 696b695, sans embarquer les évolutions produit
+  ultérieures de main ni modifier de code métier, migration ou configuration.
+- Express 5.3.0, body-parser 2.4.0, qs 6.17.1 et Zod 4.6.7 corrigent les avis
+  de dépendances backend ; undici 8.12.3 corrige les avis du développement frontend.
+- Biome, deux builds, 403 tests backend hors topologie devcontainer et 98 tests
+  frontend réussis ; quatre audits npm complets/production à zéro avis connu.
+- Les intégrations PostgreSQL réelles ne sont pas relancées dans ce lot sans
+  changement de schéma. Les validations et le déploiement VPS restent centralisés.

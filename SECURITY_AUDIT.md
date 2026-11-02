@@ -6,7 +6,18 @@ services, sauvegardes et supervision restent centralisées dans
 [`platform-ops`](https://github.com/Kutikuti/platform-ops) ; elles ne sont pas
 auditées ni dupliquées ici.
 
-## Résultats de ce lot
+## Maintenance des dépendances du 2 novembre 2026
+
+Lot depuis 696b695 : Express 5.3.0, body-parser 2.4.0, qs 6.17.1 et Zod 4.6.7 ;
+undici 8.12.3 dans les outils frontend. Les avis GHSA-27r3-jxmh-p828,
+GHSA-6pq8-jhm2-2vcw et GHSA-mrhx-c7xc-m3w5 sont corrigés par les versions
+résolues. Les quatre audits npm sont sans avis connu à la date de validation.
+Les checks, deux builds et 501 tests applicatifs passent hors test de topologie
+du devcontainer. Aucun changement métier, migration ou configuration ; les
+limites des tests mocks et des avis connus restent applicables. Cette validation
+locale ne prouve pas une installation ou une recette de production.
+
+## Résultats du lot historique de septembre
 
 - Import Notion : les noms de personnages, tags et streamers sont recherchés
   avec des motifs `ILIKE` échappés puis validés par égalité insensible à la
