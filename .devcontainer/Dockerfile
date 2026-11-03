@@ -122,7 +122,7 @@ RUN set -eux; \
   . /usr/local/share/devcontainer/versions.env; \
   curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh; \
   uv tool install -p 3.13 "serena-agent==${SERENA_VERSION}"; \
-  curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh -o /tmp/rtk-install.sh; \
+  curl -fsSL "https://raw.githubusercontent.com/rtk-ai/rtk/${RTK_VERSION}/install.sh" -o /tmp/rtk-install.sh; \
   RTK_INSTALL_DIR="/home/${USERNAME}/.local/bin" RTK_VERSION="${RTK_VERSION}" sh /tmp/rtk-install.sh; \
   rm -f /tmp/rtk-install.sh; \
   npm install -g \

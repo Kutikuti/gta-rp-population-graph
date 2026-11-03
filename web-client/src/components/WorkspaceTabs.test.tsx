@@ -4,24 +4,25 @@ import { useState } from "react";
 import { expect, it } from "vitest";
 import { WorkspaceTabs } from "./WorkspaceTabs";
 
+function Example() {
+  const [activeTab, setActiveTab] = useState("users");
+  return (
+    <WorkspaceTabs
+      label="Administration"
+      tabs={[
+        { id: "users", label: "Utilisateurs" },
+        { id: "tags", label: "Tags" },
+        { id: "logs", label: "Journaux" }
+      ]}
+      activeTab={activeTab}
+      onChange={setActiveTab}
+    >
+      {activeTab}
+    </WorkspaceTabs>
+  );
+}
+
 it("supports arrow keys, Home and End with a single active panel", async () => {
-  function Example() {
-    const [activeTab, setActiveTab] = useState("users");
-    return (
-      <WorkspaceTabs
-        label="Administration"
-        tabs={[
-          { id: "users", label: "Utilisateurs" },
-          { id: "tags", label: "Tags" },
-          { id: "logs", label: "Journaux" }
-        ]}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-      >
-        {activeTab}
-      </WorkspaceTabs>
-    );
-  }
   const user = userEvent.setup();
   render(<Example />);
   await user.tab();

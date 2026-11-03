@@ -6,24 +6,24 @@ import { describe, expect, it, vi } from "vitest";
 import { initialGraphPreferences } from "../graph/graphPreferences";
 import { GraphPreferencesPanel } from "./GraphPreferencesPanel";
 
+function Example() {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <GraphPreferencesPanel
+      twitchLive={false}
+      onTwitchLiveChange={vi.fn()}
+      isOpen={isOpen}
+      preferences={initialGraphPreferences}
+      onOpen={() => setIsOpen(true)}
+      onClose={() => setIsOpen(false)}
+      onChange={vi.fn()}
+    />
+  );
+}
+
 describe("GraphPreferencesPanel", () => {
   it("opens the collapsed panel", async () => {
     const user = userEvent.setup();
-    function Example() {
-      const [isOpen, setIsOpen] = useState(false);
-      return (
-        <GraphPreferencesPanel
-          twitchLive={false}
-          onTwitchLiveChange={vi.fn()}
-          isOpen={isOpen}
-          preferences={initialGraphPreferences}
-          onOpen={() => setIsOpen(true)}
-          onClose={() => setIsOpen(false)}
-          onChange={vi.fn()}
-        />
-      );
-    }
-
     render(<Example />);
 
     await user.click(screen.getByRole("button", { name: "Affichage du graphe" }));

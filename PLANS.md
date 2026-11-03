@@ -688,6 +688,60 @@ Maintenance des dépendances du `2026-10-04` :
   pas l'authentification. La promotion applicative et toute maintenance système
   restent à réaliser et à consigner dans `platform-ops`.
 
+Maintenance du devcontainer du `2026-10-23` :
+
+- Référence locale : Node.js `24.22.1` LTS et npm `12.2.1`. Les versions
+  minimales des manifestes applicatifs restent inchangées ; ce lot ne requiert
+  aucune intervention sur les runtimes hébergés.
+- Outils épinglés : uv `0.13.5`, Serena `2.1.0`, RTK `v1.0.1`, ast-grep
+  `0.51.0` ; Repomix reste sur `1.18.1`. L'installateur RTK est récupéré depuis
+  le tag de sa version, avec la vérification SHA-256 fournie par cet installateur.
+- Installations et commandes de version vérifiées dans un répertoire temporaire,
+  avec Python `3.13` pour Serena. Les options MCP `--context` / `--project`
+  existent toujours et `rtk init -g --codex --dry-run` réussit, sans modifier
+  la configuration utilisateur ni le projet Serena.
+- Les deux `npm ci` et les contrôles globaux réussissent sous les nouvelles
+  versions Node/npm : 394 tests backend, 15 intégrations PostgreSQL, 98 tests
+  frontend, couvertures, contrôles de code et builds.
+- L'audit npm signale désormais Vite `8.3.2` (sévérité haute, backend transitif
+  de développement et frontend direct) et `ip-address` (sévérité modérée,
+  backend transitif). Leur correction applicative reste à faire ; les lockfiles
+  ne sont pas actualisés dans ce lot consacré au devcontainer.
+- Reconstruction complète non exécutée : Docker n'est pas disponible dans cet
+  environnement. Utiliser `Dev Containers: Rebuild Container Without Cache`
+  depuis VS Code pour installer les outils et les correctifs APT. Le build
+  conserve `--pull`, `--no-cache` et `apt-get update` / `apt-get upgrade` ; les
+  sept mises à jour APT signalées restent à vérifier après cette reconstruction.
+
+Maintenance du devcontainer et des dépendances du `2026-11-03` :
+
+- Référence locale : Node.js `24.22.2` LTS et npm `12.2.1`. Le devcontainer
+  épingle uv `0.13.7`, RTK `v1.1.0` et ast-grep `0.51.1` ; Serena `2.1.0`
+  et Repomix `1.18.1` restent à jour. Les nouveaux exécutables sont vérifiés
+  temporairement, avec contrôle SHA-256 pour Node et RTK, et initialisation
+  Codex de RTK validée en simulation.
+- Dépendances backend/frontend actualisées : notamment Express `5.3.0`,
+  express-rate-limit `8.7.3`, dotenv `18.0.9`, Zod `4.6.7`, React `19.3.1`,
+  Cytoscape `3.34.4`, Vite `8.3.5`, plugin React `6.2.1`, Vitest/coverage
+  `5.1.0`, jsdom `30.1.3` et Biome `2.6.4`. Les types Node restent alignés
+  sur la branche 24 (`24.19.2`). Les minima Node des manifestes sont conservés.
+- Les alertes Vite et `ip-address` relevées en octobre sont corrigées : Vite
+  `8.3.5` et `ip-address 10.7.6` sont verrouillés. Les deux installations
+  propres `npm ci` réussissent et leurs audits npm rapportent zéro vulnérabilité.
+- Trois composants de démonstration des tests frontend sont déplacés au niveau
+  du module pour respecter la nouvelle règle Biome `noComponentHookFactories`,
+  sans désactiver la règle ni changer le comportement produit.
+- Validation globale réussie sous Node `24.22.2` / npm `12.2.1` : 394 tests
+  backend, 15 intégrations PostgreSQL, 98 tests frontend, couvertures, contrôles
+  Biome et builds. Les intégrations utilisent toujours PostgreSQL `17.4` via
+  `host.docker.internal` ; cela ne valide pas la recette de l'alias `postgres`.
+- Reconstruction effectuée depuis VS Code le `2026-11-03` : les exécutables
+  confirment Node `24.22.2`, npm `12.2.1`, uv `0.13.7`, Serena `2.1.0`,
+  RTK `1.1.0` et ast-grep `0.51.1`. Le contrôle post-reconstruction du
+  `2026-11-03T17:47:29Z` ne signale plus de paquet APT à mettre à jour et
+  toutes les versions épinglées correspondent aux versions stables vérifiées.
+  Aucun changement VPS n'est effectué dans ce dépôt.
+
 ### Etape 15 - Refactor et nettoyage transversal
 
 Statut : terminee le 2026-07-30.
@@ -874,6 +928,8 @@ a 18.
 
 ### Consultation et evenements recents
 
+- Mieux mettre en évidence les résultats de recherche, notamment les personnages
+  correspondants dans le graphe, pour les repérer rapidement.
 - Ajouter un encart ou une page compacte listant les derniers evenements issus
   des fiches et de l'historique valide : derniers deces, changements de groupe,
   changements d'entreprise, nouvelles fiches, changements de streamer et autres
@@ -883,6 +939,13 @@ a 18.
 
 ### Moderation et qualite des donnees
 
+- Lors de la modération d'une demande de modification de fiche contenant un
+  changement de photo, afficher les photos avant/après pour faciliter la
+  comparaison avant validation.
+- Vérifier le possible faux changement de parenté signalé en modération alors
+  qu'aucune parenté n'a été modifiée, notamment lors d'un changement de photo ;
+  reproduire le cas et corriger le calcul ou l'affichage des différences si le
+  défaut est confirmé.
 - Ajouter dans la vue de completude un statut `en cours de traitement`, des
   filtres experts et une orchestration collective du rattrapage si le volume ou
   le nombre de moderateurs le justifie.
@@ -946,7 +1009,7 @@ a 18.
   structure, l'accessibilite et les limites peuvent changer sans preavis.
 - Google, Discord et Twitch restent dependants de leurs services OAuth et de
   leurs limites d'API respectives.
-- Le developpement local cible Node.js `24.21.0` LTS. La version d'exécution
+- Le developpement local cible Node.js `24.22.2` LTS. La version d'exécution
   des environnements déployés est suivie par la plateforme.
 - Toute évolution du produit doit respecter l'isolation et les contrats de
   l'environnement où l'application est hébergée.
