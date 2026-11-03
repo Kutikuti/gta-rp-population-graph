@@ -688,6 +688,60 @@ Maintenance des dépendances du `2026-10-04` :
   pas l'authentification. La promotion applicative et toute maintenance système
   restent à réaliser et à consigner dans `platform-ops`.
 
+Maintenance du devcontainer du `2026-10-23` :
+
+- Référence locale : Node.js `24.22.1` LTS et npm `12.2.1`. Les versions
+  minimales des manifestes applicatifs restent inchangées ; ce lot ne requiert
+  aucune intervention sur les runtimes hébergés.
+- Outils épinglés : uv `0.13.5`, Serena `2.1.0`, RTK `v1.0.1`, ast-grep
+  `0.51.0` ; Repomix reste sur `1.18.1`. L'installateur RTK est récupéré depuis
+  le tag de sa version, avec la vérification SHA-256 fournie par cet installateur.
+- Installations et commandes de version vérifiées dans un répertoire temporaire,
+  avec Python `3.13` pour Serena. Les options MCP `--context` / `--project`
+  existent toujours et `rtk init -g --codex --dry-run` réussit, sans modifier
+  la configuration utilisateur ni le projet Serena.
+- Les deux `npm ci` et les contrôles globaux réussissent sous les nouvelles
+  versions Node/npm : 394 tests backend, 15 intégrations PostgreSQL, 98 tests
+  frontend, couvertures, contrôles de code et builds.
+- L'audit npm signale désormais Vite `8.3.2` (sévérité haute, backend transitif
+  de développement et frontend direct) et `ip-address` (sévérité modérée,
+  backend transitif). Leur correction applicative reste à faire ; les lockfiles
+  ne sont pas actualisés dans ce lot consacré au devcontainer.
+- Reconstruction complète non exécutée : Docker n'est pas disponible dans cet
+  environnement. Utiliser `Dev Containers: Rebuild Container Without Cache`
+  depuis VS Code pour installer les outils et les correctifs APT. Le build
+  conserve `--pull`, `--no-cache` et `apt-get update` / `apt-get upgrade` ; les
+  sept mises à jour APT signalées restent à vérifier après cette reconstruction.
+
+Maintenance du devcontainer et des dépendances du `2026-11-03` :
+
+- Référence locale : Node.js `24.22.2` LTS et npm `12.2.1`. Le devcontainer
+  épingle uv `0.13.7`, RTK `v1.1.0` et ast-grep `0.51.1` ; Serena `2.1.0`
+  et Repomix `1.18.1` restent à jour. Les nouveaux exécutables sont vérifiés
+  temporairement, avec contrôle SHA-256 pour Node et RTK, et initialisation
+  Codex de RTK validée en simulation.
+- Dépendances backend/frontend actualisées : notamment Express `5.3.0`,
+  express-rate-limit `8.7.3`, dotenv `18.0.9`, Zod `4.6.7`, React `19.3.1`,
+  Cytoscape `3.34.4`, Vite `8.3.5`, plugin React `6.2.1`, Vitest/coverage
+  `5.1.0`, jsdom `30.1.3` et Biome `2.6.4`. Les types Node restent alignés
+  sur la branche 24 (`24.19.2`). Les minima Node des manifestes sont conservés.
+- Les alertes Vite et `ip-address` relevées en octobre sont corrigées : Vite
+  `8.3.5` et `ip-address 10.7.6` sont verrouillés. Les deux installations
+  propres `npm ci` réussissent et leurs audits npm rapportent zéro vulnérabilité.
+- Trois composants de démonstration des tests frontend sont déplacés au niveau
+  du module pour respecter la nouvelle règle Biome `noComponentHookFactories`,
+  sans désactiver la règle ni changer le comportement produit.
+- Validation globale réussie sous Node `24.22.2` / npm `12.2.1` : 394 tests
+  backend, 15 intégrations PostgreSQL, 98 tests frontend, couvertures, contrôles
+  Biome et builds. Les intégrations utilisent toujours PostgreSQL `17.4` via
+  `host.docker.internal` ; cela ne valide pas la recette de l'alias `postgres`.
+- Reconstruction effectuée depuis VS Code le `2026-11-03` : les exécutables
+  confirment Node `24.22.2`, npm `12.2.1`, uv `0.13.7`, Serena `2.1.0`,
+  RTK `1.1.0` et ast-grep `0.51.1`. Le contrôle post-reconstruction du
+  `2026-11-03T17:47:29Z` ne signale plus de paquet APT à mettre à jour et
+  toutes les versions épinglées correspondent aux versions stables vérifiées.
+  Aucun changement VPS n'est effectué dans ce dépôt.
+
 ### Etape 15 - Refactor et nettoyage transversal
 
 Statut : terminee le 2026-07-30.
@@ -799,20 +853,10 @@ Correctifs applicatifs réalisés :
   métacaractères SQL `LIKE`, revue des routes d'accès et journaux d'erreurs
   internes expurgés ; configuration SQL des migrations séparée du runtime.
 
-Correctif de disponibilité installé le 22 octobre 2026 (`07e99cd`) : budgets
-lecture, OAuth/écritures et session/logout séparés, avec sous-limites photos et
-contributions conservées. La recette navigateur complète et les intégrations
-PostgreSQL 15.19 isolées sont validées le 23 octobre ; preuves dans platform-ops.
-
-Mises à jour de sécurité préparées le 23 octobre : `ip-address` 10.7.4 dans le
-limiteur backend et Vite 8.3.5 dans les outils backend/frontend. Les lockfiles
-figent aussi leurs dépendances de build compatibles. Audits npm sans avis,
-404 tests backend et 98 frontend, style et builds réussis. Aucun changement
-de logique produit, de migration ou de configuration ; déploiement VPS
-encore requis via les procédures centrales platform-ops.
-
 Travaux applicatifs encore ouverts :
 
+- P1 : recette navigateur réelle des rôles, des parcours OAuth et du blocage
+  inter-origines.
 - P2 : mesurer la contention du verrou transactionnel commun si les mutations
   de comptes deviennent fréquentes ; les lectures de session ne sont pas
   sérialisées.
@@ -884,6 +928,8 @@ a 18.
 
 ### Consultation et evenements recents
 
+- Mieux mettre en évidence les résultats de recherche, notamment les personnages
+  correspondants dans le graphe, pour les repérer rapidement.
 - Ajouter un encart ou une page compacte listant les derniers evenements issus
   des fiches et de l'historique valide : derniers deces, changements de groupe,
   changements d'entreprise, nouvelles fiches, changements de streamer et autres
@@ -893,11 +939,13 @@ a 18.
 
 ### Moderation et qualite des donnees
 
-- Dans la preview d'une modification de photo sur l'écran de modération,
-  afficher côte à côte l'image actuelle et l'image proposée. Demande issue
-  de la recette R11 du 22 octobre 2026, validée pour le traitement des images ;
-  amélioration d'interface à réaliser séparément du correctif des quotas.
-
+- Lors de la modération d'une demande de modification de fiche contenant un
+  changement de photo, afficher les photos avant/après pour faciliter la
+  comparaison avant validation.
+- Vérifier le possible faux changement de parenté signalé en modération alors
+  qu'aucune parenté n'a été modifiée, notamment lors d'un changement de photo ;
+  reproduire le cas et corriger le calcul ou l'affichage des différences si le
+  défaut est confirmé.
 - Ajouter dans la vue de completude un statut `en cours de traitement`, des
   filtres experts et une orchestration collective du rattrapage si le volume ou
   le nombre de moderateurs le justifie.
@@ -961,7 +1009,7 @@ a 18.
   structure, l'accessibilite et les limites peuvent changer sans preavis.
 - Google, Discord et Twitch restent dependants de leurs services OAuth et de
   leurs limites d'API respectives.
-- Le developpement local cible Node.js `24.21.0` LTS. La version d'exécution
+- Le developpement local cible Node.js `24.22.2` LTS. La version d'exécution
   des environnements déployés est suivie par la plateforme.
 - Toute évolution du produit doit respecter l'isolation et les contrats de
   l'environnement où l'application est hébergée.
@@ -969,13 +1017,10 @@ a 18.
   doit declencher une nouvelle revue RGPD et cookies.
 
 
-Maintenance de sécurité du 2026-11-02 :
+## Fusion de dépendances du 3 novembre 2026
 
-- Lot isolé depuis la baseline 696b695, sans embarquer les évolutions produit
-  ultérieures de main ni modifier de code métier, migration ou configuration.
-- Express 5.3.0, body-parser 2.4.0, qs 6.17.1 et Zod 4.6.7 corrigent les avis
-  de dépendances backend ; undici 8.12.3 corrige les avis du développement frontend.
-- Biome, deux builds, 403 tests backend hors topologie devcontainer et 98 tests
-  frontend réussis ; quatre audits npm complets/production à zéro avis connu.
-- Les intégrations PostgreSQL réelles ne sont pas relancées dans ce lot sans
-  changement de schéma. Les validations et le déploiement VPS restent centralisés.
+Les mises à jour e56d4f0 sont réunies avec le lot de sécurité 85be2ba dans
+une branche de livraison distincte. Les budgets de requêtes par catégorie,
+leurs variables et les tests associés restent conservés. Aucune migration,
+modification de rôles ou changement métier n’est inclus dans cette fusion.
+Les opérations de déploiement restent dans platform-ops.
